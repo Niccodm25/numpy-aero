@@ -82,15 +82,15 @@
       "id": "m11-e4",
       "tipo": "debug",
       "testo": "Questo controllo dovrebbe confermare che la soluzione del sistema è corretta, ma restituisce `False` anche quando lo è. Correggilo.",
-      "setup": "A = np.array([[2.0, 1.0], [1.0, 3.0]])\nb = np.array([5.0, 10.0])\nx = np.linalg.solve(A, b)\n",
+      "setup": "A = np.array([[3.366, 1.714, 0.684],\n              [0.574, 4.160, 4.607],\n              [3.230, 3.783, 2.946]])\nb = np.array([46.819, 40.977, 1.134])\nx = np.linalg.solve(A, b)\n",
       "starter": "ok = np.all(A @ x == b)\n",
-      "test": "assert bool(ok) is True, 'il controllo deve confermare che la soluzione e corretta'\nassert np.allclose(A @ x, b), 'la soluzione e effettivamente corretta: il problema e il confronto'",
+      "test": "assert not np.all(A @ x == b), 'questi dati devono esibire il residuo di arrotondamento'\nassert bool(ok) is True, 'il controllo deve confermare che la soluzione e corretta'\nassert np.allclose(A @ x, b), 'la soluzione e effettivamente corretta: il problema e il confronto'",
       "hint": [
         "Il risultato di solve differisce da b per errori di arrotondamento dell'ordine di 1e-16.",
         "np.allclose(A @ x, b)"
       ],
       "soluzione": "ok = np.allclose(A @ x, b)",
-      "spiegazione": "La fattorizzazione introduce errori dell'ordine di eps, quindi A @ x non riproduce b bit per bit. Con == il controllo fallisce sempre e sembra che il solutore sia rotto. allclose è il modo corretto di verificare una soluzione numerica — e verificarla è un'abitudine che vale la pena avere."
+      "spiegazione": "La fattorizzazione LU introduce errori dell'ordine di eps, quindi A @ x non riproduce b bit per bit: qui il residuo massimo vale circa 9e-14. Con == il controllo fallisce sempre e sembra che il solutore sia rotto. allclose e il modo corretto di verificare una soluzione numerica, e verificarla e un'abitudine che vale la pena avere.\n\nIl primo assert del test e una rete di sicurezza sui dati stessi: su un sistema a coefficienti interi piccoli il residuo puo essere esattamente zero, e l'esercizio non insegnerebbe niente."
     },
     {
       "id": "m11-e5",
