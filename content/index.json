@@ -23,13 +23,13 @@
       "id": "m04",
       "file": "m04-matematica.json",
       "titolo": "Matematica elemento per elemento",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m05",
       "file": "m05-aggregazioni.json",
       "titolo": "Aggregazioni e axis",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m06",
