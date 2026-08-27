@@ -21,16 +21,25 @@ const PRECACHE = [
   "js/storage.js",
   "js/md.js",
   "content/index.json",
-  "content/m01-creazione.json",
 ];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(SHELL)
-      // addAll fallisce tutto se un file manca: qui li aggiungo uno a uno cosi
-      // un contenuto rinominato non impedisce l'installazione.
-      .then((c) => Promise.allSettled(PRECACHE.map((u) => c.add(u))))
-      .then(() => self.skipWaiting())
+    (async () => {
+      const c = await caches.open(SHELL);
+      // I moduli si ricavano dall'indice invece di essere elencati qui:
+      // una lista fissa si dimenticherebbe di aggiornare a ogni modulo nuovo.
+      let moduli = [];
+      try {
+        const idx = await (await fetch("content/index.json")).json();
+        moduli = idx.moduli.filter((m) => m.disponibile).map((m) => "content/" + m.file);
+      } catch {
+        /* offline al primo avvio: la shell si cachea lo stesso */
+      }
+      // Uno a uno, non addAll: un file mancante non deve far fallire tutto.
+      await Promise.allSettled([...PRECACHE, ...moduli].map((u) => c.add(u)));
+      self.skipWaiting();
+    })()
   );
 });
 

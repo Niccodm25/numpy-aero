@@ -28,6 +28,8 @@ for f in sorted(glob.glob(os.path.join(ROOT, "content", "m*.json"))):
             continue
         ns = {"np": np}
         try:
+            # Stesso ordine dell'app: prima i dati forniti, poi il codice scritto.
+            exec(e.get("setup", ""), ns)
             exec(e["soluzione"], ns)
             exec(e["test"], ns)
             print(f"  {e['id']}: ok")

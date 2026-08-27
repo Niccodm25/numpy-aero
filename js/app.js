@@ -227,6 +227,7 @@ async function vistaEsercizio(mid, eid) {
       .join("");
   } else {
     zona.innerHTML = `
+      ${es.setup ? `<p class="muto">Dati forniti, gia caricati:</p><pre><code>${escapeHtml(es.setup)}</code></pre>` : ""}
       <textarea id="ed" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off">${escapeHtml(es.starter || "")}</textarea>
       <div class="simboli">${SIMBOLI.map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x.trim() || "tab")}</button>`).join("")}</div>`;
     const ed = zona.querySelector("#ed");
@@ -259,7 +260,8 @@ async function vistaEsercizio(mid, eid) {
       ok = es.opzioni[+sel.value] === es.risposta;
     } else {
       btn.textContent = "Eseguo…";
-      const r = await R.run(zona.querySelector("#ed").value, es.test);
+      const codice = (es.setup ? es.setup + "\n" : "") + zona.querySelector("#ed").value;
+      const r = await R.run(codice, es.test);
       ok = r.ok;
       if (r.out) dettaglio += `<pre><code>${escapeHtml(r.out)}</code></pre>`;
       if (r.err) dettaglio += `<pre><code>${escapeHtml(r.err)}</code></pre>`;

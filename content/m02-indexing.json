@@ -1,0 +1,175 @@
+{
+  "id": "m02",
+  "titolo": "Indexing e slicing",
+  "perche": "I dati veri arrivano sempre più grandi di quello che ti serve: un log di volo intero quando vuoi solo la crociera, una matrice di prove quando vuoi una condizione. Saper ritagliare senza copiare a mano è metà del lavoro.",
+  "funzioni": [
+    "a[i]",
+    "a[i:j:k]",
+    "a[riga, colonna]",
+    "maschere booleane",
+    "&",
+    "|",
+    "~",
+    "np.where",
+    "np.any",
+    "np.all",
+    "view vs copy"
+  ],
+  "lezioni": [
+    {
+      "id": "m02-l1",
+      "titolo": "Slicing: start, stop, step",
+      "md": "La sintassi è `a[start:stop:step]`, e vale la stessa regola delle liste Python: **stop è escluso**.\n\n```\na = np.array([10, 20, 30, 40, 50])\na[1:4]    # [20 30 40]   dall'indice 1 al 3\na[:3]     # [10 20 30]   dall'inizio\na[2:]     # [30 40 50]   fino alla fine\na[::2]    # [10 30 50]   uno sì e uno no\na[::-1]   # [50 40 30 20 10]  invertito\n```\n\n### Indici negativi\n\nContano dalla fine: `a[-1]` è l'ultimo elemento, `a[-2]` il penultimo. Ti serviranno di continuo: `T[-1]` è la temperatura all'ultima quota, `traiettoria[-1]` è il punto di arrivo.\n\n```\na[-1]     # 50\na[-2:]    # [40 50]   ultimi due\na[:-1]    # [10 20 30 40]  tutti tranne l'ultimo\n```\n\n### Perché `a[:-1]` è così frequente\n\nQuando calcoli differenze fra punti consecutivi, il risultato ha un elemento in meno degli input. La forma tipica è `a[1:] - a[:-1]`: sposta l'array di uno e sottrai. Lo vedrai nel modulo sul calcolo numerico.",
+      "demo": "a = np.array([10, 20, 30, 40, 50])\nprint(\"a[1:4]  \", a[1:4])\nprint(\"a[::2]  \", a[::2])\nprint(\"a[::-1] \", a[::-1])\nprint(\"a[-1]   \", a[-1])\nprint(\"a[:-1]  \", a[:-1])\nprint()\nprint(\"differenze consecutive:\", a[1:] - a[:-1])"
+    },
+    {
+      "id": "m02-l2",
+      "titolo": "Due dimensioni: righe, colonne, e i due punti",
+      "md": "In 2D si indicizza con **una virgola dentro le stesse parentesi quadre**, non con due parentesi separate.\n\n```\nA = np.array([[1, 2, 3],\n              [4, 5, 6],\n              [7, 8, 9]])\n\nA[1, 2]    # 6      riga 1, colonna 2\nA[1]       # [4 5 6]   tutta la riga 1\nA[:, 1]    # [2 5 8]   tutta la colonna 1\nA[0:2, 1:] # [[2 3], [5 6]]  sottomatrice\n```\n\n### I due punti significano \"tutto questo asse\"\n\n`A[:, 1]` si legge: *tutte le righe, colonna 1*. È il modo di estrarre una colonna, e lo userai ogni volta che hai una tabella con una grandezza per colonna.\n\n### Attenzione alla shape del risultato\n\n```\nA[:, 1].shape    # (3,)    <- 1D, la dimensione colonna sparisce\nA[:, 1:2].shape  # (3, 1)  <- 2D, resta una matrice colonna\n```\n\nL'indice singolo **rimuove** quell'asse, lo slice lo **conserva**. Sembra un dettaglio, ma decide se una moltiplicazione dopo funziona o esplode. Nel modulo sul broadcasting diventa la cosa più importante.\n\n### `A[1][2]` funziona ma non farlo\n\nCrea un array intermedio inutile ed è più lento. In 2D e oltre, la virgola è sempre la forma giusta.",
+      "demo": "A = np.array([[1, 2, 3],\n              [4, 5, 6],\n              [7, 8, 9]])\nprint(\"A[1, 2] =\", A[1, 2])\nprint(\"riga 1:   \", A[1])\nprint(\"colonna 1:\", A[:, 1])\nprint()\nprint(\"A[:, 1].shape  \", A[:, 1].shape)\nprint(\"A[:, 1:2].shape\", A[:, 1:2].shape)"
+    },
+    {
+      "id": "m02-l3",
+      "titolo": "Maschere booleane: filtrare i dati",
+      "md": "Questa è la tecnica che userai di più su dati sperimentali. Un confronto su un array non restituisce True o False: restituisce **un array di booleani**, uno per elemento.\n\n```\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84])\nmach > 0.8        # [False False False  True  True]\nmach[mach > 0.8]  # [0.82 0.84]   <- solo quelli che passano\n```\n\nLa maschera si può usare per indicizzare **un altro array della stessa lunghezza**. È così che si estraggono righe corrispondenti:\n\n```\nquota[mach > 0.8]   # le quote dei punti supersonici\n```\n\n### Combinare condizioni: `&` `|` `~`, mai `and` `or` `not`\n\n```\n(h > 9000) & (mach > 0.8)   # AND elemento per elemento\n(h < 1000) | (h > 10000)    # OR\n~(mach > 0.8)               # NOT\n```\n\n**Le parentesi non sono facoltative.** In Python `&` ha precedenza più alta di `>`, quindi `h > 9000 & mach > 0.8` viene letto come `h > (9000 & mach) > 0.8` e produce un errore incomprensibile.\n\n### Perché `and` non funziona\n\nScrivendo `(h > 9000) and (mach > 0.8)` ottieni:\n\n```\nValueError: The truth value of an array with more than one element is ambiguous\n```\n\n`and` vuole decidere fra due valori di verità, ma qui ha due *array* di booleani: NumPy si rifiuta di indovinare se intendevi \"tutti\" o \"almeno uno\". Quando ti serve un singolo sì/no usa `np.all(...)` o `np.any(...)` esplicitamente.\n\nQuesto è l'errore numero uno di chi arriva a NumPy da Python. Impararlo adesso ti risparmia ore.",
+      "demo": "h    = np.array([0, 3000, 9500, 10500, 11000, 10800])\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81])\n\nprint(\"maschera:\", mach > 0.8)\nprint(\"mach filtrati:\", mach[mach > 0.8])\nprint(\"quote corrispondenti:\", h[mach > 0.8])\nprint()\ncrociera = (h > 9000) & (mach > 0.8)\nprint(\"crociera:\", crociera)\nprint(\"quante:\", crociera.sum(), \"| almeno una?\", np.any(crociera), \"| tutte?\", np.all(crociera))"
+    },
+    {
+      "id": "m02-l4",
+      "titolo": "View e copy: la trappola che corrompe i dati",
+      "md": "**Uno slice non copia i dati.** Restituisce una *view*: una finestra sullo stesso blocco di memoria. Modificare la view modifica l'originale.\n\n```\na = np.array([1, 2, 3, 4, 5])\nb = a[1:4]\nb[0] = 99\nprint(a)    # [ 1 99  3  4  5]   <- a e' cambiato\n```\n\nÈ una scelta di progetto, non un difetto: su un array da un milione di elementi, copiare a ogni slice sarebbe insostenibile. Ma se non lo sai, ti ritrovi con dati sorgente corrotti e nessuna idea di dove sia successo.\n\n### La regola per capire cosa ottieni\n\n- **Slice** (`a[1:4]`, `A[:, 2]`) → **view**, condivide la memoria\n- **Maschera booleana** (`a[a > 0]`) → **copia**, memoria nuova\n- **Fancy indexing** con lista di indici (`a[[0, 2, 4]]`) → **copia**\n\nIl motivo è geometrico: uno slice regolare si descrive con un passo costante, quindi può essere una finestra. Gli elementi scelti da una maschera sono sparsi, e vanno per forza raccolti altrove.\n\n### Quando vuoi essere sicuro\n\n```\nb = a[1:4].copy()    # esplicito, nessun legame con a\n```\n\nUsalo ogni volta che modificherai il risultato e l'originale ti serve intatto. Costa una copia, ti risparmia un bug che non troveresti mai.",
+      "demo": "a = np.array([1, 2, 3, 4, 5])\nb = a[1:4]\nb[0] = 99\nprint(\"dopo slice + modifica, a =\", a)\n\na = np.array([1, 2, 3, 4, 5])\nc = a[a > 2]\nc[0] = 99\nprint(\"dopo maschera + modifica, a =\", a)\n\na = np.array([1, 2, 3, 4, 5])\nd = a[1:4].copy()\nd[0] = 99\nprint(\"dopo copy + modifica,   a =\", a)"
+    },
+    {
+      "id": "m02-l5",
+      "titolo": "np.where: scegliere elemento per elemento",
+      "md": "`np.where(condizione, se_vero, se_falso)` costruisce un nuovo array scegliendo, per ogni posizione, dal secondo o dal terzo argomento.\n\n```\nfuel = np.array([1200., 950., -3., 610.])\nnp.where(fuel < 0, 0.0, fuel)   # [1200.  950.    0.  610.]\n```\n\nÈ l'`if/else` vettorizzato. Il ciclo equivalente sarebbe cinque righe e cento volte più lento.\n\n### Gli usi tipici in ingegneria\n\n- **Ripulire letture di sensori:** valori fisicamente impossibili sostituiti con 0 o `np.nan`\n- **Formule a tratti:** l'atmosfera standard cambia legge alla tropopausa, e `where` applica la formula giusta per ogni quota senza scrivere un ciclo\n\n```\nT = np.where(h < 11000, 288.15 - 0.0065 * h, 216.65)\n```\n\n### La forma con un solo argomento fa un'altra cosa\n\n`np.where(condizione)` senza gli altri due restituisce **gli indici** dove la condizione è vera, non i valori. Utile quando ti serve sapere *dove*:\n\n```\nnp.where(mach > 0.8)   # (array([3, 4]),)  <- una tupla di array\n```\n\nNota la tupla: c'è un array di indici per ogni dimensione. In 1D si legge `np.where(...)[0]`.",
+      "demo": "fuel = np.array([1200., 950., -3., 610., -8.])\nprint(\"ripulito:\", np.where(fuel < 0, 0.0, fuel))\n\nh = np.array([0., 5000., 11000., 15000.])\nT = np.where(h < 11000, 288.15 - 0.0065 * h, 216.65)\nprint(\"ISA a tratti:\", T)\n\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84])\nprint(\"indici dove mach > 0.8:\", np.where(mach > 0.8)[0])"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m02-e1",
+      "tipo": "predict",
+      "testo": "Dato `a = np.array([10, 20, 30, 40, 50])`, che cosa vale `a[1:4]` ?",
+      "opzioni": [
+        "[20 30 40]",
+        "[20 30 40 50]",
+        "[10 20 30 40]",
+        "[20 30]"
+      ],
+      "risposta": "[20 30 40]",
+      "spiegazione": "Parte dall'indice 1 e si ferma prima del 4: elementi 1, 2, 3. Lo stop è sempre escluso, come nelle liste Python."
+    },
+    {
+      "id": "m02-e2",
+      "tipo": "predict",
+      "testo": "Data una matrice `A` di shape `(5, 3)`, che shape ha `A[:, 1]` ?",
+      "opzioni": [
+        "(5,)",
+        "(5, 1)",
+        "(3,)",
+        "(1, 5)"
+      ],
+      "risposta": "(5,)",
+      "spiegazione": "Un indice singolo rimuove quell'asse: resta un array 1D di 5 elementi. Per conservare la seconda dimensione servirebbe uno slice, A[:, 1:2], che dà (5, 1)."
+    },
+    {
+      "id": "m02-e3",
+      "tipo": "predict",
+      "testo": "Che cosa stampa questo codice?\n\n```\na = np.array([1, 2, 3, 4, 5])\nb = a[1:4]\nb[0] = 99\nprint(a)\n```",
+      "opzioni": [
+        "[ 1 99  3  4  5]",
+        "[1 2 3 4 5]",
+        "[99  2  3  4  5]",
+        "solleva un errore"
+      ],
+      "risposta": "[ 1 99  3  4  5]",
+      "spiegazione": "Uno slice restituisce una view, non una copia: b condivide la memoria con a, quindi modificare b[0] scrive nella posizione 1 di a. Per evitarlo serve a[1:4].copy()."
+    },
+    {
+      "id": "m02-e4",
+      "tipo": "predict",
+      "testo": "Perché `(h > 9000) and (mach > 0.8)` solleva `ValueError: The truth value of an array with more than one element is ambiguous` ?",
+      "opzioni": [
+        "and lavora su singoli booleani, non su array: serve &",
+        "le parentesi sono nel posto sbagliato",
+        "h e mach hanno lunghezze diverse",
+        "and non esiste in NumPy"
+      ],
+      "risposta": "and lavora su singoli booleani, non su array: serve &",
+      "spiegazione": "and deve ridurre ogni operando a un solo True/False, ma qui ha due array di booleani. NumPy si rifiuta di indovinare se intendevi 'tutti' o 'almeno uno' e solleva l'errore. Per l'AND elemento per elemento serve &, con le parentesi attorno ai confronti."
+    },
+    {
+      "id": "m02-e5",
+      "tipo": "write",
+      "testo": "Dal log di volo, estrai in `mach_alti` i soli valori di Mach superiori a 0.8.",
+      "starter": "# scrivi qui\nmach_alti = \n",
+      "test": "assert mach_alti.shape == (3,), f'attesi 3 valori, ne hai {mach_alti.shape[0]}'\nassert np.allclose(np.sort(mach_alti), [0.81, 0.82, 0.84])",
+      "hint": [
+        "mach > 0.8 ti da un array di booleani.",
+        "Usa quell'array di booleani come indice: mach[maschera]."
+      ],
+      "soluzione": "mach_alti = mach[mach > 0.8]",
+      "spiegazione": "La maschera booleana usata come indice tiene solo le posizioni dove è True. Il risultato è sempre una copia, quindi modificarlo non tocca l'array originale.",
+      "setup": "mach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81, 0.5, 0.15])\n"
+    },
+    {
+      "id": "m02-e6",
+      "tipo": "write",
+      "testo": "Sempre dal log: estrai in `h_crociera` le **quote** dei punti in cui l'aereo era sia sopra i 9000 m **sia** oltre Mach 0.8.\n\nAttenzione: la condizione è su due array, ma il filtro va applicato alle quote.",
+      "starter": "# scrivi qui\nh_crociera = \n",
+      "test": "assert h_crociera.shape == (3,), f'attesi 3 punti, ne hai {h_crociera.shape[0]}'\nassert set(h_crociera.tolist()) == {10500, 11000, 10800}, f'quote sbagliate: {h_crociera}'",
+      "hint": [
+        "Combina le due condizioni con &, e metti ogni confronto fra parentesi.",
+        "La maschera combinata indicizza h: h[(h > 9000) & (mach > 0.8)]."
+      ],
+      "soluzione": "h_crociera = h[(h > 9000) & (mach > 0.8)]",
+      "spiegazione": "La maschera si costruisce da due array e si applica a un terzo: funziona perché hanno tutti la stessa lunghezza e le posizioni corrispondono. È il pattern standard per filtrare dati sperimentali su più criteri.",
+      "setup": "h    = np.array([0, 3000, 9500, 10500, 11000, 10800, 4000, 0])\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81, 0.5, 0.15])\n"
+    },
+    {
+      "id": "m02-e7",
+      "tipo": "debug",
+      "testo": "Questo codice dovrebbe contare i punti di crociera, ma solleva `ValueError: The truth value of an array with more than one element is ambiguous`. Correggilo.",
+      "starter": "n = ((h > 9000) and (mach > 0.8)).sum()\n",
+      "test": "assert int(n) == 3, f'attesi 3 punti, hai {n}'",
+      "hint": [
+        "and vuole un singolo True/False, qui riceve due array.",
+        "L'AND elemento per elemento in NumPy si scrive &."
+      ],
+      "soluzione": "n = ((h > 9000) & (mach > 0.8)).sum()",
+      "spiegazione": "Sostituendo and con & l'operazione diventa elemento per elemento e produce un array di booleani. sum() li conta, perché True vale 1 e False vale 0.",
+      "setup": "h    = np.array([0, 3000, 9500, 10500, 11000, 10800, 4000, 0])\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81, 0.5, 0.15])\n"
+    },
+    {
+      "id": "m02-e8",
+      "tipo": "write",
+      "testo": "Il sensore del carburante ha prodotto alcune letture negative, fisicamente impossibili. Costruisci `fuel_ok` sostituendo ogni valore negativo con `0.0` e lasciando gli altri invariati.\n\nNon modificare `fuel`.",
+      "starter": "# scrivi qui\nfuel_ok = \n",
+      "test": "assert np.all(fuel_ok >= 0), 'restano valori negativi'\nassert np.allclose(fuel_ok, [1200., 950., 0., 610., 0., 250.])\nassert np.allclose(fuel, [1200., 950., -3., 610., -8., 250.]), 'fuel non doveva essere modificato'",
+      "hint": [
+        "Serve un if/else applicato a ogni elemento.",
+        "np.where(condizione, valore_se_vero, valore_se_falso)."
+      ],
+      "soluzione": "fuel_ok = np.where(fuel < 0, 0.0, fuel)",
+      "spiegazione": "np.where costruisce un array nuovo, quindi fuel resta intatto. Nota che una soluzione tentante come fuel[fuel < 0] = 0 funzionerebbe, ma modifica l'originale: quando i dati grezzi ti servono ancora, where è la scelta giusta.",
+      "setup": "fuel = np.array([1200., 950., -3., 610., -8., 250.])\n"
+    },
+    {
+      "id": "m02-e9",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Consumo in crociera.**\n\nDal log, considera solo i punti di crociera (quota sopra 9000 m). Calcola:\n\n- `n_crociera`: quanti punti sono\n- `fuel_bruciato`: la differenza fra il carburante al **primo** e all'**ultimo** punto di crociera\n\nNon usare cicli.",
+      "starter": "crociera = \nn_crociera = \nfuel_bruciato = \n",
+      "test": "assert crociera.dtype == bool, 'crociera deve essere una maschera booleana'\nassert int(n_crociera) == 4, f'attesi 4 punti sopra 9000 m, hai {n_crociera}'\nassert np.isclose(fuel_bruciato, 700.0), f'atteso 700.0, hai {fuel_bruciato}'",
+      "hint": [
+        "crociera e' la maschera h > 9000. Contala con .sum().",
+        "fuel[crociera] ti da il carburante nei soli punti di crociera: poi ti servono il primo e l'ultimo, cioe' [0] e [-1]."
+      ],
+      "soluzione": "crociera = h > 9000\nn_crociera = crociera.sum()\nfuel_bruciato = fuel[crociera][0] - fuel[crociera][-1]",
+      "spiegazione": "Tre idee insieme: la maschera come oggetto riutilizzabile, .sum() che conta i True, e l'indicizzazione negativa per prendere l'ultimo elemento del sottoinsieme filtrato. Nota che fuel[crociera] è già una copia ordinata come l'originale, quindi [0] e [-1] sono davvero il primo e l'ultimo punto in ordine di tempo.",
+      "setup": "h    = np.array([0, 3000, 9500, 10500, 11000, 10800, 4000, 0])\nfuel = np.array([2000., 1850., 1600., 1400., 1150., 900., 700., 600.])\n"
+    }
+  ]
+}

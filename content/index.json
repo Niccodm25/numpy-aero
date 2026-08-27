@@ -1,17 +1,77 @@
 {
   "titolo": "NumPy per Ingegneria Aerospaziale",
   "moduli": [
-    { "id": "m01", "file": "m01-creazione.json", "titolo": "Creazione e dtype", "disponibile": true },
-    { "id": "m02", "file": "m02-indexing.json", "titolo": "Indexing e slicing", "disponibile": false },
-    { "id": "m03", "file": "m03-broadcasting.json", "titolo": "Broadcasting", "disponibile": false },
-    { "id": "m04", "file": "m04-matematica.json", "titolo": "Matematica elemento per elemento", "disponibile": false },
-    { "id": "m05", "file": "m05-aggregazioni.json", "titolo": "Aggregazioni e axis", "disponibile": false },
-    { "id": "m06", "file": "m06-forma.json", "titolo": "Forma e composizione", "disponibile": false },
-    { "id": "m07", "file": "m07-linalg.json", "titolo": "Algebra lineare", "disponibile": false },
-    { "id": "m08", "file": "m08-numerico.json", "titolo": "Calcolo numerico", "disponibile": false },
-    { "id": "m09", "file": "m09-dati.json", "titolo": "Dati reali: I/O e NaN", "disponibile": false },
-    { "id": "m10", "file": "m10-montecarlo.json", "titolo": "Casualità e Monte Carlo", "disponibile": false },
-    { "id": "m11", "file": "m11-precisione.json", "titolo": "Precisione e performance", "disponibile": false },
-    { "id": "m12", "file": "m12-cercare.json", "titolo": "Trovare funzioni da solo", "disponibile": false }
+    {
+      "id": "m01",
+      "file": "m01-creazione.json",
+      "titolo": "Creazione e dtype",
+      "disponibile": true
+    },
+    {
+      "id": "m02",
+      "file": "m02-indexing.json",
+      "titolo": "Indexing e slicing",
+      "disponibile": true
+    },
+    {
+      "id": "m03",
+      "file": "m03-broadcasting.json",
+      "titolo": "Broadcasting",
+      "disponibile": true
+    },
+    {
+      "id": "m04",
+      "file": "m04-matematica.json",
+      "titolo": "Matematica elemento per elemento",
+      "disponibile": false
+    },
+    {
+      "id": "m05",
+      "file": "m05-aggregazioni.json",
+      "titolo": "Aggregazioni e axis",
+      "disponibile": false
+    },
+    {
+      "id": "m06",
+      "file": "m06-forma.json",
+      "titolo": "Forma e composizione",
+      "disponibile": false
+    },
+    {
+      "id": "m07",
+      "file": "m07-linalg.json",
+      "titolo": "Algebra lineare",
+      "disponibile": false
+    },
+    {
+      "id": "m08",
+      "file": "m08-numerico.json",
+      "titolo": "Calcolo numerico",
+      "disponibile": false
+    },
+    {
+      "id": "m09",
+      "file": "m09-dati.json",
+      "titolo": "Dati reali: I/O e NaN",
+      "disponibile": false
+    },
+    {
+      "id": "m10",
+      "file": "m10-montecarlo.json",
+      "titolo": "Casualità e Monte Carlo",
+      "disponibile": false
+    },
+    {
+      "id": "m11",
+      "file": "m11-precisione.json",
+      "titolo": "Precisione e performance",
+      "disponibile": false
+    },
+    {
+      "id": "m12",
+      "file": "m12-cercare.json",
+      "titolo": "Trovare funzioni da solo",
+      "disponibile": false
+    }
   ]
 }

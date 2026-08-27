@@ -1,0 +1,142 @@
+{
+  "id": "m03",
+  "titolo": "Broadcasting",
+  "perche": "È il concetto che separa chi scrive NumPy da chi scrive Python con dentro degli array. Ti permette di calcolare una grandezza su una griglia intera — tutte le quote per tutte le velocità — senza un solo ciclo, in una riga che somiglia alla formula sul libro.",
+  "funzioni": [
+    "regole di broadcast",
+    "None",
+    "np.newaxis",
+    "np.meshgrid",
+    "operazioni su griglie"
+  ],
+  "lezioni": [
+    {
+      "id": "m03-l1",
+      "titolo": "Il caso che già conosci",
+      "md": "L'hai già usato senza saperlo:\n\n```\nh = np.linspace(0, 11000, 12)\nT = 288.15 - 0.0065 * h\n```\n\nQui `288.15` è un numero singolo e `h` ha 12 elementi. NumPy **estende** lo scalare a tutti e 12 e fa l'operazione elemento per elemento. Questo si chiama *broadcasting*.\n\nIl punto importante: **l'array espanso non viene mai creato in memoria.** NumPy non costruisce 12 copie di 288.15, itera direttamente sul valore singolo. Per questo il broadcasting non è solo comodo, è anche efficiente: su griglie grandi risparmia gigabyte.\n\n### La domanda che apre il modulo\n\nLo scalare è il caso banale. Quello interessante è: se ho 12 quote e 7 velocità, e voglio la pressione dinamica per **ogni combinazione** — una tabella 12×7 — come la ottengo senza due cicli annidati?\n\nLa risposta sta nelle regole della prossima lezione.",
+      "demo": "h = np.linspace(0, 11000, 12)\nT = 288.15 - 0.0065 * h\nprint(\"h.shape:\", h.shape, \"-> T.shape:\", T.shape)\nprint(T.round(2))"
+    },
+    {
+      "id": "m03-l2",
+      "titolo": "Le due regole",
+      "md": "Quando operi su due array di shape diverse, NumPy allinea le shape **partendo da destra** e le confronta asse per asse.\n\n```\nA.shape = (12, 7)\nB.shape =     (7,)\n              -----\nrisultato (12, 7)\n```\n\nPer ogni coppia di dimensioni allineate, due sole possibilità sono ammesse:\n\n1. **sono uguali** → ok\n2. **una delle due vale 1** (o manca del tutto) → viene estesa fino all'altra\n\nSe nessuna delle due condizioni vale, NumPy solleva un errore. Non indovina mai.\n\n### Esempi\n\n```\n(12, 7) e (7,)     -> (12, 7)    la seconda si allinea a destra\n(12, 1) e (7,)     -> (12, 7)    l'1 si espande a 7\n(12,)   e (7,)     -> ERRORE     12 e 7 allineati, diversi, nessuno e' 1\n(2, 3, 4) e (3, 4) -> (2, 3, 4)  gli assi mancanti si aggiungono a sinistra\n```\n\n### Il caso che conta davvero\n\nGuarda la terza riga: `(12,)` e `(7,)` **non** si combinano. È esattamente il caso della griglia quote × velocità, e fallisce.\n\nMa la seconda riga funziona: `(12, 1)` contro `(7,)` dà `(12, 7)`. La differenza è solo quell'`1`.\n\nQuindi il problema si riduce a: **come trasformo `(12,)` in `(12, 1)`?** È la prossima lezione.",
+      "demo": "A = np.zeros((12, 7))\nB = np.zeros(7)\nprint(\"(12,7) + (7,)   ->\", (A + B).shape)\n\nC = np.zeros((12, 1))\nprint(\"(12,1) + (7,)   ->\", (C + B).shape)\n\nD = np.zeros((2, 3, 4))\nE = np.zeros((3, 4))\nprint(\"(2,3,4) + (3,4) ->\", (D + E).shape)\n\ntry:\n    np.zeros(12) + np.zeros(7)\nexcept ValueError as e:\n    print(\"\\n(12,) + (7,)     -> ERRORE:\", e)"
+    },
+    {
+      "id": "m03-l3",
+      "titolo": "None: aggiungere un asse",
+      "md": "`None` dentro le parentesi quadre inserisce **un nuovo asse di lunghezza 1** nella posizione in cui lo scrivi.\n\n```\nh = np.linspace(0, 11000, 12)\nh.shape            # (12,)\nh[:, None].shape   # (12, 1)   <- asse nuovo in fondo\nh[None, :].shape   # (1, 12)   <- asse nuovo davanti\n```\n\n`np.newaxis` è un sinonimo esatto di `None`, più esplicito da leggere. Scegli quello che preferisci, ma resta coerente.\n\n### Il pattern della griglia\n\nDue array 1D diventano una tabella 2D con un `None` sul primo:\n\n```\nh = np.linspace(0, 11000, 12)   # (12,)\nV = np.array([80., 120., 160.]) # (3,)\n\nG = h[:, None] + V              # (12, 1) con (3,) -> (12, 3)\n```\n\nOra `G[i, j]` combina `h[i]` con `V[j]`. **Il primo array diventa le righe, il secondo le colonne.**\n\n### Come ricordarlo senza memorizzare\n\nPensa a cosa vuoi che vari lungo ogni asse. Se vuoi le quote sulle righe, la quota deve avere un asse tutto suo in posizione 0 e lunghezza 1 in posizione 1: cioè `(12, 1)`, cioè `h[:, None]`.\n\nSe ti confondi, stampa le shape prima di scrivere la formula. È più veloce che ragionarci.",
+      "demo": "h = np.linspace(0, 11000, 12)\nV = np.array([80., 120., 160.])\n\nprint(\"h.shape         \", h.shape)\nprint(\"h[:, None].shape\", h[:, None].shape)\nprint(\"V.shape         \", V.shape)\n\nG = h[:, None] + V\nprint(\"\\ngriglia:\", G.shape, \"-> righe = quote, colonne = velocita\")\nprint(G[:3].round(1))"
+    },
+    {
+      "id": "m03-l4",
+      "titolo": "meshgrid: quando serve e quando no",
+      "md": "`np.meshgrid` costruisce esplicitamente due matrici piene, una con le righe ripetute e una con le colonne ripetute.\n\n```\nH, VV = np.meshgrid(h, V, indexing='ij')\nH.shape    # (12, 3)   la quota, ripetuta su ogni colonna\nVV.shape   # (12, 3)   la velocita, ripetuta su ogni riga\nQ = 0.5 * H * VV**2\n```\n\nIl risultato è identico a `0.5 * h[:, None] * V**2`, ma **occupa memoria per due matrici complete** invece di due vettori.\n\n### La regola pratica\n\n**Per fare i conti usa `None`.** È più corto, non alloca nulla, e si legge come la formula.\n\n**`meshgrid` serve quando ti servono davvero le matrici delle coordinate**, tipicamente per passarle a una funzione di plotting come `contour` o `plot_surface`, che vogliono X, Y, Z tutte della stessa shape.\n\n### L'argomento indexing\n\nDi default `meshgrid` usa `indexing='xy'`, che **scambia i primi due assi** per convenzione grafica: `meshgrid(h, V)` con h di 12 e V di 3 restituisce matrici `(3, 12)`, non `(12, 3)`.\n\nÈ una sorgente di confusione infinita. Se vuoi che il primo argomento corrisponda alle righe, passa `indexing='ij'`. Se stai plottando, di solito vuoi il default.",
+      "demo": "h = np.linspace(0, 11000, 12)\nV = np.array([80., 120., 160.])\n\nH, VV = np.meshgrid(h, V, indexing='ij')\nprint(\"con indexing='ij':\", H.shape)\nHx, Vx = np.meshgrid(h, V)\nprint(\"con default 'xy': \", Hx.shape, \"  <- assi scambiati\")\n\nQ1 = 0.5 * H * VV**2\nQ2 = 0.5 * h[:, None] * V**2\nprint(\"\\nstesso risultato?\", np.allclose(Q1, Q2))\nprint(\"memoria meshgrid:\", H.nbytes + VV.nbytes, \"byte\")\nprint(\"memoria None:    \", h.nbytes + V.nbytes, \"byte\")"
+    },
+    {
+      "id": "m03-l5",
+      "titolo": "Leggere l'errore di broadcasting",
+      "md": "Prima o poi vedrai questo:\n\n```\nValueError: operands could not be broadcast together with shapes (12,) (7,)\n```\n\nÈ un buon messaggio: ti dice esattamente le due shape coinvolte. Il metodo per risolverlo è sempre lo stesso.\n\n### Tre passi\n\n**1. Scrivi le due shape allineate a destra.**\n\n```\n(12,)\n (7,)\n```\n\n**2. Chiediti quale risultato vuoi.** Se vuoi una griglia 12×7, allora ti serve che il 12 e il 7 stiano su **assi diversi**, non allineati fra loro.\n\n**3. Aggiungi l'asse mancante** al primo array: `(12,)` diventa `(12, 1)` con `[:, None]`, e ora l'allineamento è\n\n```\n(12, 1)\n    (7,)\n-------\n(12, 7)\n```\n\n### L'altro caso: volevi davvero la stessa lunghezza\n\nSe invece i due array *dovevano* avere la stessa lunghezza e non ce l'hanno, il broadcasting non c'entra: hai un bug a monte. Tipicamente è un `arange` che ha prodotto un elemento in meno del previsto — l'errore del modulo 1.\n\n**Prima di aggiungere `None` a caso, chiediti sempre quale delle due situazioni è.** Aggiungere un asse a un bug lo nasconde invece di risolverlo, e ti ritrovi con una griglia 12×11 che non significa niente.",
+      "demo": "h = np.linspace(0, 11000, 12)\nV = np.linspace(80, 320, 7)\n\ntry:\n    Q = 0.5 * h * V**2\nexcept ValueError as e:\n    print(\"ERRORE:\", e)\n\nprint(\"\\nallineamento voluto:\")\nprint(\"  h[:, None]\", h[:, None].shape)\nprint(\"  V         \", V.shape)\nQ = 0.5 * h[:, None] * V**2\nprint(\"  risultato \", Q.shape)"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m03-e1",
+      "tipo": "predict",
+      "testo": "Che shape ha il risultato di un array `(3, 1)` moltiplicato per un array `(4,)` ?",
+      "opzioni": [
+        "(3, 4)",
+        "(4, 3)",
+        "(3, 1)",
+        "solleva un errore"
+      ],
+      "risposta": "(3, 4)",
+      "spiegazione": "Allineando a destra: 1 contro 4 → l'1 si espande a 4; 3 contro niente → resta 3. Risultato (3, 4). È il pattern base della griglia."
+    },
+    {
+      "id": "m03-e2",
+      "tipo": "predict",
+      "testo": "Che cosa succede sommando un array `(12,)` e un array `(7,)` ?",
+      "opzioni": [
+        "solleva un errore di broadcasting",
+        "restituisce shape (12, 7)",
+        "restituisce shape (7,)",
+        "restituisce shape (19,)"
+      ],
+      "risposta": "solleva un errore di broadcasting",
+      "spiegazione": "Allineati a destra, 12 e 7 finiscono sullo stesso asse: sono diversi e nessuno dei due vale 1, quindi NumPy si ferma. Per ottenere la griglia (12, 7) serve trasformare il primo in (12, 1) con [:, None]."
+    },
+    {
+      "id": "m03-e3",
+      "tipo": "predict",
+      "testo": "Che shape ha il risultato di un array `(2, 3, 4)` sommato a un array `(3, 4)` ?",
+      "opzioni": [
+        "(2, 3, 4)",
+        "(3, 4)",
+        "(2, 3, 4, 3, 4)",
+        "solleva un errore"
+      ],
+      "risposta": "(2, 3, 4)",
+      "spiegazione": "L'allineamento parte da destra: 4 con 4, 3 con 3, e il 2 non ha nulla di fronte. Gli assi mancanti vengono aggiunti a sinistra come 1 e poi espansi, quindi il secondo array viene ripetuto lungo il primo asse."
+    },
+    {
+      "id": "m03-e4",
+      "tipo": "write",
+      "testo": "Costruisci `G`, di shape `(5, 3)`, dove `G[i, j] = alpha[i] * mach[j]`.\n\nNiente cicli.",
+      "starter": "# scrivi qui\nG = \n",
+      "test": "assert G.shape == (5, 3), f'shape sbagliata: {G.shape}'\nassert np.isclose(G[2, 1], alpha[2] * mach[1]), 'i valori non corrispondono ad alpha[i]*mach[j]'\nassert np.isclose(G[4, 0], alpha[4] * mach[0])",
+      "hint": [
+        "alpha deve variare lungo le righe: serve shape (5, 1).",
+        "alpha[:, None] * mach"
+      ],
+      "soluzione": "G = alpha[:, None] * mach",
+      "spiegazione": "(5, 1) contro (3,) si allinea a destra: 1 si espande a 3, e il 5 resta. Il primo array diventa le righe, il secondo le colonne. Nessuna matrice intermedia viene allocata.",
+      "setup": "alpha = np.linspace(-5, 15, 5)\nmach  = np.array([0.2, 0.5, 0.8])\n"
+    },
+    {
+      "id": "m03-e5",
+      "tipo": "debug",
+      "testo": "Questo codice dovrebbe dare `t`, di shape `(3, 4)`, con il tempo di percorrenza di ogni distanza a ogni velocità. Solleva un errore di broadcasting. Correggilo.",
+      "starter": "t = d / V\n",
+      "test": "assert t.shape == (3, 4), f'shape sbagliata: {t.shape}'\nassert np.isclose(t[0, 0], 1000.0), f't[0,0] atteso 1000.0, hai {t[0,0]}'\nassert np.isclose(t[2, 3], 4000.0), f't[2,3] atteso 4000.0, hai {t[2,3]}'",
+      "hint": [
+        "(3,) e (4,) finiscono allineati sullo stesso asse: 3 e 4 sono diversi.",
+        "Le distanze devono stare sulle righe: d[:, None] / V."
+      ],
+      "soluzione": "t = d[:, None] / V",
+      "spiegazione": "Aggiungere l'asse a d lo porta a (3, 1), che contro (4,) dà (3, 4). Prima di scrivere il None, però, vale sempre la pena chiedersi se i due array non dovessero invece avere la stessa lunghezza: lì il None nasconderebbe un bug invece di risolverlo.",
+      "setup": "d = np.array([100e3, 500e3, 1000e3])       # 3 distanze, m\nV = np.array([100., 150., 200., 250.])     # 4 velocita, m/s\n"
+    },
+    {
+      "id": "m03-e6",
+      "tipo": "write",
+      "testo": "**Correzione di comprimibilità di Prandtl-Glauert.**\n\nCostruisci `CL`, di shape `(41, 4)`, con il coefficiente di portanza per ogni incidenza e ogni numero di Mach:\n\n`CL[i, j] = 0.1 · alpha[i] / √(1 − mach[j]²)`\n\nUna riga, nessun ciclo.",
+      "starter": "# scrivi qui\nCL = \n",
+      "test": "assert CL.shape == (41, 4), f'shape sbagliata: {CL.shape}'\nassert np.isclose(CL[10, 2], 0.1 * alpha[10] / np.sqrt(1 - 0.6**2))\nassert np.isclose(CL[40, 3], 0.1 * 15.0 / np.sqrt(1 - 0.8**2))\nassert np.isclose(CL[0, 0], 0.1 * (-5.0) / np.sqrt(1 - 0.2**2))",
+      "hint": [
+        "alpha varia sulle righe, mach sulle colonne: alpha[:, None] e mach normale.",
+        "np.sqrt(1 - mach**2) e' gia un array (4,), non serve toccarlo."
+      ],
+      "soluzione": "CL = 0.1 * alpha[:, None] / np.sqrt(1 - mach**2)",
+      "spiegazione": "Il denominatore resta (4,) e si allinea da solo con le colonne. Questa riga è la formula del libro trascritta quasi identica: è il segno che stai usando NumPy come va usato. Il ciclo equivalente sarebbe 5 righe e circa 100 volte più lento.",
+      "setup": "alpha = np.linspace(-5, 15, 41)          # gradi\nmach  = np.array([0.2, 0.4, 0.6, 0.8])\n"
+    },
+    {
+      "id": "m03-e7",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Inviluppo di pressione dinamica.**\n\nDate 6 densità (una per quota) e 7 velocità, costruisci la tabella `Q` di shape `(6, 7)` con la pressione dinamica:\n\n`Q[i, j] = ½ · rho[i] · V[j]²`\n\nPoi trova `q_max`, il valore massimo di tutta la tabella, e `i_max`, l'indice di **riga** in cui si trova.",
+      "starter": "Q = \nq_max = \ni_max = \n",
+      "test": "assert Q.shape == (6, 7), f'shape sbagliata: {Q.shape}'\nassert np.isclose(Q[0, 0], 3920.0), f'Q[0,0] atteso 3920.0, hai {Q[0,0]}'\nassert np.isclose(Q[3, 4], 0.5 * 0.909 * 240.0**2)\nassert np.isclose(q_max, 0.5 * 1.225 * 320.0**2), f'q_max atteso {0.5*1.225*320.0**2}, hai {q_max}'\nassert int(i_max) == 0, f'il massimo e alla riga 0 (densita maggiore), hai {i_max}'",
+      "hint": [
+        "rho varia sulle righe: rho[:, None]. V**2 resta (7,) e si allinea alle colonne.",
+        "Q.max() da il massimo globale. Per la riga: il massimo sta dove la densita e' maggiore, e puoi ricavarlo con np.argmax sul massimo di ogni riga, cioe' np.argmax(Q.max(axis=1))."
+      ],
+      "soluzione": "Q = 0.5 * rho[:, None] * V**2\nq_max = Q.max()\ni_max = np.argmax(Q.max(axis=1))",
+      "spiegazione": "La griglia in una riga, poi due aggregazioni. Il massimo cade alla quota più bassa e alla velocità più alta, che è il vertice destro dell'inviluppo di volo — esattamente il punto di dimensionamento strutturale. Il parametro axis di max e argmax è il tema del modulo 5: qui l'hai già incontrato.",
+      "setup": "rho = np.array([1.225, 1.112, 1.007, 0.909, 0.819, 0.736])   # kg/m3\nV   = np.array([80., 120., 160., 200., 240., 280., 320.])    # m/s\n"
+    }
+  ]
+}
