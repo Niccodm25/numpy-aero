@@ -21,11 +21,23 @@ doppio clic non funziona, i moduli ES e `fetch` richiedono `http://`.
 node js/scheduler.test.mjs
 ```
 
-Controlla che ogni soluzione degli esercizi passi davvero il suo test nascosto:
+Controlla che ogni soluzione degli esercizi passi davvero il suo test nascosto.
+Deve girare sullo stesso NumPy che Pyodide carica nel browser (2.2.5), altrimenti
+il controllo non dice niente sull'app: fra 1.x e 2.x cambiano nomi (`trapz` →
+`trapezoid`) e spariscono funzioni (`lookfor`). Setup una volta sola:
 
 ```bash
-python tools/check_content.py
+python -m venv .venv && .venv/Scripts/pip install numpy==2.2.5
 ```
+
+Poi, a ogni modifica dei contenuti:
+
+```bash
+.venv/Scripts/python tools/check_content.py
+```
+
+Lo script si rifiuta di girare se la versione non corrisponde, e dice come
+allinearla. Su Linux e macOS il percorso è `.venv/bin/python`.
 
 ## Struttura
 

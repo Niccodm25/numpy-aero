@@ -47,13 +47,13 @@
       "id": "m08",
       "file": "m08-numerico.json",
       "titolo": "Calcolo numerico",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m09",
       "file": "m09-dati.json",
       "titolo": "Dati reali: I/O e NaN",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m10",

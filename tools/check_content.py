@@ -1,9 +1,12 @@
 """Ogni soluzione deve passare il proprio test nascosto.
 
-Gira con il NumPy locale, non con quello di Pyodide: cattura errori di contenuto
-(test sbagliati, soluzioni che non risolvono), non differenze fra versioni.
+    .venv/Scripts/python tools/check_content.py     (Windows)
+    .venv/bin/python tools/check_content.py         (Linux, macOS)
 
-    python tools/check_content.py
+Deve girare con lo stesso NumPy che Pyodide carica nel browser, altrimenti il
+controllo non dice niente sul comportamento reale dell'app: fra 1.x e 2.x
+cambiano nomi (trapz -> trapezoid) e spariscono funzioni (lookfor). Se la
+versione non corrisponde, lo script si ferma e spiega come allineare.
 """
 import glob
 import json
@@ -13,6 +16,20 @@ import sys
 import numpy as np
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
+
+# La versione che Pyodide 0.28.3 carica nel browser. Se cambi la versione di
+# Pyodide in js/runner.js, aggiorna anche questa e ricrea il venv.
+NUMPY_PYODIDE = "2.2.5"
+
+if np.__version__ != NUMPY_PYODIDE:
+    sys.exit(
+        f"NumPy {np.__version__}, ma l'app gira su {NUMPY_PYODIDE}.\n"
+        f"Un controllo su una versione diversa non dice niente sull'app.\n\n"
+        f"  python -m venv .venv\n"
+        f"  .venv/Scripts/pip install numpy=={NUMPY_PYODIDE}\n"
+        f"  .venv/Scripts/python tools/check_content.py"
+    )
+
 errori = 0
 
 for f in sorted(glob.glob(os.path.join(ROOT, "content", "m*.json"))):
