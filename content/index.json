@@ -79,6 +79,20 @@
       "titolo": "Cantiere 1 — Traiettoria di lancio",
       "disponibile": true,
       "cantiere": true
+    },
+    {
+      "id": "c02",
+      "file": "c02-stabilita.json",
+      "titolo": "Cantiere 2 — Stabilità longitudinale",
+      "disponibile": true,
+      "cantiere": true
+    },
+    {
+      "id": "c03",
+      "file": "c03-campagna.json",
+      "titolo": "Cantiere 3 — Riduzione di una campagna",
+      "disponibile": true,
+      "cantiere": true
     }
   ]
 }

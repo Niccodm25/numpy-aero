@@ -1,0 +1,92 @@
+{
+  "id": "c03",
+  "cantiere": true,
+  "titolo": "Cantiere 3 — Riduzione di una campagna",
+  "perche": "L'ultimo cantiere parte da dove partono i dati veri: un file con valori sentinella al posto delle letture perse. Dalla lettura alla polare fittata, fino alla domanda che chiude ogni relazione sperimentale — con quale incertezza sono noti i coefficienti che ho appena pubblicato.",
+  "funzioni": ["np.loadtxt", "np.isfinite", "reshape per raggruppare", "np.nanmean", "np.nanstd", "np.linalg.lstsq su piu colonne", "Monte Carlo"],
+  "lezioni": [
+    {
+      "id": "c03-b",
+      "titolo": "Briefing",
+      "md": "## I dati\n\nUna campagna in galleria del vento: **6 condizioni** di incidenza (0°, 4°, 8°, 12°, 16°, 20°), **5 ripetizioni** ciascuna, per 30 righe. Tre colonne: `alpha`, `CL`, `CD`.\n\nLo strumento ha scritto **`-999`** dove la lettura è mancata. Sono cinque valori in tutto, sparsi.\n\nLe righe sono in ordine: le prime cinque sono la condizione a 0°, le successive cinque quella a 4°, e così via. Questo permette di raggruppare con un `reshape` invece che con una ricerca.\n\n## Il modello\n\nLa polare parabolica:\n\n```\nCD = CD0 + k · CL²\n```\n\n`CD0` è la resistenza a portanza nulla, `k` il fattore di resistenza indotta. Sono **lineari nei parametri**, quindi si fittano con i minimi quadrati costruendo la matrice di progetto giusta: una colonna di uni per `CD0`, una colonna di `CL²` per `k`.\n\n## Cosa devi produrre\n\n1. **Lettura** — dal testo alle colonne\n2. **Pulizia** — sentinelle in NaN, e quante misure valide restano per ciascuna condizione\n3. **Medie e incertezze** — un punto per condizione, con il suo errore standard\n4. **La polare** — `CD0` e `k` ai minimi quadrati\n5. **L'incertezza sui coefficienti** — Monte Carlo, propagando l'errore standard delle medie\n\n## La cosa nuova\n\n`np.linalg.lstsq(M, B)` con `B` a **più colonne** risolve un problema per ogni colonna in una sola chiamata. Nella fase 5 questo diventa: cinquemila fit in una riga, invece di un ciclo con cinquemila chiamate al solutore.",
+      "demo": "import io\ncsv = 'alpha,CL,CD\\n0.0,0.0203,0.02256\\n0.0,0.0309,0.02190\\n0.0,0.0298,0.02159\\n0.0,-999.0000,0.02224\\n0.0,0.0176,0.02244\\n4.0,0.4558,0.03117\\n'\n\ndati = np.loadtxt(io.StringIO(csv), delimiter=',', skiprows=1)\nprint('shape:', dati.shape)\nprint(dati)\nprint('\\nsentinelle -999:', int((dati == -999.).sum()))\nprint('\\nnel cantiere le righe sono 30, raggruppabili con reshape(6, 5)')"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c03-f1",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 1 — Lettura.**\n\nCarica il testo in `dati` (30 righe, 3 colonne) ed estrai le tre colonne in `alpha_raw`, `CL_raw`, `CD_raw`.\n\nPoi conta in `n_sentinelle` quanti valori valgono esattamente `-999`.",
+      "setup": "import io\ncsv = 'alpha,CL,CD\\n0.0,0.0203,0.02256\\n0.0,0.0309,0.02190\\n0.0,0.0298,0.02159\\n0.0,-999.0000,0.02224\\n0.0,0.0176,0.02244\\n4.0,0.4558,0.03117\\n4.0,0.4646,0.03204\\n4.0,0.4596,-999.00000\\n4.0,0.4660,0.03165\\n4.0,0.4452,0.03043\\n8.0,0.9125,0.05968\\n8.0,-999.0000,0.05853\\n8.0,0.9054,0.05955\\n8.0,0.8989,0.05759\\n8.0,0.8970,0.05781\\n12.0,1.3437,0.10275\\n12.0,1.3466,0.10256\\n12.0,1.3384,0.10269\\n12.0,1.3388,0.10297\\n12.0,1.3455,-999.00000\\n16.0,1.7730,0.16429\\n16.0,1.7679,0.16314\\n16.0,-999.0000,0.16547\\n16.0,1.7746,0.16396\\n16.0,1.7646,0.16269\\n20.0,2.2135,0.24168\\n20.0,2.2163,0.24341\\n20.0,2.2105,0.24225\\n20.0,2.2081,0.24035\\n20.0,2.2203,0.24405\\n'\n",
+      "starter": "dati = \nalpha_raw = \nCL_raw = \nCD_raw = \nn_sentinelle = \n",
+      "test": "assert dati.shape == (30, 3), f'shape sbagliata: {dati.shape} — hai saltato l intestazione?'\nassert alpha_raw.shape == (30,) and CL_raw.shape == (30,) and CD_raw.shape == (30,)\nassert np.isclose(alpha_raw[0], 0.) and np.isclose(alpha_raw[-1], 20.)\nassert np.allclose(np.unique(alpha_raw), [0., 4., 8., 12., 16., 20.]), 'sei condizioni distinte'\nassert int(n_sentinelle) == 5, f'attese 5 sentinelle, hai {n_sentinelle}'\nassert int((CL_raw == -999.).sum()) == 3 and int((CD_raw == -999.).sum()) == 2",
+      "hint": [
+        "np.loadtxt(io.StringIO(csv), delimiter=',', skiprows=1)",
+        "Le colonne si estraggono con dati[:, 0], dati[:, 1], dati[:, 2]. Per contare: (dati == -999.).sum()"
+      ],
+      "soluzione": "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1)\nalpha_raw = dati[:, 0]\nCL_raw = dati[:, 1]\nCD_raw = dati[:, 2]\nn_sentinelle = (dati == -999.).sum()",
+      "spiegazione": "Cinque letture perse su sessanta misure: tre di portanza e due di resistenza. Contarle subito è il primo gesto di ogni riduzione dati — se il numero fosse molto più alto del previsto, il problema è a monte e non ha senso proseguire con l'analisi."
+    },
+    {
+      "id": "c03-f2",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 2 — Pulizia.**\n\nCostruisci `CL` e `CD` sostituendo ogni `-999` con `np.nan`, **senza modificare** gli array originali.\n\nPoi raggruppa per condizione — le righe sono in ordine, quindi basta un `reshape` a `(6, 5)` — e conta in `val_CL` e `val_CD` quante misure valide ha ciascuna condizione.",
+      "setup": "import io\ncsv = 'alpha,CL,CD\\n0.0,0.0203,0.02256\\n0.0,0.0309,0.02190\\n0.0,0.0298,0.02159\\n0.0,-999.0000,0.02224\\n0.0,0.0176,0.02244\\n4.0,0.4558,0.03117\\n4.0,0.4646,0.03204\\n4.0,0.4596,-999.00000\\n4.0,0.4660,0.03165\\n4.0,0.4452,0.03043\\n8.0,0.9125,0.05968\\n8.0,-999.0000,0.05853\\n8.0,0.9054,0.05955\\n8.0,0.8989,0.05759\\n8.0,0.8970,0.05781\\n12.0,1.3437,0.10275\\n12.0,1.3466,0.10256\\n12.0,1.3384,0.10269\\n12.0,1.3388,0.10297\\n12.0,1.3455,-999.00000\\n16.0,1.7730,0.16429\\n16.0,1.7679,0.16314\\n16.0,-999.0000,0.16547\\n16.0,1.7746,0.16396\\n16.0,1.7646,0.16269\\n20.0,2.2135,0.24168\\n20.0,2.2163,0.24341\\n20.0,2.2105,0.24225\\n20.0,2.2081,0.24035\\n20.0,2.2203,0.24405\\n'\ndati = np.loadtxt(io.StringIO(csv), delimiter=',', skiprows=1)\nCL_raw = dati[:, 1]\nCD_raw = dati[:, 2]\n",
+      "starter": "CL = \nCD = \n\nCL_g = \nCD_g = \n\nval_CL = \nval_CD = \n",
+      "test": "assert int(np.isnan(CL).sum()) == 3 and int(np.isnan(CD).sum()) == 2\nassert int((CL_raw == -999.).sum()) == 3, 'CL_raw non doveva essere modificato'\nassert CL_g.shape == (6, 5) and CD_g.shape == (6, 5), 'raggruppa in 6 condizioni x 5 ripetizioni'\nassert np.array_equal(val_CL, [4, 5, 4, 5, 4, 5]), f'validi CL sbagliati: {val_CL}'\nassert np.array_equal(val_CD, [5, 4, 5, 4, 5, 5]), f'validi CD sbagliati: {val_CD}'\nassert np.all(val_CL >= 4) and np.all(val_CD >= 4), 'nessuna condizione scende sotto 4 misure valide'",
+      "hint": [
+        "np.where(CL_raw == -999., np.nan, CL_raw) costruisce un array nuovo.",
+        "reshape(6, 5) raggruppa. Per contare: np.isfinite(CL_g).sum(axis=1)."
+      ],
+      "soluzione": "CL = np.where(CL_raw == -999., np.nan, CL_raw)\nCD = np.where(CD_raw == -999., np.nan, CD_raw)\n\nCL_g = CL.reshape(6, 5)\nCD_g = CD.reshape(6, 5)\n\nval_CL = np.isfinite(CL_g).sum(axis=1)\nval_CD = np.isfinite(CD_g).sum(axis=1)",
+      "spiegazione": "Il `reshape` funziona **solo perché le righe sono in ordine**: cinque ripetizioni consecutive per ogni condizione. Su un file disordinato servirebbe raggruppare per valore di `alpha`, con maschere o con `np.unique`. È sempre la prima cosa da verificare quando si raggruppa così.\n\nNessuna condizione scende sotto quattro misure su cinque, quindi tutte le medie restano difendibili. Se una fosse rimasta con una sola misura, la sua incertezza sarebbe indefinita e andrebbe scartata, non mediata."
+    },
+    {
+      "id": "c03-f3",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 3 — Medie e incertezze.**\n\nUn punto per condizione. Calcola, ignorando i mancanti:\n\n- `CLm`, `CDm`: le medie (6 valori ciascuna)\n- `sCD`: la deviazione standard **campionaria** del CD di ogni condizione\n- `seCD`: l'**errore standard della media**, cioè `sCD / √n_validi`\n\nL'errore standard, non la deviazione standard, è l'incertezza del valore medio: mediando n misure indipendenti l'incertezza cala come `√n`. È il numero che propagherai nella fase 5.",
+      "setup": "import io\ncsv = 'alpha,CL,CD\\n0.0,0.0203,0.02256\\n0.0,0.0309,0.02190\\n0.0,0.0298,0.02159\\n0.0,-999.0000,0.02224\\n0.0,0.0176,0.02244\\n4.0,0.4558,0.03117\\n4.0,0.4646,0.03204\\n4.0,0.4596,-999.00000\\n4.0,0.4660,0.03165\\n4.0,0.4452,0.03043\\n8.0,0.9125,0.05968\\n8.0,-999.0000,0.05853\\n8.0,0.9054,0.05955\\n8.0,0.8989,0.05759\\n8.0,0.8970,0.05781\\n12.0,1.3437,0.10275\\n12.0,1.3466,0.10256\\n12.0,1.3384,0.10269\\n12.0,1.3388,0.10297\\n12.0,1.3455,-999.00000\\n16.0,1.7730,0.16429\\n16.0,1.7679,0.16314\\n16.0,-999.0000,0.16547\\n16.0,1.7746,0.16396\\n16.0,1.7646,0.16269\\n20.0,2.2135,0.24168\\n20.0,2.2163,0.24341\\n20.0,2.2105,0.24225\\n20.0,2.2081,0.24035\\n20.0,2.2203,0.24405\\n'\ndati = np.loadtxt(io.StringIO(csv), delimiter=',', skiprows=1)\nCL = np.where(dati[:, 1] == -999., np.nan, dati[:, 1])\nCD = np.where(dati[:, 2] == -999., np.nan, dati[:, 2])\nCL_g = CL.reshape(6, 5)\nCD_g = CD.reshape(6, 5)\nval_CD = np.isfinite(CD_g).sum(axis=1)\n",
+      "starter": "CLm = \nCDm = \nsCD = \nseCD = \n",
+      "test": "assert CLm.shape == (6,) and CDm.shape == (6,), 'un punto per condizione'\nassert np.allclose(CLm, [0.02465, 0.45824, 0.90345, 1.3426, 1.77002, 2.21374], atol=1e-5), f'CL medi sbagliati: {CLm}'\nassert np.allclose(CDm, [0.022146, 0.031323, 0.058632, 0.102742, 0.16391, 0.242348], atol=1e-6), f'CD medi sbagliati: {CDm}'\nassert not np.any(np.isnan(CLm)), 'hai usato mean invece di nanmean?'\nassert np.allclose(sCD, np.nanstd(CD_g, axis=1, ddof=1)), 'serve la deviazione campionaria: ddof=1'\nassert np.allclose(seCD, sCD/np.sqrt(val_CD)), 'errore standard = sigma / sqrt(n validi)'\nassert np.all(seCD < sCD), 'l errore standard deve essere minore della deviazione standard'",
+      "hint": [
+        "np.nanmean(CL_g, axis=1). Le versioni nan sono funzioni, non metodi.",
+        "sCD = np.nanstd(CD_g, axis=1, ddof=1), poi seCD = sCD / np.sqrt(val_CD)."
+      ],
+      "soluzione": "CLm = np.nanmean(CL_g, axis=1)\nCDm = np.nanmean(CD_g, axis=1)\nsCD = np.nanstd(CD_g, axis=1, ddof=1)\nseCD = sCD / np.sqrt(val_CD)",
+      "spiegazione": "La distinzione fra deviazione standard ed errore standard della media è quella che si sbaglia più spesso nelle relazioni sperimentali. La prima descrive **quanto sono sparse le singole misure**; il secondo **quanto è incerto il valore medio**, ed è più piccolo di un fattore √n.\n\nQuando dichiari «CD = 0.0586 ± ...», il numero dopo il ± è l'errore standard, non la deviazione. Confonderli sovrastima l'incertezza del risultato di oltre il doppio con cinque ripetizioni.\n\nNota anche il divisore `n − 1` di `ddof=1`: con quattro o cinque campioni la differenza rispetto al default non è affatto trascurabile."
+    },
+    {
+      "id": "c03-f4",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 4 — La polare.**\n\nFitta `CD = CD0 + k · CL²` ai minimi quadrati sui sei punti medi.\n\nCostruisci `M`, la matrice di progetto, poi ricava `CD0` e `k`. Calcola anche `residui` e `rms`, lo scarto quadratico medio del fit.\n\nAttenzione all'ordine delle colonne di `M`: determina quale coefficiente esce per primo.",
+      "setup": "CLm = np.array([0.02465, 0.45824, 0.90345, 1.3426, 1.77002, 2.21374])\nCDm = np.array([0.0221464, 0.03132325, 0.0586324, 0.1027415, 0.1639104, 0.2423484])\n",
+      "starter": "M = \nCD0 = \nk = \nresidui = \nrms = \n",
+      "test": "assert M.shape == (6, 2), f'matrice di progetto attesa (6, 2), hai {M.shape}'\nassert np.allclose(M[:, 0], 1.0), 'la prima colonna deve essere di uni: e il coefficiente di CD0'\nassert np.allclose(M[:, 1], CLm**2), 'la seconda colonna deve essere CL al quadrato'\nassert np.isclose(CD0, 0.021969, atol=1e-5), f'CD0 atteso 0.02197, hai {CD0}'\nassert np.isclose(k, 0.045042, atol=1e-5), f'k atteso 0.04504, hai {k}'\nassert residui.shape == (6,), 'un residuo per punto'\nassert np.allclose(residui, CDm - (CD0 + k*CLm**2)), 'residui = misurato meno predetto'\nassert np.isclose(rms, np.sqrt((residui**2).mean()), rtol=1e-9)\nassert rms < 1e-3, f'il fit deve essere buono, rms = {rms}'",
+      "hint": [
+        "M = np.column_stack([np.ones_like(CLm), CLm**2]) — l'ordine decide quale coefficiente esce per primo.",
+        "CD0, k = np.linalg.lstsq(M, CDm, rcond=None)[0]. residui = CDm - M @ np.array([CD0, k])."
+      ],
+      "soluzione": "M = np.column_stack([np.ones_like(CLm), CLm**2])\nCD0, k = np.linalg.lstsq(M, CDm, rcond=None)[0]\nresidui = CDm - M @ np.array([CD0, k])\nrms = np.sqrt((residui**2).mean())",
+      "spiegazione": "Escono `CD0 = 0.02197` e `k = 0.04504`, con uno scarto quadratico medio di 4·10⁻⁴, dello stesso ordine dell'incertezza delle singole misure: il modello parabolico descrive i dati fin dove i dati permettono di distinguere.\n\nL'ordine delle colonne di `M` è arbitrario ma **decide l'ordine dei coefficienti in uscita**: con `[CL², 1]` avresti ottenuto `k, CD0`. Non c'è una convenzione, quindi conviene sempre spacchettare con nomi espliciti come qui, invece di indicizzare `coef[0]`.\n\nUn residuo confrontabile con l'incertezza sperimentale è il segno di un fit sano. Se fosse molto più piccolo staresti fittando il rumore; se fosse molto più grande, il modello sarebbe sbagliato."
+    },
+    {
+      "id": "c03-f5",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 5 — Incertezza sui coefficienti.**\n\nI coefficienti derivano da medie incerte: con quale incertezza sono noti?\n\nGenera 5000 campagne sintetiche perturbando ogni `CDm` con il **suo** errore standard `seCD`, e rifitta ogni volta.\n\n- `B`: shape `(6, 5000)`, ogni colonna una campagna perturbata\n- `coef`: shape `(2, 5000)`, i coefficienti di tutte\n- `CD0_v`, `k_v`: i 5000 valori di ciascun coefficiente\n- `banda_CD0`, `banda_k`: array `[5° percentile, 95° percentile]`\n\nUsa `np.random.default_rng(7)`. **Niente ciclo**: `lstsq` risolve tutte le colonne di `B` in una chiamata.",
+      "setup": "CLm = np.array([0.02465, 0.45824, 0.90345, 1.3426, 1.77002, 2.21374])\nCDm = np.array([0.0221464, 0.03132325, 0.0586324, 0.1027415, 0.1639104, 0.2423484])\nseCD = np.array([1.784e-04, 3.466e-04, 4.309e-04, 8.560e-05, 4.828e-04, 6.509e-04])\nM = np.column_stack([np.ones_like(CLm), CLm**2])\nN = 5000\n",
+      "starter": "rng = \nB = \ncoef = \nCD0_v = \nk_v = \nbanda_CD0 = \nbanda_k = \n",
+      "test": "assert B.shape == (6, N), f'B atteso (6, {N}), hai {B.shape}'\nassert np.allclose(B, CDm[:, None] + np.random.default_rng(7).normal(0., seCD[:, None], (6, N))), 'seed 7, una sola chiamata a normal, sigma diverso per riga'\nassert coef.shape == (2, N), f'coef atteso (2, {N}), hai {coef.shape} — lstsq risolve tutte le colonne insieme'\nassert CD0_v.shape == (N,) and k_v.shape == (N,)\nassert np.isclose(CD0_v.mean(), 0.021966, atol=2e-5), f'CD0 medio atteso 0.02197, hai {CD0_v.mean()}'\nassert np.isclose(k_v.mean(), 0.045044, atol=2e-5), f'k medio atteso 0.04504, hai {k_v.mean()}'\nassert banda_CD0.shape == (2,) and banda_k.shape == (2,)\nassert np.allclose(banda_CD0, np.percentile(CD0_v, [5, 95]))\nassert np.allclose(banda_k, np.percentile(k_v, [5, 95]))\nassert banda_CD0[0] < 0.021969 < banda_CD0[1], 'il valore nominale deve cadere dentro la banda'\nassert 0.0006 < (banda_CD0[1] - banda_CD0[0]) < 0.0007, 'banda su CD0 attesa larga circa 6.5e-4'",
+      "hint": [
+        "B = CDm[:, None] + rng.normal(0., seCD[:, None], (6, N)) — il broadcasting da un sigma diverso a ogni riga.",
+        "coef = np.linalg.lstsq(M, B, rcond=None)[0] risolve tutte le colonne. Poi CD0_v, k_v = coef[0], coef[1]."
+      ],
+      "soluzione": "rng = np.random.default_rng(7)\nB = CDm[:, None] + rng.normal(0., seCD[:, None], (6, N))\ncoef = np.linalg.lstsq(M, B, rcond=None)[0]\nCD0_v = coef[0]\nk_v = coef[1]\nbanda_CD0 = np.percentile(CD0_v, [5, 95])\nbanda_k = np.percentile(k_v, [5, 95])",
+      "spiegazione": "**Il risultato da mettere in relazione:** `CD0 = 0.0220`, con il 90% dei casi fra 0.0216 e 0.0223 — circa il ±1.5%. E `k = 0.04504`, fra 0.04484 e 0.04525, cioè ±0.5%: molto meglio determinato, perché è vincolato dai punti ad alto CL, dove la resistenza indotta domina e il segnale è grande rispetto al rumore.\n\nQuesta asimmetria è il tipo di informazione che il solo fit non dà. Sapere che `CD0` è il coefficiente peggio determinato dice anche come migliorare la campagna: servono più ripetizioni alle basse incidenze, non alte.\n\nDue tecniche in questa fase. La prima: `rng.normal(0., seCD[:, None], (6, N))` — un sigma diverso per ogni riga, ottenuto per broadcasting, così ogni condizione viene perturbata con la **sua** incertezza invece che con una media comune. La seconda: **`lstsq` con un termine noto a più colonne** risolve un problema per colonna in una sola chiamata, e restituisce `(2, 5000)`. Cinquemila fit senza un ciclo.\n\nQui finisce il corso."
+    }
+  ]
+}

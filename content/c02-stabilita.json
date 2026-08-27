@@ -1,0 +1,74 @@
+{
+  "id": "c02",
+  "cantiere": true,
+  "titolo": "Cantiere 2 — Stabilità longitudinale",
+  "perche": "Un'analisi di qualità di volo completa: dalle derivate aerodinamiche ai modi, dai modi al confronto con la normativa, e dal confronto alla domanda che conta davvero — quanto va cambiato il progetto perché il requisito sia soddisfatto. L'ultima fase introduce l'unica cosa nuova del cantiere: gli autovalori calcolati su una pila di matrici in una sola chiamata.",
+  "funzioni": ["np.block", "np.linalg.eigvals su matrici impilate", "np.tile", "indicizzazione avanzata", "argmax con axis"],
+  "lezioni": [
+    {
+      "id": "c02-b",
+      "titolo": "Briefing",
+      "md": "## Il sistema\n\nDinamica longitudinale linearizzata attorno alla crociera, stato `[u, w, q, θ]`: velocità orizzontale, velocità verticale, velocità di beccheggio, assetto.\n\n```\nẋ = A x\n```\n\nLa matrice si divide in quattro blocchi 2×2, come nel modulo 6.\n\n## I due modi\n\nUn velivolo longitudinalmente ha sempre due modi oscillatori, separati da un ordine di grandezza in frequenza:\n\n- **Corto periodo** — veloce, qualche secondo. È la risposta che il pilota sente immediatamente al comando di equilibratore. Coinvolge incidenza e beccheggio a velocità quasi costante.\n- **Fugoide** — lento, decine di secondi. Scambio fra quota e velocità a incidenza quasi costante. Poco smorzato, ma abbastanza lento da essere facilmente correggibile.\n\n## Il requisito\n\nLe norme di qualità di volo (MIL-STD-1797, Categoria B, Livello 1) chiedono per il corto periodo:\n\n```\n0.35 ≤ ζ ≤ 1.30\n```\n\nUno smorzamento troppo basso dà un velivolo nervoso e faticoso da pilotare con precisione; troppo alto lo rende lento a rispondere.\n\nPer il fugoide il requisito è molto più permissivo: `ζ > 0.04` per il Livello 1.\n\n## Cosa devi produrre\n\n1. **La matrice di stato**, dai blocchi\n2. **I modi** — autovalori, smorzamenti, pulsazioni, periodi, e quale coppia è quale\n3. **Il verdetto** — confronto con i requisiti\n4. **La sensibilità** — come cambia il corto periodo al variare dello smorzamento in beccheggio `Mq`, e quale valore serve per rientrare nel requisito\n\n## La cosa nuova\n\n`np.linalg.eigvals` accetta **pile di matrici**: un array di shape `(n, 4, 4)` restituisce `(n, 4)`, gli autovalori di tutte e n in una chiamata. È il modo di fare uno studio parametrico senza un ciclo Python attorno al solutore.",
+      "demo": "A = np.array([[-0.045,  0.122,   0.0,   -9.81],\n              [-0.209, -0.530, 234.0,    0.0 ],\n              [ 0.017, -0.049,  -0.756,  0.0 ],\n              [ 0.0,    0.0,     1.0,    0.0 ]])\n\nprint(\"una matrice:\", A.shape, \"-> eigvals\", np.linalg.eigvals(A).shape)\n\npila = np.tile(A, (5, 1, 1))\npila[:, 2, 2] = np.linspace(-2., -0.5, 5)   # cambio Mq in ciascuna\nprint(\"una pila:  \", pila.shape, \"-> eigvals\", np.linalg.eigvals(pila).shape)\nprint(\"\\nMq usati:\", pila[:, 2, 2])"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c02-f1",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 1 — La matrice di stato.**\n\nAssembla `A`, 4×4, dai quattro blocchi. Poi verifica che il sistema sia sensato:\n\n- `traccia`: la traccia di `A`, che vale la somma delle parti reali degli autovalori\n- `stabile_traccia`: `True` se la traccia è negativa\n\nUna traccia negativa è condizione **necessaria** per la stabilità: se fosse positiva almeno un autovalore avrebbe parte reale positiva. Non è sufficiente, ma è il primo controllo da fare, e costa una riga.",
+      "setup": "A11 = np.array([[-0.045,  0.122], [-0.209, -0.530]])\nA12 = np.array([[  0.0,  -9.81], [234.0,    0.0 ]])\nA21 = np.array([[ 0.017, -0.049], [  0.0,    0.0 ]])\nA22 = np.array([[-0.756,   0.0 ], [  1.0,    0.0 ]])\n",
+      "starter": "A = \ntraccia = \nstabile_traccia = \n",
+      "test": "assert A.shape == (4, 4), f'shape sbagliata: {A.shape}'\nassert np.isclose(A[0, 3], -9.81) and np.isclose(A[1, 2], 234.0) and np.isclose(A[3, 2], 1.0)\nassert np.allclose(A[:2, :2], A11) and np.allclose(A[2:, 2:], A22)\nassert np.isclose(traccia, -1.331), f'traccia attesa -1.331, hai {traccia}'\nassert np.isclose(traccia, np.linalg.eigvals(A).real.sum()), 'la traccia deve valere la somma delle parti reali'\nassert bool(stabile_traccia) is True",
+      "hint": ["np.block([[A11, A12], [A21, A22]]) come nel modulo 6.", "La traccia e' np.trace(A), oppure np.diag(A).sum()."],
+      "soluzione": "A = np.block([[A11, A12],\n              [A21, A22]])\ntraccia = np.trace(A)\nstabile_traccia = bool(traccia < 0)",
+      "spiegazione": "La traccia di una matrice vale sempre la somma dei suoi autovalori, quindi qui la somma delle parti reali: se è positiva, almeno un modo diverge di sicuro. È un controllo che costa una riga e non richiede di calcolare niente — utile su matrici grandi, dove gli autovalori costano.\n\nAttenzione però: è necessaria, non sufficiente. Una traccia negativa è compatibile con un modo instabile compensato da uno molto stabile."
+    },
+    {
+      "id": "c02-f2",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 2 — I modi.**\n\nEstrai gli autovalori e caratterizza entrambi i modi.\n\nCalcola `lam`, `zeta`, `wn` (tutti di 4 elementi), poi identifica i due modi per pulsazione e produci:\n\n- `zeta_sp`, `wn_sp`, `T_sp` per il corto periodo\n- `zeta_ph`, `wn_ph`, `T_ph` per il fugoide\n\nIl periodo è `T = 2π / |Im(λ)|`.",
+      "setup": "A = np.array([[-0.045,  0.122,   0.0,   -9.81],\n              [-0.209, -0.530, 234.0,    0.0 ],\n              [ 0.017, -0.049,  -0.756,  0.0 ],\n              [ 0.0,    0.0,     1.0,    0.0 ]])\n",
+      "starter": "lam = \nwn = \nzeta = \n\ni_sp = \ni_ph = \n\nzeta_sp = \nwn_sp = \nT_sp = \n\nzeta_ph = \nwn_ph = \nT_ph = \n",
+      "test": "assert lam.shape == (4,) and wn.shape == (4,) and zeta.shape == (4,)\nassert np.allclose(np.sort(wn), np.sort(np.abs(np.linalg.eigvals(A))))\nassert np.abs(lam[i_sp].imag) > np.abs(lam[i_ph].imag), 'i_sp deve indicare la pulsazione piu alta'\nassert np.isclose(zeta_sp, 0.190231, atol=1e-4), f'zeta corto periodo atteso 0.1902, hai {zeta_sp}'\nassert np.isclose(wn_sp, 3.451175, atol=1e-4), f'wn corto periodo atteso 3.4512, hai {wn_sp}'\nassert np.isclose(T_sp, 1.8545, atol=1e-3), f'periodo corto periodo atteso 1.854 s, hai {T_sp}'\nassert np.isclose(zeta_ph, 0.071314, atol=1e-4), f'zeta fugoide atteso 0.0713, hai {zeta_ph}'\nassert np.isclose(T_ph, 50.0257, atol=1e-2), f'periodo fugoide atteso 50.03 s, hai {T_ph}'\nassert T_ph / T_sp > 20, 'i due modi devono essere separati di oltre un ordine di grandezza'",
+      "hint": [
+        "lam = np.linalg.eigvals(A), wn = np.abs(lam), zeta = -lam.real / wn.",
+        "i_sp = np.argmax(np.abs(lam.imag)), i_ph = np.argmin(np.abs(lam.imag)). T = 2*np.pi/abs(lam[i].imag)."
+      ],
+      "soluzione": "lam = np.linalg.eigvals(A)\nwn = np.abs(lam)\nzeta = -lam.real / wn\n\ni_sp = np.argmax(np.abs(lam.imag))\ni_ph = np.argmin(np.abs(lam.imag))\n\nzeta_sp = zeta[i_sp]\nwn_sp = wn[i_sp]\nT_sp = 2*np.pi / abs(lam[i_sp].imag)\n\nzeta_ph = zeta[i_ph]\nwn_ph = wn[i_ph]\nT_ph = 2*np.pi / abs(lam[i_ph].imag)",
+      "spiegazione": "Corto periodo: 1.85 s di periodo, ζ = 0.190. Fugoide: 50 s, ζ = 0.071. I due modi sono separati di un fattore 27 in periodo, ed è questa separazione che permette di studiarli indipendentemente — approssimazioni classiche come quella del corto periodo a velocità costante si reggono proprio su questo.\n\nL'ultimo controllo del test verifica la separazione: se i due periodi fossero comparabili, l'identificazione per pulsazione non avrebbe senso e servirebbe guardare gli autovettori per capire quale stato domina in ciascun modo."
+    },
+    {
+      "id": "c02-f3",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 3 — Il verdetto.**\n\nConfronta con i requisiti di Livello 1:\n\n- corto periodo: `0.35 ≤ ζ ≤ 1.30`\n- fugoide: `ζ > 0.04`\n\nProduci `ok_sp`, `ok_ph`, `ok_stabile` (tutti gli autovalori con parte reale negativa) e `livello1` (tutti e tre soddisfatti).\n\nPoi calcola `deficit_sp`: di quanto manca lo smorzamento del corto periodo al minimo richiesto, come frazione del requisito.\n\nAttenzione a cosa esce: il verdetto non è quello che speri.",
+      "setup": "A = np.array([[-0.045,  0.122,   0.0,   -9.81],\n              [-0.209, -0.530, 234.0,    0.0 ],\n              [ 0.017, -0.049,  -0.756,  0.0 ],\n              [ 0.0,    0.0,     1.0,    0.0 ]])\nlam = np.linalg.eigvals(A)\nwn = np.abs(lam)\nzeta = -lam.real / wn\ni_sp = np.argmax(np.abs(lam.imag))\ni_ph = np.argmin(np.abs(lam.imag))\nzeta_sp, zeta_ph = zeta[i_sp], zeta[i_ph]\n",
+      "starter": "ok_sp = \nok_ph = \nok_stabile = \nlivello1 = \n\ndeficit_sp = \n",
+      "test": "assert bool(ok_stabile) is True, 'tutti gli autovalori hanno parte reale negativa'\nassert bool(ok_ph) is True, 'il fugoide con zeta=0.071 supera il requisito di 0.04'\nassert bool(ok_sp) is False, 'zeta del corto periodo vale 0.190: sotto il minimo di 0.35, il requisito NON e soddisfatto'\nassert bool(livello1) is False, 'basta un requisito non soddisfatto perche il Livello 1 non sia raggiunto'\nassert np.isclose(deficit_sp, (0.35 - zeta_sp)/0.35, atol=1e-6), 'deficit relativo sbagliato'\nassert 0.44 < deficit_sp < 0.46, f'manca circa il 46% dello smorzamento richiesto, hai {deficit_sp:.3f}'",
+      "hint": [
+        "ok_sp = 0.35 <= zeta_sp <= 1.30. ok_stabile = np.all(lam.real < 0).",
+        "deficit_sp = (0.35 - zeta_sp) / 0.35"
+      ],
+      "soluzione": "ok_sp = bool(0.35 <= zeta_sp <= 1.30)\nok_ph = bool(zeta_ph > 0.04)\nok_stabile = bool(np.all(lam.real < 0))\nlivello1 = bool(ok_sp and ok_ph and ok_stabile)\n\ndeficit_sp = (0.35 - zeta_sp) / 0.35",
+      "spiegazione": "**Il velivolo è stabile ma non soddisfa il Livello 1.** Tutti i modi convergono, il fugoide è ampiamente in regola, ma il corto periodo ha ζ = 0.190 contro un minimo di 0.35: manca il 46% dello smorzamento richiesto.\n\nStabile e pilotabile bene non sono la stessa cosa. Un corto periodo poco smorzato oscilla per qualche ciclo dopo ogni comando, e il pilota tende a inseguire l'oscillazione — è il meccanismo delle PIO, le oscillazioni indotte dal pilota.\n\nÈ una situazione normalissima in progetto, e la risposta non è ridisegnare la coda: è uno smorzatore di beccheggio, cioè un sistema di controllo che aumenta artificialmente `Mq`. Quanto serve aumentarlo lo calcoli nella fase 4."
+    },
+    {
+      "id": "c02-f4",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 4 — Studio di sensibilità.**\n\nQuanto smorzamento in beccheggio serve? `Mq` è l'elemento `A[2, 2]`.\n\nCostruisci `pila`, di shape `(28, 4, 4)`: 28 copie della matrice, ciascuna con un valore diverso di `Mq` preso da `Mq_val`. Poi calcola gli autovalori di **tutte in una sola chiamata**, estrai `zeta_sp_v` (28 valori) e trova:\n\n- `ok_v`: maschera booleana, dove il requisito `ζ ≥ 0.35` è soddisfatto\n- `Mq_minimo`: il valore di `Mq` **meno severo** — cioè il più vicino a zero — che soddisfa ancora il requisito\n- `fattore`: di quante volte `Mq` va aumentato in modulo rispetto al valore di progetto −0.756\n\nNiente ciclo attorno al solutore.",
+      "setup": "A0 = np.array([[-0.045,  0.122,   0.0,   -9.81],\n               [-0.209, -0.530, 234.0,    0.0 ],\n               [ 0.017, -0.049,  -0.756,  0.0 ],\n               [ 0.0,    0.0,     1.0,    0.0 ]])\nMq_val = np.linspace(-3.0, -0.3, 28)\nMq_progetto = -0.756\nrequisito = 0.35\n",
+      "starter": "pila = \nlam_v = \nzeta_sp_v = \n\nok_v = \nMq_minimo = \nfattore = \n",
+      "test": "assert pila.shape == (28, 4, 4), f'shape sbagliata: {pila.shape}'\nassert np.allclose(pila[:, 2, 2], Mq_val), 'ogni matrice deve avere il suo Mq in posizione [2, 2]'\nassert np.allclose(pila[0, 0, 3], -9.81), 'il resto della matrice non deve cambiare'\nassert lam_v.shape == (28, 4), f'eigvals su una pila (28,4,4) da (28,4), hai {lam_v.shape}'\nassert zeta_sp_v.shape == (28,), f'servono 28 smorzamenti, hai {zeta_sp_v.shape}'\nassert np.isclose(zeta_sp_v[-1], 0.125634, atol=1e-4), f'a Mq=-0.3 atteso 0.1256, hai {zeta_sp_v[-1]}'\nassert np.isclose(zeta_sp_v[0], 0.489899, atol=1e-4), f'a Mq=-3.0 atteso 0.4899, hai {zeta_sp_v[0]}'\nassert np.all(np.diff(zeta_sp_v) < 0), 'lo smorzamento deve calare al calare di |Mq|'\nassert ok_v.dtype == bool and int(ok_v.sum()) == 11, f'attesi 11 valori conformi, hai {int(ok_v.sum())}'\nassert np.isclose(Mq_minimo, -2.0), f'Mq meno severo che basta atteso -2.0, hai {Mq_minimo}'\nassert np.isclose(fattore, 2.0/0.756, atol=1e-6), f'fattore atteso {2.0/0.756:.3f}, hai {fattore}'",
+      "hint": [
+        "pila = np.tile(A0, (28, 1, 1)), poi pila[:, 2, 2] = Mq_val. np.linalg.eigvals accetta direttamente la pila.",
+        "Per il corto periodo di ogni matrice: i = np.argmax(np.abs(lam_v.imag), axis=1), poi sp = lam_v[np.arange(28), i]. Mq_minimo = Mq_val[ok_v].max()."
+      ],
+      "soluzione": "pila = np.tile(A0, (28, 1, 1))\npila[:, 2, 2] = Mq_val\n\nlam_v = np.linalg.eigvals(pila)\ni_sp_v = np.argmax(np.abs(lam_v.imag), axis=1)\nsp = lam_v[np.arange(len(Mq_val)), i_sp_v]\nzeta_sp_v = -sp.real / np.abs(sp)\n\nok_v = zeta_sp_v >= requisito\nMq_minimo = Mq_val[ok_v].max()\nfattore = abs(Mq_minimo) / abs(Mq_progetto)",
+      "spiegazione": "**Risultato: serve `Mq = −2.0`, cioè 2.65 volte lo smorzamento di progetto.** È il dimensionamento dello smorzatore di beccheggio, ottenuto senza un solo ciclo attorno al solutore di autovalori.\n\nDue tecniche nuove in questa fase.\n\nLa prima: **`np.linalg.eigvals` lavora su pile di matrici.** Con shape `(28, 4, 4)` tratta gli ultimi due assi come la matrice e itera sul primo, restituendo `(28, 4)`. Vale per quasi tutte le funzioni di `np.linalg` — `solve`, `inv`, `det` — ed è il modo di fare studi parametrici e analisi su molti casi senza cicli Python. Su centinaia di condizioni di volo la differenza è sostanziale.\n\nLa seconda: **`lam_v[np.arange(28), i_sp_v]`.** Serve un elemento diverso per ogni riga, e l'indice di colonna cambia riga per riga. Passando due array di indici della stessa lunghezza, NumPy li accoppia posizione per posizione: riga 0 con `i_sp_v[0]`, riga 1 con `i_sp_v[1]`, e così via. È il modo standard di usare il risultato di un `argmax(axis=1)`, e senza di esso ti ritroveresti a scrivere il ciclo che stavi cercando di evitare."
+    }
+  ]
+}
