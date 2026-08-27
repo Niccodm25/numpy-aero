@@ -87,19 +87,22 @@ async function registraSw() {
 
 async function home() {
   const coda = L.reviewQueue(stati);
-  const righe = await Promise.all(
-    indice.moduli.map(async (m) => {
-      if (!m.disponibile)
-        return `<div class="card muto">${m.titolo} <span class="pill">in arrivo</span></div>`;
-      const mod = await modulo(m.id);
-      const pr = L.progress(stati, mod.esercizi.map((e) => e.id));
-      return `<a class="card" href="#/m/${m.id}">
-        <strong>${m.titolo}</strong>
-        <div class="muto">${pr.done} / ${pr.tot} esercizi padroneggiati</div>
-        <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
-      </a>`;
-    })
-  );
+
+  const riga = async (m) => {
+    if (!m.disponibile)
+      return `<div class="card muto">${m.titolo} <span class="pill">in arrivo</span></div>`;
+    const mod = await modulo(m.id);
+    const pr = L.progress(stati, mod.esercizi.map((e) => e.id));
+    const etichetta = m.cantiere ? "fasi completate" : "esercizi padroneggiati";
+    return `<a class="card" href="#/m/${m.id}">
+      <strong>${m.titolo}</strong>
+      <div class="muto">${pr.done} / ${pr.tot} ${etichetta}</div>
+      <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
+    </a>`;
+  };
+
+  const righe = await Promise.all(indice.moduli.filter((m) => !m.cantiere).map(riga));
+  const cantieri = await Promise.all(indice.moduli.filter((m) => m.cantiere).map(riga));
 
   app.innerHTML = `
     <h1>${indice.titolo}</h1>
@@ -114,6 +117,12 @@ async function home() {
     }
     <h2>Moduli</h2>
     ${righe.join("")}
+    ${cantieri.length
+      ? `<h2>Cantieri</h2>
+         <p class="muto">Progetti aperti, da fare quando i moduli sono solidi.
+         Non entrano nella coda di ripasso.</p>
+         ${cantieri.join("")}`
+      : ""}
     <h2>Progressi</h2>
     <p class="muto">Salvati in questo browser. Esportali per spostarli sul telefono.</p>
     <p class="muto" id="sw"></p>
@@ -273,6 +282,7 @@ async function vistaEsercizio(mid, eid) {
     // Rileggi lo stato: puoi verificare piu volte nella stessa schermata,
     // e ogni tentativo deve partire da quello aggiornato, non dallo snapshot del render.
     stati[eid] = L.grade(stato(eid), ok, hint);
+    if (m.cantiere) stati[eid].fuoriRipasso = true;
     salva();
 
     esito.innerHTML = ok

@@ -8,7 +8,6 @@ controllo non dice niente sul comportamento reale dell'app: fra 1.x e 2.x
 cambiano nomi (trapz -> trapezoid) e spariscono funzioni (lookfor). Se la
 versione non corrisponde, lo script si ferma e spiega come allineare.
 """
-import glob
 import json
 import os
 import sys
@@ -32,7 +31,19 @@ if np.__version__ != NUMPY_PYODIDE:
 
 errori = 0
 
-for f in sorted(glob.glob(os.path.join(ROOT, "content", "m*.json"))):
+# L'elenco viene dall'indice, non da un glob: cosi il controllo copre esattamente
+# i moduli che l'app carica, e un file nuovo non puo restare fuori per un pattern
+# che non lo cattura.
+indice = json.load(open(os.path.join(ROOT, "content", "index.json"), encoding="utf-8"))
+attivi = [m for m in indice["moduli"] if m["disponibile"]]
+print(f"moduli attivi nell'indice: {len(attivi)}\n")
+
+for meta in attivi:
+    f = os.path.join(ROOT, "content", meta["file"])
+    if not os.path.exists(f):
+        print(f"{meta['id']}: FALLITO — file mancante: {meta['file']}")
+        errori += 1
+        continue
     modulo = json.load(open(f, encoding="utf-8"))
     print(f"{modulo['id']} — {modulo['titolo']}")
     for e in modulo["esercizi"]:

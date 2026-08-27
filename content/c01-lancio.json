@@ -1,0 +1,83 @@
+{
+  "id": "c01",
+  "cantiere": true,
+  "titolo": "Cantiere 1 — Traiettoria di lancio",
+  "perche": "Il primo problema aperto: un razzo sonda a due stadi, dal profilo di spinta all'apogeo. Nessuna riga da indovinare, nessun suggerimento sulla funzione da usare. Metti insieme np.where, l'integrazione passo-passo, le aggregazioni con argmax e le verifiche di coerenza — tutto quello che hai imparato, su un problema che non è stato smontato per te.",
+  "funzioni": [
+    "np.where",
+    "integrazione di Eulero",
+    "np.trapezoid",
+    "argmax",
+    "verifiche di coerenza"
+  ],
+  "lezioni": [
+    {
+      "id": "c01-b",
+      "titolo": "Briefing",
+      "md": "## Il veicolo\n\nUn razzo sonda a due stadi, lanciato verticalmente.\n\n| | Stadio 1 | Coast | Stadio 2 |\n|---|---|---|---|\n| Spinta | 200 kN | 0 | 60 kN |\n| Intervallo | 0 – 60 s | 60 – 65 s | 65 – 120 s |\n| Portata | 70 kg/s | 0 | 20 kg/s |\n\nMassa al lancio 8000 kg. Prodotto `Cd·A` = 0.30 m², costante.\n\nAtmosfera esponenziale: `rho = 1.225 · exp(−h / 8400)`.\n\n## Il modello\n\nMoto verticale, un solo grado di libertà:\n\n```\na = (T − D) / m − g\nD = 0.5 · rho(h) · CdA · v · |v|\n```\n\nIl valore assoluto su `v` serve perché la resistenza si oppone al moto: in salita frena, in discesa rallenta la caduta. Scrivere `v**2` darebbe una forza sempre verso il basso, e il razzo cadrebbe accelerando all'infinito.\n\n## Cosa devi produrre\n\nQuattro fasi, ciascuna costruita sul risultato della precedente:\n\n1. **Profilo di spinta e massa** — `T(t)` e `m(t)`, senza cicli\n2. **Integrazione** — la traiettoria, `h(t)` e `v(t)`\n3. **Prestazioni** — apogeo, velocità massima, massima pressione dinamica\n4. **Verifiche** — controlli di coerenza che dicono se il risultato è credibile\n\n## Una nota sul ciclo\n\nNel modulo 11 hai imparato a eliminare i cicli. **Qui il ciclo serve.** Ogni passo dell'integrazione dipende dal risultato del precedente: `v[i+1]` richiede `a[i]`, che richiede `h[i]`, che richiede `v[i]`. Non è esprimibile come operazione vettoriale.\n\nÈ esattamente il caso limite di cui parlava quel modulo: quando la dipendenza è sequenziale, il ciclo è la struttura giusta. Le fasi 1, 3 e 4 invece si scrivono senza.\n\n## Non c'è una sola risposta\n\nI test controllano il **risultato fisico** entro una tolleranza, non come ci sei arrivato. Puoi usare `np.where` annidati o `np.select`, Eulero esplicito o semi-implicito: le due varianti differiscono dello 0.1% e passano entrambe.",
+      "demo": "g, m0, CdA, H = 9.81, 8000.0, 0.30, 8400.0\ndt = 0.1\nt = np.arange(0., 400. + dt, dt)\nprint(\"passi di integrazione:\", len(t))\nprint(\"finestra:\", t[0], \"->\", t[-1], \"s\")\nprint(\"\\ndensita al suolo :\", 1.225)\nprint(\"densita a 10 km  :\", round(1.225*np.exp(-10000/H), 4))\nprint(\"densita a 100 km :\", round(1.225*np.exp(-100000/H), 8))"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c01-f1",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 1 — Profilo di spinta e massa.**\n\nCostruisci `T`, la spinta a ogni istante, e `m`, la massa a ogni istante. Entrambi hanno la stessa lunghezza di `t`.\n\nLa massa cala solo mentre un motore brucia: durante il coast e dopo lo spegnimento resta costante.\n\nNessun ciclo.",
+      "setup": "g, m0, CdA, H = 9.81, 8000.0, 0.30, 8400.0\ndt = 0.1\nt = np.arange(0., 400. + dt, dt)\n\nT1, md1, t1b = 200000., 70., 60.       # stadio 1: spinta, portata, spegnimento\nT2, md2, t2a, t2b = 60000., 20., 65., 120.   # stadio 2: spinta, portata, accensione, spegnimento\n",
+      "starter": "T = \nm = \n",
+      "test": "assert T.shape == t.shape and m.shape == t.shape, 'T e m devono avere la lunghezza di t'\nassert np.isclose(T[0], 200000.) and np.isclose(T[300], 200000.), 'spinta stadio 1'\nassert np.isclose(T[620], 0.), f'a t=62 s siamo in coast, spinta nulla, hai {T[620]}'\nassert np.isclose(T[700], 60000.), f'a t=70 s brucia lo stadio 2, hai {T[700]}'\nassert np.isclose(T[-1], 0.), 'dopo t2b la spinta e nulla'\nassert np.isclose(m[0], 8000.), 'massa iniziale'\nassert np.isclose(m[600], 8000. - 70.*60.), f'a fine stadio 1 la massa e 3800, hai {m[600]}'\nassert np.isclose(m[640], 3800.), f'in coast la massa non cala, hai {m[640]}'\nassert np.isclose(m[-1], 2700.), f'massa finale attesa 2700 kg, hai {m[-1]}'\nassert np.all(np.diff(m) <= 1e-9), 'la massa non puo crescere'",
+      "hint": [
+        "Per T: due condizioni annidate con np.where, oppure np.select con una lista di condizioni.",
+        "Per m: il consumo cumulato e' 70*t nel primo tratto, poi costante a 4200, poi 4200 + 20*(t-65), poi costante. m = m0 - consumo."
+      ],
+      "soluzione": "T = np.where(t < t1b, T1,\n    np.where((t >= t2a) & (t < t2b), T2, 0.0))\n\ncons = np.where(t < t1b, md1*t,\n       np.where(t < t2a, md1*t1b,\n       np.where(t < t2b, md1*t1b + md2*(t - t2a), md1*t1b + md2*(t2b - t2a))))\nm = m0 - cons",
+      "spiegazione": "Quattro tratti costruiti con `where` annidati, senza un solo ciclo. `np.select` fa la stessa cosa in modo più leggibile quando i casi sono molti:\n\n```\nT = np.select([t < t1b, (t >= t2a) & (t < t2b)], [T1, T2], default=0.0)\n```\n\nL'ultimo controllo del test — che la massa non cresca mai — è il tipo di verifica che coglie subito un errore nei segni o nei confini degli intervalli."
+    },
+    {
+      "id": "c01-f2",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 2 — Integrazione.**\n\nIntegra il moto e produci `h` e `v`, entrambi lunghi come `t`, partendo da fermo al suolo.\n\nA ogni passo:\n\n```\nrho = 1.225 · exp(−h[i] / H)\nD   = 0.5 · rho · CdA · v[i] · |v[i]|\na   = (T[i] − D) / m[i] − g\n```\n\npoi aggiorna `v` e `h` con passo `dt`.\n\nQui il ciclo è necessario: ogni passo dipende dal precedente.",
+      "setup": "g, m0, CdA, H = 9.81, 8000.0, 0.30, 8400.0\ndt = 0.1\nt = np.arange(0., 400. + dt, dt)\nT1, md1, t1b = 200000., 70., 60.\nT2, md2, t2a, t2b = 60000., 20., 65., 120.\n\n# risultato della fase 1, fornito\nT = np.where(t < t1b, T1, np.where((t >= t2a) & (t < t2b), T2, 0.0))\ncons = np.where(t < t1b, md1*t,\n       np.where(t < t2a, md1*t1b,\n       np.where(t < t2b, md1*t1b + md2*(t - t2a), md1*t1b + md2*(t2b - t2a))))\nm = m0 - cons\n",
+      "starter": "h = np.zeros_like(t)\nv = np.zeros_like(t)\n\nfor i in range(len(t) - 1):\n    # scrivi qui\n    pass\n",
+      "test": "assert h.shape == t.shape and v.shape == t.shape\nassert np.isclose(h[0], 0.) and np.isclose(v[0], 0.), 'si parte da fermo al suolo'\nassert h.min() >= -1.0, 'la quota non deve diventare negativa in questa finestra'\nassert 297000. < h.max() < 298000., f'apogeo atteso circa 297500 m, hai {h.max():.0f}'\nassert 1820. < v.max() < 1832., f'velocita massima attesa circa 1827 m/s, hai {v.max():.1f}'\nassert 305.5 < t[h.argmax()] < 307.0, f'apogeo atteso a t=306 s, hai {t[h.argmax()]:.1f}'\nassert abs(v[h.argmax()]) < 5.0, 'all apogeo la velocita deve essere quasi nulla'\nassert v[1200] > v[600], 'il secondo stadio deve accelerare ancora'",
+      "hint": [
+        "Dentro il ciclo: rho = 1.225*np.exp(-h[i]/H), poi D, poi a. Usa v[i]*abs(v[i]), non v[i]**2.",
+        "v[i+1] = v[i] + a*dt, e h[i+1] = h[i] + v[i+1]*dt (semi-implicito) oppure h[i] + v[i]*dt (esplicito): passano entrambi."
+      ],
+      "soluzione": "h = np.zeros_like(t)\nv = np.zeros_like(t)\n\nfor i in range(len(t) - 1):\n    rho = 1.225 * np.exp(-h[i] / H)\n    D = 0.5 * rho * CdA * v[i] * abs(v[i])\n    a = (T[i] - D) / m[i] - g\n    v[i+1] = v[i] + a * dt\n    h[i+1] = h[i] + v[i+1] * dt",
+      "spiegazione": "Il razzo raggiunge 297 km circa 306 secondi dopo il lancio, con una velocità massima di 1827 m/s allo spegnimento del secondo stadio.\n\nDue dettagli che decidono se il risultato ha senso. Il primo: `v * abs(v)` invece di `v**2`. La resistenza si oppone al moto, quindi deve cambiare segno in discesa; con `v**2` la forza punterebbe sempre verso il basso e il razzo accelererebbe cadendo. Il secondo: la densità va valutata a `h[i]`, la quota corrente — usare quella al suolo sovrastimerebbe la resistenza di quattro ordini di grandezza a 100 km.\n\nSullo schema: quello semi-implicito, che usa la velocità appena aggiornata per la quota, è leggermente più accurato a parità di passo. Con dt = 0.1 s la differenza fra i due è dello 0.1%, ed entrambi passano — ma su passi più grossi la differenza cresce in fretta."
+    },
+    {
+      "id": "c01-f3",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Fase 3 — Prestazioni.**\n\nDalla traiettoria, estrai i numeri che finirebbero in una relazione:\n\n- `apogeo` e `t_apogeo`\n- `v_max` e `t_vmax`\n- `q`: la pressione dinamica a ogni istante, `0.5 · rho(h) · v²`\n- `q_max`, `t_qmax`, `h_qmax`: valore, istante e quota della massima pressione dinamica\n\nIl max q è il punto di carico aerodinamico più severo: è lì che si dimensiona la struttura.\n\nNessun ciclo in questa fase.",
+      "setup": "g, m0, CdA, H = 9.81, 8000.0, 0.30, 8400.0\ndt = 0.1\nt = np.arange(0., 400. + dt, dt)\nT = np.where(t < 60., 200000., np.where((t >= 65.) & (t < 120.), 60000., 0.))\ncons = np.where(t < 60., 70.*t,\n       np.where(t < 65., 4200.,\n       np.where(t < 120., 4200. + 20.*(t - 65.), 5300.)))\nm = m0 - cons\n\n# risultato della fase 2, fornito\nh = np.zeros_like(t); v = np.zeros_like(t)\nfor i in range(len(t) - 1):\n    rho = 1.225*np.exp(-h[i]/H)\n    D = 0.5*rho*CdA*v[i]*abs(v[i])\n    a = (T[i] - D)/m[i] - g\n    v[i+1] = v[i] + a*dt\n    h[i+1] = h[i] + v[i+1]*dt\n",
+      "starter": "apogeo = \nt_apogeo = \nv_max = \nt_vmax = \n\nq = \nq_max = \nt_qmax = \nh_qmax = \n",
+      "test": "assert np.isclose(apogeo, h.max()) and np.isclose(t_apogeo, t[h.argmax()])\nassert np.isclose(v_max, v.max()) and np.isclose(t_vmax, t[v.argmax()])\nassert 119.5 < t_vmax < 120.5, f'la velocita massima cade allo spegnimento, t=120 s, hai {t_vmax:.1f}'\nassert q.shape == t.shape, 'q deve essere calcolata a ogni istante'\nassert np.allclose(q, 0.5*1.225*np.exp(-h/H)*v**2), 'q sbagliata: la densita va valutata alla quota corrente'\nassert 71000. < q_max < 71600., f'max q atteso circa 71300 Pa, hai {q_max:.0f}'\nassert 33.0 < t_qmax < 34.0, f'max q atteso a t=33.4 s, hai {t_qmax:.1f}'\nassert 9300. < h_qmax < 9800., f'max q atteso intorno a 9.6 km, hai {h_qmax:.0f}'",
+      "hint": [
+        "apogeo = h.max(), t_apogeo = t[h.argmax()]. Stesso schema per v.",
+        "q = 0.5 * 1.225*np.exp(-h/H) * v**2, poi q_max = q.max() e l'indice con q.argmax() per t e h."
+      ],
+      "soluzione": "apogeo = h.max()\nt_apogeo = t[h.argmax()]\nv_max = v.max()\nt_vmax = t[v.argmax()]\n\nq = 0.5 * 1.225*np.exp(-h/H) * v**2\ni_q = q.argmax()\nq_max = q[i_q]\nt_qmax = t[i_q]\nh_qmax = h[i_q]",
+      "spiegazione": "Il max q cade a 33 secondi e 9.6 km, ben prima dello spegnimento del primo stadio: la velocità sta ancora crescendo, ma la densità cala più in fretta di quanto cresca `v²`. È il compromesso che determina il punto di carico massimo di ogni lanciatore, ed è il motivo per cui i profili di volo reali riducono la spinta proprio in quella finestra.\n\nNota che `q` va calcolata con la densità **alla quota corrente**: usare quella al suolo darebbe un massimo alla velocità massima, cioè nel punto sbagliato."
+    },
+    {
+      "id": "c01-f4",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Fase 4 — Verifiche di coerenza.**\n\nUn risultato numerico senza controlli non vale niente. Costruisci quattro verifiche indipendenti, ciascuna un booleano:\n\n- `ok_massa`: la massa non cresce mai e non diventa negativa\n- `ok_apogeo`: all'apogeo la velocità verticale è nulla entro 1 m/s\n- `impulso`, `impulso_teorico`, `err_rel`, `ok_impulso`: confronta l'impulso ottenuto integrando `T` con quello atteso dai dati dei motori, `T1·60 + T2·55`. Calcola l'errore **relativo** e accetta entro lo 0.1% — non tornera esatto, e la spiegazione dice perche\n- `ok_energia`: nella fase balistica dopo lo spegnimento, fra `t = 150 s` e l'apogeo, l'energia meccanica specifica `v²/2 + g·h` si conserva entro l'1%\n\nL'ultima è la più severa: sopra i 100 km la resistenza è trascurabile, quindi l'energia deve restare costante. Se non lo fa, l'integrazione ha un errore.",
+      "setup": "g, m0, CdA, H = 9.81, 8000.0, 0.30, 8400.0\ndt = 0.1\nt = np.arange(0., 400. + dt, dt)\nT1, T2 = 200000., 60000.\nT = np.where(t < 60., T1, np.where((t >= 65.) & (t < 120.), T2, 0.))\ncons = np.where(t < 60., 70.*t,\n       np.where(t < 65., 4200.,\n       np.where(t < 120., 4200. + 20.*(t - 65.), 5300.)))\nm = m0 - cons\nh = np.zeros_like(t); v = np.zeros_like(t)\nfor i in range(len(t) - 1):\n    rho = 1.225*np.exp(-h[i]/H)\n    D = 0.5*rho*CdA*v[i]*abs(v[i])\n    a = (T[i] - D)/m[i] - g\n    v[i+1] = v[i] + a*dt\n    h[i+1] = h[i] + v[i+1]*dt\ni_ap = h.argmax()\n",
+      "starter": "ok_massa = \nok_apogeo = \n\nimpulso = \nimpulso_teorico = \nerr_rel = \nok_impulso = \n\nfinestra = \nE = \nok_energia = \n",
+      "test": "assert bool(ok_massa) is True, 'la massa e monotona non crescente e positiva: la verifica deve passare'\nassert bool(ok_apogeo) is True, 'la velocita all apogeo vale 0.3 m/s: entro 1 m/s'\nassert np.isclose(impulso, 15290000., rtol=1e-9), f'integrando T si ottiene 15290000 N*s, hai {impulso:.0f}'\nassert np.isclose(impulso_teorico, 15300000.), f'atteso {T1*60.+T2*55.:.0f}, hai {impulso_teorico}'\nassert np.isclose(err_rel, abs(impulso - impulso_teorico)/impulso_teorico), 'err_rel deve essere relativo'\nassert err_rel < 1e-3, 'lo scarto e circa lo 0.065%'\nassert bool(ok_impulso) is True, 'entro lo 0.1% le due stime coincidono'\nassert isinstance(finestra, np.ndarray) and finestra.dtype == bool, 'finestra deve essere una maschera booleana'\nassert finestra.sum() > 1000, 'la finestra balistica deve contenere molti campioni'\nassert E.shape == t.shape, 'E va calcolata su tutta la traiettoria'\nassert np.allclose(E, v**2/2 + g*h), 'energia specifica sbagliata'\nassert bool(ok_energia) is True, 'sopra i 100 km la resistenza e trascurabile: l energia deve conservarsi'\nvar = (E[finestra].max() - E[finestra].min()) / E[finestra].mean()\nassert var < 0.01, f'variazione di energia {var*100:.2f}% — troppo alta'",
+      "hint": [
+        "ok_massa: np.all(np.diff(m) <= 1e-9) and np.all(m > 0). ok_apogeo: abs(v[i_ap]) < 1.0.",
+        "np.trapezoid(T, t) per l'impulso. err_rel = abs(impulso - teorico)/teorico. finestra = (t >= 150.) & (t <= t[i_ap]), E = v**2/2 + g*h."
+      ],
+      "soluzione": "ok_massa = bool(np.all(np.diff(m) <= 1e-9) and np.all(m > 0))\nok_apogeo = bool(abs(v[i_ap]) < 1.0)\n\nimpulso = np.trapezoid(T, t)\nimpulso_teorico = T1*60. + T2*55.\nerr_rel = abs(impulso - impulso_teorico) / impulso_teorico\nok_impulso = bool(err_rel < 1e-3)\n\nfinestra = (t >= 150.) & (t <= t[i_ap])\nE = v**2/2 + g*h\nok_energia = bool((E[finestra].max() - E[finestra].min()) / E[finestra].mean() < 0.01)",
+      "spiegazione": "Quattro controlli che non ripetono il calcolo, ma lo attaccano da direzioni diverse.\n\n**Il controllo sull'impulso non torna esatto, e la ragione vale la pena capirla.** Integrando si ottengono 15 290 000 N·s contro i 15 300 000 teorici: mancano 10 000 N·s, lo 0.065%. Non e un errore tuo. La spinta e una funzione a gradino, e la regola dei trapezi sostituisce ogni salto con una rampa larga un passo di campionamento: all'istante di spegnimento del primo stadio l'intervallo fra 59.9 e 60.0 s contribuisce con la media fra 200 kN e 0 invece che con 200 kN pieni, e si perde meta passo di spinta.\n\nE la lezione generale: **i metodi di integrazione assumono che la funzione sia regolare.** Su una discontinuita perdono accuratezza, e l'errore non cala riducendo il passo tanto quanto ti aspetteresti. Quando integri un profilo con gradini — spinta, comandi, carichi a impulso — spezza l'integrale sui tratti continui, oppure accetta lo scarto sapendo da dove viene.\n\nIl più forte è quello sull'energia. Nella fase balistica sopra i 100 km la densità è dell'ordine di 10⁻⁵ kg/m³ e la resistenza è trascurabile, quindi `v²/2 + g·h` deve restare costante. È un invariante fisico che l'integrazione non conosce: se il tuo schema ha un errore sistematico — un `dt` sbagliato, un segno invertito, la densità valutata al posto sbagliato — l'energia deriva e questo controllo lo vede.\n\nÈ il tipo di verifica che vale la pena costruire in ogni simulazione che scrivi: non \"il risultato mi sembra ragionevole\", ma una grandezza che sai come deve comportarsi, misurata sui tuoi stessi numeri.\n\nQui la variazione resta ben sotto l'1%, ma non è esattamente zero: Eulero a passo fisso non conserva l'energia. Con `dt` più grande la deriva cresce, ed è il modo più diretto di scegliere il passo di integrazione."
+    }
+  ]
+}

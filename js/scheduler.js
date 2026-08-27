@@ -29,10 +29,12 @@ export function grade(s, ok, hint = 0) {
 
 export const isMastered = (s) => s.box >= MASTERED;
 
-/** Esercizi ancora da consolidare, i più deboli per primi. */
+/** Esercizi ancora da consolidare, i più deboli per primi.
+ *  Le fasi dei cantieri restano fuori: sono progetti aperti, non esercizi
+ *  meccanici, e ripeterli finche' non sono "perfetti" non insegna niente. */
 export function reviewQueue(states) {
   return Object.values(states)
-    .filter((s) => s.tentativi > 0 && !isMastered(s))
+    .filter((s) => s.tentativi > 0 && !s.fuoriRipasso && !isMastered(s))
     .sort((a, b) => a.box - b.box || b.errori - a.errori || a.ultimo - b.ultimo);
 }
 

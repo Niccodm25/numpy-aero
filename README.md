@@ -9,11 +9,16 @@ Il piano completo del progetto è in [PLAN.md](PLAN.md).
 ## Provarlo in locale
 
 ```bash
-python -m http.server 8000
+.venv/Scripts/python tools/serve.py
 ```
 
 Poi apri <http://localhost:8000>. Serve un server HTTP: aprire `index.html` col
 doppio clic non funziona, i moduli ES e `fetch` richiedono `http://`.
+
+Usa `tools/serve.py` e non `python -m http.server`: quest'ultimo non manda header
+di cache, il browser applica la sua euristica e continua a eseguire i moduli ES
+vecchi anche dopo un reload. Modifichi un file, ricarichi, e vedi ancora il
+comportamento di prima.
 
 ## Verifiche
 

@@ -72,6 +72,13 @@
       "file": "m12-cercare.json",
       "titolo": "Trovare funzioni da solo",
       "disponibile": true
+    },
+    {
+      "id": "c01",
+      "file": "c01-lancio.json",
+      "titolo": "Cantiere 1 — Traiettoria di lancio",
+      "disponibile": true,
+      "cantiere": true
     }
   ]
 }
