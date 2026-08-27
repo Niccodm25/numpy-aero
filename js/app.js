@@ -36,9 +36,7 @@ async function modulo(id) {
   addEventListener("hashchange", route);
   route();
   // Cachea Pyodide: dalla seconda apertura l'app parte senza riscaricare 12 MB.
-  navigator.serviceWorker
-    ?.register("sw.js")
-    .catch((e) => console.warn("service worker non attivo:", e.message));
+  registraSw();
 })();
 
 async function route() {
@@ -53,6 +51,34 @@ async function route() {
   } catch (e) {
     app.innerHTML = `<div class="esito ko">${e.message}</div><p><a href="#/">Torna alla home</a></p>`;
   }
+}
+
+// ---------- service worker ----------
+// Lo stato e' visibile in home: su un telefono non c'e' una console da leggere,
+// e senza questo l'unico sintomo di un fallimento e' "non va offline".
+
+let swInfo = "controllo in corso…";
+
+function mostraSw() {
+  const el = document.querySelector("#sw");
+  if (el) el.textContent = "Uso offline: " + swInfo;
+}
+
+async function registraSw() {
+  if (!navigator.serviceWorker) {
+    swInfo = "non supportato da questo browser";
+    return mostraSw();
+  }
+  try {
+    await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+    swInfo = navigator.serviceWorker.controller
+      ? "attivo, Pyodide in cache"
+      : "installato — ricarica la pagina per attivarlo";
+  } catch (e) {
+    swInfo = "non attivo — " + e.message;
+  }
+  mostraSw();
 }
 
 // ---------- viste ----------
@@ -88,12 +114,14 @@ async function home() {
     ${righe.join("")}
     <h2>Progressi</h2>
     <p class="muto">Salvati in questo browser. Esportali per spostarli sul telefono.</p>
+    <p class="muto" id="sw"></p>
     <div class="riga">
       <button id="exp">Esporta</button>
       <button id="imp">Importa</button>
       <input type="file" id="file" accept="application/json" hidden>
     </div>`;
 
+  mostraSw();
   app.querySelector("#exp").onclick = () => S.esporta(stati);
   app.querySelector("#imp").onclick = () => app.querySelector("#file").click();
   app.querySelector("#file").onchange = (ev) => {
