@@ -18,7 +18,9 @@ async function modulo(id) {
   if (cache[id]) return cache[id];
   const meta = indice.moduli.find((m) => m.id === id);
   if (!meta) throw new Error("Modulo sconosciuto: " + id);
-  const r = await fetch("content/" + meta.file);
+  // no-cache = rivalida sempre con ETag. GitHub Pages manda max-age=600, e senza
+  // questo un modulo nuovo non comparirebbe per dieci minuti.
+  const r = await fetch("content/" + meta.file, { cache: "no-cache" });
   if (!r.ok) throw new Error("Contenuto non trovato: " + meta.file);
   return (cache[id] = await r.json());
 }
@@ -26,7 +28,7 @@ async function modulo(id) {
 // ---------- avvio ----------
 
 (async function init() {
-  indice = await (await fetch("content/index.json")).json();
+  indice = await (await fetch("content/index.json", { cache: "no-cache" })).json();
   R.boot((m) => (barra.textContent = m || ""))
     .then((v) => {
       barra.textContent = "NumPy " + v + " pronto";

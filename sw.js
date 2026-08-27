@@ -74,7 +74,9 @@ async function cacheFirst(req) {
 
 async function networkFirst(req) {
   try {
-    const res = await fetch(req);
+    // reload = ignora la cache HTTP del browser. Serve perche GitHub Pages manda
+    // max-age=600: senza, un deploy nuovo resterebbe invisibile per dieci minuti.
+    const res = await fetch(req, { cache: "reload" });
     if (res.ok) (await caches.open(SHELL)).put(req, res.clone());
     return res;
   } catch (err) {
