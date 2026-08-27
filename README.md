@@ -35,6 +35,7 @@ python tools/check_content.py
 | `js/scheduler.js` | Leitner: cosa ripassare e quando un esercizio è chiuso |
 | `js/app.js` | Router e viste |
 | `js/md.js` | Markdown minimo per il testo delle lezioni |
+| `sw.js` | Cachea Pyodide (rete-prima per l'app, cache-prima per il CDN) |
 | `content/*.json` | Lezioni ed esercizi, un file per modulo |
 
 Aggiungere contenuti significa editare un JSON in `content/`, mai il motore.

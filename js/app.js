@@ -35,6 +35,10 @@ async function modulo(id) {
     .catch((e) => (barra.textContent = "Python non caricato: " + e.message));
   addEventListener("hashchange", route);
   route();
+  // Cachea Pyodide: dalla seconda apertura l'app parte senza riscaricare 12 MB.
+  navigator.serviceWorker
+    ?.register("sw.js")
+    .catch((e) => console.warn("service worker non attivo:", e.message));
 })();
 
 async function route() {
