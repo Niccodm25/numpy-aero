@@ -1,0 +1,12 @@
+{
+  "name": "NumPy per Aerospaziale",
+  "short_name": "NumPy Aero",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fbfaf8",
+  "theme_color": "#b64a1f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

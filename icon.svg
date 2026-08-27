@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#b64a1f"/>
+  <g fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round">
+    <path d="M150 130v252M362 130v252"/>
+    <path d="M150 130h44M150 382h44M362 130h-44M362 382h-44"/>
+  </g>
+  <text x="256" y="300" font-family="Menlo,monospace" font-size="150" font-weight="700"
+        fill="#fff" text-anchor="middle">np</text>
+</svg>

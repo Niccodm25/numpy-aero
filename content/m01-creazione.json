@@ -1,0 +1,109 @@
+{
+  "id": "m01",
+  "titolo": "Creazione e dtype",
+  "perche": "Ogni calcolo che farai — atmosfera standard, polari, matrici di stato — parte da un array costruito bene. Sbagliare qui significa sbagliare shape e tipo per tutto il resto della catena.",
+  "funzioni": ["np.array", "np.zeros", "np.ones", "np.full", "np.eye", "np.arange", "np.linspace", ".shape", ".ndim", ".dtype"],
+  "lezioni": [
+    {
+      "id": "m01-l1",
+      "titolo": "Perché non basta una lista Python",
+      "md": "Una lista Python è un contenitore di oggetti qualsiasi. Un array NumPy è un blocco di memoria contiguo con **un solo tipo**. Da questa differenza discende tutto.\n\nSu una lista, moltiplicare non fa quello che vuoi:\n\n```\nquote = [0, 1000, 2000]\nprint(quote * 2)\n```\n\nOttieni la lista ripetuta due volte, non i valori raddoppiati. Su un array invece l'operazione è **elemento per elemento**, che è il comportamento matematico che ti aspetti:\n\n```\nquote = np.array([0, 1000, 2000])\nprint(quote * 2)\nprint(quote + 500)\n```\n\nQuesto si chiama *vettorizzazione*: scrivi l'operazione una volta, NumPy la applica a tutti gli elementi con un ciclo compilato in C. È il motivo per cui NumPy è 50-200 volte più veloce di un `for` in Python su dati numerici.\n\n### La regola pratica\n\nSe stai scrivendo un `for` che scorre numeri per fare conti, quasi sempre esiste la versione NumPy senza ciclo. Nel resto del corso questo diventerà un riflesso.",
+      "demo": "quote_lista = [0, 1000, 2000]\nquote_array = np.array([0, 1000, 2000])\n\nprint(\"lista: \", quote_lista * 2)\nprint(\"array: \", quote_array * 2)\nprint(\"array + 500:\", quote_array + 500)"
+    },
+    {
+      "id": "m01-l2",
+      "titolo": "Costruire array da zero",
+      "md": "Quattro costruttori coprono quasi tutti i casi. Nota che la **shape si passa come tupla**.\n\n```\nnp.zeros((3, 4))      # 3 righe, 4 colonne, tutti 0.0\nnp.ones(5)            # 5 elementi a 1.0 (shape 1D: basta il numero)\nnp.full((2, 2), 9.81) # riempi con un valore\nnp.eye(3)             # identità 3x3\n```\n\n### L'errore classico\n\n```\nnp.zeros(3, 4)   # ERRORE\nnp.zeros((3, 4)) # giusto\n```\n\nIl secondo argomento di `zeros` non è una dimensione, è il `dtype`. Scrivendo `np.zeros(3, 4)` stai dicendo \"array di 3 elementi con dtype 4\", e NumPy protesta.\n\n### A cosa servono davvero\n\n`zeros` è il modo standard di **preallocare** un risultato che riempirai dopo (una traiettoria integrata passo per passo, per esempio). `eye` ti serve ogni volta che costruisci una matrice di stato o una matrice di rotazione identità.",
+      "demo": "print(np.zeros((3, 4)))\nprint()\nprint(np.full((2, 2), 9.81))\nprint()\nprint(np.eye(3))"
+    },
+    {
+      "id": "m01-l3",
+      "titolo": "arange vs linspace: quale, e quando",
+      "md": "Sono i due modi di generare una sequenza, e la scelta sbagliata è una delle cause di bug più frequenti.\n\n```\nnp.arange(inizio, fine, passo)   # decidi il PASSO, la fine e' esclusa\nnp.linspace(inizio, fine, punti) # decidi QUANTI PUNTI, la fine e' inclusa\n```\n\n### Due trappole di arange\n\n**1. L'estremo destro è escluso.** `np.arange(0, 11000, 1000)` non contiene 11000: si ferma a 10000, e ottieni 11 valori invece dei 12 che ti aspettavi.\n\n**2. Con passo decimale il numero di elementi non è prevedibile.** Il passo viene sommato in virgola mobile, e l'errore si accumula:\n\n```\nprint(len(np.arange(0, 1.1, 0.1)))\n```\n\nPuò uscire 11 o 12 a seconda dell'arrotondamento. Su una griglia di quote o di angoli d'incidenza, questo significa un array della dimensione sbagliata che poi non si allinea con gli altri.\n\n### La regola\n\n**Passo intero e non ti serve l'estremo → `arange`. In tutti gli altri casi → `linspace`.**\n\nCon `linspace` decidi tu quanti punti escono, quindi la shape è garantita. Per un dominio fisico (quote, angoli, tempo) è quasi sempre la scelta giusta.",
+      "demo": "print(\"arange(0, 11000, 1000):\", np.arange(0, 11000, 1000))\nprint(\"quanti elementi:\", len(np.arange(0, 11000, 1000)))\nprint()\nprint(\"linspace(0, 11000, 12):\", np.linspace(0, 11000, 12))\nprint(\"quanti elementi:\", len(np.linspace(0, 11000, 12)))\nprint()\nprint(\"trappola float, len(arange(0, 1.1, 0.1)) =\", len(np.arange(0, 1.1, 0.1)))"
+    },
+    {
+      "id": "m01-l4",
+      "titolo": "shape, ndim, dtype: i tre attributi da controllare sempre",
+      "md": "Quando qualcosa non torna, il primo gesto è stampare questi tre valori. Risolvono la maggior parte dei bug.\n\n```\na = np.linspace(0, 11000, 12)\nprint(a.shape)  # (12,)  <- tupla, sempre\nprint(a.ndim)   # 1      <- numero di dimensioni\nprint(a.dtype)  # float64\n```\n\n### shape è una tupla\n\n`(12,)` con la virgola è una tupla di un elemento: array 1D di 12 valori. Non confonderlo con `(12, 1)`, che è una **matrice colonna** 2D. Sono cose diverse e si comportano diversamente nelle operazioni. Nel modulo sul broadcasting questa distinzione diventerà centrale.\n\n### dtype: il tipo si decide alla creazione\n\nNumPy sceglie il tipo più generale che contiene tutti i valori:\n\n```\nnp.array([1, 2, 3])     # int64\nnp.array([1, 2, 3.0])   # float64  <- un solo float \"contagia\" tutto\n```\n\n**Il rischio con gli interi:** un array `int64` tronca le assegnazioni decimali senza avvisarti.\n\n```\na = np.zeros(3, dtype=int)\na[0] = 2.7\nprint(a)   # [2 0 0]  <- il 2.7 e' diventato 2\n```\n\n### La regola per l'ingegneria\n\n**Se rappresenta una quantità fisica, deve essere float.** Scrivi `0.0` invece di `0`, o forza il tipo con `dtype=float`. Gli interi vanno bene per indici, contatori e maschere, non per quote, forze o velocità.",
+      "demo": "a = np.linspace(0, 11000, 12)\nprint(\"shape:\", a.shape, \"| ndim:\", a.ndim, \"| dtype:\", a.dtype)\n\nprint(\"\\nint o float?\")\nprint(np.array([1, 2, 3]).dtype)\nprint(np.array([1, 2, 3.0]).dtype)\n\nprint(\"\\ntroncamento silenzioso:\")\nb = np.zeros(3, dtype=int)\nb[0] = 2.7\nprint(b)"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m01-e1",
+      "tipo": "predict",
+      "testo": "Che cosa stampa `print(np.zeros((3, 4)).shape)` ?",
+      "opzioni": ["(3, 4)", "(4, 3)", "(12,)", "3 4"],
+      "risposta": "(3, 4)",
+      "spiegazione": "shape restituisce sempre una tupla, nell'ordine (righe, colonne). Il primo numero è la dimensione più esterna."
+    },
+    {
+      "id": "m01-e2",
+      "tipo": "predict",
+      "testo": "Qual è il dtype di `np.array([1, 2, 3.0])` ?",
+      "opzioni": ["float64", "int64", "object", "solleva un errore"],
+      "risposta": "float64",
+      "spiegazione": "Un array ha un solo tipo. NumPy sceglie il più generale che contiene tutti i valori: basta un float perché l'intero array diventi float64. È il motivo per cui scrivere 0.0 invece di 0 nelle costanti fisiche evita sorprese."
+    },
+    {
+      "id": "m01-e3",
+      "tipo": "predict",
+      "testo": "Quanti elementi ha `np.arange(0, 1, 0.25)` ?",
+      "opzioni": ["4", "5", "3", "dipende dall'arrotondamento"],
+      "risposta": "4",
+      "spiegazione": "Sono 0, 0.25, 0.5, 0.75: l'estremo destro è escluso. Qui il passo 0.25 è esatto in binario, quindi il conto è prevedibile. Con 0.1 non lo sarebbe: per questo su domini fisici si usa linspace."
+    },
+    {
+      "id": "m01-e4",
+      "tipo": "write",
+      "testo": "Crea `I`, la matrice identità 3×3 (ti servirà per inizializzare matrici di rotazione).",
+      "starter": "# scrivi qui\nI = \n",
+      "test": "assert I.shape == (3, 3), f'shape sbagliata: {I.shape}'\nassert np.allclose(I, np.eye(3)), 'non e la matrice identita'",
+      "hint": ["Il nome della funzione viene da 'Identity'.", "np.eye(n) costruisce una identità n×n."],
+      "soluzione": "I = np.eye(3)",
+      "spiegazione": "np.eye(3) crea l'identità 3×3. Esiste anche np.identity(3), identica ma meno flessibile: eye accetta un parametro k per spostare la diagonale."
+    },
+    {
+      "id": "m01-e5",
+      "tipo": "write",
+      "testo": "Crea `p`: un array di 5 elementi, tutti pari alla pressione al livello del mare, 101325.0 Pa.",
+      "starter": "# scrivi qui\np = \n",
+      "test": "assert p.shape == (5,), f'shape sbagliata: {p.shape}'\nassert np.all(p == 101325.0), 'i valori non sono tutti 101325.0'\nassert p.dtype == np.float64, f'deve essere float64, e {p.dtype}'",
+      "hint": ["Serve un costruttore che riempie con un valore a scelta.", "np.full(shape, valore)."],
+      "soluzione": "p = np.full(5, 101325.0)",
+      "spiegazione": "np.full(5, 101325.0) è il modo diretto. Funziona anche np.ones(5) * 101325.0, ma full dice l'intenzione ed evita una moltiplicazione inutile."
+    },
+    {
+      "id": "m01-e6",
+      "tipo": "debug",
+      "testo": "Questo codice dovrebbe produrre 12 quote da 0 a 11000 m, **estremi inclusi**. Non lo fa. Correggilo.",
+      "starter": "h = np.arange(0, 11000, 1000)\n",
+      "test": "assert h.shape == (12,), f'servono 12 quote, ne hai {h.shape[0]}'\nassert np.isclose(h[0], 0.0), 'deve partire da 0'\nassert np.isclose(h[-1], 11000.0), f'deve arrivare a 11000, arriva a {h[-1]}'",
+      "hint": ["arange esclude l'estremo destro: si ferma a 10000, quindi 11 valori.", "Qui conta il numero di punti, non il passo. Usa linspace."],
+      "soluzione": "h = np.linspace(0, 11000, 12)",
+      "spiegazione": "arange(0, 11000, 1000) si ferma a 10000. Puoi rattoppare con arange(0, 11001, 1000), ma è fragile. linspace(0, 11000, 12) dice esattamente quello che vuoi: 12 punti, estremi inclusi, shape garantita."
+    },
+    {
+      "id": "m01-e7",
+      "tipo": "write",
+      "testo": "Crea `alpha`: gli angoli d'incidenza da -5° a +15°, con passo di 0.5°, estremi inclusi. Sono i punti in cui campionerai la polare.",
+      "starter": "# scrivi qui\nalpha = \n",
+      "test": "assert alpha.shape == (41,), f'servono 41 punti, ne hai {alpha.shape[0]}'\nassert np.isclose(alpha[0], -5.0) and np.isclose(alpha[-1], 15.0)\nassert np.isclose(alpha[1] - alpha[0], 0.5), 'il passo deve essere 0.5'",
+      "hint": ["Quanti punti servono da -5 a 15 con passo 0.5? Intervallo 20, quindi 20/0.5 = 40 passi.", "40 passi significano 41 punti: np.linspace(-5, 15, 41)."],
+      "soluzione": "alpha = np.linspace(-5, 15, 41)",
+      "spiegazione": "L'errore off-by-one classico: n passi danno n+1 punti. 20/0.5 = 40 intervalli, quindi 41 valori."
+    },
+    {
+      "id": "m01-e8",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Atmosfera standard, troposfera.**\n\nCostruisci `h`: 23 quote equispaziate da 0 a 11000 m, estremi inclusi.\nPoi calcola `T`, la temperatura ISA in kelvin, con il gradiente termico standard:\n\n`T = 288.15 - 0.0065 · h`\n\nNota che la seconda riga non ha bisogno di nessun ciclo.",
+      "starter": "h = \nT = \n",
+      "test": "assert h.shape == (23,), f'h.shape = {h.shape}, servono 23 quote'\nassert np.isclose(h[0], 0.0) and np.isclose(h[-1], 11000.0)\nassert np.isclose(h[1] - h[0], 500.0), 'le quote devono essere equispaziate'\nassert T.shape == (23,), f'T.shape = {T.shape}'\nassert np.isclose(T[0], 288.15), f'al suolo la ISA da 288.15 K, tu hai {T[0]}'\nassert np.isclose(T[-1], 216.65), f'a 11 km la ISA da 216.65 K, tu hai {T[-1]}'\nassert T.dtype == np.float64",
+      "hint": ["Per h: 23 punti, estremi inclusi, quindi linspace.", "Per T: scrivi la formula tale e quale usando h. L'operazione si applica a tutti i 23 valori da sola."],
+      "soluzione": "h = np.linspace(0, 11000, 23)\nT = 288.15 - 0.0065 * h",
+      "spiegazione": "Questo è NumPy in due righe: costruisci il dominio, poi scrivi la formula fisica come la scriveresti sulla lavagna. Nessun for, nessun indice. La tropopausa a 11 km viene 216.65 K, che è il valore ISA tabulato — buon segno che il conto è giusto."
+    }
+  ]
+}
