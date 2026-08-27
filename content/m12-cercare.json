@@ -1,0 +1,128 @@
+{
+  "id": "m12",
+  "titolo": "Trovare funzioni da solo",
+  "perche": "NumPy ha circa 480 funzioni pubbliche e questo corso ne ha coperte una sessantina. Le altre non vanno memorizzate: va imparato il metodo per trovarle quando servono. È la competenza che resta quando i nomi si dimenticano, e l'unica che sopravvive ai cambi di versione.",
+  "funzioni": ["dir", "help", "np.info", "See Also", "pattern di naming", "release notes"],
+  "lezioni": [
+    {
+      "id": "m12-l1",
+      "titolo": "Livello 1 — dir: quando sai dove, non come si chiama",
+      "md": "`dir(oggetto)` elenca tutto quello che contiene. Da solo è illeggibile — 550 nomi — ma filtrato diventa uno strumento preciso.\n\n```\n[n for n in dir(np) if 'sort' in n]\n# ['argsort', 'lexsort', 'searchsorted', 'sort', 'sort_complex']\n```\n\nIn cinque nomi hai la mappa completa di tutto ciò che NumPy sa fare sull'ordinamento, e `searchsorted` — che probabilmente non conoscevi — salta fuori da sola.\n\n### Sui sottomoduli è ancora più efficace\n\n```\ndir(np.linalg)   # 22 nomi: li leggi tutti in dieci secondi\ndir(np.fft)      # 19\n```\n\nQuando sai che il tuo problema è di algebra lineare, scorrere i 22 nomi di `np.linalg` è più veloce di qualsiasi ricerca su internet, e ti fa vedere anche le funzioni vicine.\n\n### Il filtro giusto\n\nCerca per **concetto**, non per il nome che immagini:\n\n```\n[n for n in dir(np) if 'diff' in n]     # diff, ediff1d, setdiff1d\n[n for n in dir(np) if 'max' in n]      # max, maximum, amax, argmax, nanmax, fmax\n```\n\nQuest'ultimo esempio è istruttivo: `max` e `maximum` fanno cose diverse — uno riduce, l'altro confronta due array elemento per elemento — e vederli affiancati chiarisce la distinzione meglio di qualsiasi spiegazione.",
+      "demo": "print(\"tutto cio' che riguarda l'ordinamento:\")\nprint([n for n in dir(np) if 'sort' in n])\n\nprint(\"\\ntutto cio' che riguarda i massimi:\")\nprint([n for n in dir(np) if 'max' in n])\n\nprint(\"\\nl'intero modulo di algebra lineare:\")\nprint([n for n in dir(np.linalg) if not n.startswith('_')])\n\nprint(\"\\nquante funzioni pubbliche ha np:\", len([n for n in dir(np) if not n.startswith('_')]))"
+    },
+    {
+      "id": "m12-l2",
+      "titolo": "Livello 2 — leggere una docstring",
+      "md": "Trovato il nome, `help` dice come si usa:\n\n```\nhelp(np.searchsorted)\nnp.info(np.searchsorted)     # piu compatto\n```\n\n**Il 90% delle domande su NumPy ha risposta nelle prime dieci righe.** Questa è la competenza vera del modulo: non conoscere le funzioni, ma saper leggere in trenta secondi come funziona una che non hai mai visto.\n\n### Come si legge una signature\n\n```\nnp.searchsorted(a, v, side='left', sorter=None)\n```\n\n- **`a`, `v`** — obbligatori, nell'ordine dato. Qui la docstring chiarisce che `a` è l'array ordinato e `v` i valori da inserire: l'ordine non è indovinabile.\n- **`side='left'`** — opzionale, con default. Se non lo passi ottieni `'left'`, e la docstring spiega la differenza con `'right'` sui valori uguali.\n- **`sorter=None`** — `None` significa quasi sempre \"comportamento automatico\".\n\n### Le sezioni che contano\n\n- **Parameters** — cosa accetta, e soprattutto **cosa assume**. È qui che scopri che `searchsorted` pretende `a` già ordinato, e che non lo verifica.\n- **Returns** — cosa esce, e con che shape. Da leggere prima di scrivere la riga dopo.\n- **Examples** — quasi sempre eseguibili così come sono. Copiali e provali: è il modo più rapido di capire.\n- **See Also** — vedi la lezione 4.\n\n### La domanda da farsi sempre\n\n**\"Cosa assume questa funzione che io non le sto dicendo?\"** L'array ordinato di `searchsorted`, l'`x` crescente di `interp`, il denominatore `N` invece di `N−1` in `std`: sono tutte assunzioni scritte nella docstring, e tutte cause di risultati sbagliati senza errore.",
+      "demo": "np.info(np.searchsorted)"
+    },
+    {
+      "id": "m12-l3",
+      "titolo": "Livello 3 — i pattern dei nomi",
+      "md": "NumPy è coerente. Imparare le convenzioni vale più che memorizzare duecento nomi, perché ti permette di **indovinare** il nome giusto.\n\n| Pattern | Significato | Esempi |\n|---|---|---|\n| `arg*` | restituisce **indici**, non valori | `argmax`, `argmin`, `argsort`, `argwhere` |\n| `nan*` | ignora i NaN | `nanmean`, `nanstd`, `nanmax`, `nansum` |\n| `*_like` | stessa shape e dtype di un altro array | `zeros_like`, `ones_like`, `full_like` |\n| `cum*` | cumulativo, restituisce un array | `cumsum`, `cumprod` |\n| `is*` | test, restituisce booleani | `isnan`, `isfinite`, `isclose`, `isin` |\n| `a*` (alias) | vecchi alias della riduzione | `amax`, `amin` |\n\n### Usarli al contrario\n\nSe ti serve *dove* invece di *quanto*, prova ad anteporre `arg`. Se hai dati con buchi, prova a mettere `nan` davanti. Funziona quasi sempre, e quando non funziona `dir` te lo dice in due secondi.\n\n### La coppia che confonde tutti\n\n```\nnp.max(a)           # riduzione: il massimo DI un array\nnp.maximum(a, b)    # elemento per elemento: il massimo FRA due array\n```\n\nStessa radice, funzioni diverse. La regola: il **singolare** riduce, il **plurale in -imum** confronta. Vale anche per `min`/`minimum`.\n\n### Gli array non hanno tutti i metodi\n\n```\na.mean()        # esiste\na.nanmean()     # NON esiste\n```\n\nLe riduzioni base ci sono sia come metodo sia come funzione; tutto il resto — `nan*`, `where`, `interp`, `clip` come funzione libera — esiste solo come `np.qualcosa`. Nel dubbio, `np.` funziona sempre.",
+      "demo": "a = np.array([3., 1., 4., 1., 5.])\nb = np.array([2., 2., 2., 9., 0.])\n\nprint(\"max  (riduce):    \", np.max(a))\nprint(\"maximum (confronta):\", np.maximum(a, b))\n\nprint(\"\\narg* da gli indici:\", np.argmax(a), \"| argsort:\", np.argsort(a))\nprint(\"is*  da booleani:  \", np.isfinite(np.array([1., np.nan, np.inf])))\nprint(\"*_like copia la forma:\", np.zeros_like(a))\n\ntry:\n    a.nanmean()\nexcept AttributeError as e:\n    print(\"\\n\", e)"
+    },
+    {
+      "id": "m12-l4",
+      "titolo": "Livello 4 — la documentazione, e il riquadro See Also",
+      "md": "Su **numpy.org/doc/stable** la struttura è:\n\n- **API reference** — la pagina di una funzione che già sai come si chiama\n- **Routines by topic** — l'elenco per categoria: *Linear algebra*, *Statistics*, *Sorting and searching*, *Polynomials*, *Set routines*. **Questa è la pagina da aprire quando non sai il nome.** Scorrere la categoria giusta è più efficace di qualsiasi ricerca testuale.\n- **User guide** — le spiegazioni concettuali, fra cui la pagina sul broadcasting\n\n### See Also è la parte migliore\n\nIn fondo a ogni pagina di funzione c'è un riquadro **See Also** con le funzioni imparentate e una riga che spiega la differenza.\n\nÈ il posto dove si scoprono le funzioni migliori: arrivi cercando `sort`, il See Also ti manda a `argsort`, e da lì a `lexsort` che risolve il problema vero — ordinare per più criteri. Nessuna ricerca testuale ti ci avrebbe portato, perché non sapevi che quel nome esistesse.\n\n**Abitudine da prendere: quando apri la pagina di una funzione, leggi sempre il See Also prima di chiudere.** Costa dieci secondi e allarga la mappa mentale.\n\n### Prima di scrivere codice tuo\n\nSe stai per scrivere più di tre righe per fare qualcosa che *suona* standard — contare occorrenze, trovare l'elemento più vicino, limitare un valore a un intervallo, unire due insiemi — **cercalo prima**. Nel 90% dei casi esiste già, è testato meglio del tuo, ed è cento volte più veloce.\n\nQuesto vale in generale, ben oltre NumPy.",
+      "demo": "print(\"Categorie principali su numpy.org/doc/stable (Routines by topic):\\n\")\nfor c in [\"Array creation\", \"Indexing\", \"Linear algebra (numpy.linalg)\",\n          \"Logic functions\", \"Mathematical functions\", \"Polynomials\",\n          \"Random sampling (numpy.random)\", \"Set routines\",\n          \"Sorting, searching, counting\", \"Statistics\"]:\n    print(\"  -\", c)\n\nprint(\"\\nEsempio: cercavi 'sort', il See Also ti porta a:\")\nprint(\" \", [n for n in dir(np) if 'sort' in n])"
+    },
+    {
+      "id": "m12-l5",
+      "titolo": "Livello 5 — la versione conta",
+      "md": "Le librerie cambiano fra le versioni maggiori. Il codice che trovi online può essere scritto per una versione diversa dalla tua.\n\n### Due casi concreti, in NumPy 2.0\n\n**`np.trapz` è stato rinominato `np.trapezoid`.** Il vecchio nome resta come alias deprecato, quindi il codice vecchio gira ancora, ma in quello nuovo va usato il nome nuovo.\n\n**`np.lookfor` è stato rimosso.** Era una ricerca testuale nelle docstring — `np.lookfor('eigenvalue')` — e la trovi consigliata in molti tutorial. In NumPy 2.x non esiste più: al suo posto si usano `dir` filtrato e la documentazione online.\n\n### Come verificare, in una riga\n\n```\nnp.__version__            # quale versione sto usando\nhasattr(np, 'trapezoid')  # questa funzione esiste qui?\n```\n\n`hasattr` è il controllo diretto: nessun errore, solo `True` o `False`. È quello che ti serve quando copi codice da una fonte di età ignota.\n\n### Le release notes\n\nOgni versione ha una pagina di note con le sezioni **Deprecations**, **Expired deprecations** e **Compatibility notes**. Leggerle quando aggiorni una libreria è mezz'ora ben spesa: è lì che stanno scritte le cose che romperanno il tuo codice, prima che si rompa.\n\n### Il riflesso finale\n\nQuando qualcosa che dovrebbe funzionare non funziona, la sequenza è:\n\n1. `np.__version__` — sto usando quello che credo?\n2. `hasattr(np, 'nome')` — questa funzione esiste in questa versione?\n3. `np.info(np.nome)` — la signature è quella che mi aspetto?\n4. Release notes della versione — è cambiato qualcosa?\n\nQuattro passi, due minuti, e hai escluso l'intera categoria di problemi che nascono dalle differenze di versione.",
+      "demo": "print(\"versione in uso:\", np.__version__)\n\nfor nome in ['trapz', 'trapezoid', 'lookfor', 'searchsorted', 'in1d']:\n    print(f\"  hasattr(np, '{nome}'): {hasattr(np, nome)}\")\n\nprint(\"\\ntrapz esiste ancora come alias, ma nel codice nuovo si usa trapezoid\")\nprint(\"lookfor e' stato rimosso in NumPy 2.0: al suo posto, dir() filtrato\")"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m12-e1",
+      "tipo": "predict",
+      "testo": "Ti serve una funzione che restituisca la **posizione** del minimo, non il suo valore. Quale prefisso provi prima di cercare?",
+      "opzioni": ["arg", "idx", "where", "nan"],
+      "risposta": "arg",
+      "spiegazione": "In NumPy il prefisso arg significa 'restituisce indici': argmin, argmax, argsort, argwhere. Conoscere le convenzioni permette di indovinare il nome invece di cercarlo, e quando l'ipotesi è sbagliata dir() lo conferma in due secondi."
+    },
+    {
+      "id": "m12-e2",
+      "tipo": "predict",
+      "testo": "Qual è la differenza fra `np.max(a, b)` e `np.maximum(a, b)` ?",
+      "opzioni": [
+        "maximum confronta due array elemento per elemento, max e' una riduzione",
+        "sono sinonimi",
+        "max funziona solo su array 1D",
+        "maximum restituisce l'indice del massimo"
+      ],
+      "risposta": "maximum confronta due array elemento per elemento, max e' una riduzione",
+      "spiegazione": "np.max riduce un array a un solo valore (il secondo argomento è axis, non un altro array). np.maximum prende due array e restituisce il massimo posizione per posizione. La regola generale: il singolare riduce, il plurale in -imum confronta. Vale anche per min e minimum."
+    },
+    {
+      "id": "m12-e3",
+      "tipo": "predict",
+      "testo": "Trovi in un tutorial `np.lookfor('eigenvalue')` per cercare funzioni. Cosa succede eseguendolo su questa app?",
+      "opzioni": [
+        "AttributeError: lookfor e' stato rimosso in NumPy 2.0",
+        "funziona ed elenca le funzioni sugli autovalori",
+        "funziona ma stampa un avviso di deprecazione",
+        "restituisce una lista vuota"
+      ],
+      "risposta": "AttributeError: lookfor e' stato rimosso in NumPy 2.0",
+      "spiegazione": "lookfor cercava nelle docstring ed è stato rimosso in NumPy 2.0, ma resta consigliato in molti tutorial scritti per la 1.x. Al suo posto: dir(np) filtrato per concetto, e la pagina 'Routines by topic' della documentazione. hasattr(np, 'lookfor') è il modo di verificarlo in una riga."
+    },
+    {
+      "id": "m12-e4",
+      "tipo": "write",
+      "testo": "**Ti do il problema, non la funzione.**\n\nHai una tabella di quote **già ordinata**. Devi sapere in quale posizione andrebbe inserita la quota 5000 m per mantenere l'ordine — cioè fra quali due righe della tabella cade.\n\nTrova la funzione e calcola `pos`.\n\nSuggerimento sul metodo: `[n for n in dir(np) if 'sort' in n]`.",
+      "setup": "h_tab = np.array([0., 2000., 4000., 6000., 8000., 11000.])\n",
+      "starter": "pos = \n",
+      "test": "assert int(pos) == 3, f'posizione attesa 3, hai {pos}'\nassert np.searchsorted(h_tab, 5000.) == int(pos), 'il risultato deve essere l indice di inserimento'",
+      "hint": [
+        "Filtra dir(np) su 'sort': fra i cinque nomi ce n'e' uno che parla di cercare in un array ordinato.",
+        "np.searchsorted(array_ordinato, valore). Leggi np.info per l'ordine degli argomenti."
+      ],
+      "soluzione": "pos = np.searchsorted(h_tab, 5000.)",
+      "spiegazione": "np.searchsorted usa una ricerca binaria: su una tabella di un milione di righe costa venti confronti invece di un milione. È la funzione dietro ogni lookup su tabelle ordinate — atmosfera, curve motore, mappe di calibrazione.\n\nAttenzione all'assunzione, scritta nella docstring: l'array **deve** essere già ordinato, e la funzione non lo verifica. Su dati non ordinati restituisce un numero senza significato, senza errore."
+    },
+    {
+      "id": "m12-e5",
+      "tipo": "write",
+      "testo": "**Ti do il problema, non la funzione.**\n\n`cfg` registra quale configurazione è stata provata a ogni run. Devi sapere **quali** configurazioni compaiono e **quante volte** ciascuna.\n\nCalcola `valori` e `conteggi`, con una sola chiamata.\n\nMetodo: la funzione la conosci già di nome, ma serve un suo parametro opzionale — leggi `np.info` per trovarlo.",
+      "setup": "cfg = np.array([2, 1, 3, 1, 2, 1, 3, 3, 3])\n",
+      "starter": "valori, conteggi = \n",
+      "test": "assert np.array_equal(valori, [1, 2, 3]), f'valori attesi [1 2 3], hai {valori}'\nassert np.array_equal(conteggi, [3, 2, 4]), f'conteggi attesi [3 2 4], hai {conteggi}'",
+      "hint": [
+        "La funzione e' np.unique. Di default restituisce solo i valori distinti.",
+        "np.info(np.unique) mostra il parametro return_counts=False: portalo a True."
+      ],
+      "soluzione": "valori, conteggi = np.unique(cfg, return_counts=True)",
+      "spiegazione": "Questo è il caso più frequente in assoluto: la funzione la conosci, ma fa più di quello che pensavi. I parametri opzionali di unique includono anche return_index e return_inverse, che risolvono altri due problemi comuni.\n\nMorale: prima di scrivere codice attorno a una funzione che già usi, leggi la sua signature completa. Spesso il parametro che ti serve c'è già."
+    },
+    {
+      "id": "m12-e6",
+      "tipo": "write",
+      "testo": "**Ti do il problema, non la funzione.**\n\nUn'uscita di controllo va limitata fra `0.0` e `2.0`: i valori sotto lo zero diventano 0, quelli sopra il due diventano 2, gli altri restano.\n\nSai già farlo con `np.where` annidato, ma esiste una funzione dedicata. Trovala e calcola `u_lim`.\n\nMetodo: cerca su numpy.org sotto *Mathematical functions*, oppure filtra `dir(np)` su `'clip'`.",
+      "setup": "u = np.array([-3.0, 0.5, 1.4, 2.7, -0.2, 2.0])\n",
+      "starter": "u_lim = \n",
+      "test": "assert np.allclose(u_lim, [0.0, 0.5, 1.4, 2.0, 0.0, 2.0]), f'valori sbagliati: {u_lim}'\nassert u_lim.min() >= 0.0 and u_lim.max() <= 2.0\nassert np.allclose(u, [-3.0, 0.5, 1.4, 2.7, -0.2, 2.0]), 'u non doveva essere modificato'",
+      "hint": ["Il nome inglese dell'operazione 'limitare fra due estremi' e' proprio quello.", "np.clip(array, minimo, massimo)"],
+      "soluzione": "u_lim = np.clip(u, 0.0, 2.0)",
+      "spiegazione": "np.where(u < 0, 0, np.where(u > 2, 2, u)) darebbe lo stesso risultato in molti più caratteri e con una leggibilità peggiore. Il test verifica anche il risultato, non quale funzione hai usato: entrambe le strade passano.\n\nMa il punto del modulo è questo: prima di scrivere tre righe per qualcosa che suona standard, cerca. La saturazione di un attuatore è un'operazione talmente comune che una funzione dedicata esiste per forza."
+    },
+    {
+      "id": "m12-e7",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Prova finale: due funzioni che non hai mai visto in questo corso.**\n\nHai i coefficienti di resistenza di quattro configurazioni e i loro codici identificativi.\n\n1. `ordine`: gli **indici** che ordinerebbero `CD` dal più basso al più alto — senza ordinare `CD` stesso\n2. `codici_ordinati`: i codici, riordinati dalla configurazione migliore alla peggiore\n3. `promosse`: maschera booleana, `True` per i codici che compaiono in `shortlist`\n\nMetodo: per il punto 1, `[n for n in dir(np) if 'sort' in n]`. Per il punto 3, cerca fra le *Set routines* della documentazione, o filtra `dir(np)` su `'in'`.",
+      "setup": "CD = np.array([0.031, 0.023, 0.035, 0.026])\ncodici = np.array([10, 20, 30, 40])\nshortlist = np.array([20, 40])\n",
+      "starter": "ordine = \ncodici_ordinati = \npromosse = \n",
+      "test": "assert np.array_equal(ordine, [1, 3, 0, 2]), f'ordine atteso [1 3 0 2], hai {ordine}'\nassert np.array_equal(codici_ordinati, [20, 40, 10, 30]), f'codici sbagliati: {codici_ordinati}'\nassert promosse.dtype == bool, 'promosse deve essere una maschera booleana'\nassert np.array_equal(promosse, [False, True, False, True]), f'maschera sbagliata: {promosse}'\nassert np.allclose(CD, [0.031, 0.023, 0.035, 0.026]), 'CD non doveva essere modificato'",
+      "hint": [
+        "Punto 1: il prefisso arg significa 'restituisce indici'. Fra i nomi che contengono 'sort' ce n'e' uno che inizia per arg.",
+        "Punto 2: gli indici trovati si usano per indicizzare codici. Punto 3: cerca np.isin(elementi, insieme)."
+      ],
+      "soluzione": "ordine = np.argsort(CD)\ncodici_ordinati = codici[ordine]\npromosse = np.isin(codici, shortlist)",
+      "spiegazione": "`np.argsort` è il pattern `arg*` applicato all'ordinamento: restituisce gli indici invece dei valori, e quegli indici riordinano **qualsiasi** array parallelo. È il modo standard di ordinare una tabella per una colonna mantenendo allineate tutte le altre.\n\n`np.isin` risolve il test di appartenenza in un colpo solo, senza cicli. Sta fra le *Set routines*, una categoria della documentazione che vale la pena scorrere una volta: contiene anche `union1d`, `intersect1d` e `setdiff1d`, che risolvono problemi che altrimenti scriveresti a mano.\n\nSe sei arrivato qui usando `dir` e `np.info` invece dei suggerimenti, hai imparato la cosa più utile di tutto il corso."
+    }
+  ]
+}

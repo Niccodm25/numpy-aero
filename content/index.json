@@ -59,19 +59,19 @@
       "id": "m10",
       "file": "m10-montecarlo.json",
       "titolo": "Casualità e Monte Carlo",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m11",
       "file": "m11-precisione.json",
       "titolo": "Precisione e performance",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m12",
       "file": "m12-cercare.json",
       "titolo": "Trovare funzioni da solo",
-      "disponibile": false
+      "disponibile": true
     }
   ]
 }

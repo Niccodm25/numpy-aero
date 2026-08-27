@@ -1,0 +1,132 @@
+{
+  "id": "m10",
+  "titolo": "Casualità e Monte Carlo",
+  "perche": "Nessun pezzo esce dall'officina con la quota nominale, nessun motore eroga la spinta di targa. La domanda che ti faranno non è quanto vale l'apogeo, ma entro quale intervallo cade nel 95% dei casi. Il Monte Carlo risponde con dieci righe e nessuna matematica dell'incertezza.",
+  "funzioni": [
+    "np.random.default_rng",
+    "rng.normal",
+    "rng.uniform",
+    "rng.integers",
+    "rng.choice",
+    "np.percentile",
+    "np.quantile"
+  ],
+  "lezioni": [
+    {
+      "id": "m10-l1",
+      "titolo": "default_rng: il generatore moderno",
+      "md": "Il modo corretto di generare numeri casuali in NumPy è creare un **generatore**:\n\n```\nrng = np.random.default_rng(42)\nrng.normal(0, 1, 1000)\n```\n\nIl numero passato è il **seed**: fissa la sequenza. Stesso seed, stessi numeri, sempre. Senza seed, `default_rng()` prende entropia dal sistema e ogni esecuzione è diversa.\n\n### Perché non np.random.normal\n\nEsiste ancora la vecchia interfaccia:\n\n```\nnp.random.seed(42)          # legacy\nnp.random.normal(0, 1, 1000)\n```\n\nFunziona, ma è **stato globale**: qualsiasi funzione, in qualsiasi libreria che importi, può consumare numeri dalla stessa sequenza o resettare il seed. In una simulazione con più componenti, questo rende i risultati non riproducibili in modi difficili da diagnosticare.\n\nCon `default_rng` ogni parte del codice ha il suo generatore indipendente. La documentazione di NumPy raccomanda esplicitamente questa forma dal 2019, e nel codice nuovo non c'è motivo di usare l'altra.\n\n### La riproducibilità non è un dettaglio\n\nUna simulazione Monte Carlo che dà un risultato diverso a ogni esecuzione non è verificabile: non puoi confrontare due versioni del codice, non puoi ripetere un caso che ha dato un risultato strano, non puoi far controllare i tuoi numeri a qualcun altro.\n\n**Fissa sempre il seed nelle simulazioni che producono risultati.** Toglilo solo quando ti serve davvero variabilità fra esecuzioni.\n\n### Il parametro size\n\n```\nrng.normal(294.3, 5.0, 10000)      # 10000 campioni\nrng.normal(294.3, 5.0, (100, 50))  # una matrice\n```\n\nGli argomenti sono media, deviazione standard, e forma del risultato.",
+      "demo": "rng = np.random.default_rng(42)\nprint(\"primi 5:\", rng.normal(0, 1, 5).round(4))\n\na = np.random.default_rng(7).normal(size=5)\nb = np.random.default_rng(7).normal(size=5)\nprint(\"\\nstesso seed, stessi numeri:\", np.allclose(a, b))\n\nc = np.random.default_rng().normal(size=5)\nd = np.random.default_rng().normal(size=5)\nprint(\"senza seed, diversi:      \", not np.allclose(c, d))"
+    },
+    {
+      "id": "m10-l2",
+      "titolo": "Le distribuzioni che ti servono",
+      "md": "Tre coprono quasi tutti i casi ingegneristici.\n\n```\nrng.normal(media, sigma, n)      # gaussiana: tolleranze di lavorazione, rumore\nrng.uniform(min, max, n)         # uniforme: quando conosci solo gli estremi\nrng.integers(0, 10, n)           # interi: scelte discrete\n```\n\n### Quale scegliere\n\n**Normale** quando la grandezza è il risultato di molti effetti piccoli indipendenti — tolleranze di produzione, rumore di un sensore, errori di misura. È la scelta di default, e il teorema del limite centrale spiega perché.\n\n**Uniforme** quando sai solo che il valore sta fra due estremi e non hai motivo di credere che uno sia più probabile — una quota d'incertezza dichiarata da un fornitore come ±0.1 mm senza altre informazioni.\n\nUsare la normale dove servirebbe l'uniforme sottostima la probabilità dei casi estremi. È un errore che rende una simulazione ottimista, che è il tipo peggiore.\n\n### Da tolleranza a sigma\n\nLe tolleranze meccaniche si dichiarano come `±t`. Per trasformarle in una deviazione standard serve una convenzione: quella usuale è che la tolleranza copra **tre sigma**, cioè il 99.7% dei pezzi.\n\n```\nsigma = tolleranza / 3\n```\n\nÈ un'assunzione, non un fatto — dichiarala sempre quando presenti un risultato Monte Carlo.\n\n### rng.choice, per campionare da un insieme\n\n```\nrng.choice(configurazioni, size=1000)\nrng.choice([0, 1], size=1000, p=[0.95, 0.05])   # con probabilita\n```\n\nUtile per guasti, scelte di configurazione, campionamento da dati esistenti.",
+      "demo": "rng = np.random.default_rng(0)\n\nn = rng.normal(10.0, 0.5, 10000)\nu = rng.uniform(9.0, 11.0, 10000)\nprint(\"normale : media\", n.mean().round(3), \"std\", n.std().round(3))\nprint(\"uniforme: media\", u.mean().round(3), \"std\", u.std().round(3))\n\nprint(\"\\noltre 3 sigma dalla media:\")\nprint(\"  normale :\", (np.abs(n - 10) > 1.5).sum(), \"su 10000\")\nprint(\"  uniforme:\", (np.abs(u - 10) > 1.5).sum(), \"su 10000\")\n\nguasti = rng.choice([0, 1], size=10000, p=[0.98, 0.02])\nprint(\"\\nguasti simulati:\", guasti.sum(), \"su 10000\")"
+    },
+    {
+      "id": "m10-l3",
+      "titolo": "percentile: leggere il risultato",
+      "md": "Una simulazione Monte Carlo produce migliaia di valori. Quello che serve è riassumerli.\n\n```\nnp.percentile(risultati, 95)              # il valore superato dal 5% dei casi\nnp.percentile(risultati, [5, 50, 95])     # tre di colpo\n```\n\nIl secondo argomento è in **percentuale**, da 0 a 100. `np.quantile` fa la stessa cosa con valori fra 0 e 1 — stessa funzione, scala diversa.\n\n### Perché non media e deviazione standard\n\nMedia e sigma descrivono bene una distribuzione **se è gaussiana**. Ma il risultato di un Monte Carlo quasi mai lo è: la funzione che propaga gli input è non lineare, e l'output esce asimmetrico anche partendo da input perfettamente normali.\n\nI percentili non assumono niente sulla forma. Se ti chiedono \"qual è il caso peggiore ragionevole\", il 95° o il 99° percentile è la risposta onesta; `media + 2σ` lo è solo se la distribuzione è simmetrica, e non lo sai.\n\n### L'intervallo di confidenza al 90%\n\n```\nbasso, alto = np.percentile(risultati, [5, 95])\n```\n\nSi legge: nel 90% dei casi il risultato cade fra questi due valori. È la forma in cui un risultato Monte Carlo si presenta in una relazione.\n\n### Quanti campioni servono\n\nL'errore di una stima Monte Carlo cala come `1/√N`: per dimezzarlo servono quattro volte più campioni. Diecimila campioni sono un buon punto di partenza e costano millisecondi; per stimare bene le code — il 99.9° percentile — ne servono molti di più, perché in quella zona cadono pochissimi campioni.",
+      "demo": "rng = np.random.default_rng(42)\nv0 = rng.normal(294.3, 5.0, 10000)\nh = v0**2 / (2 * 9.81)\n\nprint(\"apogeo nominale:\", round(294.3**2 / (2*9.81), 1), \"m\")\nprint(\"media simulata :\", h.mean().round(1), \"m\")\nprint(\"deviazione std :\", h.std().round(1), \"m\")\n\nb, m, a = np.percentile(h, [5, 50, 95])\nprint(f\"\\nnel 90% dei casi: fra {b:.0f} e {a:.0f} m  (mediana {m:.0f})\")\nprint(\"la mediana non coincide con la media: la distribuzione e' asimmetrica\")"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m10-e1",
+      "tipo": "predict",
+      "testo": "Perché `np.random.default_rng()` è preferibile a `np.random.seed()` + `np.random.normal()` ?",
+      "opzioni": [
+        "default_rng crea un generatore indipendente, senza stato globale condiviso",
+        "default_rng e' piu veloce",
+        "np.random.seed e' stato rimosso in NumPy 2.0",
+        "default_rng supporta piu distribuzioni"
+      ],
+      "risposta": "default_rng crea un generatore indipendente, senza stato globale condiviso",
+      "spiegazione": "L'interfaccia legacy usa un unico stato globale: qualsiasi libreria importata può consumare numeri dalla stessa sequenza o resettare il seed, rendendo una simulazione non riproducibile in modi difficili da diagnosticare. Con default_rng ogni parte del codice ha il suo generatore. Esiste ancora, ma non va usata nel codice nuovo."
+    },
+    {
+      "id": "m10-e2",
+      "tipo": "predict",
+      "testo": "Un fornitore dichiara una quota con tolleranza ±0.09 mm, senza altre informazioni sulla distribuzione. Vuoi simularla come gaussiana assumendo che la tolleranza copra tre sigma. Quanto vale sigma?",
+      "opzioni": [
+        "0.03 mm",
+        "0.09 mm",
+        "0.27 mm",
+        "0.045 mm"
+      ],
+      "risposta": "0.03 mm",
+      "spiegazione": "Con la convenzione a tre sigma, sigma = tolleranza / 3 = 0.03 mm, cioè il 99.7% dei pezzi cade dentro la tolleranza. È un'assunzione, non un dato: va sempre dichiarata quando presenti il risultato, perché cambia la larghezza dell'intervallo che riporti."
+    },
+    {
+      "id": "m10-e3",
+      "tipo": "predict",
+      "testo": "Perché si riportano i percentili invece di `media ± 2σ` come risultato di un Monte Carlo?",
+      "opzioni": [
+        "i percentili non assumono che la distribuzione sia simmetrica",
+        "i percentili sono piu veloci da calcolare",
+        "media e sigma non si possono calcolare su dati simulati",
+        "e' solo una convenzione di presentazione"
+      ],
+      "risposta": "i percentili non assumono che la distribuzione sia simmetrica",
+      "spiegazione": "La propagazione attraverso una funzione non lineare rende l'output asimmetrico anche partendo da input perfettamente gaussiani. media ± 2σ descrive bene solo una distribuzione simmetrica, e tu non sai che lo sia: i percentili si leggono direttamente dai dati simulati senza assumere nulla."
+    },
+    {
+      "id": "m10-e4",
+      "tipo": "write",
+      "testo": "Crea un generatore con seed `2024` e genera `m`, 5000 campioni della massa di un componente: nominale 12.5 kg, deviazione standard 0.4 kg.",
+      "setup": "",
+      "starter": "rng = \nm = \n",
+      "test": "assert m.shape == (5000,), f'attesi 5000 campioni, shape {m.shape}'\nassert abs(m.mean() - 12.5) < 0.05, f'media attesa circa 12.5, hai {m.mean():.3f}'\nassert abs(m.std() - 0.4) < 0.02, f'deviazione attesa circa 0.4, hai {m.std():.3f}'\nrng2 = np.random.default_rng(2024)\nassert np.allclose(m, rng2.normal(12.5, 0.4, 5000)), 'il seed deve essere 2024 e la generazione una sola chiamata'",
+      "hint": [
+        "np.random.default_rng(seed) crea il generatore.",
+        "rng.normal(media, sigma, n)"
+      ],
+      "soluzione": "rng = np.random.default_rng(2024)\nm = rng.normal(12.5, 0.4, 5000)",
+      "spiegazione": "L'ultimo controllo del test verifica la riproducibilità: un secondo generatore con lo stesso seed deve produrre esattamente gli stessi numeri. È la proprietà che rende una simulazione verificabile da qualcun altro."
+    },
+    {
+      "id": "m10-e5",
+      "tipo": "write",
+      "testo": "Dai risultati di una simulazione già eseguita, ricava l'intervallo che contiene il **90%** dei casi e la mediana.\n\nCalcola `p05`, `p50` e `p95`.",
+      "setup": "rng = np.random.default_rng(1)\nrisultati = rng.normal(1000.0, 50.0, 20000)\n",
+      "starter": "p05 = \np50 = \np95 = \n",
+      "test": "assert np.isclose(p05, np.percentile(risultati, 5)), f'p05 sbagliato: {p05}'\nassert np.isclose(p50, np.percentile(risultati, 50)), f'p50 sbagliato: {p50}'\nassert np.isclose(p95, np.percentile(risultati, 95)), f'p95 sbagliato: {p95}'\nassert p05 < p50 < p95, 'i percentili devono essere crescenti'\nassert 900 < p05 < 930, f'p05 atteso intorno a 918, hai {p05:.1f} — hai usato 0.05 invece di 5?'",
+      "hint": [
+        "np.percentile vuole la percentuale da 0 a 100, non la frazione.",
+        "Puoi chiederne piu di uno insieme: np.percentile(x, [5, 50, 95])."
+      ],
+      "soluzione": "p05, p50, p95 = np.percentile(risultati, [5, 50, 95])",
+      "spiegazione": "Passare 0.05 invece di 5 è l'errore tipico, e non solleva niente: ottieni il 5° millesimo invece del 5° percentile, cioè quasi il minimo. np.quantile accetta le frazioni fra 0 e 1, se preferisci quella scala."
+    },
+    {
+      "id": "m10-e6",
+      "tipo": "debug",
+      "testo": "Questa simulazione dà un risultato diverso a ogni esecuzione, quindi non è verificabile né confrontabile con una versione precedente del codice. Rendila riproducibile, mantenendo lo stesso numero di campioni e la stessa distribuzione.",
+      "setup": "",
+      "starter": "rng = np.random.default_rng()\nx = rng.uniform(0.9, 1.1, 8000)\n",
+      "test": "assert x.shape == (8000,), f'shape sbagliata: {x.shape}'\nassert x.min() >= 0.9 and x.max() <= 1.1, 'la distribuzione deve restare uniforme fra 0.9 e 1.1'\nassert np.allclose(x, np.random.default_rng(0).uniform(0.9, 1.1, 8000)), 'il seed deve essere 0'",
+      "hint": [
+        "Il seed va passato a default_rng.",
+        "np.random.default_rng(0)"
+      ],
+      "soluzione": "rng = np.random.default_rng(0)\nx = rng.uniform(0.9, 1.1, 8000)",
+      "spiegazione": "Senza seed il generatore prende entropia dal sistema. Un risultato che cambia a ogni esecuzione non si può confrontare fra due versioni del codice, né far ricontrollare a un collega, né riprodurre quando un caso dà un valore sospetto. Il seed si toglie solo quando serve davvero variabilità."
+    },
+    {
+      "id": "m10-e7",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Dispersione dell'apogeo.**\n\nUn razzo sonda raggiunge l'apogeo con `h = v0² / (2g)`. La velocità di fine combustione ha nominale 294.3 m/s e tolleranza **±15 m/s a tre sigma**.\n\nSimula 20000 tiri con seed `42` e calcola:\n\n- `sigma_v`: la deviazione standard della velocità, dalla tolleranza\n- `v0`: i campioni di velocità\n- `h`: gli apogei corrispondenti\n- `h_nom`: l'apogeo nominale, cioè quello calcolato con la velocità nominale\n- `banda`: array `[5° percentile, 95° percentile]` degli apogei\n\nGuarda poi dove cade `h_nom` rispetto alla media simulata.",
+      "setup": "g = 9.81\nv_nom = 294.3\ntoll = 15.0      # +- a tre sigma\nN = 20000\n",
+      "starter": "sigma_v = \nrng = \nv0 = \nh = \nh_nom = \nbanda = \n",
+      "test": "assert np.isclose(sigma_v, 5.0), f'sigma attesa 5.0, hai {sigma_v}'\nassert v0.shape == (N,) and h.shape == (N,), 'servono N campioni'\nassert np.allclose(v0, np.random.default_rng(42).normal(v_nom, 5.0, N)), 'seed 42, una sola chiamata a normal'\nassert np.allclose(h, v0**2 / (2*g)), 'h deve venire da v0, senza cicli'\nassert np.isclose(h_nom, 4414.5), f'apogeo nominale atteso 4414.5 m, hai {h_nom}'\nassert banda.shape == (2,), 'banda deve avere due valori'\nassert np.allclose(banda, np.percentile(h, [5, 95])), 'banda sbagliata'\nassert banda[0] < h_nom < banda[1], 'il nominale deve cadere dentro la banda'\nassert h.mean() > h_nom - 5, 'la media simulata non e uguale al nominale: la relazione e quadratica'",
+      "hint": [
+        "sigma_v = toll / 3. Poi rng = np.random.default_rng(42) e v0 = rng.normal(v_nom, sigma_v, N).",
+        "h si ottiene dalla formula applicata all'intero array. banda = np.percentile(h, [5, 95])."
+      ],
+      "soluzione": "sigma_v = toll / 3\nrng = np.random.default_rng(42)\nv0 = rng.normal(v_nom, sigma_v, N)\nh = v0**2 / (2*g)\nh_nom = v_nom**2 / (2*g)\nbanda = np.percentile(h, [5, 95])",
+      "spiegazione": "Il risultato: apogeo nominale 4414 m, ma nel 90% dei tiri cade fra circa 4170 e 4670 m — una banda di circa 500 m, larga l'11% del valore, prodotta da una tolleranza di appena il 5% sulla velocità. È l'informazione che serve per dimensionare un'area di ricaduta, e il calcolo nominale da solo non la dà.\n\nNota anche che la media simulata non coincide con il nominale: la relazione `h = v²/2g` è quadratica, quindi gli scarti positivi pesano più di quelli negativi. È esattamente la ragione per cui non basta propagare il valore nominale."
+    }
+  ]
+}
