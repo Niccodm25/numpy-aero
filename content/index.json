@@ -35,13 +35,13 @@
       "id": "m06",
       "file": "m06-forma.json",
       "titolo": "Forma e composizione",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m07",
       "file": "m07-linalg.json",
       "titolo": "Algebra lineare",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "m08",

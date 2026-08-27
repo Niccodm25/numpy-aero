@@ -1,0 +1,120 @@
+{
+  "id": "m07",
+  "titolo": "Algebra lineare",
+  "perche": "Equilibrio di forze, centraggio, fitting di dati sperimentali, stabilità dinamica: sono tutti sistemi lineari. Qui il codice smette di essere manipolazione di array e diventa il conto che faresti sul quaderno — con la differenza che gli autovalori li ottieni davvero.",
+  "funzioni": ["@", "np.linalg.solve", "np.linalg.inv", "np.linalg.det", "np.linalg.norm", "np.linalg.eig", "np.linalg.eigvals", "np.linalg.lstsq"],
+  "lezioni": [
+    {
+      "id": "m07-l1",
+      "titolo": "@ e * sono cose diverse",
+      "md": "Questo è il malinteso numero uno di chi arriva da MATLAB.\n\n```\nA * B    # prodotto ELEMENTO PER ELEMENTO\nA @ B    # prodotto MATRICIALE\n```\n\n```\nA = np.array([[1., 2.], [3., 4.]])\nB = np.array([[5., 6.], [7., 8.]])\n\nA * B    # [[ 5. 12.], [21. 32.]]   ogni elemento per il suo corrispondente\nA @ B    # [[19. 22.], [43. 50.]]   righe per colonne\n```\n\n**Entrambi funzionano su matrici quadrate della stessa dimensione**, quindi scambiarli non produce nessun errore: produce numeri sbagliati. È l'errore più costoso perché il programma continua a girare.\n\n### La regola\n\nIn NumPy `*` è **sempre** elemento per elemento, su qualsiasi array. Per il prodotto matriciale serve `@` (o `np.matmul`, o `np.dot`, che sono equivalenti nei casi normali).\n\nÈ l'opposto di MATLAB, dove `*` è matriciale e `.*` è elemento per elemento. Se vieni da lì, aspettati di sbagliarlo per un po'.\n\n### Matrice per vettore\n\n```\nA @ v\n```\n\nCon `v` 1D funziona già come vuoi: NumPy lo tratta come colonna e restituisce un 1D. Non serve trasporre né aggiungere assi — è uno dei pochi punti in cui NumPy è più permissivo di quanto ti aspetti.",
+      "demo": "A = np.array([[1., 2.], [3., 4.]])\nB = np.array([[5., 6.], [7., 8.]])\nprint(\"A * B (elemento per elemento):\\n\", A * B)\nprint(\"\\nA @ B (matriciale):\\n\", A @ B)\n\nv = np.array([1., 1.])\nprint(\"\\nA @ v:\", A @ v, \" shape\", (A @ v).shape)"
+    },
+    {
+      "id": "m07-l2",
+      "titolo": "solve, non inv",
+      "md": "Per risolvere `A x = b`:\n\n```\nx = np.linalg.solve(A, b)        # corretto\nx = np.linalg.inv(A) @ b         # funziona, ma non farlo\n```\n\n### Perché solve è meglio\n\n`solve` esegue una **fattorizzazione LU** e due sostituzioni. `inv` calcola l'inversa completa — che significa risolvere n sistemi invece di uno — e poi fa un prodotto. È circa **due volte più lento** e, cosa più importante, **numericamente meno stabile**: gli errori di arrotondamento si accumulano nell'inversa e poi si propagano nel prodotto.\n\nSu una matrice mal condizionata — e le matrici strutturali lo sono spesso — la differenza fra i due risultati può essere di ordini di grandezza.\n\n### La regola\n\n**Se vedi `inv(A) @ b` nel tuo codice, sostituiscilo con `solve(A, b)`.** L'inversa esplicita serve davvero solo quando ti serve *la matrice inversa in quanto tale*, non la soluzione di un sistema: quasi mai.\n\n### Quando la matrice è singolare\n\n```\nnp.linalg.LinAlgError: Singular matrix\n```\n\nSignifica che il sistema non ha soluzione unica: righe linearmente dipendenti, cioè equazioni ridondanti o un vincolo mancante. `np.linalg.det(A)` vicino a zero è il campanello d'allarme, ma su matrici grandi il determinante è inaffidabile — meglio guardare `np.linalg.cond(A)`, il numero di condizionamento: sopra 10¹² i risultati non sono più credibili.",
+      "demo": "A = np.array([[2., 1.], [1., 3.]])\nb = np.array([5., 10.])\n\nprint(\"solve:      \", np.linalg.solve(A, b))\nprint(\"inv @ b:    \", np.linalg.inv(A) @ b)\nprint(\"determinante:\", np.linalg.det(A).round(4))\nprint(\"condizionamento:\", np.linalg.cond(A).round(4))\n\nS = np.array([[1., 2.], [2., 4.]])   # seconda riga = 2x la prima\ntry:\n    np.linalg.solve(S, b)\nexcept np.linalg.LinAlgError as e:\n    print(\"\\nmatrice singolare:\", e)"
+    },
+    {
+      "id": "m07-l3",
+      "titolo": "norm: moduli e distanze",
+      "md": "`np.linalg.norm` calcola la norma, cioè il modulo di un vettore.\n\n```\nv = np.array([3., 4.])\nnp.linalg.norm(v)     # 5.0\n```\n\nÈ `sqrt(sum(v**2))`, ma scritto meglio e implementato in modo più robusto rispetto all'overflow.\n\n### Con axis, su tanti vettori insieme\n\nSe hai una matrice dove ogni riga è un vettore:\n\n```\nV = np.column_stack([vN, vE, vD])   # (n, 3)\nnp.linalg.norm(V, axis=1)           # (n,) il modulo di ciascuno\n```\n\nVale la stessa regola del modulo 5: `axis` è l'asse che sparisce. Qui sparisce il 3 delle componenti e resta un modulo per riga.\n\n### Distanza fra due punti\n\n```\nnp.linalg.norm(p2 - p1)\n```\n\nÈ la forma idiomatica, e si estende a qualsiasi numero di dimensioni.\n\n### Le altre norme\n\nIl parametro `ord` cambia il tipo: `ord=1` somma dei valori assoluti, `ord=np.inf` il massimo. Su matrici, `norm` di default calcola la norma di Frobenius, non quella indotta — se ti serve quella spettrale, `ord=2`.",
+      "demo": "v = np.array([3., 4.])\nprint(\"norma:\", np.linalg.norm(v))\n\nvN = np.array([200., 180., 150.])\nvE = np.array([0., 50., 80.])\nvD = np.array([5., 10., -15.])\nV = np.column_stack([vN, vE, vD])\nprint(\"\\nmatrice velocita:\", V.shape)\nprint(\"moduli:\", np.linalg.norm(V, axis=1).round(2))\n\np1 = np.array([0., 0., 0.])\np2 = np.array([1000., 2000., 500.])\nprint(\"\\ndistanza:\", np.linalg.norm(p2 - p1).round(1), \"m\")"
+    },
+    {
+      "id": "m07-l4",
+      "titolo": "eig: i modi di un sistema dinamico",
+      "md": "Dato un sistema `ẋ = A x`, gli **autovalori** di `A` dicono come si comporta nel tempo. È il cuore dell'analisi di stabilità.\n\n```\nlam = np.linalg.eigvals(A)          # solo gli autovalori\nlam, vec = np.linalg.eig(A)         # autovalori E autovettori\n```\n\n`eig` restituisce una **tupla**: dimenticare di spacchettarla è un errore comune. Se ti servono solo gli autovalori, `eigvals` è più esplicito e più veloce.\n\n### Come si leggono\n\nGli autovalori sono in generale **complessi**, e arrivano in coppie coniugate `λ = σ ± jω`:\n\n- **`σ` (parte reale)** governa la crescita o il decadimento. **Negativa = stabile**, l'oscillazione si smorza. Positiva = divergente.\n- **`ω` (parte immaginaria)** è la pulsazione dell'oscillazione. Periodo `T = 2π/ω`.\n\nDa lì si ricavano le due grandezze che si usano davvero:\n\n```\nwn = np.abs(lam)              # pulsazione naturale\nzeta = -lam.real / wn         # smorzamento\n```\n\n`.real` e `.imag` sono attributi degli array complessi, non funzioni: si scrivono senza parentesi.\n\n### Perché conta\n\nUn velivolo longitudinalmente ha due modi: il **corto periodo**, veloce e ben smorzato (qualche secondo), e il **fugoide**, lento e poco smorzato (decine di secondi). Le normative di qualità di volo impongono valori minimi di `ζ` per entrambi: gli autovalori della matrice di stato sono il modo di verificarlo.\n\n### L'ordine non è garantito\n\nNumPy non ordina gli autovalori. Per distinguere i modi devi identificarli tu, tipicamente per pulsazione: il corto periodo ha `|ω|` molto maggiore del fugoide.",
+      "demo": "A = np.array([[-0.045,  0.122,   0.0,   -9.81],\n              [-0.209, -0.530, 234.0,    0.0 ],\n              [ 0.017, -0.049,  -0.756,  0.0 ],\n              [ 0.0,    0.0,     1.0,    0.0 ]])\n\nlam = np.linalg.eigvals(A)\nwn = np.abs(lam)\nzeta = -lam.real / wn\n\nfor l, w, z in zip(lam, wn, zeta):\n    T = 2 * np.pi / abs(l.imag)\n    print(f\"lambda = {l:.4f}   wn = {w:.4f} rad/s   zeta = {z:.4f}   T = {T:.2f} s\")\n\nprint(\"\\ntutti stabili?\", np.all(lam.real < 0))"
+    },
+    {
+      "id": "m07-l5",
+      "titolo": "lstsq: fitting ai minimi quadrati",
+      "md": "Quando hai più misure che incognite, il sistema `M c = y` è **sovradeterminato**: non esiste una soluzione esatta. `lstsq` trova quella che minimizza l'errore quadratico.\n\n```\ncoef, residui, rank, sv = np.linalg.lstsq(M, y, rcond=None)\n```\n\nRestituisce quattro cose; di solito serve solo la prima. La forma idiomatica per scartare il resto:\n\n```\ncoef, *_ = np.linalg.lstsq(M, y, rcond=None)\n```\n\n`rcond=None` va passato esplicitamente: senza, NumPy emette un avviso di deprecazione.\n\n### Costruire la matrice di progetto\n\nPer una retta `y = a·x + b`, ogni riga di `M` contiene i coefficienti delle incognite per quel punto: `x` per `a`, e `1` per `b`.\n\n```\nM = np.column_stack([x, np.ones_like(x)])\na, b = np.linalg.lstsq(M, y, rcond=None)[0]\n```\n\nEcco perché `column_stack` del modulo 6 tornava utile: un'incognita per colonna.\n\n### E np.polyfit?\n\n```\na, b = np.polyfit(x, y, 1)\n```\n\nFa la stessa cosa per i polinomi, ed è più corto. Ma `lstsq` accetta **qualsiasi** modello lineare nei parametri, non solo polinomi: `y = a·x + b·sin(x) + c` si fitta costruendo le colonne giuste. Nella pratica sperimentale i modelli non sono quasi mai polinomi puri, e lì `polyfit` non basta più.",
+      "demo": "alpha = np.array([-4., -2., 0., 2., 4., 6., 8.])\nCL = np.array([-0.418, -0.202, 0.021, 0.238, 0.462, 0.679, 0.902])\n\nM = np.column_stack([alpha, np.ones_like(alpha)])\ncoef, *_ = np.linalg.lstsq(M, CL, rcond=None)\nprint(\"pendenza CL_alpha:\", coef[0].round(5), \"per grado\")\nprint(\"CL a incidenza nulla:\", coef[1].round(5))\n\nprint(\"\\npolyfit da lo stesso:\", np.polyfit(alpha, CL, 1).round(5))"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m07-e1",
+      "tipo": "predict",
+      "testo": "Con `A = [[1, 2], [3, 4]]` e `B = [[5, 6], [7, 8]]`, quanto vale l'elemento in alto a sinistra di `A * B` ?",
+      "opzioni": ["5", "19", "35", "solleva un errore"],
+      "risposta": "5",
+      "spiegazione": "In NumPy * è sempre elemento per elemento: 1×5 = 5. Il prodotto matriciale è A @ B, e darebbe 1×5 + 2×7 = 19. Entrambi funzionano su matrici quadrate, quindi confonderli non solleva errori — produce solo numeri sbagliati."
+    },
+    {
+      "id": "m07-e2",
+      "tipo": "predict",
+      "testo": "Perché è preferibile `np.linalg.solve(A, b)` a `np.linalg.inv(A) @ b` ?",
+      "opzioni": [
+        "solve e' piu veloce e numericamente piu stabile",
+        "inv non funziona su matrici piu grandi di 3x3",
+        "solve accetta anche matrici non quadrate",
+        "sono equivalenti, e' solo questione di stile"
+      ],
+      "risposta": "solve e' piu veloce e numericamente piu stabile",
+      "spiegazione": "solve fa una fattorizzazione LU e due sostituzioni. inv risolve n sistemi per costruire l'inversa, poi fa un prodotto: circa il doppio del lavoro, con errori di arrotondamento che si accumulano nell'inversa e poi si propagano. Su matrici mal condizionate la differenza è sostanziale."
+    },
+    {
+      "id": "m07-e3",
+      "tipo": "predict",
+      "testo": "Per un autovalore `λ = σ + jω` di una matrice di stato, quale condizione indica un modo **stabile**?",
+      "opzioni": ["σ < 0", "ω < 0", "σ > 0", "|λ| < 1"],
+      "risposta": "σ < 0",
+      "spiegazione": "La parte reale governa crescita o decadimento nel tempo continuo: negativa significa che l'oscillazione si smorza. La parte immaginaria dà solo la pulsazione. La condizione |λ| < 1 vale per i sistemi a tempo discreto, non per ẋ = A x."
+    },
+    {
+      "id": "m07-e4",
+      "tipo": "debug",
+      "testo": "Questo codice dovrebbe applicare la matrice di rotazione al vettore, ma dà un risultato sbagliato senza sollevare errori. Correggilo.",
+      "setup": "import numpy as np\nth = np.deg2rad(30.0)\nR = np.array([[np.cos(th), -np.sin(th)],\n              [np.sin(th),  np.cos(th)]])\nv = np.array([1.0, 0.0])\n",
+      "starter": "vr = R * v\n",
+      "test": "assert vr.shape == (2,), f'shape sbagliata: {vr.shape} — hai usato il prodotto elemento per elemento?'\nassert np.allclose(vr, [np.cos(np.deg2rad(30.0)), np.sin(np.deg2rad(30.0))]), f'valori sbagliati: {vr}'\nassert np.isclose(np.linalg.norm(vr), 1.0), 'una rotazione deve conservare il modulo'",
+      "hint": ["In NumPy * e' elemento per elemento, sempre.", "Il prodotto matrice-vettore si scrive R @ v."],
+      "soluzione": "vr = R @ v",
+      "spiegazione": "Con * il risultato ha shape (2, 2) invece di (2,): qui l'errore si vede dalla shape, ma su matrici quadrate della stessa dimensione * e @ danno entrambi un risultato valido e sbagliato. Il controllo che salva sempre è fisico: una rotazione conserva il modulo."
+    },
+    {
+      "id": "m07-e5",
+      "tipo": "write",
+      "testo": "**Equilibrio in volo livellato.**\n\nRisolvi il sistema `A x = b` per trovare le due incognite: portanza `L` e resistenza `D`.",
+      "setup": "A = np.array([[1.0, -0.05],\n              [0.0,  1.0 ]])\nb = np.array([12000.0, 950.0])\n",
+      "starter": "x = \nL, D = \n",
+      "test": "assert x.shape == (2,), f'shape sbagliata: {x.shape}'\nassert np.isclose(L, 12047.5), f'L attesa 12047.5, hai {L}'\nassert np.isclose(D, 950.0), f'D attesa 950.0, hai {D}'\nassert np.allclose(A @ x, b), 'la soluzione non soddisfa il sistema'",
+      "hint": ["np.linalg.solve(A, b) restituisce un array di 2 elementi.", "Spacchettalo: L, D = x."],
+      "soluzione": "x = np.linalg.solve(A, b)\nL, D = x",
+      "spiegazione": "L'ultimo controllo del test — che A @ x sia davvero uguale a b — è la verifica che dovresti fare sempre dopo aver risolto un sistema. Costa una riga e coglie sia errori di impostazione sia matrici mal condizionate."
+    },
+    {
+      "id": "m07-e6",
+      "tipo": "write",
+      "testo": "**Pendenza della curva di portanza.**\n\nDai punti sperimentali, fitta la retta `CL = a·α + b` con i minimi quadrati e ricava `a` (il CL_α, per grado) e `b`.\n\nCostruisci tu la matrice di progetto.",
+      "setup": "alpha = np.array([-4., -2., 0., 2., 4., 6., 8.])\nCL = np.array([-0.418, -0.202, 0.021, 0.238, 0.462, 0.679, 0.902])\n",
+      "starter": "M = \na, b = \n",
+      "test": "assert M.shape == (7, 2), f'la matrice di progetto deve essere (7, 2), hai {M.shape}'\nassert np.isclose(a, 0.11005357, atol=1e-6), f'pendenza attesa 0.11005, hai {a}'\nassert np.isclose(b, 0.02017857, atol=1e-6), f'intercetta attesa 0.02018, hai {b}'",
+      "hint": [
+        "Ogni riga di M contiene i coefficienti delle due incognite per quel punto: alpha per a, e 1 per b.",
+        "M = np.column_stack([alpha, np.ones_like(alpha)]), poi a, b = np.linalg.lstsq(M, CL, rcond=None)[0]"
+      ],
+      "soluzione": "M = np.column_stack([alpha, np.ones_like(alpha)])\na, b = np.linalg.lstsq(M, CL, rcond=None)[0]",
+      "spiegazione": "La colonna di uni è il termine noto: senza, staresti forzando la retta a passare per l'origine. lstsq restituisce quattro valori e qui serve solo il primo, da cui l'indice [0]. Con np.polyfit(alpha, CL, 1) otterresti lo stesso risultato in meno caratteri, ma lstsq funziona con qualsiasi modello lineare nei parametri, non solo con i polinomi."
+    },
+    {
+      "id": "m07-e7",
+      "tipo": "apply",
+      "difficolta": 3,
+      "testo": "**Modi longitudinali del velivolo.**\n\nDalla matrice di stato che hai assemblato nel modulo 6, estrai i modi di volo.\n\nCalcola:\n\n- `lam`: i quattro autovalori\n- `wn`: la pulsazione naturale di ciascuno, `|λ|`\n- `zeta`: lo smorzamento di ciascuno, `−Re(λ)/ωn`\n- `stabile`: `True` se tutti i modi sono stabili\n\nPoi identifica i due modi. Il **corto periodo** è quello a pulsazione più alta, il **fugoide** quello a pulsazione più bassa: ricava `zeta_sp` e `T_ph`, il periodo del fugoide in secondi.",
+      "setup": "A = np.array([[-0.045,  0.122,   0.0,   -9.81],\n              [-0.209, -0.530, 234.0,    0.0 ],\n              [ 0.017, -0.049,  -0.756,  0.0 ],\n              [ 0.0,    0.0,     1.0,    0.0 ]])\n",
+      "starter": "lam = \nwn = \nzeta = \nstabile = \n\ni_sp = \ni_ph = \nzeta_sp = \nT_ph = \n",
+      "test": "assert lam.shape == (4,), f'attesi 4 autovalori, shape {lam.shape}'\nassert np.allclose(np.sort(wn), np.sort(np.abs(np.linalg.eigvals(A)))), 'wn sbagliata: deve essere |lambda|'\nassert bool(stabile) is True, 'tutti gli autovalori hanno parte reale negativa: il velivolo e stabile'\nassert np.isclose(zeta_sp, 0.190231, atol=1e-4), f'zeta del corto periodo atteso 0.1902, hai {zeta_sp}'\nassert np.isclose(T_ph, 50.0257, atol=1e-2), f'periodo del fugoide atteso 50.03 s, hai {T_ph}'\nassert np.abs(lam[i_sp].imag) > np.abs(lam[i_ph].imag), 'i_sp deve indicare il modo a pulsazione piu alta'",
+      "hint": [
+        "np.linalg.eigvals(A) da i quattro autovalori complessi. wn = np.abs(lam), zeta = -lam.real / wn.",
+        "Per identificare i modi: i_sp = np.argmax(np.abs(lam.imag)), i_ph = np.argmin(np.abs(lam.imag)). Il periodo e' T = 2*np.pi / abs(lam[i_ph].imag)."
+      ],
+      "soluzione": "lam = np.linalg.eigvals(A)\nwn = np.abs(lam)\nzeta = -lam.real / wn\nstabile = np.all(lam.real < 0)\n\ni_sp = np.argmax(np.abs(lam.imag))\ni_ph = np.argmin(np.abs(lam.imag))\nzeta_sp = zeta[i_sp]\nT_ph = 2 * np.pi / abs(lam[i_ph].imag)",
+      "spiegazione": "I numeri che escono sono quelli di un velivolo da trasporto vero: corto periodo con ζ = 0.19 e periodo di 1.85 s — la risposta rapida che senti al comando di equilibratore — e fugoide con ζ = 0.071 e periodo di 50 s, l'oscillazione lenta di quota e velocità a incidenza quasi costante, così poco smorzata da restare visibile per minuti.\n\nNota che NumPy non ordina gli autovalori: identificare quale coppia è quale è compito tuo, e il criterio della pulsazione è quello standard. Questo è il conto che, in un progetto vero, verifica le qualità di volo rispetto alle normative."
+    }
+  ]
+}

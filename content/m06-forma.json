@@ -1,0 +1,103 @@
+{
+  "id": "m06",
+  "titolo": "Forma e composizione",
+  "perche": "Le matrici con cui lavorerai raramente arrivano già pronte: le assembli da pezzi. Una matrice di stato si costruisce da blocchi di derivate aerodinamiche, una tabella di dati da colonne separate, un risultato da riorganizzare prima di passarlo a un solutore.",
+  "funzioni": ["reshape", "ravel", ".T", "np.transpose", "np.concatenate", "np.stack", "np.vstack", "np.hstack", "np.column_stack", "np.block", "np.split"],
+  "lezioni": [
+    {
+      "id": "m06-l1",
+      "titolo": "reshape e il -1",
+      "md": "`reshape` reinterpreta gli stessi dati con una forma diversa. Il numero totale di elementi deve combaciare.\n\n```\na = np.arange(12)        # (12,)\na.reshape(3, 4)          # (3, 4)\na.reshape(2, 6)          # (2, 6)\na.reshape(5, 3)          # ValueError: cannot reshape array of size 12 into shape (5,3)\n```\n\n### Il -1 significa \"calcolalo tu\"\n\n```\na.reshape(3, -1)    # (3, 4)   NumPy deduce il 4\na.reshape(-1, 2)    # (6, 2)   deduce il 6\n```\n\nPuoi usare `-1` **su un asse solo**: con due incognite il sistema sarebbe indeterminato. È comodo quando una dimensione la conosci e l'altra dipende dai dati: `dati.reshape(-1, 3)` dice \"organizzali in righe da 3, quante che siano\".\n\n### L'ordine con cui riempie\n\nDi default NumPy riempie **per righe**: scorre l'ultimo asse per primo.\n\n```\nnp.arange(6).reshape(2, 3)\n# [[0 1 2]\n#  [3 4 5]]\n```\n\nSe i tuoi dati arrivano organizzati per colonne (convenzione Fortran e MATLAB), serve `order='F'`. È la causa tipica di matrici trasposte quando importi dati da MATLAB.\n\n### reshape restituisce una view\n\nQuando può, non copia: modifica il risultato e modifichi l'originale. Vale la stessa cautela del modulo 2. `ravel()` appiattisce a 1D con la stessa logica (`flatten()` invece copia sempre).",
+      "demo": "a = np.arange(12)\nprint(\"a.reshape(3, 4):\\n\", a.reshape(3, 4))\nprint(\"\\na.reshape(3, -1).shape:\", a.reshape(3, -1).shape)\nprint(\"a.reshape(-1, 2).shape:\", a.reshape(-1, 2).shape)\n\nprint(\"\\nordine C (default), per righe:\\n\", np.arange(6).reshape(2, 3))\nprint(\"ordine F, per colonne:\\n\", np.arange(6).reshape(2, 3, order='F'))\n\ntry:\n    a.reshape(5, 3)\nexcept ValueError as e:\n    print(\"\\n\", e)"
+    },
+    {
+      "id": "m06-l2",
+      "titolo": "Trasposta: gratis, ma è una view",
+      "md": "`.T` scambia gli assi. Su una matrice 2D è la trasposta classica.\n\n```\nA.shape     # (3, 4)\nA.T.shape   # (4, 3)\n```\n\n**Non copia niente.** NumPy cambia solo il modo di percorrere la memoria, quindi `.T` è istantanea anche su matrici enormi. Ma è una view: `A.T[0, 0] = 5` scrive dentro `A`.\n\n### Su un array 1D non fa nulla\n\n```\nv = np.array([1., 2., 3.])\nv.shape     # (3,)\nv.T.shape   # (3,)   <- identico!\n```\n\nQuesta è una sorpresa per chi viene da MATLAB, dove ogni vettore è implicitamente una matrice riga o colonna. In NumPy un array 1D **non ha orientamento**: non è né riga né colonna.\n\nPer ottenere davvero una colonna serve aggiungere l'asse, come nel modulo 3:\n\n```\nv[:, None].shape    # (3, 1)   colonna\nv[None, :].shape    # (1, 3)   riga\n```\n\n### Perché di solito non ti serve\n\nIl prodotto matrice-vettore `A @ v` con `v` 1D funziona già come ti aspetti, senza trasporre nulla: NumPy tratta `v` come colonna per l'occasione e restituisce un 1D. La trasposizione esplicita serve quasi solo quando costruisci prodotti come `A.T @ A`, tipici dei minimi quadrati.",
+      "demo": "A = np.arange(12).reshape(3, 4)\nprint(\"A.shape:\", A.shape, \"-> A.T.shape:\", A.T.shape)\n\nv = np.array([1., 2., 3.])\nprint(\"\\nvettore 1D:\", v.shape, \"| v.T:\", v.T.shape, \" <- nessun effetto\")\nprint(\"v[:, None]:\", v[:, None].shape, \"| v[None, :]:\", v[None, :].shape)\n\nA = np.arange(6).reshape(2, 3)\nB = A.T\nB[0, 0] = 99\nprint(\"\\n.T e' una view, A e' cambiata:\\n\", A)"
+    },
+    {
+      "id": "m06-l3",
+      "titolo": "concatenate o stack: unire o impilare",
+      "md": "Le confondono tutti, ma la differenza è netta:\n\n- **`concatenate`** unisce lungo un asse **che esiste già**. Il numero di dimensioni non cambia.\n- **`stack`** crea **un asse nuovo**. Il numero di dimensioni aumenta di uno.\n\n```\na = np.array([1., 2., 3.])   # (3,)\nb = np.array([4., 5., 6.])   # (3,)\n\nnp.concatenate([a, b])   # (6,)     [1 2 3 4 5 6]\nnp.stack([a, b])         # (2, 3)   [[1 2 3], [4 5 6]]\n```\n\n### Come scegliere\n\nChiediti cosa rappresentano i tuoi array.\n\n- Sono **pezzi della stessa serie**? Il log di stamattina e quello di stasera → `concatenate`.\n- Sono **grandezze diverse da affiancare**? Quota, velocità e Mach dello stesso volo → `stack`.\n\nNel secondo caso vuoi una matrice dove ogni riga è una grandezza: è esattamente ciò che `stack` produce.\n\n### Le scorciatoie\n\n```\nnp.vstack([a, b])        # impila in verticale\nnp.hstack([a, b])        # affianca in orizzontale\nnp.column_stack([a, b])  # (3, 2), ogni array diventa una COLONNA\n```\n\n`column_stack` è quella che userai per costruire tabelle di dati e matrici di progetto per i minimi quadrati: un array per colonna, che è come sono organizzati i file di misura.\n\nAttenzione a `vstack` e `hstack` su array 1D: `vstack([a, b])` dà `(2, 3)` come `stack`, ma `hstack([a, b])` dà `(6,)` come `concatenate`. Sono comode ma ambigue — quando la shape conta, `stack` e `concatenate` espliciti si leggono meglio.",
+      "demo": "a = np.array([1., 2., 3.])\nb = np.array([4., 5., 6.])\n\nprint(\"concatenate:\", np.concatenate([a, b]), np.concatenate([a, b]).shape)\nprint(\"stack:\\n\", np.stack([a, b]), np.stack([a, b]).shape)\nprint(\"\\ncolumn_stack:\\n\", np.column_stack([a, b]), np.column_stack([a, b]).shape)\n\nprint(\"\\nvstack ->\", np.vstack([a, b]).shape, \" hstack ->\", np.hstack([a, b]).shape)"
+    },
+    {
+      "id": "m06-l4",
+      "titolo": "np.block: matrici a blocchi",
+      "md": "Le matrici dell'ingegneria hanno spesso una struttura a blocchi: la matrice di stato longitudinale si divide naturalmente in derivate di forza, derivate di momento e cinematica.\n\n`np.block` le assembla con una notazione che somiglia a come le scriveresti a mano:\n\n```\nA = np.block([[A11, A12],\n              [A21, A22]])\n```\n\nLe liste annidate rappresentano righe e colonne di **blocchi**, e NumPy verifica che le dimensioni combacino. Un blocco può essere una matrice, un vettore o anche uno scalare.\n\n### Perché non concatenate\n\nCon `concatenate` dovresti farlo in due passaggi — prima le righe, poi impilare — e a ogni passaggio ricordare quale asse. `np.block` esprime la struttura in una volta, e se sbagli una dimensione l'errore ti dice quale blocco non torna.\n\n```\n# equivalente, ma peggiore da leggere\nA = np.concatenate([np.concatenate([A11, A12], axis=1),\n                    np.concatenate([A21, A22], axis=1)], axis=0)\n```\n\n### Costruire una matrice identità a blocchi\n\n```\nnp.block([[np.eye(2), np.zeros((2, 2))],\n          [np.zeros((2, 2)), np.eye(2)]])\n```\n\nÈ il modo naturale di montare matrici di sistemi accoppiati: dinamica longitudinale e latero-direzionale, o più corpi rigidi collegati.",
+      "demo": "A11 = np.array([[-0.045, 0.122], [-0.209, -0.530]])\nA12 = np.array([[0.0, -9.81], [234.0, 0.0]])\nA21 = np.array([[0.017, -0.049], [0.0, 0.0]])\nA22 = np.array([[-0.756, 0.0], [1.0, 0.0]])\n\nA = np.block([[A11, A12],\n              [A21, A22]])\nprint(\"shape:\", A.shape)\nprint(A)"
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "m06-e1",
+      "tipo": "predict",
+      "testo": "Che shape ha `np.arange(12).reshape(3, -1)` ?",
+      "opzioni": ["(3, 4)", "(3, 12)", "(3, -1)", "solleva un errore"],
+      "risposta": "(3, 4)",
+      "spiegazione": "Il -1 significa 'deducilo tu': 12 elementi divisi in 3 righe danno 4 colonne. Si può usare su un asse solo, altrimenti il sistema sarebbe indeterminato."
+    },
+    {
+      "id": "m06-e2",
+      "tipo": "predict",
+      "testo": "Dati due array `a` e `b` entrambi di shape `(3,)`, che shape ha `np.stack([a, b])` ?",
+      "opzioni": ["(2, 3)", "(6,)", "(3, 2)", "(2,)"],
+      "risposta": "(2, 3)",
+      "spiegazione": "stack crea un asse nuovo davanti: due array da 3 diventano una matrice 2×3. concatenate invece unisce lungo l'asse esistente e darebbe (6,)."
+    },
+    {
+      "id": "m06-e3",
+      "tipo": "predict",
+      "testo": "Dato `v = np.array([1., 2., 3.])`, che shape ha `v.T` ?",
+      "opzioni": ["(3,)", "(3, 1)", "(1, 3)", "solleva un errore"],
+      "risposta": "(3,)",
+      "spiegazione": "Un array 1D non ha orientamento: non è né riga né colonna, e trasporlo non fa niente. Per ottenere una colonna serve v[:, None], che dà (3, 1). È una differenza importante rispetto a MATLAB, dove ogni vettore è già una matrice."
+    },
+    {
+      "id": "m06-e4",
+      "tipo": "write",
+      "testo": "I 12 valori di `dati` sono in realtà 4 punti di misura, con 3 grandezze ciascuno. Riorganizzali in `M`, una matrice con **un punto per riga**.",
+      "setup": "dati = np.arange(12.0)\n",
+      "starter": "M = \n",
+      "test": "assert M.shape == (4, 3), f'shape sbagliata: {M.shape}'\nassert np.allclose(M[0], [0., 1., 2.]), f'la prima riga deve essere i primi 3 valori, hai {M[0]}'\nassert np.allclose(M[3], [9., 10., 11.])",
+      "hint": ["Vuoi 3 colonne, e le righe si deducono dal totale.", "dati.reshape(-1, 3), oppure reshape(4, 3)."],
+      "soluzione": "M = dati.reshape(-1, 3)",
+      "spiegazione": "reshape(-1, 3) dice 'righe da 3, quante servono': resta corretto anche se domani i punti di misura diventano 100. reshape(4, 3) funziona ma va aggiornato a mano."
+    },
+    {
+      "id": "m06-e5",
+      "tipo": "write",
+      "testo": "Costruisci `tabella`, di shape `(6, 3)`, con quota, velocità e Mach come **colonne** — il formato in cui salveresti i dati su file.",
+      "setup": "h    = np.array([0., 3000., 6000., 9000., 10500., 11000.])\nV    = np.array([120., 160., 200., 230., 245., 250.])\nmach = np.array([0.35, 0.49, 0.63, 0.76, 0.82, 0.85])\n",
+      "starter": "tabella = \n",
+      "test": "assert tabella.shape == (6, 3), f'shape sbagliata: {tabella.shape} — le grandezze devono essere colonne'\nassert np.allclose(tabella[:, 0], h), 'la prima colonna deve essere la quota'\nassert np.allclose(tabella[:, 2], mach), 'la terza colonna deve essere il Mach'",
+      "hint": ["Ogni array deve diventare una colonna.", "np.column_stack([h, V, mach])"],
+      "soluzione": "tabella = np.column_stack([h, V, mach])",
+      "spiegazione": "column_stack è pensato esattamente per questo: un array per colonna. Con np.stack([h, V, mach]) avresti ottenuto (3, 6), cioè una grandezza per riga — il trasposto di quello che serve per salvare un file di misure."
+    },
+    {
+      "id": "m06-e6",
+      "tipo": "debug",
+      "testo": "Questo codice dovrebbe impilare i tre assetti come **righe** di una matrice `(3, 4)`. Produce invece un array 1D di 12 elementi. Correggilo.",
+      "setup": "a1 = np.array([1., 0., 0., 0.])\na2 = np.array([0., 1., 0., 0.])\na3 = np.array([0., 0., 1., 0.])\n",
+      "starter": "M = np.concatenate([a1, a2, a3])\n",
+      "test": "assert M.shape == (3, 4), f'shape sbagliata: {M.shape}'\nassert np.allclose(M[1], a2), 'la seconda riga deve essere a2'",
+      "hint": ["concatenate unisce lungo un asse che esiste gia: su array 1D non puo che dare un 1D piu lungo.", "Serve creare un asse nuovo: np.stack."],
+      "soluzione": "M = np.stack([a1, a2, a3])",
+      "spiegazione": "La domanda da farsi è sempre: gli array sono pezzi della stessa serie, o grandezze diverse da affiancare? Qui sono tre vettori distinti che devono restare distinti, quindi serve un asse nuovo — stack, non concatenate."
+    },
+    {
+      "id": "m06-e7",
+      "tipo": "apply",
+      "difficolta": 2,
+      "testo": "**Assemblare la matrice di stato longitudinale.**\n\nLa dinamica longitudinale, con stato `[u, w, q, θ]`, si divide in quattro blocchi 2×2: forze, accoppiamento, momenti e cinematica.\n\nMontali in `A`, la matrice di stato completa 4×4, con i blocchi disposti così:\n\n```\nA = [ A11  A12 ]\n    [ A21  A22 ]\n```\n\nLa userai nel modulo successivo per estrarne i modi di volo.",
+      "setup": "A11 = np.array([[-0.045,  0.122], [-0.209, -0.530]])\nA12 = np.array([[  0.0,  -9.81], [234.0,    0.0 ]])\nA21 = np.array([[ 0.017, -0.049], [  0.0,    0.0 ]])\nA22 = np.array([[-0.756,   0.0 ], [  1.0,    0.0 ]])\n",
+      "starter": "A = \n",
+      "test": "assert A.shape == (4, 4), f'shape sbagliata: {A.shape}'\nassert np.isclose(A[0, 0], -0.045) and np.isclose(A[1, 1], -0.530), 'blocco in alto a sinistra fuori posto'\nassert np.isclose(A[0, 3], -9.81), 'il termine di gravita deve stare in A[0, 3]'\nassert np.isclose(A[1, 2], 234.0), 'il termine di velocita deve stare in A[1, 2]'\nassert np.isclose(A[3, 2], 1.0), 'la cinematica theta_punto = q deve stare in A[3, 2]'\nassert np.allclose(A[2:, :2], A21)",
+      "hint": ["np.block accetta liste annidate di blocchi: righe esterne, colonne interne.", "np.block([[A11, A12], [A21, A22]])"],
+      "soluzione": "A = np.block([[A11, A12],\n              [A21, A22]])",
+      "spiegazione": "np.block esprime la struttura come la scriveresti a mano e controlla che le dimensioni combacino. Riconosci i termini: -9.81 è la gravità che agisce sulla velocità orizzontale, 234.0 è la velocità di volo che accoppia il beccheggio alla velocità verticale, e l'1.0 in basso è semplicemente θ̇ = q."
+    }
+  ]
+}

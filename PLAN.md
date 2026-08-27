@@ -147,6 +147,22 @@ Ogni funzione è scelta perché ti servirà davvero. Ogni modulo chiude con un e
 | **M11** | Precisione e performance | `float64` vs `float32`, `isclose`, `allclose`, overflow, view vs copy | Perché il confronto `==` su float fallisce, e la versione vettorizzata 200× più veloce del ciclo |
 | **M12** | **Trovare da solo le funzioni che non conosci** | vedi §6 | Tre problemi con funzioni mai viste nel corso. Devi trovarle da solo. |
 
+### Dopo i 12: i moduli cantiere
+
+I moduli M1–M12 insegnano **a usare NumPy**: l'aerospaziale è il contesto, ma quello che i test verificano è l'operazione NumPy, non la fisica. È una scelta deliberata — solo le competenze meccaniche si possono drillare col ripasso forzato. "Quale axis collassa le colonne" o lo sai o non lo sai; "capire il modo di corto periodo" non è una domanda con una risposta da ripetere finché non è perfetta.
+
+L'applicazione arriva dopo, quando gli strumenti ci sono tutti, in 2-3 **moduli cantiere**: problemi aperti end-to-end, senza una singola riga da indovinare, dove il risultato si valuta sul risultato.
+
+| # | Cantiere | Cosa metti insieme |
+|---|---|---|
+| **C1** | Traiettoria di lancio a due stadi | integrazione passo-passo, `where` per la separazione, aggregazioni, ricerca dell'apogeo |
+| **C2** | Analisi di stabilità longitudinale completa | assemblaggio della matrice, autovalori, qualità di volo, studio di sensibilità su una derivata |
+| **C3** | Riduzione dati di una campagna in galleria | I/O, NaN, medie per condizione, fitting, propagazione dell'incertezza |
+
+Questi non entrano nel sistema Leitner: sono progetti, non esercizi da ripassare.
+
+---
+
 **Ordine non negoziabile:** M3 (broadcasting) prima di tutto il resto applicativo. È il concetto che separa chi scrive NumPy da chi scrive Python con array dentro. M5 (`axis`) è il secondo scoglio: quasi tutti gli errori dei principianti sono `axis` sbagliato.
 
 ---
