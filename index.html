@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NumPy Aero - Corso Interattivo</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 2rem;
+        max-width: 980px;
+      }
+      h1 {
+        margin-top: 0;
+      }
+      .card {
+        border: 1px solid #8884;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+      .examples {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      button {
+        border: 1px solid #8888;
+        border-radius: 8px;
+        padding: 0.45rem 0.75rem;
+        cursor: pointer;
+        font: inherit;
+      }
+      textarea {
+        width: 100%;
+        min-height: 220px;
+        border-radius: 8px;
+        padding: 0.75rem;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.95rem;
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+      }
+      #status {
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.27.2/full/pyodide.js"></script>
+  </head>
+  <body>
+    <h1>Corso interattivo NumPy per ingegneria aerospaziale</h1>
+    <p>
+      Scrivi ed esegui Python direttamente nel browser con <strong>Pyodide</strong>.
+      Gli esempi sotto usano <strong>NumPy</strong> su casi base di aerospazio.
+    </p>
+
+    <div class="card">
+      <div class="examples">
+        <button type="button" data-example="vettori">Somma vettori 3D</button>
+        <button type="button" data-example="rotazione">Matrice di rotazione</button>
+        <button type="button" data-example="pressione">Pressione dinamica</button>
+      </div>
+
+      <label for="code"><strong>Codice Python</strong></label>
+      <textarea id="code"></textarea>
+      <div style="display: flex; gap: 0.6rem; margin-top: 0.75rem">
+        <button type="button" id="run">Esegui codice</button>
+        <span id="status">Inizializzazione Pyodide...</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Output</strong>
+      <pre id="output">Attendi il caricamento di Pyodide...</pre>
+    </div>
+
+    <script>
+      const examples = {
+        vettori: `import numpy as np\n\nvel_aircraft = np.array([120.0, -8.0, 2.0])  # m/s\nwind = np.array([12.0, 4.0, 0.0])            # m/s\nrelative_speed = vel_aircraft - wind\n\nprint("Velocità relativa [m/s]:", relative_speed)\nprint("Modulo [m/s]:", np.linalg.norm(relative_speed))`,
+        rotazione: `import numpy as np\n\ntheta_deg = 12\ntheta = np.deg2rad(theta_deg)\nRz = np.array([[np.cos(theta), -np.sin(theta), 0],\n               [np.sin(theta),  np.cos(theta), 0],\n               [0,              0,             1]])\n\nbody_x = np.array([1.0, 0.0, 0.0])\ninertial_x = Rz @ body_x\n\nprint("Matrice Rz:")\nprint(Rz)\nprint("Asse x nel sistema inerziale:", inertial_x)`,
+        pressione: `import numpy as np\n\nrho = 1.225  # kg/m^3\nvel = np.array([45, 55, 65, 75])\nq = 0.5 * rho * vel**2\n\nprint("Velocità [m/s]:", vel)\nprint("Pressione dinamica [Pa]:", np.round(q, 1))`,
+      };
+
+      const codeEl = document.getElementById("code");
+      const outputEl = document.getElementById("output");
+      const statusEl = document.getElementById("status");
+      const runBtn = document.getElementById("run");
+
+      let pyodide;
+
+      function setExample(name) {
+        codeEl.value = examples[name] || "";
+      }
+
+      document.querySelectorAll("[data-example]").forEach((button) => {
+        button.addEventListener("click", () => setExample(button.dataset.example));
+      });
+
+      async function init() {
+        pyodide = await loadPyodide();
+        statusEl.textContent = "Pyodide pronto";
+        outputEl.textContent = "Pronto. Scegli un esempio o scrivi codice Python.";
+        setExample("vettori");
+      }
+
+      runBtn.addEventListener("click", async () => {
+        if (!pyodide) {
+          outputEl.textContent = "Pyodide non è ancora pronto.";
+          return;
+        }
+
+        runBtn.disabled = true;
+        statusEl.textContent = "Esecuzione in corso...";
+        outputEl.textContent = "";
+
+        try {
+          pyodide.setStdout({ batched: (text) => (outputEl.textContent += `${text}\n`) });
+          pyodide.setStderr({ batched: (text) => (outputEl.textContent += `ERRORE: ${text}\n`) });
+          await pyodide.runPythonAsync(codeEl.value);
+          if (!outputEl.textContent.trim()) {
+            outputEl.textContent = "Codice eseguito senza output.";
+          }
+        } catch (error) {
+          outputEl.textContent += `\n${error}`;
+        } finally {
+          runBtn.disabled = false;
+          statusEl.textContent = "Pyodide pronto";
+        }
+      });
+
+      init().catch((error) => {
+        statusEl.textContent = "Errore inizializzazione";
+        outputEl.textContent = `Impossibile avviare Pyodide: ${error}`;
+      });
+    </script>
+  </body>
+</html>
