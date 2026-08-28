@@ -2,17 +2,19 @@ import { md } from "./md.js";
 import * as R from "./runner.js";
 import * as S from "./storage.js";
 import * as L from "./scheduler.js";
+import * as P from "./percorso.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
 
 let indice = null;
 const cache = {};
-let stati = S.load();
+let dati = S.load();
+let stati = dati.esercizi;
 let modoRipasso = false;
 
 const stato = (id) => (stati[id] ||= L.newState(id));
-const salva = () => S.save(stati);
+const salva = () => S.save(dati);
 
 async function modulo(id) {
   if (cache[id]) return cache[id];
@@ -56,6 +58,7 @@ async function route() {
   try {
     if (p[0] === "m") return await vistaModulo(p[1]);
     if (p[0] === "r") return await vistaRaccolta(p[1], p[2]);
+    if (p[0] === "p") return await vistaPercorso(p[1]);
     if (p[0] === "l") return await vistaLezione(p[1], p[2]);
     if (p[0] === "e") return await vistaEsercizio(p[1], p[2]);
     if (p[0] === "ripasso") return await vistaRipasso();
@@ -144,11 +147,14 @@ async function home() {
     </div>`;
 
   mostraSw();
-  app.querySelector("#exp").onclick = () => S.esporta(stati);
+  app.querySelector("#exp").onclick = () => S.esporta(dati);
   app.querySelector("#imp").onclick = () => app.querySelector("#file").click();
   app.querySelector("#file").onchange = (ev) => {
     const f = ev.target.files[0];
-    if (f) S.importa(f).then((d) => { stati = d; salva(); route(); }).catch((e) => alert(e.message));
+    if (f)
+      S.importa(f)
+        .then((d) => { dati = d; stati = dati.esercizi; salva(); route(); })
+        .catch((e) => alert(e.message));
   };
 }
 
@@ -176,7 +182,159 @@ async function vistaModulo(id) {
     <h2>Lezioni</h2>${lez}
     <h2>Esercizi</h2>
     <p class="muto">Una raccolta per comando: aprine una per allenarti su quel comando soltanto.</p>
-    ${racc}`;
+    ${racc}
+    <h2>Percorso di apprendimento</h2>
+    <p class="muto">Un esercizio per comando a rotazione, finché non li sai tutti.</p>
+    ${cartaPercorso(id, m)}`;
+}
+
+function cartaPercorso(id, m) {
+  const p = dati.percorsi[id];
+  const argomenti = m.raccolte.map((r) => r.id);
+  const valido = p && (p.argomenti || []).join("|") === argomenti.join("|");
+  if (!valido)
+    return `<a class="card" href="#/p/${id}" style="border-color:var(--acc)">
+      <strong>Inizia il percorso</strong>
+      <div class="muto">${argomenti.length} comandi · ${argomenti.length * 2} esercizi se non sbagli nulla</div>
+    </a>`;
+  const pct = P.percentuale(p);
+  return `<a class="card" href="#/p/${id}" style="border-color:var(--acc)">
+    <strong>${p.completo ? "Percorso completato" : "Riprendi il percorso"}</strong>
+    <div class="muto">${pct}% · ciclo ${p.ciclo} · ${p.fatti} esercizi fatti</div>
+    <div class="barra"><i style="width:${pct}%"></i></div>
+  </a>`;
+}
+
+// ---------- percorso di apprendimento ----------
+
+/**
+ * Sceglie l'esercizio da servire per uno slot del percorso: dalla raccolta del
+ * comando, del tipo richiesto, preferendo quelli mai usati in questo percorso e
+ * poi i meno recenti. Con abbastanza esercizi per comando, lo stesso non torna
+ * quasi mai a distanza ravvicinata.
+ */
+function scegliEsercizio(m, slot, p) {
+  const r = m.raccolte.find((x) => x.id === slot.arg);
+  let cand = r.esercizi;
+  if (slot.tipo === "write") {
+    const scrittura = cand.filter((e) => e.tipo !== "predict");
+    if (scrittura.length) cand = scrittura;
+  }
+  const usati = (p.usati ||= {});
+  const minimo = Math.min(...cand.map((e) => usati[e.id] ?? -1));
+  const pool = cand.filter((e) => (usati[e.id] ?? -1) === minimo);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+async function vistaPercorso(mid) {
+  modoRipasso = false;
+  const m = await modulo(mid);
+  const argomenti = m.raccolte.map((r) => r.id);
+  let p = dati.percorsi[mid];
+
+  // Se le raccolte del modulo sono cambiate, un percorso vecchio non e' piu
+  // interpretabile: meglio ricominciarlo che servire slot inesistenti.
+  if (p && (p.argomenti || []).join("|") !== argomenti.join("|")) p = null;
+
+  const avvia = () => {
+    dati.percorsi[mid] = P.nuovo(argomenti);
+    salva();
+    vistaPercorso(mid);
+  };
+
+  if (!p) {
+    app.innerHTML = `
+      <div class="nav"><a href="#/m/${mid}">‹ ${m.titolo}</a></div>
+      <h1>Percorso di apprendimento</h1>
+      <p>Un esercizio per comando, a rotazione. Se sbagli, quel comando torna con
+      un esercizio in piu alla fine del ciclo successivo. Il percorso si chiude con
+      due cicli puliti di fila, il secondo tutto di scrittura.</p>
+      <p class="muto">${argomenti.length} comandi in questo modulo:
+      ${m.raccolte.map((r) => `<code>${r.comando}</code>`).join(" ")}</p>
+      <p class="muto">Percorso perfetto: ${argomenti.length * 2} esercizi. Ogni errore lo allunga.</p>
+      <div class="riga"><button class="primario" id="via">Inizia il percorso</button></div>`;
+    app.querySelector("#via").onclick = avvia;
+    return;
+  }
+
+  const pct = P.percentuale(p);
+  const testata = `
+    <div class="nav">
+      <a href="#/m/${mid}">‹ ${m.titolo}</a>
+      <span class="muto">ciclo ${p.ciclo}${p.chiusura ? " · chiusura" : ""}</span>
+    </div>
+    <div class="barra grande"><i style="width:${pct}%"></i></div>
+    <p class="muto" id="stato-percorso">${pct}% · ${p.fatti} di ${P.proiezione(p)} esercizi previsti</p>`;
+
+  if (p.completo) {
+    app.innerHTML = `
+      ${testata}
+      <h1>Percorso completato</h1>
+      <p>Due cicli puliti di fila, il secondo tutto di scrittura. Hai fatto
+      <strong>${p.fatti}</strong> esercizi su un minimo teorico di ${argomenti.length * 2}.</p>
+      <div class="riga"><button id="via">Ricomincia</button>
+      <a class="btn" href="#/m/${mid}">Torna al modulo</a></div>`;
+    app.querySelector("#via").onclick = avvia;
+    return;
+  }
+
+  const slot = P.prossimo(p);
+  const r = m.raccolte.find((x) => x.id === slot.arg);
+  const es = scegliEsercizio(m, slot, p);
+
+  const avanti = (azioni) => {
+    const b = document.createElement("button");
+    b.className = "primario";
+    b.textContent = "Avanti ›";
+    b.onclick = () => vistaPercorso(mid);
+    azioni.appendChild(b);
+  };
+
+  // L'intestazione e' costruita prima della risposta: senza questo aggiornamento
+  // resterebbe indietro di un esercizio, e non vedresti mai la barra scendere
+  // proprio nel momento in cui sbagli.
+  const aggiornaTestata = () => {
+    const nuovaPct = P.percentuale(p);
+    const barra = app.querySelector(".barra.grande > i");
+    const riga = app.querySelector("#stato-percorso");
+    if (barra) barra.style.width = nuovaPct + "%";
+    if (riga) {
+      const delta = nuovaPct - pct;
+      const segno = delta < 0 ? ` (${delta.toFixed(1)})` : "";
+      riga.textContent = `${nuovaPct}%${segno} · ${p.fatti} di ${P.proiezione(p)} esercizi previsti`;
+      riga.classList.toggle("giu", delta < 0);
+    }
+  };
+
+  montaEsercizio({
+    mid,
+    m,
+    es,
+    unTentativo: true,
+    testata:
+      testata +
+      `<p class="muto">Comando in prova: <code>${r.comando}</code>${
+        slot.tipo === "write" ? " · esercizio di scrittura" : ""
+      }</p>`,
+    dopoCorretto: (azioni) => {
+      P.rispondi(p, true);
+      p.usati[es.id] = p.fatti;
+      salva();
+      aggiornaTestata();
+      avanti(azioni);
+    },
+    dopoSbagliato: (azioni) => {
+      P.rispondi(p, false);
+      p.usati[es.id] = p.fatti;
+      salva();
+      aggiornaTestata();
+      const nota = document.createElement("p");
+      nota.className = "muto";
+      nota.textContent = `${r.comando} tornera con un esercizio in piu alla fine del prossimo ciclo.`;
+      azioni.parentElement.insertBefore(nota, azioni);
+      avanti(azioni);
+    },
+  });
 }
 
 async function vistaRaccolta(mid, rid) {
@@ -246,18 +404,38 @@ async function vistaEsercizio(mid, eid) {
   const es = m.esercizi.find((e) => e.id === eid);
   if (!es) throw new Error("Esercizio sconosciuto: " + eid);
   const s = stato(eid);
+
+  montaEsercizio({
+    mid,
+    m,
+    es,
+    testata: `<div class="nav">
+        <a href="#/m/${mid}">‹ ${m.titolo}</a>
+        <span class="pill ${L.isMastered(s) ? "ok" : ""}">${etichetta(s)}</span>
+      </div>
+      ${L.isLeech(s) && !L.isMastered(s)
+        ? `<div class="esito ko">Hai sbagliato questo esercizio ${s.errori} volte.
+           Il problema è il concetto, non l'esercizio: <a href="#/m/${mid}">rileggi le lezioni del modulo</a> prima di riprovare.</div>`
+        : ""}`,
+    dopoCorretto: (azioni) => azioni.appendChild(bottoneAvanti(m, mid, es)),
+  });
+}
+
+/**
+ * Corpo di un esercizio: testo, zona di risposta, suggerimenti, verifica.
+ * Condiviso fra esercizio libero e percorso, che differiscono solo in cosa
+ * succede dopo la risposta.
+ *
+ * unTentativo: nel percorso la risposta conta una volta sola, e uno sbaglio
+ * mostra subito la soluzione invece di lasciar riprovare.
+ */
+function montaEsercizio({ mid, m, es, testata, unTentativo = false, dopoCorretto, dopoSbagliato }) {
+  const eid = es.id;
   let hint = 0;
   let chiuso = false;
 
   app.innerHTML = `
-    <div class="nav">
-      <a href="#/m/${mid}">‹ ${m.titolo}</a>
-      <span class="pill ${L.isMastered(s) ? "ok" : ""}">${etichetta(s)}</span>
-    </div>
-    ${L.isLeech(s) && !L.isMastered(s)
-      ? `<div class="esito ko">Hai sbagliato questo esercizio ${s.errori} volte.
-         Il problema è il concetto, non l'esercizio: <a href="#/m/${mid}">rileggi le lezioni del modulo</a> prima di riprovare.</div>`
-      : ""}
+    ${testata}
     <div>${md(es.testo)}</div>
     <div id="zona"></div>
     <div id="esito"></div>
@@ -323,24 +501,40 @@ async function vistaEsercizio(mid, eid) {
     esito.innerHTML = ok
       ? `<div class="esito ok"><strong>Corretto.</strong>${hint ? " (con suggerimento: torna in coda di ripasso)" : ""}
          ${dettaglio}</div>${md(es.spiegazione || "")}`
-      : `<div class="esito ko"><strong>Non ancora.</strong> Questo esercizio torna in fondo alla coda.${dettaglio}</div>`;
+      : `<div class="esito ko"><strong>Non ancora.</strong>${
+          unTentativo ? "" : " Questo esercizio torna in fondo alla coda."
+        }${dettaglio}</div>`;
 
     if (ok) {
       chiuso = true;
       azioni.innerHTML = "";
-      azioni.appendChild(bottoneAvanti(m, mid, es));
-    } else {
-      btn.disabled = false;
-      if (!es.soluzione || hint < (es.hint?.length || 0)) return;
-      const sol = document.createElement("button");
-      sol.textContent = "Mostra la soluzione";
-      sol.onclick = () => {
-        sol.remove();
-        esito.insertAdjacentHTML("beforeend",
-          `<pre><code>${escapeHtml(es.soluzione)}</code></pre>${md(es.spiegazione || "")}`);
-      };
-      azioni.appendChild(sol);
+      dopoCorretto?.(azioni);
+      return;
     }
+
+    if (unTentativo) {
+      // Nel percorso non si riprova: la risposta e' gia stata registrata, quindi
+      // tanto vale mostrare subito soluzione e spiegazione.
+      chiuso = true;
+      esito.insertAdjacentHTML(
+        "beforeend",
+        `<pre><code>${escapeHtml(es.soluzione || "")}</code></pre>${md(es.spiegazione || "")}`
+      );
+      azioni.innerHTML = "";
+      dopoSbagliato?.(azioni);
+      return;
+    }
+
+    btn.disabled = false;
+    if (!es.soluzione || hint < (es.hint?.length || 0)) return;
+    const sol = document.createElement("button");
+    sol.textContent = "Mostra la soluzione";
+    sol.onclick = () => {
+      sol.remove();
+      esito.insertAdjacentHTML("beforeend",
+        `<pre><code>${escapeHtml(es.soluzione)}</code></pre>${md(es.spiegazione || "")}`);
+    };
+    azioni.appendChild(sol);
   };
 }
 

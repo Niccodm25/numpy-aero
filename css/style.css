@@ -131,7 +131,9 @@ textarea {
 .pill.warn { border-color: var(--acc); color: var(--acc); }
 
 .barra { height: 6px; background: var(--bordo); border-radius: 3px; overflow: hidden; margin-top: .5rem; }
-.barra > i { display: block; height: 100%; background: var(--ok); }
+.barra > i { display: block; height: 100%; background: var(--ok); transition: width .3s ease; }
+.barra.grande { height: 12px; border-radius: 6px; margin: .6rem 0 .2rem; }
+#stato-percorso.giu { color: var(--ko); }
 
 #stato {
   position: sticky; top: 0; z-index: 5;
