@@ -46,7 +46,23 @@ for meta in attivi:
         continue
     modulo = json.load(open(f, encoding="utf-8"))
     print(f"{modulo['id']} — {modulo['titolo']}")
-    for e in modulo["esercizi"]:
+
+    # Due formati: i moduli nuovi raggruppano per comando in "raccolte", i
+    # vecchi hanno una lista piatta. Qui si appiattisce e si controlla tutto.
+    if "raccolte" in modulo:
+        esercizi = []
+        for r in modulo["raccolte"]:
+            print(f"  [{r['comando']}] {len(r['esercizi'])} esercizi")
+            esercizi += r["esercizi"]
+    else:
+        esercizi = modulo["esercizi"]
+
+    visti = set()
+    for e in esercizi:
+        if e["id"] in visti:
+            print(f"  {e['id']}: FALLITO — id duplicato")
+            errori += 1
+        visti.add(e["id"])
         if e["tipo"] == "predict":
             if e["risposta"] not in e["opzioni"]:
                 print(f"  {e['id']}: FALLITO — la risposta non e' fra le opzioni")

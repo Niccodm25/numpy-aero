@@ -22,7 +22,17 @@ async function modulo(id) {
   // questo un modulo nuovo non comparirebbe per dieci minuti.
   const r = await fetch("content/" + meta.file, { cache: "no-cache" });
   if (!r.ok) throw new Error("Contenuto non trovato: " + meta.file);
-  return (cache[id] = await r.json());
+  const m = await r.json();
+
+  // Due formati. I moduli nuovi raggruppano gli esercizi per comando in
+  // "raccolte"; i vecchi hanno una lista piatta. Qui si normalizza a raccolte,
+  // e si tiene anche la lista piatta perche' le viste la usano per cercare per id.
+  if (!m.raccolte) {
+    m.raccolte = [{ id: m.id + "-tutti", comando: m.titolo, titolo: "Esercizi", esercizi: m.esercizi || [] }];
+  }
+  m.esercizi = m.raccolte.flatMap((r) => r.esercizi);
+  m.cantiere = meta.cantiere || m.cantiere;
+  return (cache[id] = m);
 }
 
 // ---------- avvio ----------
@@ -45,6 +55,7 @@ async function route() {
   const p = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   try {
     if (p[0] === "m") return await vistaModulo(p[1]);
+    if (p[0] === "r") return await vistaRaccolta(p[1], p[2]);
     if (p[0] === "l") return await vistaLezione(p[1], p[2]);
     if (p[0] === "e") return await vistaEsercizio(p[1], p[2]);
     if (p[0] === "ripasso") return await vistaRipasso();
@@ -147,12 +158,13 @@ async function vistaModulo(id) {
   const lez = m.lezioni
     .map((l, i) => `<a class="card" href="#/l/${id}/${l.id}"><strong>${i + 1}. ${l.titolo}</strong></a>`)
     .join("");
-  const es = m.esercizi
-    .map((e, i) => {
-      const s = stato(e.id);
-      return `<a class="card" href="#/e/${id}/${e.id}">
-        <span class="pill ${L.isMastered(s) ? "ok" : s.errori ? "warn" : ""}">${etichetta(s)}</span>
-        <strong> ${i + 1}.</strong> ${primaRiga(e.testo)}
+  const racc = m.raccolte
+    .map((r) => {
+      const pr = L.progress(stati, r.esercizi.map((e) => e.id));
+      return `<a class="card" href="#/r/${id}/${r.id}">
+        <strong><code>${r.comando}</code></strong>
+        <div class="muto">${r.esercizi.length} esercizi · ${pr.done} padroneggiati</div>
+        <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
       </a>`;
     })
     .join("");
@@ -161,9 +173,32 @@ async function vistaModulo(id) {
     <div class="nav"><a href="#/">‹ Moduli</a></div>
     <h1>${m.titolo}</h1>
     <p>${m.perche}</p>
-    <p class="muto">${m.funzioni.map((f) => `<code>${f}</code>`).join(" ")}</p>
     <h2>Lezioni</h2>${lez}
-    <h2>Esercizi</h2>${es}`;
+    <h2>Esercizi</h2>
+    <p class="muto">Una raccolta per comando: aprine una per allenarti su quel comando soltanto.</p>
+    ${racc}`;
+}
+
+async function vistaRaccolta(mid, rid) {
+  const m = await modulo(mid);
+  const r = m.raccolte.find((x) => x.id === rid);
+  if (!r) throw new Error("Raccolta sconosciuta: " + rid);
+
+  const es = r.esercizi
+    .map((e, i) => {
+      const s = stato(e.id);
+      return `<a class="card" href="#/e/${mid}/${e.id}">
+        <span class="pill ${L.isMastered(s) ? "ok" : s.errori ? "warn" : ""}">${etichetta(s)}</span>
+        <strong> ${i + 1}.</strong> ${primaRiga(e.testo)}
+      </a>`;
+    })
+    .join("");
+
+  app.innerHTML = `
+    <div class="nav"><a href="#/m/${mid}">‹ ${m.titolo}</a></div>
+    <h1><code>${r.comando}</code></h1>
+    <p class="muto">${r.titolo}</p>
+    ${es}`;
 }
 
 async function vistaLezione(mid, lid) {
@@ -343,4 +378,4 @@ const escapeHtml = (s = "") =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const primaRiga = (t = "") =>
-  escapeHtml(t.split("\n")[0].replace(/\*\*/g, "").slice(0, 80));
+  escapeHtml(t.split("\n")[0].replace(/\*\*/g, "").replace(/`/g, "").slice(0, 80));

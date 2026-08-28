@@ -2,7 +2,18 @@
   "id": "m01",
   "titolo": "Creazione e dtype",
   "perche": "Ogni calcolo che farai — atmosfera standard, polari, matrici di stato — parte da un array costruito bene. Sbagliare qui significa sbagliare shape e tipo per tutto il resto della catena.",
-  "funzioni": ["np.array", "np.zeros", "np.ones", "np.full", "np.eye", "np.arange", "np.linspace", ".shape", ".ndim", ".dtype"],
+  "funzioni": [
+    "np.array",
+    "np.zeros",
+    "np.ones",
+    "np.full",
+    "np.eye",
+    "np.arange",
+    "np.linspace",
+    ".shape",
+    ".ndim",
+    ".dtype"
+  ],
   "lezioni": [
     {
       "id": "m01-l1",
@@ -29,81 +40,1040 @@
       "demo": "a = np.linspace(0, 11000, 12)\nprint(\"shape:\", a.shape, \"| ndim:\", a.ndim, \"| dtype:\", a.dtype)\n\nprint(\"\\nint o float?\")\nprint(np.array([1, 2, 3]).dtype)\nprint(np.array([1, 2, 3.0]).dtype)\n\nprint(\"\\ntroncamento silenzioso:\")\nb = np.zeros(3, dtype=int)\nb[0] = 2.7\nprint(b)"
     }
   ],
-  "esercizi": [
+  "raccolte": [
     {
-      "id": "m01-e1",
-      "tipo": "predict",
-      "testo": "Che cosa stampa `print(np.zeros((3, 4)).shape)` ?",
-      "opzioni": ["(3, 4)", "(4, 3)", "(12,)", "3 4"],
-      "risposta": "(3, 4)",
-      "spiegazione": "shape restituisce sempre una tupla, nell'ordine (righe, colonne). Il primo numero è la dimensione più esterna."
+      "id": "m01-array",
+      "comando": "np.array",
+      "titolo": "np.array — da lista ad array",
+      "esercizi": [
+        {
+          "id": "m01-array-1",
+          "tipo": "write",
+          "testo": "Converti la lista di quote in un array NumPy chiamato `h`.",
+          "setup": "quote = [0, 3000, 6000, 9000, 11000]\n",
+          "starter": "h = \n",
+          "test": "assert isinstance(h, np.ndarray), 'deve essere un array NumPy, non una lista'\nassert h.shape == (5,)\nassert np.allclose(h, [0, 3000, 6000, 9000, 11000])",
+          "hint": [
+            "np.array(lista)"
+          ],
+          "soluzione": "h = np.array(quote)",
+          "spiegazione": "np.array copia i valori in un blocco di memoria contiguo di un solo tipo. Da qui in poi le operazioni sono elemento per elemento."
+        },
+        {
+          "id": "m01-array-2",
+          "tipo": "write",
+          "testo": "Costruisci `A`, una matrice 2×3, da liste annidate: prima riga `[1, 2, 3]`, seconda `[4, 5, 6]`.",
+          "setup": "",
+          "starter": "A = \n",
+          "test": "assert A.shape == (2, 3), f'shape sbagliata: {A.shape}'\nassert np.allclose(A[0], [1, 2, 3]) and np.allclose(A[1], [4, 5, 6])",
+          "hint": [
+            "Una lista di liste: ogni lista interna e' una riga."
+          ],
+          "soluzione": "A = np.array([[1, 2, 3], [4, 5, 6]])",
+          "spiegazione": "Le liste interne diventano le righe. Il numero di liste è la prima dimensione, la loro lunghezza la seconda."
+        },
+        {
+          "id": "m01-array-3",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.array([1, 2, 3.0])` ?",
+          "opzioni": [
+            "float64",
+            "int64",
+            "object",
+            "solleva un errore"
+          ],
+          "risposta": "float64",
+          "spiegazione": "Un array ha un solo tipo: NumPy sceglie il più generale che contiene tutti i valori. Basta un float perché l'intero array diventi float64."
+        },
+        {
+          "id": "m01-array-4",
+          "tipo": "predict",
+          "testo": "Con `L = [1, 2, 3]` e `a = np.array([1, 2, 3])`, cosa danno rispettivamente `L * 2` e `a * 2` ?",
+          "opzioni": [
+            "[1, 2, 3, 1, 2, 3] e [2 4 6]",
+            "[2, 4, 6] e [2 4 6]",
+            "[1, 2, 3, 1, 2, 3] e [1 2 3 1 2 3]",
+            "il primo solleva un errore"
+          ],
+          "risposta": "[1, 2, 3, 1, 2, 3] e [2 4 6]",
+          "spiegazione": "Su una lista `*` ripete il contenitore; su un array è la moltiplicazione elemento per elemento. È la differenza che rende NumPy utile per il calcolo."
+        },
+        {
+          "id": "m01-array-5",
+          "tipo": "write",
+          "testo": "Le quote arrivano come lista di interi, ma ti servono in virgola mobile per i conti successivi. Costruisci `h` come array di **float**.",
+          "setup": "quote = [0, 2500, 5000, 7500, 10000]\n",
+          "starter": "h = \n",
+          "test": "assert h.dtype == np.float64, f'atteso float64, hai {h.dtype}'\nassert np.allclose(h, [0., 2500., 5000., 7500., 10000.])",
+          "hint": [
+            "np.array accetta un parametro dtype.",
+            "np.array(quote, dtype=float)"
+          ],
+          "soluzione": "h = np.array(quote, dtype=float)",
+          "spiegazione": "Le grandezze fisiche vanno sempre in float. Con interi, un'assegnazione decimale successiva verrebbe troncata senza avvisare."
+        },
+        {
+          "id": "m01-array-6",
+          "tipo": "debug",
+          "testo": "Questo codice deve dividere a metà ogni valore, ma il risultato è troncato. Correggilo intervenendo sulla **creazione** dell'array.",
+          "setup": "letture = [7, 9, 11, 13]\n",
+          "starter": "a = np.array(letture)\na = a // 2\n",
+          "test": "assert a.dtype == np.float64, 'il risultato deve essere in virgola mobile'\nassert np.allclose(a, [3.5, 4.5, 5.5, 6.5]), f'valori sbagliati: {a}'",
+          "hint": [
+            "L'array e' di interi, e // tronca.",
+            "Crea l'array come float e usa la divisione normale: np.array(letture, dtype=float) e poi / 2."
+          ],
+          "soluzione": "a = np.array(letture, dtype=float)\na = a / 2",
+          "spiegazione": "Due cose insieme: `//` tronca sempre, e un array di interi propaga il tipo. Creare in float e dividere con `/` risolve entrambe."
+        },
+        {
+          "id": "m01-array-7",
+          "tipo": "predict",
+          "testo": "Che shape ha `np.array([[1, 2], [3, 4], [5, 6]])` ?",
+          "opzioni": [
+            "(3, 2)",
+            "(2, 3)",
+            "(6,)",
+            "(3,)"
+          ],
+          "risposta": "(3, 2)",
+          "spiegazione": "Tre liste interne da due elementi: tre righe, due colonne. Il primo numero della shape è sempre il numero di elementi della dimensione più esterna."
+        },
+        {
+          "id": "m01-array-8",
+          "tipo": "apply",
+          "testo": "**Da tre liste di misura a tre array.**\n\nConverti le tre liste in array float e calcola `energia`, l'energia specifica `v²/2 + 9.81·h` di ogni punto.",
+          "setup": "quote = [0, 1000, 2000, 3000]\nvelocita = [50, 80, 110, 140]\n",
+          "starter": "h = \nv = \nenergia = \n",
+          "test": "assert h.dtype == np.float64 and v.dtype == np.float64, 'entrambi in float'\nassert energia.shape == (4,)\nassert np.allclose(energia, np.array(velocita, dtype=float)**2/2 + 9.81*np.array(quote, dtype=float))\nassert np.isclose(energia[0], 1250.0), f'primo valore atteso 1250.0, hai {energia[0]}'",
+          "hint": [
+            "np.array(lista, dtype=float) per entrambe.",
+            "Poi la formula si scrive tale e quale: v**2/2 + 9.81*h"
+          ],
+          "soluzione": "h = np.array(quote, dtype=float)\nv = np.array(velocita, dtype=float)\nenergia = v**2/2 + 9.81*h",
+          "spiegazione": "Il passaggio da liste ad array è quello che permette di scrivere la formula fisica una volta sola invece di un ciclo. Nota che il primo punto, a quota zero, ha solo energia cinetica: 50²/2 = 1250."
+        }
+      ]
     },
     {
-      "id": "m01-e2",
-      "tipo": "predict",
-      "testo": "Qual è il dtype di `np.array([1, 2, 3.0])` ?",
-      "opzioni": ["float64", "int64", "object", "solleva un errore"],
-      "risposta": "float64",
-      "spiegazione": "Un array ha un solo tipo. NumPy sceglie il più generale che contiene tutti i valori: basta un float perché l'intero array diventi float64. È il motivo per cui scrivere 0.0 invece di 0 nelle costanti fisiche evita sorprese."
+      "id": "m01-zeros",
+      "comando": "np.zeros",
+      "titolo": "np.zeros — preallocare",
+      "esercizi": [
+        {
+          "id": "m01-zeros-1",
+          "tipo": "write",
+          "testo": "Crea `a`, un array di 6 zeri.",
+          "setup": "",
+          "starter": "a = \n",
+          "test": "assert a.shape == (6,), f'shape sbagliata: {a.shape}'\nassert np.all(a == 0)",
+          "hint": [
+            "np.zeros(n)"
+          ],
+          "soluzione": "a = np.zeros(6)",
+          "spiegazione": "In 1D basta il numero di elementi."
+        },
+        {
+          "id": "m01-zeros-2",
+          "tipo": "write",
+          "testo": "Crea `M`, una matrice di zeri con 4 righe e 7 colonne.",
+          "setup": "",
+          "starter": "M = \n",
+          "test": "assert M.shape == (4, 7), f'shape sbagliata: {M.shape}'\nassert np.all(M == 0)",
+          "hint": [
+            "In 2D la shape si passa come tupla: np.zeros((righe, colonne))"
+          ],
+          "soluzione": "M = np.zeros((4, 7))",
+          "spiegazione": "Le doppie parentesi non sono un vezzo: la shape è un solo argomento, e deve essere una tupla."
+        },
+        {
+          "id": "m01-zeros-3",
+          "tipo": "debug",
+          "testo": "Questo codice dovrebbe creare una matrice 3×4 di zeri, ma solleva un errore. Correggilo.",
+          "setup": "",
+          "starter": "M = np.zeros(3, 4)\n",
+          "test": "assert M.shape == (3, 4), f'shape sbagliata: {M.shape}'\nassert np.all(M == 0)",
+          "hint": [
+            "Il secondo argomento di zeros non e' una dimensione: e' il dtype.",
+            "La shape va passata come una sola tupla: np.zeros((3, 4))"
+          ],
+          "soluzione": "M = np.zeros((3, 4))",
+          "spiegazione": "Scrivendo `np.zeros(3, 4)` stai dicendo «array di 3 elementi con dtype 4», e NumPy protesta. È l'errore più frequente in assoluto sui costruttori."
+        },
+        {
+          "id": "m01-zeros-4",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.zeros(5)` ?",
+          "opzioni": [
+            "float64",
+            "int64",
+            "bool",
+            "dipende dalla piattaforma"
+          ],
+          "risposta": "float64",
+          "spiegazione": "I costruttori `zeros`, `ones` e `full` producono float64 di default, anche quando il valore sembra intero. Per gli interi serve `dtype=int`."
+        },
+        {
+          "id": "m01-zeros-5",
+          "tipo": "write",
+          "testo": "Crea `conta`, un array di 10 zeri **interi** — lo userai come contatore.",
+          "setup": "",
+          "starter": "conta = \n",
+          "test": "assert conta.shape == (10,)\nassert conta.dtype == np.int64 or conta.dtype == np.int32, f'atteso un intero, hai {conta.dtype}'\nassert np.all(conta == 0)",
+          "hint": [
+            "np.zeros accetta dtype come secondo argomento: np.zeros(10, dtype=int)"
+          ],
+          "soluzione": "conta = np.zeros(10, dtype=int)",
+          "spiegazione": "I contatori vanno in intero: un contatore in float che vale 2.9999999 invece di 3 è un bug in attesa."
+        },
+        {
+          "id": "m01-zeros-6",
+          "tipo": "write",
+          "testo": "Stai per integrare una traiettoria in 500 passi. Prealloca `h` e `v`, entrambi da 500 elementi, pronti a essere riempiti.",
+          "setup": "n = 500\n",
+          "starter": "h = \nv = \n",
+          "test": "assert h.shape == (500,) and v.shape == (500,)\nassert h.dtype == np.float64 and v.dtype == np.float64\nassert np.all(h == 0) and np.all(v == 0)",
+          "hint": [
+            "np.zeros(n) per entrambi."
+          ],
+          "soluzione": "h = np.zeros(n)\nv = np.zeros(n)",
+          "spiegazione": "La preallocazione è l'uso principale di `zeros`: crei il contenitore della dimensione giusta e poi lo riempi passo per passo, invece di far crescere una lista."
+        },
+        {
+          "id": "m01-zeros-7",
+          "tipo": "predict",
+          "testo": "Che shape ha `np.zeros((3, 1))` ?",
+          "opzioni": [
+            "(3, 1)",
+            "(3,)",
+            "(1, 3)",
+            "(3, 0)"
+          ],
+          "risposta": "(3, 1)",
+          "spiegazione": "È una matrice colonna: 2D, con la seconda dimensione lunga 1. Diversa da `(3,)`, che è 1D e non ha orientamento — una distinzione che diventa centrale con il broadcasting."
+        },
+        {
+          "id": "m01-zeros-8",
+          "tipo": "apply",
+          "testo": "**Tabella di risultati.**\n\nDevi provare 6 configurazioni a 8 velocità. Prealloca `R`, la tabella dei risultati con una riga per configurazione, poi scrivi in `R[0, 0]` il valore `0.031` e verifica in `celle` quante celle contiene la tabella.",
+          "setup": "n_config, n_vel = 6, 8\n",
+          "starter": "R = \nR[0, 0] = 0.031\ncelle = \n",
+          "test": "assert R.shape == (6, 8), f'shape sbagliata: {R.shape} — righe = configurazioni'\nassert np.isclose(R[0, 0], 0.031)\nassert np.all(R[1:] == 0), 'il resto deve essere ancora a zero'\nassert int(celle) == 48, f'attese 48 celle, hai {celle}'",
+          "hint": [
+            "np.zeros((n_config, n_vel)) — tupla.",
+            "Il numero di celle e' R.size, oppure il prodotto delle dimensioni."
+          ],
+          "soluzione": "R = np.zeros((n_config, n_vel))\nR[0, 0] = 0.031\ncelle = R.size",
+          "spiegazione": "`R.size` è il numero totale di elementi, `R.shape` come sono disposti. Nota che l'assegnazione in `R[0, 0]` funziona perché l'array è già float: su un array di interi 0.031 sarebbe diventato 0."
+        }
+      ]
     },
     {
-      "id": "m01-e3",
-      "tipo": "predict",
-      "testo": "Quanti elementi ha `np.arange(0, 1, 0.25)` ?",
-      "opzioni": ["4", "5", "3", "dipende dall'arrotondamento"],
-      "risposta": "4",
-      "spiegazione": "Sono 0, 0.25, 0.5, 0.75: l'estremo destro è escluso. Qui il passo 0.25 è esatto in binario, quindi il conto è prevedibile. Con 0.1 non lo sarebbe: per questo su domini fisici si usa linspace."
+      "id": "m01-ones",
+      "comando": "np.ones",
+      "titolo": "np.ones — riempire di uni",
+      "esercizi": [
+        {
+          "id": "m01-ones-1",
+          "tipo": "write",
+          "testo": "Crea `u`, un array di 7 uni.",
+          "setup": "",
+          "starter": "u = \n",
+          "test": "assert u.shape == (7,)\nassert np.all(u == 1.0)",
+          "hint": [
+            "np.ones(n)"
+          ],
+          "soluzione": "u = np.ones(7)",
+          "spiegazione": "Stessa firma di `zeros`."
+        },
+        {
+          "id": "m01-ones-2",
+          "tipo": "write",
+          "testo": "Crea `U`, una matrice 3×5 di uni.",
+          "setup": "",
+          "starter": "U = \n",
+          "test": "assert U.shape == (3, 5), f'shape sbagliata: {U.shape}'\nassert np.all(U == 1.0)",
+          "hint": [
+            "La shape come tupla: np.ones((3, 5))"
+          ],
+          "soluzione": "U = np.ones((3, 5))",
+          "spiegazione": "Come per `zeros`, in 2D la shape è una tupla."
+        },
+        {
+          "id": "m01-ones-3",
+          "tipo": "write",
+          "testo": "Ti serve la colonna di uni della matrice di progetto per un fit lineare: un array lungo quanto `x`, tutto a 1.\n\nCostruiscilo in `col` **senza scrivere a mano la lunghezza**.",
+          "setup": "x = np.array([-4., -2., 0., 2., 4., 6., 8.])\n",
+          "starter": "col = \n",
+          "test": "assert col.shape == x.shape, f'deve avere la lunghezza di x, hai {col.shape}'\nassert np.all(col == 1.0)",
+          "hint": [
+            "Puoi usare len(x), oppure la variante che copia la forma di un altro array.",
+            "np.ones_like(x) crea uni con la stessa shape e dtype di x."
+          ],
+          "soluzione": "col = np.ones_like(x)",
+          "spiegazione": "`np.ones_like(x)` copia shape e dtype da `x`: resta corretto anche se domani `x` cambia lunghezza. Il suffisso `_like` esiste anche per `zeros` e `full`."
+        },
+        {
+          "id": "m01-ones-4",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.ones(4)` ?",
+          "opzioni": [
+            "float64",
+            "int64",
+            "bool",
+            "uint8"
+          ],
+          "risposta": "float64",
+          "spiegazione": "Come `zeros`: float64 di default, nonostante il valore 1 sembri intero."
+        },
+        {
+          "id": "m01-ones-5",
+          "tipo": "apply",
+          "testo": "**Fattore di carico di riferimento.**\n\nIn volo livellato il fattore di carico vale 1 in ogni punto. Costruisci `nz`, un array di fattori di carico unitari lungo quanto la traiettoria, e calcola `L`, la portanza `n·m·g` in ogni punto.",
+          "setup": "t = np.linspace(0., 100., 21)\nmassa = 12000.0\ng = 9.81\n",
+          "starter": "nz = \nL = \n",
+          "test": "assert nz.shape == (21,), f'shape sbagliata: {nz.shape}'\nassert np.all(nz == 1.0)\nassert L.shape == (21,)\nassert np.allclose(L, massa*g), f'portanza attesa {massa*g}, hai {L[0]}'",
+          "hint": [
+            "np.ones_like(t) oppure np.ones(len(t)).",
+            "L = nz * massa * g"
+          ],
+          "soluzione": "nz = np.ones_like(t)\nL = nz * massa * g",
+          "spiegazione": "Un array costante sembra inutile, ma serve appena il fattore di carico smette di essere costante: la formula resta identica, cambia solo `nz`."
+        }
+      ]
     },
     {
-      "id": "m01-e4",
-      "tipo": "write",
-      "testo": "Crea `I`, la matrice identità 3×3 (ti servirà per inizializzare matrici di rotazione).",
-      "starter": "# scrivi qui\nI = \n",
-      "test": "assert I.shape == (3, 3), f'shape sbagliata: {I.shape}'\nassert np.allclose(I, np.eye(3)), 'non e la matrice identita'",
-      "hint": ["Il nome della funzione viene da 'Identity'.", "np.eye(n) costruisce una identità n×n."],
-      "soluzione": "I = np.eye(3)",
-      "spiegazione": "np.eye(3) crea l'identità 3×3. Esiste anche np.identity(3), identica ma meno flessibile: eye accetta un parametro k per spostare la diagonale."
+      "id": "m01-full",
+      "comando": "np.full",
+      "titolo": "np.full — riempire con un valore",
+      "esercizi": [
+        {
+          "id": "m01-full-1",
+          "tipo": "write",
+          "testo": "Crea `p`, un array di 5 elementi tutti pari a `101325.0`.",
+          "setup": "",
+          "starter": "p = \n",
+          "test": "assert p.shape == (5,)\nassert np.all(p == 101325.0)",
+          "hint": [
+            "np.full(shape, valore)"
+          ],
+          "soluzione": "p = np.full(5, 101325.0)",
+          "spiegazione": "Primo argomento la forma, secondo il valore."
+        },
+        {
+          "id": "m01-full-2",
+          "tipo": "write",
+          "testo": "Crea `G`, una matrice 2×4 riempita con `9.81`.",
+          "setup": "",
+          "starter": "G = \n",
+          "test": "assert G.shape == (2, 4), f'shape sbagliata: {G.shape}'\nassert np.all(G == 9.81)",
+          "hint": [
+            "np.full((2, 4), 9.81)"
+          ],
+          "soluzione": "G = np.full((2, 4), 9.81)",
+          "spiegazione": "Come gli altri costruttori, in 2D la shape è una tupla."
+        },
+        {
+          "id": "m01-full-3",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.full(3, 7)` ?",
+          "opzioni": [
+            "int64",
+            "float64",
+            "object",
+            "dipende dalla shape"
+          ],
+          "risposta": "int64",
+          "spiegazione": "A differenza di `zeros` e `ones`, `full` deduce il dtype **dal valore**: con 7 esce un array di interi, con 7.0 un array di float. È una asimmetria che sorprende, e il motivo per cui conviene scrivere sempre il punto decimale sulle costanti fisiche."
+        },
+        {
+          "id": "m01-full-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve creare un array di 6 valori tutti pari a `288.15`, ma il risultato è sbagliato. Correggilo usando il costruttore giusto.",
+          "setup": "",
+          "starter": "T = np.ones(6) + 288.15\n",
+          "test": "assert T.shape == (6,)\nassert np.all(T == 288.15), f'valori sbagliati: {T[0]}'",
+          "hint": [
+            "np.ones(6) e' pieno di 1, e sommando 288.15 ottieni 289.15.",
+            "Esiste un costruttore che riempie direttamente con il valore che vuoi."
+          ],
+          "soluzione": "T = np.full(6, 288.15)",
+          "spiegazione": "Con `np.ones(6) * 288.15` avresti ottenuto il risultato giusto per caso, ma `full` dice l'intenzione ed evita un passaggio. L'errore qui era `+` invece di `*`, e non solleva niente: 289.15 è un numero plausibile per una temperatura."
+        },
+        {
+          "id": "m01-full-5",
+          "tipo": "apply",
+          "testo": "**Condizioni iniziali di una simulazione.**\n\nPrepara lo stato iniziale di 200 particelle: `x` tutte a 0.0, `T` tutte a `288.15`, e `attive` tutte a `True`.",
+          "setup": "n = 200\n",
+          "starter": "x = \nT = \nattive = \n",
+          "test": "assert x.shape == (n,) and T.shape == (n,) and attive.shape == (n,)\nassert np.all(x == 0.0)\nassert np.all(T == 288.15)\nassert attive.dtype == bool, f'attive deve essere booleano, hai {attive.dtype}'\nassert np.all(attive)",
+          "hint": [
+            "Per x va bene np.zeros. Per T, np.full.",
+            "np.full deduce il dtype dal valore: np.full(n, True) da un array booleano."
+          ],
+          "soluzione": "x = np.zeros(n)\nT = np.full(n, 288.15)\nattive = np.full(n, True)",
+          "spiegazione": "`full` funziona con qualsiasi tipo, booleani compresi, e il dtype segue il valore. Per la maschera esiste anche `np.ones(n, dtype=bool)`, ma `full(n, True)` si legge meglio."
+        }
+      ]
     },
     {
-      "id": "m01-e5",
-      "tipo": "write",
-      "testo": "Crea `p`: un array di 5 elementi, tutti pari alla pressione al livello del mare, 101325.0 Pa.",
-      "starter": "# scrivi qui\np = \n",
-      "test": "assert p.shape == (5,), f'shape sbagliata: {p.shape}'\nassert np.all(p == 101325.0), 'i valori non sono tutti 101325.0'\nassert p.dtype == np.float64, f'deve essere float64, e {p.dtype}'",
-      "hint": ["Serve un costruttore che riempie con un valore a scelta.", "np.full(shape, valore)."],
-      "soluzione": "p = np.full(5, 101325.0)",
-      "spiegazione": "np.full(5, 101325.0) è il modo diretto. Funziona anche np.ones(5) * 101325.0, ma full dice l'intenzione ed evita una moltiplicazione inutile."
+      "id": "m01-eye",
+      "comando": "np.eye",
+      "titolo": "np.eye — la matrice identità",
+      "esercizi": [
+        {
+          "id": "m01-eye-1",
+          "tipo": "write",
+          "testo": "Crea `I`, la matrice identità 3×3.",
+          "setup": "",
+          "starter": "I = \n",
+          "test": "assert I.shape == (3, 3), f'shape sbagliata: {I.shape}'\nassert np.allclose(I, np.eye(3))",
+          "hint": [
+            "Il nome viene da 'Identity': np.eye(n)"
+          ],
+          "soluzione": "I = np.eye(3)",
+          "spiegazione": "Un solo argomento: l'ordine della matrice."
+        },
+        {
+          "id": "m01-eye-2",
+          "tipo": "predict",
+          "testo": "Quanto vale la somma di tutti gli elementi di `np.eye(5)` ?",
+          "opzioni": [
+            "5.0",
+            "1.0",
+            "25.0",
+            "0.0"
+          ],
+          "risposta": "5.0",
+          "spiegazione": "Cinque uni sulla diagonale e zeri ovunque: la somma è l'ordine della matrice. È anche la sua traccia."
+        },
+        {
+          "id": "m01-eye-3",
+          "tipo": "write",
+          "testo": "Crea `S`, una matrice 4×4 con **uni sulla diagonale immediatamente sopra** quella principale e zeri altrove. È la matrice che sposta uno stato di una posizione.",
+          "setup": "",
+          "starter": "S = \n",
+          "test": "assert S.shape == (4, 4), f'shape sbagliata: {S.shape}'\nassert np.isclose(S[0, 1], 1.0) and np.isclose(S[2, 3], 1.0)\nassert np.isclose(S[0, 0], 0.0), 'la diagonale principale deve essere nulla'\nassert np.isclose(S.sum(), 3.0)",
+          "hint": [
+            "np.eye ha un parametro k che sposta la diagonale.",
+            "k positivo sposta verso l'alto: np.eye(4, k=1)"
+          ],
+          "soluzione": "S = np.eye(4, k=1)",
+          "spiegazione": "Il parametro `k` sposta la diagonale: positivo verso l'alto, negativo verso il basso. Serve per costruire matrici di differenze finite e operatori di shift senza scrivere gli elementi a mano."
+        },
+        {
+          "id": "m01-eye-4",
+          "tipo": "write",
+          "testo": "Verifica che l'identità sia l'elemento neutro: calcola `P`, il prodotto matriciale fra `A` e l'identità dell'ordine giusto, e `uguale`, un booleano che dice se `P` coincide con `A`.",
+          "setup": "A = np.array([[2., 1., 0.],\n              [1., 3., 5.],\n              [0., 4., 1.]])\n",
+          "starter": "I = \nP = \nuguale = \n",
+          "test": "assert I.shape == (3, 3)\nassert P.shape == (3, 3)\nassert np.allclose(P, A), 'A @ I deve dare A'\nassert bool(uguale) is True",
+          "hint": [
+            "L'identita deve avere lo stesso ordine di A: np.eye(3), oppure np.eye(A.shape[0]).",
+            "Il prodotto matriciale e' @, non *. E il confronto va fatto con np.allclose."
+          ],
+          "soluzione": "I = np.eye(A.shape[0])\nP = A @ I\nuguale = np.allclose(P, A)",
+          "spiegazione": "Due cose che torneranno: `@` è il prodotto matriciale mentre `*` è elemento per elemento, e i confronti fra float si fanno con `allclose`, mai con `==`."
+        },
+        {
+          "id": "m01-eye-5",
+          "tipo": "apply",
+          "testo": "**Matrice di rotazione a rotazione nulla.**\n\nCostruisci `R`, la matrice di rotazione 2×2 per un angolo `th`, e verifica in `neutra` che con `th = 0` coincida con l'identità.\n\n`R = [[cos, −sin], [sin, cos]]`",
+          "setup": "th = 0.0\n",
+          "starter": "R = \nI = \nneutra = \n",
+          "test": "assert R.shape == (2, 2), f'shape sbagliata: {R.shape}'\nassert np.allclose(R, np.eye(2)), f'con th=0 la rotazione e l identita, hai {R}'\nassert I.shape == (2, 2)\nassert bool(neutra) is True",
+          "hint": [
+            "R = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])",
+            "I = np.eye(2), poi neutra = np.allclose(R, I)"
+          ],
+          "soluzione": "R = np.array([[np.cos(th), -np.sin(th)],\n              [np.sin(th),  np.cos(th)]])\nI = np.eye(2)\nneutra = np.allclose(R, I)",
+          "spiegazione": "Con angolo nullo il coseno vale 1 e il seno 0, quindi la rotazione degenera nell'identità. È il controllo di sanità più veloce su qualsiasi matrice di trasformazione che scrivi: metti l'angolo a zero e deve uscire l'identità."
+        }
+      ]
     },
     {
-      "id": "m01-e6",
-      "tipo": "debug",
-      "testo": "Questo codice dovrebbe produrre 12 quote da 0 a 11000 m, **estremi inclusi**. Non lo fa. Correggilo.",
-      "starter": "h = np.arange(0, 11000, 1000)\n",
-      "test": "assert h.shape == (12,), f'servono 12 quote, ne hai {h.shape[0]}'\nassert np.isclose(h[0], 0.0), 'deve partire da 0'\nassert np.isclose(h[-1], 11000.0), f'deve arrivare a 11000, arriva a {h[-1]}'",
-      "hint": ["arange esclude l'estremo destro: si ferma a 10000, quindi 11 valori.", "Qui conta il numero di punti, non il passo. Usa linspace."],
-      "soluzione": "h = np.linspace(0, 11000, 12)",
-      "spiegazione": "arange(0, 11000, 1000) si ferma a 10000. Puoi rattoppare con arange(0, 11001, 1000), ma è fragile. linspace(0, 11000, 12) dice esattamente quello che vuoi: 12 punti, estremi inclusi, shape garantita."
+      "id": "m01-arange",
+      "comando": "np.arange",
+      "titolo": "np.arange — sequenze a passo fisso",
+      "esercizi": [
+        {
+          "id": "m01-arange-1",
+          "tipo": "write",
+          "testo": "Crea `a`, la sequenza di interi da 0 a 9 inclusi.",
+          "setup": "",
+          "starter": "a = \n",
+          "test": "assert a.shape == (10,), f'attesi 10 elementi, hai {a.shape[0]}'\nassert np.array_equal(a, np.arange(10))",
+          "hint": [
+            "np.arange(n) parte da 0 e si ferma prima di n."
+          ],
+          "soluzione": "a = np.arange(10)",
+          "spiegazione": "Con un solo argomento parte da 0. L'estremo destro è sempre escluso."
+        },
+        {
+          "id": "m01-arange-2",
+          "tipo": "predict",
+          "testo": "Quanto vale l'ultimo elemento di `np.arange(5, 15, 3)` ?",
+          "opzioni": [
+            "14",
+            "15",
+            "12",
+            "13"
+          ],
+          "risposta": "14",
+          "spiegazione": "La sequenza è 5, 8, 11, 14: il passo successivo sarebbe 17, oltre il limite. L'estremo destro è escluso, ma non è detto che il passo ci cada sopra: qui l'ultimo valore è 14, non 15."
+        },
+        {
+          "id": "m01-arange-3",
+          "tipo": "predict",
+          "testo": "Quanti elementi ha `np.arange(0, 100, 10)` ?",
+          "opzioni": [
+            "10",
+            "11",
+            "9",
+            "100"
+          ],
+          "risposta": "10",
+          "spiegazione": "Da 0 a 90 con passo 10: dieci valori. Il 100 è escluso. Con passo intero il conto è `(stop − start) / passo`, arrotondato per eccesso."
+        },
+        {
+          "id": "m01-arange-4",
+          "tipo": "predict",
+          "testo": "Quanti elementi ha `np.arange(0, 1, 0.25)` ?",
+          "opzioni": [
+            "4",
+            "5",
+            "3",
+            "dipende dall'arrotondamento"
+          ],
+          "risposta": "4",
+          "spiegazione": "Sono 0, 0.25, 0.5, 0.75. Qui il conto è prevedibile perché 0.25 è esatto in binario — con 0.1 non lo sarebbe."
+        },
+        {
+          "id": "m01-arange-5",
+          "tipo": "predict",
+          "testo": "Perché `np.arange(0, 1.1, 0.1)` è considerato pericoloso?",
+          "opzioni": [
+            "il passo 0.1 non e' esatto in binario e il numero di elementi diventa imprevedibile",
+            "arange non accetta passi decimali",
+            "solleva un errore di arrotondamento",
+            "e' molto piu lento di linspace"
+          ],
+          "risposta": "il passo 0.1 non e' esatto in binario e il numero di elementi diventa imprevedibile",
+          "spiegazione": "Il passo viene sommato ripetutamente in virgola mobile e l'errore si accumula: l'ultimo valore può cadere appena sotto il limite e venire incluso, o appena sopra ed essere escluso. Su una griglia di quote o di angoli significa un array della dimensione sbagliata che poi non si allinea con gli altri."
+        },
+        {
+          "id": "m01-arange-6",
+          "tipo": "write",
+          "testo": "Crea `c`, il conto alla rovescia da 10 a 1 inclusi, in ordine decrescente.",
+          "setup": "",
+          "starter": "c = \n",
+          "test": "assert c.shape == (10,), f'attesi 10 elementi, hai {c.shape[0]}'\nassert c[0] == 10 and c[-1] == 1, f'da 10 a 1, hai da {c[0]} a {c[-1]}'\nassert np.array_equal(c, np.arange(10, 0, -1))",
+          "hint": [
+            "Il passo puo essere negativo.",
+            "np.arange(10, 0, -1): lo stop 0 resta escluso."
+          ],
+          "soluzione": "c = np.arange(10, 0, -1)",
+          "spiegazione": "Con passo negativo lo stop deve essere **minore** dello start. Lo 0 è escluso, quindi si ferma a 1."
+        },
+        {
+          "id": "m01-arange-7",
+          "tipo": "predict",
+          "testo": "Che cosa restituisce `np.arange(5, 2)` ?",
+          "opzioni": [
+            "un array vuoto, shape (0,)",
+            "[5 4 3]",
+            "[2 3 4]",
+            "solleva un errore"
+          ],
+          "risposta": "un array vuoto, shape (0,)",
+          "spiegazione": "Il passo di default è +1, quindi partendo da 5 non si raggiunge mai 2: la sequenza è vuota. Nessun errore, nessun avviso — e un array vuoto che passa a valle produce medie `nan` e riduzioni senza senso."
+        },
+        {
+          "id": "m01-arange-8",
+          "tipo": "debug",
+          "testo": "Questo codice deve produrre le 12 quote da 0 a 11000 m, **estremi inclusi**. Non lo fa. Correggilo restando su `arange`.",
+          "setup": "",
+          "starter": "h = np.arange(0, 11000, 1000)\n",
+          "test": "assert h.shape == (12,), f'servono 12 quote, ne hai {h.shape[0]}'\nassert h[0] == 0 and h[-1] == 11000, f'da 0 a 11000, hai da {h[0]} a {h[-1]}'",
+          "hint": [
+            "arange esclude lo stop: si ferma a 10000, quindi 11 valori.",
+            "Sposta lo stop oltre l'ultimo valore che vuoi: np.arange(0, 11001, 1000)"
+          ],
+          "soluzione": "h = np.arange(0, 11001, 1000)",
+          "spiegazione": "Il rattoppo funziona ma è fragile: se domani il passo diventa 500, `11001` va ricalcolato a mano. Quando ti serve l'estremo incluso, `linspace` è la scelta giusta — ed è l'esercizio successivo."
+        },
+        {
+          "id": "m01-arange-9",
+          "tipo": "predict",
+          "testo": "Devi campionare l'incidenza da −5° a 15° con passo 0.5°, estremi inclusi. Quale strumento è corretto?",
+          "opzioni": [
+            "np.linspace(-5, 15, 41), perche il passo e' decimale e serve l'estremo",
+            "np.arange(-5, 15, 0.5), e' esattamente il suo caso d'uso",
+            "np.arange(-5, 15.5, 0.5), l'unica forma corretta",
+            "sono equivalenti"
+          ],
+          "risposta": "np.linspace(-5, 15, 41), perche il passo e' decimale e serve l'estremo",
+          "spiegazione": "Due motivi contro `arange`: l'estremo escluso e il passo decimale imprevedibile. La regola: passo intero e non serve l'estremo → `arange`; in tutti gli altri casi → `linspace`, che garantisce il numero di punti."
+        },
+        {
+          "id": "m01-arange-10",
+          "tipo": "write",
+          "testo": "Crea `idx`, gli indici delle righe di `dati` — cioè `0, 1, 2, ...` fino all'ultima riga.\n\nNon scrivere il numero a mano.",
+          "setup": "dati = np.zeros((7, 3))\n",
+          "starter": "idx = \n",
+          "test": "assert idx.shape == (7,), f'attesi 7 indici, hai {idx.shape[0]}'\nassert np.array_equal(idx, np.arange(7))\nassert idx.dtype != np.float64, 'gli indici devono essere interi'",
+          "hint": [
+            "Il numero di righe e' dati.shape[0], oppure len(dati).",
+            "np.arange(len(dati))"
+          ],
+          "soluzione": "idx = np.arange(len(dati))",
+          "spiegazione": "Questo è l'uso per cui `arange` è insostituibile: generare indici. Passo intero, estremo escluso — esattamente la semantica che serve, e il risultato è di tipo intero, utilizzabile per indicizzare."
+        },
+        {
+          "id": "m01-arange-11",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.arange(5)` e quello di `np.arange(5.0)` ?",
+          "opzioni": [
+            "int64 e float64",
+            "float64 in entrambi i casi",
+            "int64 in entrambi i casi",
+            "int64 e int64, il punto viene ignorato"
+          ],
+          "risposta": "int64 e float64",
+          "spiegazione": "`arange` deduce il tipo dagli argomenti, come `full` e a differenza di `zeros`. È il motivo per cui `np.arange(10)` è ottimo per gli indici e `np.arange(0., 10.)` per una griglia fisica."
+        },
+        {
+          "id": "m01-arange-12",
+          "tipo": "apply",
+          "testo": "**Griglia temporale di campionamento.**\n\nUn'acquisizione dura 60 s a 20 Hz. Costruisci `t`, gli istanti di campionamento a partire da 0, e verifica in `n` quanti campioni sono e in `dt` il passo effettivo fra due campioni.\n\nL'ultimo istante non deve raggiungere i 60 s: l'acquisizione si ferma prima.",
+          "setup": "durata = 60.0\nfreq = 20.0\n",
+          "starter": "dt = \nt = \nn = \n",
+          "test": "assert np.isclose(dt, 0.05), f'a 20 Hz il passo e 0.05 s, hai {dt}'\nassert t.shape == (1200,), f'attesi 1200 campioni, hai {t.shape[0]}'\nassert np.isclose(t[0], 0.0)\nassert t[-1] < durata, 'l ultimo istante non deve raggiungere i 60 s'\nassert np.isclose(t[-1], 59.95), f'ultimo istante atteso 59.95, hai {t[-1]}'\nassert int(n) == 1200",
+          "hint": [
+            "Il passo di campionamento e' 1/freq.",
+            "np.arange(0., durata, dt). Il numero di campioni e' len(t)."
+          ],
+          "soluzione": "dt = 1.0 / freq\nt = np.arange(0.0, durata, dt)\nn = len(t)",
+          "spiegazione": "Questo è il caso in cui `arange` è la scelta giusta anche con passo decimale: la frequenza definisce il passo, e l'estremo escluso è proprio quello che vuoi — a 20 Hz per 60 s i campioni sono 1200, non 1201.\n\nNota però che 0.05 non è esatto in binario: qui il conto torna perché 60/0.05 cade lontano da un confine, ma su durate diverse potresti ritrovarti con un campione in più o in meno. Se la dimensione dell'array è critica, `linspace(0, durata, 1200, endpoint=False)` è più sicuro."
+        }
+      ]
     },
     {
-      "id": "m01-e7",
-      "tipo": "write",
-      "testo": "Crea `alpha`: gli angoli d'incidenza da -5° a +15°, con passo di 0.5°, estremi inclusi. Sono i punti in cui campionerai la polare.",
-      "starter": "# scrivi qui\nalpha = \n",
-      "test": "assert alpha.shape == (41,), f'servono 41 punti, ne hai {alpha.shape[0]}'\nassert np.isclose(alpha[0], -5.0) and np.isclose(alpha[-1], 15.0)\nassert np.isclose(alpha[1] - alpha[0], 0.5), 'il passo deve essere 0.5'",
-      "hint": ["Quanti punti servono da -5 a 15 con passo 0.5? Intervallo 20, quindi 20/0.5 = 40 passi.", "40 passi significano 41 punti: np.linspace(-5, 15, 41)."],
-      "soluzione": "alpha = np.linspace(-5, 15, 41)",
-      "spiegazione": "L'errore off-by-one classico: n passi danno n+1 punti. 20/0.5 = 40 intervalli, quindi 41 valori."
+      "id": "m01-linspace",
+      "comando": "np.linspace",
+      "titolo": "np.linspace — sequenze a numero fisso",
+      "esercizi": [
+        {
+          "id": "m01-linspace-1",
+          "tipo": "write",
+          "testo": "Crea `x`, 5 valori equispaziati da 0 a 1, estremi inclusi.",
+          "setup": "",
+          "starter": "x = \n",
+          "test": "assert x.shape == (5,), f'attesi 5 punti, hai {x.shape[0]}'\nassert np.isclose(x[0], 0.0) and np.isclose(x[-1], 1.0)\nassert np.allclose(x, [0., 0.25, 0.5, 0.75, 1.])",
+          "hint": [
+            "np.linspace(inizio, fine, quanti_punti)"
+          ],
+          "soluzione": "x = np.linspace(0, 1, 5)",
+          "spiegazione": "Il terzo argomento è il **numero di punti**, non il passo. Gli estremi sono inclusi."
+        },
+        {
+          "id": "m01-linspace-2",
+          "tipo": "predict",
+          "testo": "Quanti **intervalli** separano i punti di `np.linspace(0, 10, 6)` ?",
+          "opzioni": [
+            "5",
+            "6",
+            "10",
+            "7"
+          ],
+          "risposta": "5",
+          "spiegazione": "Sei punti delimitano cinque intervalli, ciascuno di ampiezza 2. È l'off-by-one classico: `n` punti danno `n − 1` passi."
+        },
+        {
+          "id": "m01-linspace-3",
+          "tipo": "write",
+          "testo": "Crea `alpha`, gli angoli d'incidenza da −5° a +15° con passo di **0.5°**, estremi inclusi.\n\nAttenzione: `linspace` vuole il numero di punti, non il passo.",
+          "setup": "",
+          "starter": "alpha = \n",
+          "test": "assert alpha.shape == (41,), f'servono 41 punti, ne hai {alpha.shape[0]}'\nassert np.isclose(alpha[0], -5.0) and np.isclose(alpha[-1], 15.0)\nassert np.isclose(alpha[1] - alpha[0], 0.5), 'il passo deve essere 0.5'",
+          "hint": [
+            "Intervallo 20 gradi diviso passo 0.5 fa 40 intervalli.",
+            "40 intervalli significano 41 punti: np.linspace(-5, 15, 41)"
+          ],
+          "soluzione": "alpha = np.linspace(-5, 15, 41)",
+          "spiegazione": "Il conto è sempre `(fine − inizio) / passo + 1`. Dimenticare il `+ 1` è l'errore più comune con `linspace`, e produce un array che sembra giusto ma ha il passo sbagliato."
+        },
+        {
+          "id": "m01-linspace-4",
+          "tipo": "predict",
+          "testo": "Quanto vale l'ultimo elemento di `np.linspace(0, 10, 5, endpoint=False)` ?",
+          "opzioni": [
+            "8.0",
+            "10.0",
+            "9.0",
+            "7.5"
+          ],
+          "risposta": "8.0",
+          "spiegazione": "Con `endpoint=False` l'intervallo viene diviso in 5 parti e il 10 è escluso: i punti sono 0, 2, 4, 6, 8. È il modo di ottenere il comportamento di `arange` garantendo però il numero di elementi."
+        },
+        {
+          "id": "m01-linspace-5",
+          "tipo": "write",
+          "testo": "Crea `h` con 23 quote da 0 a 11000 m, e ricava `passo`, la distanza fra due quote consecutive, **facendotela restituire da linspace** invece di calcolarla.",
+          "setup": "",
+          "starter": "h, passo = \n",
+          "test": "assert h.shape == (23,), f'attese 23 quote, hai {h.shape[0]}'\nassert np.isclose(h[-1], 11000.0)\nassert np.isclose(passo, 500.0), f'passo atteso 500.0, hai {passo}'",
+          "hint": [
+            "linspace ha un parametro che gli fa restituire anche il passo.",
+            "np.linspace(0, 11000, 23, retstep=True) restituisce una tupla (array, passo)."
+          ],
+          "soluzione": "h, passo = np.linspace(0, 11000, 23, retstep=True)",
+          "spiegazione": "`retstep=True` cambia il valore restituito da un array a una tupla. Utile quando il passo ti serve dopo — per una derivata numerica, per esempio — ed evita di ricalcolarlo a mano sbagliando l'off-by-one."
+        },
+        {
+          "id": "m01-linspace-6",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare 11 valori da 0 a 100 con passo 10. Il numero di punti è sbagliato. Correggilo.",
+          "setup": "",
+          "starter": "x = np.linspace(0, 100, 10)\n",
+          "test": "assert x.shape == (11,), f'servono 11 punti, ne hai {x.shape[0]}'\nassert np.isclose(x[0], 0.0) and np.isclose(x[-1], 100.0)\nassert np.isclose(x[1] - x[0], 10.0), f'passo atteso 10.0, hai {x[1]-x[0]}'",
+          "hint": [
+            "Con 10 punti il passo viene 100/9 = 11.11.",
+            "Servono 10 intervalli, quindi 11 punti."
+          ],
+          "soluzione": "x = np.linspace(0, 100, 10 + 1)",
+          "spiegazione": "Con 10 punti `linspace` divide comunque l'intervallo in 9 parti: ottieni un array della lunghezza che hai chiesto ma con il passo sbagliato. È un errore silenzioso — nessuna eccezione, solo una griglia che non corrisponde a quello che credevi."
+        },
+        {
+          "id": "m01-linspace-7",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.linspace(0, 10, 5)`, con estremi interi?",
+          "opzioni": [
+            "float64",
+            "int64",
+            "dipende dagli estremi",
+            "float32"
+          ],
+          "risposta": "float64",
+          "spiegazione": "`linspace` produce sempre float, anche con estremi interi: deve poter rappresentare passi frazionari. È l'opposto di `arange`, che deduce il tipo dagli argomenti."
+        },
+        {
+          "id": "m01-linspace-8",
+          "tipo": "apply",
+          "testo": "**Griglia ISA e temperatura.**\n\nCostruisci `h`, 23 quote equispaziate da 0 a 11000 m, e `T`, la temperatura ISA `288.15 − 0.0065·h`.\n\nVerifica in `dT` la variazione totale di temperatura fra suolo e tropopausa.",
+          "setup": "",
+          "starter": "h = \nT = \ndT = \n",
+          "test": "assert h.shape == (23,), f'h.shape = {h.shape}'\nassert np.isclose(h[0], 0.0) and np.isclose(h[-1], 11000.0)\nassert np.isclose(h[1] - h[0], 500.0), 'quote equispaziate ogni 500 m'\nassert T.shape == (23,)\nassert np.isclose(T[0], 288.15) and np.isclose(T[-1], 216.65), f'a 11 km la ISA da 216.65 K, hai {T[-1]}'\nassert np.isclose(dT, -71.5), f'variazione attesa -71.5 K, hai {dT}'\nassert T.dtype == np.float64",
+          "hint": [
+            "23 punti, estremi inclusi: linspace.",
+            "La formula si applica all'intero array. dT = T[-1] - T[0]"
+          ],
+          "soluzione": "h = np.linspace(0, 11000, 23)\nT = 288.15 - 0.0065 * h\ndT = T[-1] - T[0]",
+          "spiegazione": "Due righe: costruisci il dominio, poi scrivi la formula come la scriveresti sulla lavagna. La tropopausa esce a 216.65 K, che è il valore ISA tabulato — buon segno che il conto è giusto."
+        }
+      ]
     },
     {
-      "id": "m01-e8",
-      "tipo": "apply",
-      "difficolta": 2,
-      "testo": "**Atmosfera standard, troposfera.**\n\nCostruisci `h`: 23 quote equispaziate da 0 a 11000 m, estremi inclusi.\nPoi calcola `T`, la temperatura ISA in kelvin, con il gradiente termico standard:\n\n`T = 288.15 - 0.0065 · h`\n\nNota che la seconda riga non ha bisogno di nessun ciclo.",
-      "starter": "h = \nT = \n",
-      "test": "assert h.shape == (23,), f'h.shape = {h.shape}, servono 23 quote'\nassert np.isclose(h[0], 0.0) and np.isclose(h[-1], 11000.0)\nassert np.isclose(h[1] - h[0], 500.0), 'le quote devono essere equispaziate'\nassert T.shape == (23,), f'T.shape = {T.shape}'\nassert np.isclose(T[0], 288.15), f'al suolo la ISA da 288.15 K, tu hai {T[0]}'\nassert np.isclose(T[-1], 216.65), f'a 11 km la ISA da 216.65 K, tu hai {T[-1]}'\nassert T.dtype == np.float64",
-      "hint": ["Per h: 23 punti, estremi inclusi, quindi linspace.", "Per T: scrivi la formula tale e quale usando h. L'operazione si applica a tutti i 23 valori da sola."],
-      "soluzione": "h = np.linspace(0, 11000, 23)\nT = 288.15 - 0.0065 * h",
-      "spiegazione": "Questo è NumPy in due righe: costruisci il dominio, poi scrivi la formula fisica come la scriveresti sulla lavagna. Nessun for, nessun indice. La tropopausa a 11 km viene 216.65 K, che è il valore ISA tabulato — buon segno che il conto è giusto."
+      "id": "m01-shape",
+      "comando": ".shape",
+      "titolo": ".shape — la forma dell'array",
+      "esercizi": [
+        {
+          "id": "m01-shape-1",
+          "tipo": "predict",
+          "testo": "Che cosa vale `np.zeros((3, 4)).shape` ?",
+          "opzioni": [
+            "(3, 4)",
+            "(4, 3)",
+            "(12,)",
+            "12"
+          ],
+          "risposta": "(3, 4)",
+          "spiegazione": "Una tupla, nell'ordine (righe, colonne). Il primo numero è la dimensione più esterna."
+        },
+        {
+          "id": "m01-shape-2",
+          "tipo": "predict",
+          "testo": "Che cosa vale `np.array([1., 2., 3.]).shape` ?",
+          "opzioni": [
+            "(3,)",
+            "(3)",
+            "(1, 3)",
+            "3"
+          ],
+          "risposta": "(3,)",
+          "spiegazione": "La virgola non è un refuso: `(3,)` è una tupla di un elemento, cioè un array 1D di 3 valori. `(3)` sarebbe solo il numero 3 fra parentesi."
+        },
+        {
+          "id": "m01-shape-3",
+          "tipo": "write",
+          "testo": "Estrai in `righe` e `colonne` le due dimensioni di `M`, senza scrivere numeri a mano.",
+          "setup": "M = np.zeros((7, 4))\n",
+          "starter": "righe = \ncolonne = \n",
+          "test": "assert int(righe) == 7 and int(colonne) == 4, f'hai {righe}, {colonne}'",
+          "hint": [
+            "M.shape e' una tupla: si indicizza o si spacchetta.",
+            "righe, colonne = M.shape"
+          ],
+          "soluzione": "righe, colonne = M.shape",
+          "spiegazione": "Spacchettare la tupla è più leggibile di `M.shape[0]` e `M.shape[1]`, e fallisce rumorosamente se l'array non è 2D — il che è un bene."
+        },
+        {
+          "id": "m01-shape-4",
+          "tipo": "predict",
+          "testo": "Data `A` di shape `(5, 3)`, che shape ha `A[:, 1]` ?",
+          "opzioni": [
+            "(5,)",
+            "(5, 1)",
+            "(3,)",
+            "(1, 5)"
+          ],
+          "risposta": "(5,)",
+          "spiegazione": "Un indice singolo **rimuove** quell'asse: resta un array 1D di 5 elementi. Per conservare la dimensione servirebbe uno slice, `A[:, 1:2]`, che dà `(5, 1)`."
+        },
+        {
+          "id": "m01-shape-5",
+          "tipo": "predict",
+          "testo": "Perché `(3,)` e `(3, 1)` non sono la stessa cosa?",
+          "opzioni": [
+            "il primo e' 1D senza orientamento, il secondo e' una matrice colonna 2D",
+            "sono equivalenti, cambia solo la notazione",
+            "il primo e' una riga, il secondo una colonna, ma entrambi 2D",
+            "il secondo contiene un elemento in piu"
+          ],
+          "risposta": "il primo e' 1D senza orientamento, il secondo e' una matrice colonna 2D",
+          "spiegazione": "Un array 1D non è né riga né colonna: `.T` su di esso non fa nulla. La distinzione diventa decisiva con il broadcasting, dove `(3,)` e `(3, 1)` si combinano con gli altri array in modi completamente diversi."
+        },
+        {
+          "id": "m01-shape-6",
+          "tipo": "write",
+          "testo": "Prima di moltiplicare due array bisogna sapere se le forme sono compatibili. Calcola `stessa_forma`, `n_elementi_a` e `dimensioni_a`.",
+          "setup": "a = np.zeros((4, 6))\nb = np.zeros((4, 6))\n",
+          "starter": "stessa_forma = \nn_elementi_a = \ndimensioni_a = \n",
+          "test": "assert bool(stessa_forma) is True\nassert int(n_elementi_a) == 24, f'attesi 24 elementi, hai {n_elementi_a}'\nassert int(dimensioni_a) == 2, f'attese 2 dimensioni, hai {dimensioni_a}'",
+          "hint": [
+            "Le tuple si confrontano con ==: a.shape == b.shape",
+            "Il numero di elementi e' a.size, il numero di dimensioni len(a.shape) oppure a.ndim."
+          ],
+          "soluzione": "stessa_forma = a.shape == b.shape\nn_elementi_a = a.size\ndimensioni_a = a.ndim",
+          "spiegazione": "`shape` dice come sono disposti gli elementi, `size` quanti sono, `ndim` su quanti assi. Confrontare le shape con `==` funziona perché sono tuple, non array: qui il confronto dà un solo booleano."
+        },
+        {
+          "id": "m01-shape-7",
+          "tipo": "predict",
+          "testo": "Che cosa vale `np.array(5.0).shape` ?",
+          "opzioni": [
+            "()",
+            "(1,)",
+            "(0,)",
+            "solleva un errore"
+          ],
+          "risposta": "()",
+          "spiegazione": "Una tupla vuota: è un array a zero dimensioni, uno scalare NumPy. Non è la stessa cosa di `np.array([5.0])`, che ha shape `(1,)`. Capita quando una riduzione collassa tutti gli assi."
+        },
+        {
+          "id": "m01-shape-8",
+          "tipo": "apply",
+          "testo": "**Controllo dimensionale prima del calcolo.**\n\nPrima di combinare i dati, verifica che tutto torni. Calcola `n_punti`, `n_grandezze`, `allineati` (True se `tempi` è lungo quanto le righe di `dati`) e `celle_totali`.",
+          "setup": "dati = np.zeros((100, 3))\ntempi = np.zeros(100)\n",
+          "starter": "n_punti = \nn_grandezze = \nallineati = \ncelle_totali = \n",
+          "test": "assert int(n_punti) == 100 and int(n_grandezze) == 3\nassert bool(allineati) is True\nassert int(celle_totali) == 300, f'attese 300 celle, hai {celle_totali}'",
+          "hint": [
+            "n_punti, n_grandezze = dati.shape",
+            "allineati = tempi.shape[0] == n_punti, oppure len(tempi) == n_punti. celle_totali = dati.size"
+          ],
+          "soluzione": "n_punti, n_grandezze = dati.shape\nallineati = tempi.shape[0] == n_punti\ncelle_totali = dati.size",
+          "spiegazione": "Questo controllo costa tre righe e coglie l'errore più frequente sui dati reali: un file letto male, una colonna in più, un array di tempi che non corrisponde alle misure. Farlo subito evita di inseguire un errore di broadcasting venti righe più avanti."
+        }
+      ]
+    },
+    {
+      "id": "m01-ndim",
+      "comando": ".ndim",
+      "titolo": ".ndim — quante dimensioni",
+      "esercizi": [
+        {
+          "id": "m01-ndim-1",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.zeros((3, 4)).ndim` ?",
+          "opzioni": [
+            "2",
+            "12",
+            "(3, 4)",
+            "3"
+          ],
+          "risposta": "2",
+          "spiegazione": "Due assi: righe e colonne. `ndim` è sempre la lunghezza di `shape`."
+        },
+        {
+          "id": "m01-ndim-2",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.array([1., 2., 3.]).ndim` ?",
+          "opzioni": [
+            "1",
+            "3",
+            "0",
+            "(3,)"
+          ],
+          "risposta": "1",
+          "spiegazione": "Un array 1D ha un solo asse, indipendentemente da quanti elementi contiene."
+        },
+        {
+          "id": "m01-ndim-3",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.array(7.0).ndim` ?",
+          "opzioni": [
+            "0",
+            "1",
+            "7",
+            "solleva un errore"
+          ],
+          "risposta": "0",
+          "spiegazione": "Uno scalare NumPy ha zero dimensioni, coerentemente con la sua shape `()`. È il caso che ottieni da una riduzione completa come `a.sum()`."
+        },
+        {
+          "id": "m01-ndim-4",
+          "tipo": "write",
+          "testo": "Verifica in `d` il numero di dimensioni di `x`, e in `coerente` che coincida con la lunghezza della sua shape.",
+          "setup": "x = np.zeros((2, 5, 3))\n",
+          "starter": "d = \ncoerente = \n",
+          "test": "assert int(d) == 3, f'attese 3 dimensioni, hai {d}'\nassert bool(coerente) is True",
+          "hint": [
+            "d = x.ndim",
+            "coerente = x.ndim == len(x.shape)"
+          ],
+          "soluzione": "d = x.ndim\ncoerente = x.ndim == len(x.shape)",
+          "spiegazione": "`ndim` e `len(shape)` sono sempre uguali: il primo è solo più diretto da leggere. Un array 3D come questo è tipico di una griglia con più grandezze, o di più campagne di prove impilate."
+        },
+        {
+          "id": "m01-ndim-5",
+          "tipo": "apply",
+          "testo": "**Guardia sui dati in ingresso.**\n\nUna funzione di riduzione dati si aspetta una matrice 2D. Costruisci `ok_2d`, `ok_1d` e `messaggio`: il messaggio deve valere `\"ok\"` se i dati sono 2D, altrimenti `\"servono dati 2D\"`.",
+          "setup": "dati = np.zeros((50, 4))\ntempi = np.zeros(50)\n",
+          "starter": "ok_2d = \nok_1d = \nmessaggio = \n",
+          "test": "assert bool(ok_2d) is True, 'dati e 2D'\nassert bool(ok_1d) is True, 'tempi e 1D'\nassert messaggio == 'ok', f'messaggio sbagliato: {messaggio}'",
+          "hint": [
+            "ok_2d = dati.ndim == 2, ok_1d = tempi.ndim == 1",
+            "messaggio = 'ok' if ok_2d else 'servono dati 2D'"
+          ],
+          "soluzione": "ok_2d = dati.ndim == 2\nok_1d = tempi.ndim == 1\nmessaggio = 'ok' if ok_2d else 'servono dati 2D'",
+          "spiegazione": "Controllare `ndim` all'ingresso di una funzione è la difesa più economica contro i dati letti male: un CSV con una sola riga arriva come 1D invece che 2D, e senza questa guardia l'errore compare molto più a valle, dove è difficile da attribuire."
+        }
+      ]
+    },
+    {
+      "id": "m01-dtype",
+      "comando": ".dtype",
+      "titolo": ".dtype — il tipo degli elementi",
+      "esercizi": [
+        {
+          "id": "m01-dtype-1",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.array([1, 2, 3])` ?",
+          "opzioni": [
+            "int64",
+            "float64",
+            "object",
+            "int8"
+          ],
+          "risposta": "int64",
+          "spiegazione": "Tutti interi, quindi array di interi. Su Windows il default può essere `int32`, ma il principio è lo stesso: nessun float, nessuna promozione."
+        },
+        {
+          "id": "m01-dtype-2",
+          "tipo": "predict",
+          "testo": "Qual è il dtype di `np.array([True, False, True])` ?",
+          "opzioni": [
+            "bool",
+            "int64",
+            "float64",
+            "object"
+          ],
+          "risposta": "bool",
+          "spiegazione": "NumPy ha un tipo booleano dedicato, un byte per elemento. È quello che produce ogni confronto, ed è il tipo delle maschere che userai per filtrare i dati."
+        },
+        {
+          "id": "m01-dtype-3",
+          "tipo": "write",
+          "testo": "Crea `q`, un array con i valori `[1, 2, 3, 4]` ma **in virgola mobile**.",
+          "setup": "",
+          "starter": "q = \n",
+          "test": "assert q.dtype == np.float64, f'atteso float64, hai {q.dtype}'\nassert np.allclose(q, [1., 2., 3., 4.])",
+          "hint": [
+            "Puoi scrivere i valori col punto, oppure passare dtype=float."
+          ],
+          "soluzione": "q = np.array([1, 2, 3, 4], dtype=float)",
+          "spiegazione": "Due strade equivalenti: `[1., 2., 3., 4.]` oppure `dtype=float`. La seconda è più chiara quando i valori arrivano da altrove."
+        },
+        {
+          "id": "m01-dtype-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve registrare la quota 2500.7 m, ma il valore finisce troncato. Correggilo.",
+          "setup": "",
+          "starter": "h = np.zeros(3, dtype=int)\nh[0] = 2500.7\n",
+          "test": "assert h.dtype == np.float64, f'servono float, hai {h.dtype}'\nassert np.isclose(h[0], 2500.7), f'valore atteso 2500.7, hai {h[0]}'\nassert np.all(h[1:] == 0)",
+          "hint": [
+            "Un array di interi tronca l'assegnazione senza avvisare: 2500.7 diventa 2500.",
+            "Crea l'array in float: np.zeros(3)"
+          ],
+          "soluzione": "h = np.zeros(3)\nh[0] = 2500.7",
+          "spiegazione": "L'assegnazione **non promuove** il tipo dell'array: converte il valore. Nessun errore, nessun avviso, solo 70 cm di quota persi a ogni scrittura. È la ragione della regola: le grandezze fisiche vanno in float."
+        },
+        {
+          "id": "m01-dtype-5",
+          "tipo": "predict",
+          "testo": "Qual è il dtype del risultato di `np.array([7, 8]) / np.array([2, 2])` ?",
+          "opzioni": [
+            "float64",
+            "int64",
+            "dipende dai valori",
+            "solleva un errore"
+          ],
+          "risposta": "float64",
+          "spiegazione": "L'operatore `/` promuove sempre a float, anche quando la divisione sarebbe esatta: così non perdi mai cifre per sbaglio. Per restare interi serve `//`, che però tronca."
+        },
+        {
+          "id": "m01-dtype-6",
+          "tipo": "write",
+          "testo": "I dati arrivano in `int32` da un file. Convertili in `d64`, in virgola mobile a doppia precisione, senza modificare l'originale.",
+          "setup": "dati = np.array([100, 250, 400], dtype=np.int32)\n",
+          "starter": "d64 = \n",
+          "test": "assert d64.dtype == np.float64, f'atteso float64, hai {d64.dtype}'\nassert np.allclose(d64, [100., 250., 400.])\nassert dati.dtype == np.int32, 'l originale non doveva cambiare'",
+          "hint": [
+            "astype crea un array nuovo con il tipo richiesto.",
+            "d64 = dati.astype(np.float64)"
+          ],
+          "soluzione": "d64 = dati.astype(np.float64)",
+          "spiegazione": "`astype` copia sempre, quindi l'originale resta intatto. Convertire appena leggi dati esterni è una riga che previene una classe intera di errori a valle."
+        },
+        {
+          "id": "m01-dtype-7",
+          "tipo": "predict",
+          "testo": "Quali di questi producono un array di **float** senza specificare `dtype`?\n\n`np.zeros(3)` · `np.arange(3)` · `np.linspace(0, 2, 3)` · `np.full(3, 5)`",
+          "opzioni": [
+            "zeros e linspace",
+            "tutti e quattro",
+            "solo linspace",
+            "zeros, arange e linspace"
+          ],
+          "risposta": "zeros e linspace",
+          "spiegazione": "`zeros` e `ones` sono float per progetto; `linspace` deve esserlo per rappresentare passi frazionari. `arange` e `full` invece deducono il tipo dagli argomenti: `arange(3)` e `full(3, 5)` danno interi. È l'asimmetria che conviene tenere a mente."
+        },
+        {
+          "id": "m01-dtype-8",
+          "tipo": "apply",
+          "testo": "**Preparare dati misti al calcolo.**\n\nDa un file arrivano tre array: quote intere, velocità float e una maschera booleana. Portali tutti nel tipo giusto per il calcolo e verifica.\n\nCostruisci `h` (float64 dalle quote), `n_validi` (quanti elementi di `valida` sono veri) e `energia` (`v²/2 + 9.81·h`, solo se tutti i tipi sono corretti).",
+          "setup": "quote = np.array([0, 1000, 2000, 3000], dtype=np.int32)\nv = np.array([50., 80., 110., 140.])\nvalida = np.array([True, True, False, True])\n",
+          "starter": "h = \nn_validi = \nenergia = \n",
+          "test": "assert h.dtype == np.float64, f'h deve essere float64, hai {h.dtype}'\nassert np.allclose(h, [0., 1000., 2000., 3000.])\nassert int(n_validi) == 3, f'attesi 3 validi, hai {n_validi}'\nassert energia.dtype == np.float64\nassert np.allclose(energia, v**2/2 + 9.81*h)\nassert np.isclose(energia[1], 80.**2/2 + 9810.), f'secondo valore sbagliato: {energia[1]}'",
+          "hint": [
+            "h = quote.astype(float). Su un array booleano, sum() conta i True.",
+            "n_validi = valida.sum(), poi energia = v**2/2 + 9.81*h"
+          ],
+          "soluzione": "h = quote.astype(float)\nn_validi = valida.sum()\nenergia = v**2/2 + 9.81*h",
+          "spiegazione": "Tre tipi diversi usati per quello che sanno fare: gli interi per i dati grezzi, i float per il calcolo, i booleani per contare. `valida.sum()` funziona perché `True` vale 1 — è il modo idiomatico di contare quanti elementi soddisfano una condizione."
+        }
+      ]
     }
   ]
 }
