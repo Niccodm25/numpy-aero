@@ -2,7 +2,19 @@
   "id": "m05",
   "titolo": "Aggregazioni e axis",
   "perche": "Dati sperimentali significano sempre ripetizioni: più campioni per la stessa condizione, più condizioni nella stessa campagna. Media, deviazione standard e massimo hanno un senso solo se li calcoli lungo l'asse giusto — e scegliere l'asse sbagliato è l'errore più frequente in assoluto su matrici di dati.",
-  "funzioni": ["sum", "mean", "std", "min", "max", "argmin", "argmax", "cumsum", "axis", "keepdims", "np.unravel_index"],
+  "funzioni": [
+    "sum",
+    "mean",
+    "std",
+    "min",
+    "max",
+    "argmin",
+    "argmax",
+    "cumsum",
+    "axis",
+    "keepdims",
+    "np.unravel_index"
+  ],
   "lezioni": [
     {
       "id": "m05-l1",
@@ -29,89 +41,802 @@
       "demo": "A = np.array([[1., 2., 3., 4.],\n              [2., 2., 2., 2.]])\nprint(\"A.shape:\", A.shape)\nprint(\"somma per riga:        \", A.sum(axis=1), A.sum(axis=1).shape)\nprint(\"con keepdims:\\n\", A.sum(axis=1, keepdims=True), A.sum(axis=1, keepdims=True).shape)\n\ntry:\n    A / A.sum(axis=1)\nexcept ValueError as e:\n    print(\"\\nsenza keepdims ->\", e)\n\nN = A / A.sum(axis=1, keepdims=True)\nprint(\"\\nnormalizzato per riga:\\n\", N.round(3))\nprint(\"somma di ogni riga:\", N.sum(axis=1))"
     }
   ],
-  "esercizi": [
+  "raccolte": [
     {
-      "id": "m05-e1",
-      "tipo": "predict",
-      "testo": "Data una matrice `A` di shape `(6, 7)`, che shape ha `A.sum(axis=0)` ?",
-      "opzioni": ["(7,)", "(6,)", "(6, 7)", "(1, 7)"],
-      "risposta": "(7,)",
-      "spiegazione": "axis è l'asse che sparisce: axis=0 elimina il 6 e lascia le 7 colonne. In parole, collassa le righe e dà un valore per colonna."
+      "id": "m05-summean",
+      "comando": "sum / mean",
+      "titolo": "sum e mean — le riduzioni di base",
+      "esercizi": [
+        {
+          "id": "m05-sm-1",
+          "tipo": "write",
+          "testo": "Calcola `totale`, la somma di tutti gli elementi di `a`.",
+          "setup": "a = np.array([10., 20., 30., 40.])\n",
+          "starter": "totale = \n",
+          "test": "assert np.isclose(totale, 100.)",
+          "hint": [
+            "a.sum() oppure np.sum(a)"
+          ],
+          "soluzione": "totale = a.sum()",
+          "spiegazione": "Senza `axis` la riduzione collassa tutto in un solo numero."
+        },
+        {
+          "id": "m05-sm-2",
+          "tipo": "write",
+          "testo": "Calcola `media`, il valore medio di `a`.",
+          "setup": "a = np.array([10., 20., 30., 40.])\n",
+          "starter": "media = \n",
+          "test": "assert np.isclose(media, 25.)",
+          "hint": [
+            "a.mean()"
+          ],
+          "soluzione": "media = a.mean()",
+          "spiegazione": "Metodo o funzione, `a.mean()` e `np.mean(a)` sono equivalenti."
+        },
+        {
+          "id": "m05-sm-3",
+          "tipo": "predict",
+          "testo": "Su una matrice `(3, 4)`, quanto vale `A.sum()` senza `axis` ?",
+          "opzioni": [
+            "un solo numero: la somma di tutti i 12 elementi",
+            "un array di 3 valori",
+            "un array di 4 valori",
+            "una matrice (3, 4)"
+          ],
+          "risposta": "un solo numero: la somma di tutti i 12 elementi",
+          "spiegazione": "Senza `axis` la riduzione collassa **tutti** gli assi, indipendentemente dalla forma. È il caso di default, e spesso non è quello che vuoi su una tabella di dati."
+        },
+        {
+          "id": "m05-sm-4",
+          "tipo": "write",
+          "testo": "Conta in `quanti` i punti in cui il Mach supera 0.8, sfruttando il fatto che i booleani si sommano.",
+          "setup": "mach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81])\n",
+          "starter": "quanti = \n",
+          "test": "assert int(quanti) == 3, f'attesi 3, hai {quanti}'",
+          "hint": [
+            "(mach > 0.8).sum()"
+          ],
+          "soluzione": "quanti = (mach > 0.8).sum()",
+          "spiegazione": "`True` vale 1 e `False` vale 0: sommare una maschera significa contare."
+        },
+        {
+          "id": "m05-sm-5",
+          "tipo": "write",
+          "testo": "Calcola `frazione`, la frazione di punti in crociera — quelli sopra 9000 m — sfruttando che la media di una maschera è già una frazione.",
+          "setup": "h = np.array([0., 3000., 9500., 10500., 11000., 4000., 10800., 0.])\n",
+          "starter": "frazione = \n",
+          "test": "assert np.isclose(frazione, 0.5), f'attesa 0.5, hai {frazione}'",
+          "hint": [
+            "La media di 0 e 1 e' la proporzione di 1.",
+            "(h > 9000).mean()"
+          ],
+          "soluzione": "frazione = (h > 9000).mean()",
+          "spiegazione": "`mean` su una maschera dà direttamente la proporzione, senza dividere a mano per la lunghezza. È una forma idiomatica che vale la pena riconoscere."
+        },
+        {
+          "id": "m05-sm-6",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.array([]).sum()`, su un array vuoto?",
+          "opzioni": [
+            "0.0",
+            "nan",
+            "solleva un errore",
+            "inf"
+          ],
+          "risposta": "0.0",
+          "spiegazione": "La somma di nessun elemento è l'elemento neutro, cioè zero. `mean` invece dà `nan` con un avviso, perché dividerebbe per zero. Su dati filtrati un array vuoto capita davvero, e le due funzioni si comportano in modo diverso."
+        },
+        {
+          "id": "m05-sm-7",
+          "tipo": "write",
+          "testo": "Calcola `consumo_totale` sommando i consumi parziali, e `consumo_medio` per tratta.",
+          "setup": "tratte = np.array([120., 340., 210., 480., 150.])   # kg\n",
+          "starter": "consumo_totale = \nconsumo_medio = \n",
+          "test": "assert np.isclose(consumo_totale, 1300.)\nassert np.isclose(consumo_medio, 260.)",
+          "hint": [
+            "tratte.sum() e tratte.mean()"
+          ],
+          "soluzione": "consumo_totale = tratte.sum()\nconsumo_medio = tratte.mean()",
+          "spiegazione": "Nota che `mean` è `sum` diviso il numero di elementi: 1300/5 = 260."
+        },
+        {
+          "id": "m05-sm-8",
+          "tipo": "apply",
+          "testo": "**Bilancio di una missione.**\n\nDai consumi per tratta, calcola:\n\n- `totale` e `medio`\n- `residuo`: il carburante rimasto partendo da 2000 kg\n- `n_sopra_media`: quante tratte consumano più della media\n- `frazione_sopra`: la loro frazione",
+          "setup": "tratte = np.array([120., 340., 210., 480., 150.])\niniziale = 2000.0\n",
+          "starter": "totale = \nmedio = \nresiduo = \nn_sopra_media = \nfrazione_sopra = \n",
+          "test": "assert np.isclose(totale, 1300.) and np.isclose(medio, 260.)\nassert np.isclose(residuo, 700.), f'atteso 700, hai {residuo}'\nassert int(n_sopra_media) == 2, f'attese 2 tratte sopra la media, hai {n_sopra_media}'\nassert np.isclose(frazione_sopra, 0.4)",
+          "hint": [
+            "residuo = iniziale - totale",
+            "n_sopra_media = (tratte > medio).sum(); frazione_sopra = (tratte > medio).mean()"
+          ],
+          "soluzione": "totale = tratte.sum()\nmedio = tratte.mean()\nresiduo = iniziale - totale\nn_sopra_media = (tratte > medio).sum()\nfrazione_sopra = (tratte > medio).mean()",
+          "spiegazione": "Due tratte su cinque stanno sopra la media, non due e mezzo: la media non divide mai a metà un campione, perché è tirata dai valori estremi. Qui la tratta da 480 alza la media al punto che tre tratte su cinque le stanno sotto."
+        }
+      ]
     },
     {
-      "id": "m05-e2",
-      "tipo": "predict",
-      "testo": "Hai una matrice `(5, 8)`: 5 condizioni di prova, 8 ripetizioni per condizione. Vuoi la media **di ogni condizione**. Quale chiamata è corretta?",
-      "opzioni": ["A.mean(axis=1)", "A.mean(axis=0)", "A.mean()", "A.mean(axis=-2)"],
-      "risposta": "A.mean(axis=1)",
-      "spiegazione": "Vuoi 5 numeri, uno per condizione. L'unico axis che lascia 5 è quello che elimina l'8, cioè axis=1. Il controllo veloce è sempre sulla shape del risultato: se non è (5,), l'asse è invertito."
+      "id": "m05-axis",
+      "comando": "axis",
+      "titolo": "axis — l'asse che sparisce",
+      "esercizi": [
+        {
+          "id": "m05-ax-1",
+          "tipo": "predict",
+          "testo": "Data `A` di shape `(6, 7)`, che shape ha `A.sum(axis=0)` ?",
+          "opzioni": [
+            "(7,)",
+            "(6,)",
+            "(6, 7)",
+            "(1, 7)"
+          ],
+          "risposta": "(7,)",
+          "spiegazione": "`axis` è l'asse che **sparisce**: `axis=0` elimina il 6 e lascia le 7 colonne. In parole: collassa le righe, dà un valore per colonna."
+        },
+        {
+          "id": "m05-ax-2",
+          "tipo": "predict",
+          "testo": "E `A.sum(axis=1)` sulla stessa matrice `(6, 7)` ?",
+          "opzioni": [
+            "(6,)",
+            "(7,)",
+            "(6, 7)",
+            "(6, 1)"
+          ],
+          "risposta": "(6,)",
+          "spiegazione": "Sparisce il 7, restano le 6 righe. Collassa le colonne, dà un valore per riga."
+        },
+        {
+          "id": "m05-ax-3",
+          "tipo": "predict",
+          "testo": "Hai una matrice `(5, 8)`: 5 condizioni di prova, 8 ripetizioni ciascuna. Vuoi la media **di ogni condizione**. Quale chiamata è corretta?",
+          "opzioni": [
+            "A.mean(axis=1)",
+            "A.mean(axis=0)",
+            "A.mean()",
+            "A.mean(axis=-2)"
+          ],
+          "risposta": "A.mean(axis=1)",
+          "spiegazione": "Vuoi 5 numeri, uno per condizione: l'unico asse che lascia 5 è quello che elimina l'8. Il controllo veloce è sempre sulla shape del risultato — se non è `(5,)`, l'asse è invertito."
+        },
+        {
+          "id": "m05-ax-4",
+          "tipo": "write",
+          "testo": "Dalla matrice di prove — 4 condizioni sulle righe, 5 ripetizioni sulle colonne — calcola `media_cond`, la media di ogni condizione.",
+          "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
+          "starter": "media_cond = \n",
+          "test": "assert media_cond.shape == (4,), f'attesi 4 valori, shape {media_cond.shape} — hai invertito axis?'\nassert np.allclose(media_cond, [0.21, 0.46, 0.71, 0.96])",
+          "hint": [
+            "Vuoi 4 numeri, uno per riga: deve sparire l'asse delle 5 ripetizioni.",
+            "CL.mean(axis=1)"
+          ],
+          "soluzione": "media_cond = CL.mean(axis=1)",
+          "spiegazione": "Il test controlla la shape **prima** dei valori: con `axis=0` avresti 5 numeri, e il messaggio te lo dice subito invece di lasciarti confrontare numeri sbagliati."
+        },
+        {
+          "id": "m05-ax-5",
+          "tipo": "write",
+          "testo": "Sulla stessa matrice, calcola `media_rip`, la media di ogni **ripetizione** attraverso tutte le condizioni.",
+          "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
+          "starter": "media_rip = \n",
+          "test": "assert media_rip.shape == (5,), f'attesi 5 valori, shape {media_rip.shape}'\nassert np.allclose(media_rip, CL.mean(axis=0))",
+          "hint": [
+            "Vuoi 5 numeri: deve sparire l'asse delle 4 condizioni.",
+            "CL.mean(axis=0)"
+          ],
+          "soluzione": "media_rip = CL.mean(axis=0)",
+          "spiegazione": "Stessa matrice, asse opposto. Questa media ha senso solo per cercare una deriva sistematica fra le ripetizioni — per esempio uno strumento che scalda durante la campagna."
+        },
+        {
+          "id": "m05-ax-6",
+          "tipo": "write",
+          "testo": "Calcola `per_riga` e `per_colonna`, le somme lungo i due assi di `A`, e verifica in `stesso_totale` che sommate diano lo stesso risultato.",
+          "setup": "A = np.arange(12.).reshape(3, 4)\n",
+          "starter": "per_riga = \nper_colonna = \nstesso_totale = \n",
+          "test": "assert per_riga.shape == (3,) and per_colonna.shape == (4,)\nassert np.allclose(per_riga, [6., 22., 38.])\nassert np.allclose(per_colonna, [12., 15., 18., 21.])\nassert bool(stesso_totale) is True",
+          "hint": [
+            "per_riga = A.sum(axis=1); per_colonna = A.sum(axis=0)",
+            "stesso_totale = np.isclose(per_riga.sum(), per_colonna.sum())"
+          ],
+          "soluzione": "per_riga = A.sum(axis=1)\nper_colonna = A.sum(axis=0)\nstesso_totale = np.isclose(per_riga.sum(), per_colonna.sum())",
+          "spiegazione": "Sommare lungo un asse e poi l'altro dà sempre il totale generale: è un controllo di coerenza gratuito che coglie subito un asse invertito o una matrice letta male."
+        },
+        {
+          "id": "m05-ax-7",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare il consumo totale di **ogni volo** — una riga per volo, una colonna per tratta. Restituisce il numero sbagliato di valori. Correggilo.",
+          "setup": "consumi = np.array([[120., 340., 210.],\n                    [150., 280., 190.],\n                    [130., 360., 220.],\n                    [140., 300., 200.]])\n",
+          "starter": "per_volo = consumi.sum(axis=0)\n",
+          "test": "assert per_volo.shape == (4,), f'attesi 4 voli, hai {per_volo.shape[0]}'\nassert np.allclose(per_volo, [670., 620., 710., 640.])",
+          "hint": [
+            "Vuoi un totale per volo, cioe per riga: deve sparire l'asse delle tratte.",
+            "consumi.sum(axis=1)"
+          ],
+          "soluzione": "per_volo = consumi.sum(axis=1)",
+          "spiegazione": "Con `axis=0` ottieni tre numeri — il totale per tratta attraverso tutti i voli — invece di quattro. Entrambi sono calcoli sensati, e per questo l'errore non solleva niente: solo la shape lo tradisce."
+        },
+        {
+          "id": "m05-ax-8",
+          "tipo": "predict",
+          "testo": "Su un array 3D di shape `(2, 3, 4)`, che shape ha `A.sum(axis=1)` ?",
+          "opzioni": [
+            "(2, 4)",
+            "(3, 4)",
+            "(2, 3)",
+            "(2, 3, 4)"
+          ],
+          "risposta": "(2, 4)",
+          "spiegazione": "Sparisce l'asse in posizione 1, cioè il 3. La regola non cambia con il numero di dimensioni: l'asse che passi è quello che scompare dalla shape."
+        },
+        {
+          "id": "m05-ax-9",
+          "tipo": "write",
+          "testo": "Su una griglia `(6, 7)` di pressione dinamica, calcola `max_per_quota` (un valore per riga) e `max_per_velocita` (uno per colonna).",
+          "setup": "rho = np.array([1.225, 1.112, 1.007, 0.909, 0.819, 0.736])\nV   = np.array([80., 120., 160., 200., 240., 280., 320.])\nq = 0.5 * rho[:, None] * V**2\n",
+          "starter": "max_per_quota = \nmax_per_velocita = \n",
+          "test": "assert max_per_quota.shape == (6,), f'un valore per quota: atteso (6,), hai {max_per_quota.shape}'\nassert max_per_velocita.shape == (7,), f'un valore per velocita: atteso (7,), hai {max_per_velocita.shape}'\nassert np.allclose(max_per_quota, q.max(axis=1))\nassert np.allclose(max_per_velocita, q.max(axis=0))",
+          "hint": [
+            "Per riga: sparisce l'asse delle colonne, axis=1. Per colonna: axis=0."
+          ],
+          "soluzione": "max_per_quota = q.max(axis=1)\nmax_per_velocita = q.max(axis=0)",
+          "spiegazione": "Il massimo per quota cade sempre alla velocità più alta, quello per velocità alla quota più bassa: la griglia è monotona su entrambi gli assi, e i due profili lo mostrano."
+        },
+        {
+          "id": "m05-ax-10",
+          "tipo": "predict",
+          "testo": "Che cosa significa `axis=-1` ?",
+          "opzioni": [
+            "l'ultimo asse, qualunque sia il numero di dimensioni",
+            "il primo asse",
+            "nessun asse: equivale a omettere il parametro",
+            "solleva un errore"
+          ],
+          "risposta": "l'ultimo asse, qualunque sia il numero di dimensioni",
+          "spiegazione": "Come per gli indici, i valori negativi contano dalla fine. `axis=-1` è l'ultimo, `axis=-2` il penultimo. È utile quando scrivi codice che deve funzionare su array di dimensionalità diversa: su una matrice `axis=-1` è `axis=1`, su un array 3D è `axis=2`."
+        },
+        {
+          "id": "m05-ax-11",
+          "tipo": "write",
+          "testo": "Calcola `somma_ultimo`, la somma lungo l'**ultimo** asse, in modo che funzioni sia sulla matrice 2D sia sull'array 3D.",
+          "setup": "A2 = np.arange(12.).reshape(3, 4)\nA3 = np.arange(24.).reshape(2, 3, 4)\n",
+          "starter": "somma_2d = \nsomma_3d = \n",
+          "test": "assert somma_2d.shape == (3,), f'atteso (3,), hai {somma_2d.shape}'\nassert somma_3d.shape == (2, 3), f'atteso (2, 3), hai {somma_3d.shape}'\nassert np.allclose(somma_2d, A2.sum(axis=-1))\nassert np.allclose(somma_3d, A3.sum(axis=-1))",
+          "hint": [
+            "axis=-1 indica l'ultimo asse in entrambi i casi."
+          ],
+          "soluzione": "somma_2d = A2.sum(axis=-1)\nsomma_3d = A3.sum(axis=-1)",
+          "spiegazione": "La stessa scrittura funziona su entrambi. È il motivo per cui molte funzioni di NumPy hanno `axis=-1` come default: l'ultimo asse è quello contiguo in memoria, e quindi il più veloce da ridurre."
+        },
+        {
+          "id": "m05-ax-12",
+          "tipo": "apply",
+          "testo": "**Campagna in galleria: le due letture della stessa tabella.**\n\n`CD` ha 4 configurazioni sulle righe e 6 velocità sulle colonne.\n\nCalcola `per_config` (media per configurazione), `per_velocita` (media per velocità), `globale` (la media di tutto), e `coerente`, `True` se la media delle medie per configurazione coincide con quella globale.",
+          "setup": "CD = np.array([[0.031, 0.029, 0.028, 0.028, 0.029, 0.031],\n               [0.026, 0.024, 0.023, 0.023, 0.024, 0.026],\n               [0.035, 0.033, 0.032, 0.032, 0.033, 0.035],\n               [0.028, 0.026, 0.025, 0.025, 0.026, 0.028]])\n",
+          "starter": "per_config = \nper_velocita = \nglobale = \ncoerente = \n",
+          "test": "assert per_config.shape == (4,), f'attesi 4 valori, hai {per_config.shape}'\nassert per_velocita.shape == (6,), f'attesi 6 valori, hai {per_velocita.shape}'\nassert np.allclose(per_config, CD.mean(axis=1))\nassert np.allclose(per_velocita, CD.mean(axis=0))\nassert np.isclose(globale, CD.mean())\nassert bool(coerente) is True",
+          "hint": [
+            "per_config = CD.mean(axis=1); per_velocita = CD.mean(axis=0); globale = CD.mean()",
+            "coerente = np.isclose(per_config.mean(), globale)"
+          ],
+          "soluzione": "per_config = CD.mean(axis=1)\nper_velocita = CD.mean(axis=0)\nglobale = CD.mean()\ncoerente = np.isclose(per_config.mean(), globale)",
+          "spiegazione": "La media delle medie coincide con la media globale **solo perché tutte le righe hanno lo stesso numero di elementi**. Con un numero diverso di ripetizioni per configurazione — il caso normale quando qualche misura va persa — le due divergono, e mediare le medie diventa sbagliato.\n\nÈ il motivo per cui, sui dati veri, conviene sempre portarsi dietro anche il conteggio dei campioni."
+        }
+      ]
     },
     {
-      "id": "m05-e3",
-      "tipo": "predict",
-      "testo": "Data `A` di shape `(4, 5)`, che shape ha `A.sum(axis=1, keepdims=True)` ?",
-      "opzioni": ["(4, 1)", "(4,)", "(1, 5)", "(4, 5)"],
-      "risposta": "(4, 1)",
-      "spiegazione": "keepdims conserva l'asse ridotto con lunghezza 1 invece di rimuoverlo. Serve proprio perché (4, 1) si combina con (4, 5) per broadcasting, mentre (4,) no."
+      "id": "m05-std",
+      "comando": "std / var",
+      "titolo": "std e var — la dispersione, e il divisore giusto",
+      "esercizi": [
+        {
+          "id": "m05-std-1",
+          "tipo": "write",
+          "testo": "Calcola `sigma`, la deviazione standard di `x`.",
+          "setup": "x = np.array([10., 12., 11., 13.])\n",
+          "starter": "sigma = \n",
+          "test": "assert np.isclose(sigma, x.std())",
+          "hint": [
+            "x.std()"
+          ],
+          "soluzione": "sigma = x.std()",
+          "spiegazione": "Di default NumPy divide per N: è la deviazione di **popolazione**."
+        },
+        {
+          "id": "m05-std-2",
+          "tipo": "predict",
+          "testo": "Per quale divisore calcola `x.std()` di default?",
+          "opzioni": [
+            "N, la deviazione di popolazione",
+            "N-1, la deviazione campionaria",
+            "N-2",
+            "dipende dalla lunghezza"
+          ],
+          "risposta": "N, la deviazione di popolazione",
+          "spiegazione": "È l'opposto della convenzione di molti pacchetti statistici. Per la deviazione **campionaria**, quella che si usa per stimare l'incertezza da un campione, serve `ddof=1`."
+        },
+        {
+          "id": "m05-std-3",
+          "tipo": "write",
+          "testo": "Calcola `sigma_camp`, la deviazione standard **campionaria** di `x`, quella che divide per N−1.",
+          "setup": "x = np.array([10., 12., 11., 13.])\n",
+          "starter": "sigma_camp = \n",
+          "test": "assert np.isclose(sigma_camp, x.std(ddof=1))\nassert not np.isclose(sigma_camp, x.std()), 'deve essere diversa da quella di popolazione'",
+          "hint": [
+            "Il parametro si chiama ddof: x.std(ddof=1)"
+          ],
+          "soluzione": "sigma_camp = x.std(ddof=1)",
+          "spiegazione": "`ddof` sta per *delta degrees of freedom*: il divisore è `N - ddof`. Con 4 campioni la differenza fra i due è del 15%."
+        },
+        {
+          "id": "m05-std-4",
+          "tipo": "write",
+          "testo": "Misura quanto pesa la scelta del divisore: calcola le due deviazioni e `rapporto`, il loro quoziente.",
+          "setup": "x = np.array([10., 12., 11., 13., 10.5])\n",
+          "starter": "pop = \ncamp = \nrapporto = \n",
+          "test": "assert np.isclose(pop, x.std()) and np.isclose(camp, x.std(ddof=1))\nassert np.isclose(rapporto, camp/pop)\nassert rapporto > 1.0, 'la campionaria e sempre maggiore'\nassert np.isclose(rapporto, np.sqrt(5/4)), 'il rapporto vale sqrt(N/(N-1))'",
+          "hint": [
+            "pop = x.std(); camp = x.std(ddof=1); rapporto = camp/pop"
+          ],
+          "soluzione": "pop = x.std()\ncamp = x.std(ddof=1)\nrapporto = camp / pop",
+          "spiegazione": "Il rapporto vale sempre `√(N/(N−1))`, indipendentemente dai dati: con 5 campioni è 1.118, cioè l'11.8%. Con 100 campioni scende allo 0.5% e la scelta smette di contare — ma sulle 4 o 5 ripetizioni di una campagna in galleria conta eccome."
+        },
+        {
+          "id": "m05-std-5",
+          "tipo": "predict",
+          "testo": "Che rapporto c'è fra `np.var` e `np.std` ?",
+          "opzioni": [
+            "var e' il quadrato di std",
+            "std e' il quadrato di var",
+            "sono la stessa cosa con nomi diversi",
+            "var divide per N e std per N-1"
+          ],
+          "risposta": "var e' il quadrato di std",
+          "spiegazione": "La varianza è la media degli scarti al quadrato, la deviazione standard la sua radice. Entrambe accettano `ddof` con lo stesso significato. La varianza si somma quando si combinano contributi indipendenti, la deviazione no — motivo per cui nella propagazione degli errori si lavora sulle varianze."
+        },
+        {
+          "id": "m05-std-6",
+          "tipo": "write",
+          "testo": "Su una matrice di prove — 4 condizioni, 5 ripetizioni — calcola `sigma_cond`, la deviazione **campionaria** di ogni condizione.",
+          "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
+          "starter": "sigma_cond = \n",
+          "test": "assert sigma_cond.shape == (4,), f'attesi 4 valori, hai {sigma_cond.shape}'\nassert np.allclose(sigma_cond, CL.std(axis=1, ddof=1))\nassert not np.allclose(sigma_cond, CL.std(axis=1)), 'serve ddof=1'",
+          "hint": [
+            "Vanno combinati axis e ddof: CL.std(axis=1, ddof=1)"
+          ],
+          "soluzione": "sigma_cond = CL.std(axis=1, ddof=1)",
+          "spiegazione": "I due parametri sono indipendenti e si usano insieme: `axis` decide su cosa si riduce, `ddof` con quale divisore."
+        },
+        {
+          "id": "m05-std-7",
+          "tipo": "write",
+          "testo": "Calcola `errore_std`, l'**errore standard della media** di ogni condizione: la deviazione campionaria divisa per la radice del numero di campioni.",
+          "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\nn = CL.shape[1]\n",
+          "starter": "errore_std = \n",
+          "test": "assert errore_std.shape == (4,)\nassert np.allclose(errore_std, CL.std(axis=1, ddof=1)/np.sqrt(n))\nassert np.all(errore_std < CL.std(axis=1, ddof=1)), 'l errore standard e minore della deviazione'",
+          "hint": [
+            "errore_std = CL.std(axis=1, ddof=1) / np.sqrt(n)"
+          ],
+          "soluzione": "errore_std = CL.std(axis=1, ddof=1) / np.sqrt(n)",
+          "spiegazione": "La distinzione che si sbaglia più spesso nelle relazioni: la **deviazione** descrive quanto sono sparse le singole misure, l'**errore standard** quanto è incerto il valor medio, ed è più piccolo di un fattore √N.\n\nQuando scrivi «CL = 0.46 ± ...», il numero dopo il ± è l'errore standard."
+        },
+        {
+          "id": "m05-std-8",
+          "tipo": "apply",
+          "testo": "**Ripetibilità di una campagna.**\n\nDalla matrice di prove, calcola:\n\n- `media` e `sigma` per condizione (campionaria)\n- `cv`: il coefficiente di variazione, `sigma/media`, che rende confrontabili condizioni di ordini diversi\n- `peggiore`: l'indice della condizione meno ripetibile",
+          "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
+          "starter": "media = \nsigma = \ncv = \npeggiore = \n",
+          "test": "assert media.shape == (4,) and sigma.shape == (4,) and cv.shape == (4,)\nassert np.allclose(media, CL.mean(axis=1))\nassert np.allclose(sigma, CL.std(axis=1, ddof=1))\nassert np.allclose(cv, sigma/media)\nassert int(peggiore) == int(np.argmax(sigma/media)), f'indice sbagliato: {peggiore}'\nassert int(peggiore) == 0, f'la prima condizione e la meno ripetibile in relativo, hai {peggiore}'",
+          "hint": [
+            "media = CL.mean(axis=1); sigma = CL.std(axis=1, ddof=1); cv = sigma/media",
+            "peggiore = cv.argmax()"
+          ],
+          "soluzione": "media = CL.mean(axis=1)\nsigma = CL.std(axis=1, ddof=1)\ncv = sigma / media\npeggiore = cv.argmax()",
+          "spiegazione": "In **assoluto** le quattro condizioni hanno esattamente la stessa dispersione, ma in **relativo** la prima è di gran lunga la peggiore, perché il suo valore medio è cinque volte più piccolo. Il coefficiente di variazione è ciò che rende confrontabili misure di ordini diversi, ed è la grandezza che dice davvero quale punto della campagna è poco affidabile."
+        }
+      ]
     },
     {
-      "id": "m05-e4",
-      "tipo": "write",
-      "testo": "Dalla matrice di prove — 4 condizioni sulle righe, 5 ripetizioni sulle colonne — calcola `media_cond`, la media di ogni condizione.",
-      "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
-      "starter": "media_cond = \n",
-      "test": "assert media_cond.shape == (4,), f'attesi 4 valori, shape {media_cond.shape} — hai invertito axis?'\nassert np.allclose(media_cond, [0.21, 0.46, 0.71, 0.96]), f'valori sbagliati: {media_cond}'",
-      "hint": ["Vuoi 4 numeri, uno per riga: l'asse che deve sparire e' quello delle 5 ripetizioni.", "CL.mean(axis=1)"],
-      "soluzione": "media_cond = CL.mean(axis=1)",
-      "spiegazione": "axis=1 elimina le colonne e lascia una media per riga. Se avessi usato axis=0 avresti ottenuto 5 valori — e il test lo dice subito, perché controlla la shape prima dei numeri."
+      "id": "m05-minmax",
+      "comando": "min / max",
+      "titolo": "min e max — gli estremi",
+      "esercizi": [
+        {
+          "id": "m05-mm-1",
+          "tipo": "write",
+          "testo": "Calcola `picco` e `minimo`, i valori estremi del carico.",
+          "setup": "carico = np.array([1.0, 2.4, 3.8, 2.1, -0.5, 3.2])\n",
+          "starter": "picco = \nminimo = \n",
+          "test": "assert np.isclose(picco, 3.8) and np.isclose(minimo, -0.5)",
+          "hint": [
+            "carico.max() e carico.min()"
+          ],
+          "soluzione": "picco = carico.max()\nminimo = carico.min()",
+          "spiegazione": "Senza `axis` scandiscono tutto l'array."
+        },
+        {
+          "id": "m05-mm-2",
+          "tipo": "write",
+          "testo": "Calcola `escursione`, la differenza fra il valore massimo e quello minimo.",
+          "setup": "T = np.array([288.15, 275.0, 250.0, 233.0, 216.65])\n",
+          "starter": "escursione = \n",
+          "test": "assert np.isclose(escursione, 71.5), f'attesa 71.5, hai {escursione}'",
+          "hint": [
+            "escursione = T.max() - T.min()",
+            "Esiste anche np.ptp, che fa esattamente questo."
+          ],
+          "soluzione": "escursione = T.max() - T.min()",
+          "spiegazione": "Esiste anche `np.ptp` (*peak to peak*) che calcola direttamente la differenza fra estremi: `np.ptp(T)` dà lo stesso risultato."
+        },
+        {
+          "id": "m05-mm-3",
+          "tipo": "predict",
+          "testo": "Che differenza c'è fra `np.max(a, b)` e `np.maximum(a, b)` ?",
+          "opzioni": [
+            "maximum confronta due array elemento per elemento, max riduce un array solo",
+            "sono equivalenti",
+            "max accetta due array, maximum uno solo",
+            "maximum funziona solo su scalari"
+          ],
+          "risposta": "maximum confronta due array elemento per elemento, max riduce un array solo",
+          "spiegazione": "`np.max(a)` restituisce un numero, `np.maximum(a, b)` un array della stessa shape con il maggiore di ogni coppia. Scrivere `np.max(a, b)` interpreta `b` come `axis` e produce un errore incomprensibile."
+        },
+        {
+          "id": "m05-mm-4",
+          "tipo": "write",
+          "testo": "Applica una saturazione: costruisci `limitato`, con ogni valore di `v` portato ad almeno `0` — i negativi diventano zero, gli altri restano.",
+          "setup": "v = np.array([3.5, -1.2, 0.8, -0.3, 2.0])\n",
+          "starter": "limitato = \n",
+          "test": "assert np.allclose(limitato, [3.5, 0., 0.8, 0., 2.0])\nassert np.allclose(v, [3.5, -1.2, 0.8, -0.3, 2.0]), 'v non doveva cambiare'",
+          "hint": [
+            "Serve il massimo fra ogni elemento e 0, elemento per elemento.",
+            "np.maximum(v, 0.0)"
+          ],
+          "soluzione": "limitato = np.maximum(v, 0.0)",
+          "spiegazione": "`np.maximum` con uno scalare applica una soglia inferiore a tutto l'array. Per una soglia da entrambi i lati esiste `np.clip`."
+        },
+        {
+          "id": "m05-mm-5",
+          "tipo": "write",
+          "testo": "Su una griglia `(4, 6)`, calcola `max_globale`, `max_per_riga` e `max_per_colonna`.",
+          "setup": "q = np.array([[3920., 8820., 15680., 24500., 35280., 48020.],\n              [3223., 7251., 12890., 20141., 29003., 39477.],\n              [2919., 6568., 11676., 18244., 26271., 35757.],\n              [2634., 5927., 10537., 16464., 23709., 32271.]])\n",
+          "starter": "max_globale = \nmax_per_riga = \nmax_per_colonna = \n",
+          "test": "assert np.isclose(max_globale, 48020.)\nassert max_per_riga.shape == (4,) and max_per_colonna.shape == (6,)\nassert np.allclose(max_per_riga, q.max(axis=1))\nassert np.allclose(max_per_colonna, q.max(axis=0))",
+          "hint": [
+            "q.max(), q.max(axis=1), q.max(axis=0)"
+          ],
+          "soluzione": "max_globale = q.max()\nmax_per_riga = q.max(axis=1)\nmax_per_colonna = q.max(axis=0)",
+          "spiegazione": "Il massimo globale coincide sempre con il massimo dei massimi per riga: `q.max(axis=1).max()` dà lo stesso numero."
+        },
+        {
+          "id": "m05-mm-6",
+          "tipo": "apply",
+          "testo": "**Inviluppo di carico.**\n\nDal profilo del fattore di carico durante una manovra, calcola:\n\n- `nz_max` e `nz_min`\n- `escursione`\n- `oltre_limite`: quanti campioni superano il limite di 2.5 g\n- `margine`: quanto manca al limite dal picco (negativo se sforato)",
+          "setup": "nz = np.array([1.0, 1.4, 2.1, 2.8, 3.1, 2.6, 1.8, 1.0, 0.2, -0.4])\nlimite = 2.5\n",
+          "starter": "nz_max = \nnz_min = \nescursione = \noltre_limite = \nmargine = \n",
+          "test": "assert np.isclose(nz_max, 3.1) and np.isclose(nz_min, -0.4)\nassert np.isclose(escursione, 3.5)\nassert int(oltre_limite) == 3, f'attesi 3 campioni oltre 2.5 g, hai {oltre_limite}'\nassert np.isclose(margine, -0.6), f'atteso -0.6, il limite e sforato: hai {margine}'",
+          "hint": [
+            "oltre_limite = (nz > limite).sum()",
+            "margine = limite - nz_max, negativo se il picco supera il limite"
+          ],
+          "soluzione": "nz_max = nz.max()\nnz_min = nz.min()\nescursione = nz_max - nz_min\noltre_limite = (nz > limite).sum()\nmargine = limite - nz_max",
+          "spiegazione": "Il margine negativo dice subito che il limite è stato sforato, e di quanto: 0.6 g oltre il consentito, per tre campioni consecutivi. Riportare un margine con segno invece di un booleano è più utile — dice anche **quanto** manca quando il limite regge."
+        }
+      ]
     },
     {
-      "id": "m05-e5",
-      "tipo": "write",
-      "testo": "Sulla stessa matrice, calcola `sigma`, la deviazione standard **campionaria** di ogni condizione — quella che divide per N−1, corretta per stimare l'incertezza di misura.",
-      "setup": "CL = np.array([[0.20, 0.22, 0.21, 0.21, 0.21],\n               [0.45, 0.47, 0.46, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71, 0.71],\n               [0.95, 0.97, 0.96, 0.96, 0.96]])\n",
-      "starter": "sigma = \n",
-      "test": "assert sigma.shape == (4,), f'attesi 4 valori, shape {sigma.shape}'\nassert np.allclose(sigma, CL.std(axis=1, ddof=1)), 'serve la deviazione campionaria: ddof=1'\nassert not np.allclose(sigma, CL.std(axis=1)), 'questa e la deviazione di popolazione, non quella campionaria'",
-      "hint": ["Stesso axis dell'esercizio precedente.", "Il divisore N-1 si ottiene con il parametro ddof=1."],
-      "soluzione": "sigma = CL.std(axis=1, ddof=1)",
-      "spiegazione": "NumPy usa ddof=0 di default, cioè divide per N: è la deviazione della popolazione. Su 5 campioni la differenza fra i due divisori è circa l'11%, tutt'altro che trascurabile quando dichiari un'incertezza."
+      "id": "m05-argminmax",
+      "comando": "argmin / argmax",
+      "titolo": "argmin e argmax — dove, non quanto",
+      "esercizi": [
+        {
+          "id": "m05-arg-1",
+          "tipo": "write",
+          "testo": "Trova in `i_picco` l'**indice** del carico massimo.",
+          "setup": "carico = np.array([1.0, 2.4, 3.8, 2.1, 3.2])\n",
+          "starter": "i_picco = \n",
+          "test": "assert int(i_picco) == 2, f'atteso 2, hai {i_picco}'",
+          "hint": [
+            "carico.argmax() restituisce la posizione, non il valore."
+          ],
+          "soluzione": "i_picco = carico.argmax()",
+          "spiegazione": "Il prefisso `arg` significa «restituisce indici»."
+        },
+        {
+          "id": "m05-arg-2",
+          "tipo": "predict",
+          "testo": "Che differenza c'è fra `a.max()` e `a.argmax()` ?",
+          "opzioni": [
+            "max da il valore, argmax la posizione in cui si trova",
+            "sono equivalenti su array 1D",
+            "argmax da il valore, max la posizione",
+            "argmax funziona solo su array ordinati"
+          ],
+          "risposta": "max da il valore, argmax la posizione in cui si trova",
+          "spiegazione": "Serve quando il *dove* conta quanto il *quanto*: a quale incidenza il CL è massimo, in quale istante il carico di punta."
+        },
+        {
+          "id": "m05-arg-3",
+          "tipo": "write",
+          "testo": "**Il pattern chiave.**\n\nTrova in `alpha_stallo` l'incidenza a cui il coefficiente di portanza è massimo: cerca l'indice su `CL` e usalo su `alpha`.",
+          "setup": "alpha = np.linspace(-5., 20., 51)\nCL = 0.11*alpha - 0.0035*alpha**2\n",
+          "starter": "alpha_stallo = \n",
+          "test": "assert np.isclose(alpha_stallo, alpha[CL.argmax()])\nassert 15. < alpha_stallo < 16., f'attesa circa 15.5 gradi, hai {alpha_stallo}'",
+          "hint": [
+            "L'indice si cerca su CL ma si applica ad alpha.",
+            "alpha[CL.argmax()]"
+          ],
+          "soluzione": "alpha_stallo = alpha[CL.argmax()]",
+          "spiegazione": "`argmax` su un array, usato come indice su un altro: è il pattern fondamentale del modulo. Vale ogni volta che due array sono allineati e la condizione sta su uno mentre la risposta sta sull'altro."
+        },
+        {
+          "id": "m05-arg-4",
+          "tipo": "write",
+          "testo": "Trova in `t_picco` l'istante del carico massimo, e in `nz_picco` il valore.",
+          "setup": "t  = np.linspace(0., 9., 10)\nnz = np.array([1.0, 1.4, 2.1, 2.8, 3.1, 2.6, 1.8, 1.0, 0.2, -0.4])\n",
+          "starter": "i = \nt_picco = \nnz_picco = \n",
+          "test": "assert int(i) == 4\nassert np.isclose(t_picco, 4.0) and np.isclose(nz_picco, 3.1)",
+          "hint": [
+            "i = nz.argmax(), poi t_picco = t[i] e nz_picco = nz[i]"
+          ],
+          "soluzione": "i = nz.argmax()\nt_picco = t[i]\nnz_picco = nz[i]",
+          "spiegazione": "Salvare l'indice in una variabile evita di ricalcolare `argmax` due volte e garantisce che valore e istante si riferiscano allo stesso punto."
+        },
+        {
+          "id": "m05-arg-5",
+          "tipo": "predict",
+          "testo": "Su una matrice `(6, 7)`, che cosa restituisce `q.argmax()` senza `axis` ?",
+          "opzioni": [
+            "un solo numero fra 0 e 41, l'indice nell'array appiattito",
+            "una coppia (riga, colonna)",
+            "un array di 6 indici",
+            "solleva un errore"
+          ],
+          "risposta": "un solo numero fra 0 e 41, l'indice nell'array appiattito",
+          "spiegazione": "NumPy conta come se la matrice fosse stesa in una fila unica, riga dopo riga. Per riavere le coordinate serve `np.unravel_index`."
+        },
+        {
+          "id": "m05-arg-6",
+          "tipo": "write",
+          "testo": "Trova in `riga` e `col` la posizione del massimo della griglia.",
+          "setup": "q = np.array([[3920., 8820., 15680.],\n              [3223., 7251., 12890.],\n              [2919., 6568., 11676.]])\n",
+          "starter": "riga, col = \n",
+          "test": "assert int(riga) == 0 and int(col) == 2, f'atteso (0, 2), hai ({riga}, {col})'\nassert np.isclose(q[riga, col], q.max())",
+          "hint": [
+            "argmax da un indice piatto: va tradotto.",
+            "np.unravel_index(q.argmax(), q.shape)"
+          ],
+          "soluzione": "riga, col = np.unravel_index(q.argmax(), q.shape)",
+          "spiegazione": "`unravel_index` traduce l'indice piatto nelle coordinate della shape che gli passi. È l'unico modo corretto di localizzare il massimo di una tabella."
+        },
+        {
+          "id": "m05-arg-7",
+          "tipo": "write",
+          "testo": "Con `axis`, trova `col_max`, l'indice di colonna del massimo di **ogni riga**.",
+          "setup": "q = np.array([[3920., 15680., 8820.],\n              [12890., 3223., 7251.],\n              [2919., 6568., 11676.]])\n",
+          "starter": "col_max = \n",
+          "test": "assert col_max.shape == (3,), f'attesi 3 indici, hai {col_max.shape}'\nassert np.array_equal(col_max, [1, 0, 2]), f'attesi [1 0 2], hai {col_max}'",
+          "hint": [
+            "q.argmax(axis=1) da un indice di colonna per ogni riga."
+          ],
+          "soluzione": "col_max = q.argmax(axis=1)",
+          "spiegazione": "Con `axis` l'indice è relativo a quell'asse, non piatto. Qui ogni riga ha il massimo in una colonna diversa."
+        },
+        {
+          "id": "m05-arg-8",
+          "tipo": "write",
+          "testo": "Usa gli indici trovati per riga per estrarre i valori corrispondenti in `valori_max`.\n\nServe accoppiare ogni riga con il suo indice di colonna.",
+          "setup": "q = np.array([[3920., 15680., 8820.],\n              [12890., 3223., 7251.],\n              [2919., 6568., 11676.]])\ncol_max = q.argmax(axis=1)\n",
+          "starter": "valori_max = \n",
+          "test": "assert valori_max.shape == (3,)\nassert np.allclose(valori_max, [15680., 12890., 11676.])\nassert np.allclose(valori_max, q.max(axis=1))",
+          "hint": [
+            "Servono due array di indici della stessa lunghezza: le righe e le colonne.",
+            "q[np.arange(len(q)), col_max]"
+          ],
+          "soluzione": "valori_max = q[np.arange(len(q)), col_max]",
+          "spiegazione": "Passando due array di indici, NumPy li accoppia posizione per posizione: riga 0 con `col_max[0]`, riga 1 con `col_max[1]`. È il modo standard di usare il risultato di un `argmax(axis=1)` — senza, ti ritroveresti a scrivere il ciclo che stavi evitando.\n\nQui il risultato coincide con `q.max(axis=1)`, ma la tecnica serve quando gli indici trovati su un array vanno applicati a un **altro**."
+        },
+        {
+          "id": "m05-arg-9",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare l'incidenza di CL massimo. Restituisce un coefficiente invece di un angolo. Correggilo.",
+          "setup": "alpha = np.linspace(-5., 20., 51)\nCL = 0.11*alpha - 0.0035*alpha**2\n",
+          "starter": "alpha_stallo = CL.max()\n",
+          "test": "assert np.isclose(alpha_stallo, alpha[CL.argmax()])\nassert 15. < alpha_stallo < 16., f'deve essere un angolo in gradi, hai {alpha_stallo}'",
+          "hint": [
+            "max da il valore, non la posizione.",
+            "Serve l'indice: alpha[CL.argmax()]"
+          ],
+          "soluzione": "alpha_stallo = alpha[CL.argmax()]",
+          "spiegazione": "`CL.max()` restituisce 0.864, che è un CL, non un angolo. L'errore è di tipo dimensionale e non solleva niente: solo un controllo sul valore plausibile lo coglie."
+        },
+        {
+          "id": "m05-arg-10",
+          "tipo": "apply",
+          "testo": "**Punto di dimensionamento.**\n\nDalla griglia di pressione dinamica, trova il punto critico e le sue condizioni:\n\n- `riga`, `col`: dove cade il massimo\n- `q_max`: il valore\n- `rho_crit`, `V_crit`: la densità e la velocità in quel punto\n- `i_peggiore`: la quota (indice di riga) con il massimo per riga più alto",
+          "setup": "rho = np.array([1.225, 1.112, 1.007, 0.909])\nV   = np.array([80., 160., 240., 320.])\nq = 0.5 * rho[:, None] * V**2\n",
+          "starter": "riga, col = \nq_max = \nrho_crit = \nV_crit = \ni_peggiore = \n",
+          "test": "assert int(riga) == 0 and int(col) == 3, f'atteso (0, 3), hai ({riga}, {col})'\nassert np.isclose(q_max, q.max())\nassert np.isclose(rho_crit, 1.225) and np.isclose(V_crit, 320.)\nassert int(i_peggiore) == 0, f'atteso 0, hai {i_peggiore}'",
+          "hint": [
+            "riga, col = np.unravel_index(q.argmax(), q.shape)",
+            "rho_crit = rho[riga]; V_crit = V[col]; i_peggiore = q.max(axis=1).argmax()"
+          ],
+          "soluzione": "riga, col = np.unravel_index(q.argmax(), q.shape)\nq_max = q[riga, col]\nrho_crit = rho[riga]\nV_crit = V[col]\ni_peggiore = q.max(axis=1).argmax()",
+          "spiegazione": "Gli indici trovati sulla griglia si applicano ai **vettori di partenza**: `rho[riga]` e `V[col]` dicono a quali condizioni fisiche corrisponde il massimo. È il punto in cui si dimensiona la struttura — densità massima e velocità massima, l'angolo dell'inviluppo di volo.\n\nNota che `i_peggiore` coincide con `riga`: riducendo prima per riga e poi cercando il massimo si arriva allo stesso punto, ed è una verifica gratuita."
+        }
+      ]
     },
     {
-      "id": "m05-e6",
-      "tipo": "debug",
-      "testo": "Questo codice dovrebbe normalizzare ogni riga in modo che sommi a 1. Solleva `ValueError: operands could not be broadcast together with shapes (4,5) (4,)`. Correggilo.",
-      "setup": "A = np.array([[1., 2., 3., 4., 5.],\n              [2., 2., 2., 2., 2.],\n              [1., 0., 0., 0., 1.],\n              [3., 1., 4., 1., 5.]])\n",
-      "starter": "N = A / A.sum(axis=1)\n",
-      "test": "assert N.shape == (4, 5), f'shape sbagliata: {N.shape}'\nassert np.allclose(N.sum(axis=1), 1.0), 'ogni riga deve sommare a 1'\nassert np.isclose(N[0, 0], 1.0 / 15.0)",
-      "hint": ["La somma per riga ha shape (4,), che non si allinea con (4, 5).", "Serve che resti (4, 1): keepdims=True."],
-      "soluzione": "N = A / A.sum(axis=1, keepdims=True)",
-      "spiegazione": "Con keepdims=True la somma resta (4, 1), che per broadcasting si estende a (4, 5). Funziona anche A / A.sum(axis=1)[:, None]: stessa idea, l'asse rimesso a mano invece che conservato."
+      "id": "m05-keepdims",
+      "comando": "keepdims",
+      "titolo": "keepdims — quando la riduzione deve restare 2D",
+      "esercizi": [
+        {
+          "id": "m05-kd-1",
+          "tipo": "predict",
+          "testo": "Data `A` di shape `(4, 5)`, che shape ha `A.sum(axis=1, keepdims=True)` ?",
+          "opzioni": [
+            "(4, 1)",
+            "(4,)",
+            "(1, 5)",
+            "(4, 5)"
+          ],
+          "risposta": "(4, 1)",
+          "spiegazione": "`keepdims` conserva l'asse ridotto con lunghezza 1 invece di rimuoverlo. Serve proprio perché `(4, 1)` si combina con `(4, 5)` per broadcasting, mentre `(4,)` no."
+        },
+        {
+          "id": "m05-kd-2",
+          "tipo": "write",
+          "testo": "Calcola `somme`, le somme per riga di `A`, conservando la seconda dimensione.",
+          "setup": "A = np.arange(12.).reshape(3, 4)\n",
+          "starter": "somme = \n",
+          "test": "assert somme.shape == (3, 1), f'attesa (3, 1), hai {somme.shape}'\nassert np.allclose(somme[:, 0], [6., 22., 38.])",
+          "hint": [
+            "A.sum(axis=1, keepdims=True)"
+          ],
+          "soluzione": "somme = A.sum(axis=1, keepdims=True)",
+          "spiegazione": "Stessi numeri di `A.sum(axis=1)`, forma diversa."
+        },
+        {
+          "id": "m05-kd-3",
+          "tipo": "debug",
+          "testo": "Questo codice deve normalizzare ogni riga in modo che sommi a 1. Solleva `ValueError: operands could not be broadcast together with shapes (4,5) (4,)`. Correggilo.",
+          "setup": "A = np.array([[1., 2., 3., 4., 5.],\n              [2., 2., 2., 2., 2.],\n              [1., 0., 0., 0., 1.],\n              [3., 1., 4., 1., 5.]])\n",
+          "starter": "N = A / A.sum(axis=1)\n",
+          "test": "assert N.shape == (4, 5), f'shape sbagliata: {N.shape}'\nassert np.allclose(N.sum(axis=1), 1.0), 'ogni riga deve sommare a 1'\nassert np.isclose(N[0, 0], 1./15.)",
+          "hint": [
+            "La somma per riga ha shape (4,), che contro (4,5) allinea 5 con 4.",
+            "keepdims=True la lascia (4,1)"
+          ],
+          "soluzione": "N = A / A.sum(axis=1, keepdims=True)",
+          "spiegazione": "Con `keepdims=True` la somma resta `(4, 1)` e si estende a `(4, 5)`. Funziona anche `A / A.sum(axis=1)[:, None]`: stessa idea, l'asse rimesso a mano invece che conservato."
+        },
+        {
+          "id": "m05-kd-4",
+          "tipo": "write",
+          "testo": "Centra ogni **riga** sulla propria media: costruisci `C` in modo che ogni riga abbia media nulla.",
+          "setup": "A = np.array([[10., 12., 14., 16.],\n              [20., 20., 20., 20.],\n              [1., 5., 9., 13.]])\n",
+          "starter": "C = \n",
+          "test": "assert C.shape == (3, 4)\nassert np.allclose(C.mean(axis=1), 0.0, atol=1e-12), 'ogni riga deve avere media nulla'\nassert np.isclose(C[0, 0], -3.)",
+          "hint": [
+            "A.mean(axis=1, keepdims=True)"
+          ],
+          "soluzione": "C = A - A.mean(axis=1, keepdims=True)",
+          "spiegazione": "Lo stesso schema di prima con la sottrazione. Il riconoscimento è: **riduci lungo un asse e poi ricombini con l'array originale** → serve `keepdims`."
+        },
+        {
+          "id": "m05-kd-5",
+          "tipo": "predict",
+          "testo": "Perché `A - A.mean(axis=0)` funziona senza `keepdims`, mentre `A - A.mean(axis=1)` no?",
+          "opzioni": [
+            "axis=0 lascia un array lungo quanto le colonne, che si allinea gia a destra",
+            "axis=0 conserva sempre le dimensioni",
+            "e' un caso speciale di mean",
+            "entrambi funzionano, dipende dalla versione di NumPy"
+          ],
+          "risposta": "axis=0 lascia un array lungo quanto le colonne, che si allinea gia a destra",
+          "spiegazione": "Il broadcasting allinea da destra: una riduzione su `axis=0` produce un array della lunghezza delle colonne, che combacia con l'ultimo asse. Su `axis=1` la lunghezza è quella delle righe, e finisce allineata all'asse sbagliato.\n\nÈ l'asimmetria da ricordare: `axis=0` si ricombina gratis, `axis=1` no."
+        },
+        {
+          "id": "m05-kd-6",
+          "tipo": "write",
+          "testo": "Scala ogni riga sul proprio massimo, così che il massimo di ogni riga valga 1.",
+          "setup": "q = np.array([[3920., 8820., 15680., 24500.],\n              [3223., 7251., 12890., 20141.],\n              [2919., 6568., 11676., 18244.]])\n",
+          "starter": "scalato = \n",
+          "test": "assert scalato.shape == (3, 4)\nassert np.allclose(scalato.max(axis=1), 1.0), 'il massimo di ogni riga deve valere 1'\nassert np.isclose(scalato[0, 0], 3920./24500.)",
+          "hint": [
+            "q.max(axis=1, keepdims=True)"
+          ],
+          "soluzione": "scalato = q / q.max(axis=1, keepdims=True)",
+          "spiegazione": "`keepdims` vale per tutte le riduzioni, non solo per `sum` e `mean`: `max`, `min`, `std` lo accettano allo stesso modo."
+        },
+        {
+          "id": "m05-kd-7",
+          "tipo": "apply",
+          "testo": "**Normalizzare una campagna in due modi.**\n\nDalla tabella di misure, produci:\n\n- `per_riga`: ogni riga scalata sulla propria media\n- `per_colonna`: ogni colonna scalata sulla propria media\n- `check_riga`: `True` se ogni riga di `per_riga` ha media 1\n- `check_colonna`: `True` se ogni colonna di `per_colonna` ha media 1\n\nNota quale dei due ha bisogno di `keepdims`.",
+          "setup": "M = np.array([[10., 12., 14., 16.],\n              [20., 24., 28., 32.],\n              [ 5.,  6.,  7.,  8.]])\n",
+          "starter": "per_riga = \nper_colonna = \ncheck_riga = \ncheck_colonna = \n",
+          "test": "assert per_riga.shape == (3, 4) and per_colonna.shape == (3, 4)\nassert np.allclose(per_riga.mean(axis=1), 1.0)\nassert np.allclose(per_colonna.mean(axis=0), 1.0)\nassert bool(check_riga) is True and bool(check_colonna) is True",
+          "hint": [
+            "per_riga = M / M.mean(axis=1, keepdims=True) — serve keepdims",
+            "per_colonna = M / M.mean(axis=0) — qui non serve, si allinea gia"
+          ],
+          "soluzione": "per_riga = M / M.mean(axis=1, keepdims=True)\nper_colonna = M / M.mean(axis=0)\ncheck_riga = np.allclose(per_riga.mean(axis=1), 1.0)\ncheck_colonna = np.allclose(per_colonna.mean(axis=0), 1.0)",
+          "spiegazione": "Le due normalizzazioni sembrano simmetriche ma si scrivono in modo diverso, e la ragione è tutta nel broadcasting: solo la riduzione su `axis=1` va rimessa in forma.\n\nSe non vuoi ricordare l'asimmetria, mettere `keepdims=True` **sempre** funziona in entrambi i casi: `(1, 4)` si allinea con `(3, 4)` esattamente come `(4,)`."
+        }
+      ]
     },
     {
-      "id": "m05-e7",
-      "tipo": "write",
-      "testo": "Dalla polare, trova l'incidenza a cui il coefficiente di portanza è massimo.\n\nCalcola `i_max` (l'indice) e `alpha_stallo` (l'incidenza corrispondente, in gradi).",
-      "setup": "alpha = np.linspace(-5., 20., 51)     # gradi\nCL = 0.11 * alpha - 0.0035 * alpha**2\n",
-      "starter": "i_max = \nalpha_stallo = \n",
-      "test": "assert int(i_max) == int(np.argmax(CL)), f'indice sbagliato: {i_max}'\nassert np.isclose(alpha_stallo, alpha[np.argmax(CL)]), f'incidenza sbagliata: {alpha_stallo}'\nassert 15.0 < alpha_stallo < 16.0, f'atteso circa 15.5 gradi, hai {alpha_stallo}'",
-      "hint": ["argmax da la posizione del massimo, non il valore.", "L'indice trovato su CL si usa per indicizzare alpha: alpha[CL.argmax()]."],
-      "soluzione": "i_max = CL.argmax()\nalpha_stallo = alpha[i_max]",
-      "spiegazione": "Il pattern fondamentale: argmax su un array, usato come indice su un altro. Vale ogni volta che il 'dove' conta quanto il 'quanto' — l'istante del carico di punta, la configurazione di resistenza minima, la quota di massima autonomia."
-    },
-    {
-      "id": "m05-e8",
-      "tipo": "apply",
-      "difficolta": 3,
-      "testo": "**Campagna in galleria del vento.**\n\n`CD` contiene 4 configurazioni (righe) misurate a 6 velocità (colonne).\n\nCalcola:\n\n- `cd_medio`: la resistenza media di ogni configurazione → 4 valori\n- `i_best`: l'indice della configurazione con resistenza media minima\n- `riga, col`: la posizione (configurazione, velocità) del **singolo valore più basso** dell'intera tabella",
-      "setup": "CD = np.array([[0.031, 0.029, 0.028, 0.028, 0.029, 0.031],\n               [0.026, 0.024, 0.023, 0.023, 0.024, 0.026],\n               [0.035, 0.033, 0.032, 0.032, 0.033, 0.035],\n               [0.028, 0.026, 0.025, 0.025, 0.026, 0.028]])\n",
-      "starter": "cd_medio = \ni_best = \nriga, col = \n",
-      "test": "assert cd_medio.shape == (4,), f'attesi 4 valori, shape {cd_medio.shape}'\nassert np.allclose(cd_medio, CD.mean(axis=1))\nassert int(i_best) == 1, f'la configurazione migliore e la 1, hai {i_best}'\nassert int(riga) == 1 and int(col) in (2, 3), f'minimo atteso alla riga 1, hai ({riga}, {col})'\nassert np.isclose(CD[riga, col], CD.min()), 'la posizione non corrisponde al minimo globale'",
-      "hint": [
-        "cd_medio: media lungo le velocita, quindi axis=1. i_best: argmin su cd_medio.",
-        "Per la posizione nella tabella, argmin senza axis da un indice piatto: va tradotto con np.unravel_index(CD.argmin(), CD.shape)."
-      ],
-      "soluzione": "cd_medio = CD.mean(axis=1)\ni_best = cd_medio.argmin()\nriga, col = np.unravel_index(CD.argmin(), CD.shape)",
-      "spiegazione": "Tre livelli di aggregazione nella stessa tabella: lungo un asse, sul risultato ridotto, e sull'array intero. Nota che l'indice di argmin su una matrice è piatto — conta come se i dati fossero in fila — e senza unravel_index otterresti il numero 8 invece della coppia (1, 2)."
+      "id": "m05-cumsum",
+      "comando": "np.cumsum",
+      "titolo": "cumsum — la somma che si accumula",
+      "esercizi": [
+        {
+          "id": "m05-cs-1",
+          "tipo": "write",
+          "testo": "Calcola `cumulato`, la somma progressiva dei consumi per tratta.",
+          "setup": "tratte = np.array([120., 340., 210., 480., 150.])\n",
+          "starter": "cumulato = \n",
+          "test": "assert cumulato.shape == (5,), f'stessa lunghezza dell input: {cumulato.shape}'\nassert np.allclose(cumulato, [120., 460., 670., 1150., 1300.])",
+          "hint": [
+            "np.cumsum(tratte)"
+          ],
+          "soluzione": "cumulato = np.cumsum(tratte)",
+          "spiegazione": "A differenza di `sum`, `cumsum` **conserva la lunghezza**: ogni elemento è il totale fino a quel punto."
+        },
+        {
+          "id": "m05-cs-2",
+          "tipo": "predict",
+          "testo": "Che rapporto c'è fra l'ultimo elemento di `np.cumsum(a)` e `a.sum()` ?",
+          "opzioni": [
+            "coincidono: l'ultimo cumulato e' il totale",
+            "differiscono del primo elemento",
+            "cumsum ha un elemento in meno",
+            "non c'e' nessun rapporto"
+          ],
+          "risposta": "coincidono: l'ultimo cumulato e' il totale",
+          "spiegazione": "`np.cumsum(a)[-1] == a.sum()`. È un controllo di coerenza gratuito quando usi le somme cumulate."
+        },
+        {
+          "id": "m05-cs-3",
+          "tipo": "write",
+          "testo": "Dal consumo per tratta, calcola `residuo`, il carburante rimasto **dopo** ogni tratta partendo da 2000 kg.",
+          "setup": "tratte = np.array([120., 340., 210., 480., 150.])\niniziale = 2000.0\n",
+          "starter": "residuo = \n",
+          "test": "assert residuo.shape == (5,)\nassert np.allclose(residuo, [1880., 1540., 1330., 850., 700.])\nassert np.isclose(residuo[-1], iniziale - tratte.sum())",
+          "hint": [
+            "residuo = iniziale - np.cumsum(tratte)"
+          ],
+          "soluzione": "residuo = iniziale - np.cumsum(tratte)",
+          "spiegazione": "È il profilo di carburante lungo la missione, non solo il totale. Serve per verificare che la riserva non venga intaccata a metà volo, non solo alla fine."
+        },
+        {
+          "id": "m05-cs-4",
+          "tipo": "write",
+          "testo": "**Integrazione approssimata.**\n\nDalla velocità campionata a passo costante, ricava `distanza`, lo spazio percorso cumulato, moltiplicando per il passo temporale.",
+          "setup": "dt = 0.5\nv = np.array([100., 110., 120., 130., 140.])\n",
+          "starter": "distanza = \n",
+          "test": "assert distanza.shape == (5,)\nassert np.allclose(distanza, np.cumsum(v)*dt)\nassert np.isclose(distanza[-1], v.sum()*dt)\nassert np.isclose(distanza[0], 50.)",
+          "hint": [
+            "distanza = np.cumsum(v) * dt"
+          ],
+          "soluzione": "distanza = np.cumsum(v) * dt",
+          "spiegazione": "È l'integrazione rettangolare: approssima l'area con rettangoli di base `dt`. Meno accurata della regola dei trapezi che vedrai nel modulo 8, ma è l'unica che dà il **profilo cumulato** con solo NumPy — `np.trapezoid` restituisce un numero solo."
+        },
+        {
+          "id": "m05-cs-5",
+          "tipo": "apply",
+          "testo": "**Profilo di missione.**\n\nDai consumi per tratta, produci il quadro completo:\n\n- `cumulato` e `residuo` (da 2000 kg iniziali)\n- `sotto_riserva`: `True` se il residuo scende sotto la riserva di 800 kg\n- `prima_tratta_critica`: l'indice della prima tratta dopo la quale si è sotto riserva",
+          "setup": "tratte = np.array([120., 340., 210., 480., 150.])\niniziale = 2000.0\nriserva = 800.0\n",
+          "starter": "cumulato = \nresiduo = \nsotto_riserva = \nprima_tratta_critica = \n",
+          "test": "assert np.allclose(cumulato, np.cumsum(tratte))\nassert np.allclose(residuo, iniziale - np.cumsum(tratte))\nassert bool(sotto_riserva) is True\nassert int(prima_tratta_critica) == 4, f'attesa la tratta 4, hai {prima_tratta_critica}'\nassert residuo[3] > riserva and residuo[4] < riserva",
+          "hint": [
+            "sotto_riserva = np.any(residuo < riserva)",
+            "prima_tratta_critica = np.argmax(residuo < riserva) — argmax su una maschera da il primo True"
+          ],
+          "soluzione": "cumulato = np.cumsum(tratte)\nresiduo = iniziale - cumulato\nsotto_riserva = bool(np.any(residuo < riserva))\nprima_tratta_critica = np.argmax(residuo < riserva)",
+          "spiegazione": "`np.argmax` su una **maschera booleana** restituisce l'indice del primo `True`: è la forma idiomatica per «la prima volta che una condizione si verifica», e funziona perché `True` vale 1 e `argmax` si ferma al primo massimo.\n\nAttenzione al caso limite: se la condizione non si verifica mai, `argmax` restituisce 0 invece di segnalare l'assenza. Per questo va sempre accompagnato da un `np.any` che confermi che esiste almeno un caso — esattamente come qui."
+        }
+      ]
     }
   ]
 }
