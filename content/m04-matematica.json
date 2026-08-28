@@ -2,7 +2,20 @@
   "id": "m04",
   "titolo": "Matematica elemento per elemento",
   "perche": "Trigonometria e esponenziali sono il contenuto di metà delle formule che userai: trasformazioni fra terne di riferimento, angoli di rampa, variazione della pressione con la quota. NumPy le applica a interi array, ma lavora in radianti e ha una funzione che quasi tutti sbagliano.",
-  "funzioni": ["np.sin", "np.cos", "np.tan", "np.arctan2", "np.exp", "np.log", "np.sqrt", "np.abs", "np.deg2rad", "np.rad2deg", "np.pi", "np.hypot"],
+  "funzioni": [
+    "np.sin",
+    "np.cos",
+    "np.tan",
+    "np.arctan2",
+    "np.exp",
+    "np.log",
+    "np.sqrt",
+    "np.abs",
+    "np.deg2rad",
+    "np.rad2deg",
+    "np.pi",
+    "np.hypot"
+  ],
   "lezioni": [
     {
       "id": "m04-l1",
@@ -29,93 +42,693 @@
       "demo": "p0, H = 101325.0, 8400.0\nh = np.linspace(0, 11000, 6)\np = p0 * np.exp(-h / H)\nprint(\"quote  :\", h)\nprint(\"pressioni:\", p.round(0))\n\nprint(\"\\nritorno alla quota:\", (-H * np.log(p / p0)).round(1))\n\nprint(\"\\nlog naturale, non base 10:\")\nprint(\"  np.log(100)   =\", np.log(100).round(4))\nprint(\"  np.log10(100) =\", np.log10(100).round(4))"
     }
   ],
-  "esercizi": [
+  "raccolte": [
     {
-      "id": "m04-e1",
-      "tipo": "predict",
-      "testo": "Quanto vale `np.sin(30)` ?",
-      "opzioni": [
-        "circa -0.988, perche 30 e' interpretato come radianti",
-        "esattamente 0.5",
-        "circa 0.5, con errore di arrotondamento",
-        "solleva un errore perche manca la conversione"
-      ],
-      "risposta": "circa -0.988, perche 30 e' interpretato come radianti",
-      "spiegazione": "Le trigonometriche di NumPy lavorano sempre in radianti e non avvisano mai. 30 rad ≈ 1719°, cioè quasi cinque giri: il risultato è un numero plausibile ma senza nessun rapporto con l'angolo che intendevi. Serve np.deg2rad(30)."
+      "id": "m04-gradi",
+      "comando": "np.deg2rad / np.rad2deg",
+      "titolo": "Gradi e radianti — la conversione che nessuno ti ricorda",
+      "esercizi": [
+        {
+          "id": "m04-deg-1",
+          "tipo": "write",
+          "testo": "Converti in `rad` gli angoli di rampa da gradi a radianti.",
+          "setup": "gamma_deg = np.array([0., 3., 6., 9., 12.])\n",
+          "starter": "rad = \n",
+          "test": "assert rad.shape == (5,)\nassert np.allclose(rad, np.deg2rad(gamma_deg))\nassert np.isclose(rad[1], 3*np.pi/180)",
+          "hint": [
+            "np.deg2rad converte l'intero array in un colpo solo."
+          ],
+          "soluzione": "rad = np.deg2rad(gamma_deg)",
+          "spiegazione": "Una chiamata sull'array intero, nessun ciclo."
+        },
+        {
+          "id": "m04-deg-2",
+          "tipo": "write",
+          "testo": "Riporta in gradi l'angolo calcolato in radianti, in `deg`.",
+          "setup": "theta = np.array([0., np.pi/6, np.pi/4, np.pi/2])\n",
+          "starter": "deg = \n",
+          "test": "assert np.allclose(deg, [0., 30., 45., 90.]), f'attesi [0 30 45 90], hai {deg}'",
+          "hint": [
+            "np.rad2deg fa il percorso inverso."
+          ],
+          "soluzione": "deg = np.rad2deg(theta)",
+          "spiegazione": "Si converte alla fine, quando si stampa o si plotta."
+        },
+        {
+          "id": "m04-deg-3",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.sin(30)` ?",
+          "opzioni": [
+            "circa -0.988: 30 e' interpretato come radianti",
+            "esattamente 0.5",
+            "circa 0.5, con errore di arrotondamento",
+            "solleva un errore perche manca la conversione"
+          ],
+          "risposta": "circa -0.988: 30 e' interpretato come radianti",
+          "spiegazione": "Tutte le trigonometriche di NumPy lavorano in radianti e non avvisano mai. 30 rad sono quasi cinque giri: il risultato è plausibile e non ha nessun rapporto con l'angolo che intendevi."
+        },
+        {
+          "id": "m04-deg-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare la velocità verticale per una rampa di 3°. Dà un numero sbagliato senza sollevare nulla. Correggilo.",
+          "setup": "V = 150.0\ngamma_deg = 3.0\n",
+          "starter": "vz = V * np.sin(gamma_deg)\n",
+          "test": "assert np.isclose(vz, 150.0*np.sin(np.deg2rad(3.0))), f'atteso circa 7.85, hai {vz}'\nassert 7. < vz < 8.5, 'con 3 gradi di rampa la salita e circa 7.85 m/s'",
+          "hint": [
+            "np.sin vuole radianti.",
+            "vz = V * np.sin(np.deg2rad(gamma_deg))"
+          ],
+          "soluzione": "vz = V * np.sin(np.deg2rad(gamma_deg))",
+          "spiegazione": "Senza conversione esce 21.2 m/s invece di 7.85: un valore plausibile per una velocità verticale, che nessun controllo automatico segnalerebbe. È il tipo di errore che sopravvive fino in fondo."
+        },
+        {
+          "id": "m04-deg-5",
+          "tipo": "predict",
+          "testo": "`np.radians` e `np.deg2rad` che rapporto hanno?",
+          "opzioni": [
+            "sono la stessa funzione con due nomi",
+            "radians accetta solo scalari",
+            "deg2rad e' piu preciso",
+            "radians converte in gradi, deg2rad in radianti"
+          ],
+          "risposta": "sono la stessa funzione con due nomi",
+          "spiegazione": "Come `np.degrees` e `np.rad2deg`. Scegli una coppia e resta coerente nello stesso file: mescolarle non rompe niente ma rende il codice più difficile da leggere."
+        },
+        {
+          "id": "m04-deg-6",
+          "tipo": "write",
+          "testo": "Converti a mano, senza usare `deg2rad`, per verificare cosa fa: calcola `rad` moltiplicando per il fattore giusto.",
+          "setup": "deg = np.array([0., 45., 90., 180.])\n",
+          "starter": "rad = \n",
+          "test": "assert np.allclose(rad, np.deg2rad(deg))\nassert np.isclose(rad[3], np.pi)",
+          "hint": [
+            "Il fattore e' pi greco diviso 180.",
+            "rad = deg * np.pi / 180"
+          ],
+          "soluzione": "rad = deg * np.pi / 180",
+          "spiegazione": "È esattamente quello che fa `deg2rad`. Conoscerlo serve per riconoscere la conversione nel codice altrui, dove spesso è scritta a mano."
+        },
+        {
+          "id": "m04-deg-7",
+          "tipo": "write",
+          "testo": "**La disciplina che salva.**\n\nDati gli angoli in gradi, converti **una volta sola** e calcola le tre componenti. Usa il suffisso nel nome per non confonderti.\n\nCalcola `alpha` (radianti), `sen` e `cos`.",
+          "setup": "alpha_deg = np.linspace(-5., 15., 5)\n",
+          "starter": "alpha = \nsen = \ncos = \n",
+          "test": "assert np.allclose(alpha, np.deg2rad(alpha_deg))\nassert np.allclose(sen, np.sin(alpha))\nassert np.allclose(cos, np.cos(alpha))\nassert np.isclose(sen[0], np.sin(np.deg2rad(-5.)))",
+          "hint": [
+            "Converti alpha_deg una volta, poi usa alpha per tutto il resto."
+          ],
+          "soluzione": "alpha = np.deg2rad(alpha_deg)\nsen = np.sin(alpha)\ncos = np.cos(alpha)",
+          "spiegazione": "Il pattern corretto: converti appena leggi i dati, lavora solo in radianti, riconverti solo per stampare. Il suffisso `_deg` sul nome originale rende impossibile confondere le due unità venti righe più avanti."
+        },
+        {
+          "id": "m04-deg-8",
+          "tipo": "predict",
+          "testo": "Un angolo di rampa di 3° viene passato per errore come 3 radianti. Quanto vale in gradi?",
+          "opzioni": [
+            "circa 172 gradi",
+            "circa 3 gradi, la differenza e' trascurabile",
+            "circa 0.05 gradi",
+            "circa 540 gradi"
+          ],
+          "risposta": "circa 172 gradi",
+          "spiegazione": "3 rad ≈ 171.9°. Il velivolo starebbe scendendo quasi in verticale, e il conto proseguirebbe senza un avviso. È il motivo per cui la conversione va fatta una volta sola, subito, e mai «più avanti»."
+        },
+        {
+          "id": "m04-deg-9",
+          "tipo": "write",
+          "testo": "Calcola `giri`, quanti giri completi rappresentano gli angoli dati in radianti.",
+          "setup": "theta = np.array([0., np.pi, 2*np.pi, 6*np.pi])\n",
+          "starter": "giri = \n",
+          "test": "assert np.allclose(giri, [0., 0.5, 1., 3.]), f'attesi [0 0.5 1 3], hai {giri}'",
+          "hint": [
+            "Un giro completo sono 2 pi radianti.",
+            "giri = theta / (2*np.pi)"
+          ],
+          "soluzione": "giri = theta / (2 * np.pi)",
+          "spiegazione": "np.pi e la costante, non una funzione: si scrive senza parentesi. NumPy non definisce tau, quindi il giro completo si scrive 2*np.pi."
+        },
+        {
+          "id": "m04-deg-10",
+          "tipo": "apply",
+          "testo": "**Rateo di salita da rampa e velocità.**\n\nPer ogni condizione di volo, calcola:\n\n- `gamma`: le rampe in radianti\n- `vz`: la velocità verticale `V · sin(γ)` in m/s\n- `vz_fpm`: la stessa in piedi al minuto (`1 m/s = 196.85 ft/min`)\n- `max_deg`: la rampa, **in gradi**, del punto a salita massima",
+          "setup": "V         = np.array([120., 150., 180., 200.])\ngamma_deg = np.array([2., 5., 3., 8.])\n",
+          "starter": "gamma = \nvz = \nvz_fpm = \nmax_deg = \n",
+          "test": "assert np.allclose(gamma, np.deg2rad(gamma_deg))\nassert np.allclose(vz, V*np.sin(np.deg2rad(gamma_deg)))\nassert np.allclose(vz_fpm, vz*196.85)\nassert np.isclose(max_deg, 8.0), f'la salita massima e a 8 gradi, hai {max_deg}'\nassert vz.max() > 27., 'la salita massima supera i 27 m/s'",
+          "hint": [
+            "gamma = np.deg2rad(gamma_deg); vz = V * np.sin(gamma)",
+            "max_deg = gamma_deg[vz.argmax()] — l'indice trovato su vz indicizza gamma_deg"
+          ],
+          "soluzione": "gamma = np.deg2rad(gamma_deg)\nvz = V * np.sin(gamma)\nvz_fpm = vz * 196.85\nmax_deg = gamma_deg[vz.argmax()]",
+          "spiegazione": "Il giro completo: entri in gradi, converti subito, calcoli in radianti, e **esci** in gradi indicizzando l'array originale invece di riconvertire. `gamma_deg[vz.argmax()]` è più diretto e non introduce un secondo arrotondamento."
+        }
+      ]
     },
     {
-      "id": "m04-e2",
-      "tipo": "predict",
-      "testo": "Perché `np.sin(np.pi)` non vale esattamente `0.0` ?",
-      "opzioni": [
-        "np.pi e' l'approssimazione in virgola mobile di pi greco",
-        "np.sin ha una precisione limitata a 8 cifre",
-        "e' un bug noto di NumPy",
-        "in realta vale esattamente 0.0"
-      ],
-      "risposta": "np.pi e' l'approssimazione in virgola mobile di pi greco",
-      "spiegazione": "π è irrazionale e non ha una rappresentazione esatta in float64. np.sin calcola correttamente il seno del valore rappresentabile più vicino, che dista ~10⁻¹⁶ da π. Conseguenza pratica: i confronti fra float vanno fatti con np.isclose, mai con ==."
+      "id": "m04-trig",
+      "comando": "np.sin / np.cos / np.tan",
+      "titolo": "Trigonometriche — su array, in radianti",
+      "esercizi": [
+        {
+          "id": "m04-trig-1",
+          "tipo": "write",
+          "testo": "Calcola `s`, il seno di ciascun angolo (già in radianti).",
+          "setup": "th = np.array([0., np.pi/6, np.pi/2])\n",
+          "starter": "s = \n",
+          "test": "assert np.allclose(s, [0., 0.5, 1.], atol=1e-12)",
+          "hint": [
+            "np.sin(th)"
+          ],
+          "soluzione": "s = np.sin(th)",
+          "spiegazione": "Una ufunc: si applica a ogni elemento e restituisce un array della stessa shape."
+        },
+        {
+          "id": "m04-trig-2",
+          "tipo": "predict",
+          "testo": "Perché `math.sin(a)` fallisce se `a` è un array NumPy?",
+          "opzioni": [
+            "math lavora su un numero alla volta, non su array",
+            "math.sin vuole i gradi",
+            "math non e' importato di default",
+            "non fallisce, e' solo piu lento"
+          ],
+          "risposta": "math lavora su un numero alla volta, non su array",
+          "spiegazione": "Solleva `TypeError: only length-1 arrays can be converted to Python scalars`. La regola: con gli array, sempre `np.qualcosa`."
+        },
+        {
+          "id": "m04-trig-3",
+          "tipo": "predict",
+          "testo": "Perché `np.sin(np.pi)` non vale esattamente `0.0` ?",
+          "opzioni": [
+            "np.pi e' l'approssimazione in virgola mobile di pi greco",
+            "np.sin ha una precisione limitata a 8 cifre",
+            "e' un bug noto di NumPy",
+            "in realta vale esattamente 0.0"
+          ],
+          "risposta": "np.pi e' l'approssimazione in virgola mobile di pi greco",
+          "spiegazione": "Vale circa 1.2·10⁻¹⁶: NumPy calcola correttamente il seno del valore rappresentabile più vicino a π. Conseguenza pratica: `if np.sin(x) == 0` non entra mai nel ramo, serve `np.isclose`."
+        },
+        {
+          "id": "m04-trig-4",
+          "tipo": "write",
+          "testo": "Calcola le componenti di un vettore di modulo `V` inclinato di `th` radianti: `vx = V·cos(th)` e `vz = V·sin(th)`.",
+          "setup": "V = np.array([100., 150., 200.])\nth = np.deg2rad(np.array([0., 30., 45.]))\n",
+          "starter": "vx = \nvz = \n",
+          "test": "assert np.allclose(vx, V*np.cos(th))\nassert np.allclose(vz, V*np.sin(th))\nassert np.isclose(vx[0], 100.) and np.isclose(vz[0], 0., atol=1e-12)",
+          "hint": [
+            "vx = V * np.cos(th), vz = V * np.sin(th)"
+          ],
+          "soluzione": "vx = V * np.cos(th)\nvz = V * np.sin(th)",
+          "spiegazione": "Tre condizioni trattate insieme. La prima, a 0°, dà tutto sull'orizzontale: buon controllo di sanità."
+        },
+        {
+          "id": "m04-trig-5",
+          "tipo": "write",
+          "testo": "Verifica l'identità fondamentale: calcola `identita = sin² + cos²` e `vale_uno`, che deve essere `True`.",
+          "setup": "th = np.linspace(0., 2*np.pi, 17)\n",
+          "starter": "identita = \nvale_uno = \n",
+          "test": "assert identita.shape == (17,)\nassert bool(vale_uno) is True\nassert np.allclose(identita, 1.0)",
+          "hint": [
+            "identita = np.sin(th)**2 + np.cos(th)**2",
+            "vale_uno = np.allclose(identita, 1.0) — non ==, sono float"
+          ],
+          "soluzione": "identita = np.sin(th)**2 + np.cos(th)**2\nvale_uno = np.allclose(identita, 1.0)",
+          "spiegazione": "Il confronto va fatto con `allclose`: i valori escono `0.9999999999999999` in qualche punto. È anche il modo di verificare che una trasformazione fra terne conservi i moduli."
+        },
+        {
+          "id": "m04-trig-6",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.tan(np.pi/2)` ?",
+          "opzioni": [
+            "un numero enorme, circa 1.6e16, non infinito",
+            "inf",
+            "nan",
+            "solleva un ZeroDivisionError"
+          ],
+          "risposta": "un numero enorme, circa 1.6e16, non infinito",
+          "spiegazione": "Poiché `np.pi/2` non è esattamente π/2, il coseno non è esattamente zero e la tangente esce finita ma enorme. Nessun errore, nessun avviso: se quel numero entra in un conto, il risultato esplode senza spiegazione."
+        },
+        {
+          "id": "m04-trig-7",
+          "tipo": "write",
+          "testo": "Calcola `pendenza`, la tangente dell'angolo di rampa, e `perc`, la stessa pendenza in percentuale.",
+          "setup": "gamma_deg = np.array([0., 3., 5., 10.])\n",
+          "starter": "pendenza = \nperc = \n",
+          "test": "assert np.allclose(pendenza, np.tan(np.deg2rad(gamma_deg)))\nassert np.allclose(perc, pendenza*100)\nassert np.isclose(perc[3], np.tan(np.deg2rad(10.))*100)\nassert 17. < perc[3] < 18., 'una rampa di 10 gradi e circa il 17.6%'",
+          "hint": [
+            "pendenza = np.tan(np.deg2rad(gamma_deg)); perc = pendenza * 100"
+          ],
+          "soluzione": "pendenza = np.tan(np.deg2rad(gamma_deg))\nperc = pendenza * 100",
+          "spiegazione": "Una rampa di 10° è il 17.6%, non il 10%: la pendenza percentuale è la tangente, non l'angolo. Per angoli piccoli le due quasi coincidono, ed è da lì che nasce la confusione."
+        },
+        {
+          "id": "m04-trig-8",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare la componente orizzontale della velocità. Con rampa nulla dovrebbe restituire l'intera velocità, e invece dà zero. Correggilo.",
+          "setup": "V = np.array([100., 150., 200.])\ngamma = np.deg2rad(np.array([0., 5., 10.]))\n",
+          "starter": "vx = V * np.sin(gamma)\n",
+          "test": "assert np.isclose(vx[0], 100.), f'a rampa nulla la componente orizzontale e tutta la velocita, hai {vx[0]}'\nassert np.allclose(vx, V*np.cos(gamma))",
+          "hint": [
+            "A rampa nulla il seno vale 0 e il coseno 1.",
+            "vx = V * np.cos(gamma)"
+          ],
+          "soluzione": "vx = V * np.cos(gamma)",
+          "spiegazione": "Seno e coseno scambiati: l'errore non solleva niente e produce numeri dello stesso ordine. Il controllo che lo coglie è il caso limite — a rampa nulla la componente orizzontale deve valere `V`."
+        },
+        {
+          "id": "m04-trig-9",
+          "tipo": "write",
+          "testo": "**Matrice di rotazione.**\n\nCostruisci `R`, la matrice di rotazione 2×2 per l'angolo `th`, e verifica in `det_uno` che il determinante valga 1.\n\n`R = [[cos, −sin], [sin, cos]]`",
+          "setup": "th = np.deg2rad(37.0)\n",
+          "starter": "R = \ndet_uno = \n",
+          "test": "assert R.shape == (2, 2)\nassert np.isclose(R[0, 0], np.cos(th)) and np.isclose(R[0, 1], -np.sin(th))\nassert bool(det_uno) is True\nassert np.isclose(np.linalg.det(R), 1.0)",
+          "hint": [
+            "R = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])",
+            "det_uno = np.isclose(np.linalg.det(R), 1.0)"
+          ],
+          "soluzione": "R = np.array([[np.cos(th), -np.sin(th)],\n              [np.sin(th),  np.cos(th)]])\ndet_uno = np.isclose(np.linalg.det(R), 1.0)",
+          "spiegazione": "Il determinante unitario è la firma di una rotazione pura: conserva aree e moduli. Se ti esce diverso da 1, hai sbagliato un segno o messo un seno al posto di un coseno."
+        },
+        {
+          "id": "m04-trig-10",
+          "tipo": "apply",
+          "testo": "**Componenti in terna terrestre.**\n\nDati modulo, rampa e rotta, calcola le tre componenti NED:\n\n- `vN = V·cos(γ)·cos(χ)`\n- `vE = V·cos(γ)·sin(χ)`\n- `vD = −V·sin(γ)`\n\nGli angoli arrivano in gradi. Verifica in `modulo_ok` che il modulo si conservi.",
+          "setup": "V         = np.array([200., 200., 250., 250.])\ngamma_deg = np.array([0., 5., -3., 10.])\nchi_deg   = np.array([0., 90., 180., 45.])\n",
+          "starter": "gamma = \nchi = \nvN = \nvE = \nvD = \nmodulo_ok = \n",
+          "test": "g = np.deg2rad(gamma_deg); c = np.deg2rad(chi_deg)\nassert np.allclose(vN, V*np.cos(g)*np.cos(c)), 'vN sbagliata'\nassert np.allclose(vE, V*np.cos(g)*np.sin(c)), 'vE sbagliata'\nassert np.allclose(vD, -V*np.sin(g)), 'vD sbagliata'\nassert np.isclose(vN[0], 200.), 'primo caso: livellato verso nord'\nassert vD[2] > 0, 'rampa negativa e discesa, quindi vD positivo'\nassert bool(modulo_ok) is True",
+          "hint": [
+            "Converti entrambi gli angoli, poi scrivi le tre formule tali e quali.",
+            "modulo_ok = np.allclose(np.sqrt(vN**2 + vE**2 + vD**2), V)"
+          ],
+          "soluzione": "gamma = np.deg2rad(gamma_deg)\nchi = np.deg2rad(chi_deg)\nvN = V * np.cos(gamma) * np.cos(chi)\nvE = V * np.cos(gamma) * np.sin(chi)\nvD = -V * np.sin(gamma)\nmodulo_ok = np.allclose(np.sqrt(vN**2 + vE**2 + vD**2), V)",
+          "spiegazione": "Il controllo finale è quello che vale: ricomporre il modulo dalle tre componenti deve restituire `V`. Coglie sia gli errori di segno sia le conversioni dimenticate, ed è una verifica che puoi sempre fare su una trasformazione fra terne."
+        }
+      ]
     },
     {
-      "id": "m04-e3",
-      "tipo": "predict",
-      "testo": "Per un punto con `x = -1` e `y = 1` (secondo quadrante), quale espressione dà l'angolo corretto di 135° ?",
-      "opzioni": [
-        "np.rad2deg(np.arctan2(1, -1))",
-        "np.rad2deg(np.arctan2(-1, 1))",
-        "np.rad2deg(np.arctan(1 / -1))",
-        "np.rad2deg(np.arctan(-1))"
-      ],
-      "risposta": "np.rad2deg(np.arctan2(1, -1))",
-      "spiegazione": "arctan2 vuole prima y e poi x: arctan2(y=1, x=-1) → 135°. Invertendo gli argomenti si ottiene -45°. arctan riceve solo il rapporto -1 e non può distinguere il secondo quadrante dal quarto."
+      "id": "m04-arctan2",
+      "comando": "np.arctan2",
+      "titolo": "arctan2 — l'arcotangente che conosce il quadrante",
+      "esercizi": [
+        {
+          "id": "m04-at2-1",
+          "tipo": "write",
+          "testo": "Calcola `ang`, l'angolo in radianti del punto `(x, y)` rispetto all'asse x.",
+          "setup": "x = np.array([1., 0., -1., 0.])\ny = np.array([0., 1., 0., -1.])\n",
+          "starter": "ang = \n",
+          "test": "assert np.allclose(ang, np.arctan2(y, x))\nassert np.isclose(ang[0], 0.) and np.isclose(ang[1], np.pi/2)",
+          "hint": [
+            "L'ordine e' prima y, poi x: np.arctan2(y, x)"
+          ],
+          "soluzione": "ang = np.arctan2(y, x)",
+          "spiegazione": "Prima l'ordinata, poi l'ascissa. È l'ordine inverso rispetto a come scriveresti un punto."
+        },
+        {
+          "id": "m04-at2-2",
+          "tipo": "predict",
+          "testo": "Per il punto `x = −1`, `y = 1`, quanto vale `np.rad2deg(np.arctan2(1, -1))` ?",
+          "opzioni": [
+            "135",
+            "-45",
+            "45",
+            "-135"
+          ],
+          "risposta": "135",
+          "spiegazione": "Secondo quadrante. `arctan2` riceve i due valori separati, quindi conosce i segni. `np.arctan(1/-1)` darebbe −45°, indistinguibile dal quarto quadrante."
+        },
+        {
+          "id": "m04-at2-3",
+          "tipo": "predict",
+          "testo": "Perché `np.arctan(y/x)` non basta?",
+          "opzioni": [
+            "riceve solo il rapporto e non puo distinguere i quadranti opposti",
+            "e' meno preciso numericamente",
+            "non accetta array",
+            "restituisce gradi invece di radianti"
+          ],
+          "risposta": "riceve solo il rapporto e non puo distinguere i quadranti opposti",
+          "spiegazione": "`-1/1` e `1/-1` valgono entrambi −1, ma sono direzioni opposte. `arctan` restituisce sempre un valore fra −90° e +90°; `arctan2` copre tutto il giro."
+        },
+        {
+          "id": "m04-at2-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare l'angolo di rampa dalle componenti di velocità. Per una discesa (`vD` positivo verso il basso) dovrebbe uscire **negativo**, e invece esce positivo. Correggilo.",
+          "setup": "vN = np.array([200., 180., 150.])\nvE = np.array([0., 50., 80.])\nvD = np.array([5., 10., 15.])\n",
+          "starter": "gamma = np.arctan2(vD, np.hypot(vN, vE))\n",
+          "test": "assert np.all(gamma < 0), 'con vD positivo la rampa deve essere negativa'\nassert np.allclose(gamma, np.arctan2(-vD, np.hypot(vN, vE)))",
+          "hint": [
+            "Nella terna NED l'asse D punta verso il basso, la rampa e' positiva in salita.",
+            "gamma = np.arctan2(-vD, np.hypot(vN, vE))"
+          ],
+          "soluzione": "gamma = np.arctan2(-vD, np.hypot(vN, vE))",
+          "spiegazione": "Errore di convenzione, non di sintassi: nessuna eccezione, solo il segno invertito su una grandezza che finisce in una relazione. L'unica difesa è controllare che il segno abbia senso fisico."
+        },
+        {
+          "id": "m04-at2-5",
+          "tipo": "write",
+          "testo": "Calcola `chi_deg`, la rotta in gradi, dalle componenti nord ed est.",
+          "setup": "vN = np.array([200., 0., -150., 100.])\nvE = np.array([0., 100., 0., 100.])\n",
+          "starter": "chi_deg = \n",
+          "test": "assert np.allclose(chi_deg, np.rad2deg(np.arctan2(vE, vN)))\nassert np.isclose(chi_deg[0], 0.), 'verso nord: rotta 0'\nassert np.isclose(chi_deg[1], 90.), 'verso est: rotta 90'\nassert np.isclose(chi_deg[3], 45.)",
+          "hint": [
+            "La rotta si misura da nord verso est: np.arctan2(vE, vN)"
+          ],
+          "soluzione": "chi_deg = np.rad2deg(np.arctan2(vE, vN))",
+          "spiegazione": "Nota l'ordine: qui il «primo» argomento è la componente **est**, perché la rotta si misura da nord. Cambiare l'ordine ruota tutto di 90°, e i casi di prova a 0° e 90° lo colgono subito."
+        },
+        {
+          "id": "m04-at2-6",
+          "tipo": "predict",
+          "testo": "In quale intervallo cade il risultato di `np.arctan2` ?",
+          "opzioni": [
+            "(-pi, +pi], cioe tutto il giro",
+            "[0, 2*pi)",
+            "[-pi/2, +pi/2]",
+            "[0, pi]"
+          ],
+          "risposta": "(-pi, +pi], cioe tutto il giro",
+          "spiegazione": "Copre l'intero giro con il segno: una rotta a ovest esce come −90°, non 270°. Per avere l'intervallo `[0, 360)` serve un `% 360` dopo la conversione."
+        },
+        {
+          "id": "m04-at2-7",
+          "tipo": "write",
+          "testo": "Riporta la rotta nell'intervallo `[0, 360)`, come sugli strumenti di bordo.",
+          "setup": "vN = np.array([200., 0., -150., 0.])\nvE = np.array([0., 100., 0., -100.])\n",
+          "starter": "chi_360 = \n",
+          "test": "assert np.allclose(chi_360, np.rad2deg(np.arctan2(vE, vN)) % 360)\nassert np.isclose(chi_360[2], 180.), 'verso sud: 180'\nassert np.isclose(chi_360[3], 270.), 'verso ovest: 270, non -90'\nassert np.all((chi_360 >= 0) & (chi_360 < 360))",
+          "hint": [
+            "Il modulo 360 riporta i negativi nell'intervallo giusto.",
+            "chi_360 = np.rad2deg(np.arctan2(vE, vN)) % 360"
+          ],
+          "soluzione": "chi_360 = np.rad2deg(np.arctan2(vE, vN)) % 360",
+          "spiegazione": "L'operatore `%` in Python restituisce sempre un risultato con il segno del divisore, quindi `-90 % 360` dà 270. In C darebbe −90: è una differenza che sorprende chi arriva da lì."
+        },
+        {
+          "id": "m04-at2-8",
+          "tipo": "apply",
+          "testo": "**Dal vettore velocità agli angoli.**\n\nDate le tre componenti NED, ricava:\n\n- `V`: il modulo della velocità\n- `gamma_deg`: l'angolo di rampa in gradi, positivo in salita\n- `chi_deg`: la rotta in gradi, nell'intervallo `[0, 360)`\n\nÈ l'operazione inversa dell'esercizio finale delle trigonometriche.",
+          "setup": "vN = np.array([200., 0., -150., 141.42])\nvE = np.array([0., 200., 0., 141.42])\nvD = np.array([-10., 5., 0., -20.])\n",
+          "starter": "V = \ngamma_deg = \nchi_deg = \n",
+          "test": "assert np.allclose(V, np.sqrt(vN**2 + vE**2 + vD**2))\nassert np.allclose(gamma_deg, np.rad2deg(np.arctan2(-vD, np.hypot(vN, vE))))\nassert gamma_deg[0] > 0, 'vD negativo e salita: rampa positiva'\nassert gamma_deg[1] < 0, 'vD positivo e discesa: rampa negativa'\nassert np.isclose(gamma_deg[2], 0.), 'volo livellato'\nassert np.allclose(chi_deg, np.rad2deg(np.arctan2(vE, vN)) % 360)\nassert np.isclose(chi_deg[2], 180.) and np.isclose(chi_deg[3], 45., atol=0.01)",
+          "hint": [
+            "V = np.sqrt(vN**2 + vE**2 + vD**2), oppure con hypot annidati.",
+            "gamma = np.arctan2(-vD, np.hypot(vN, vE)); chi = np.arctan2(vE, vN)"
+          ],
+          "soluzione": "V = np.sqrt(vN**2 + vE**2 + vD**2)\ngamma_deg = np.rad2deg(np.arctan2(-vD, np.hypot(vN, vE)))\nchi_deg = np.rad2deg(np.arctan2(vE, vN)) % 360",
+          "spiegazione": "Tre `arctan2` con convenzioni diverse nello stesso esercizio: il segno meno su `vD` perché l'asse punta in basso, `hypot` come secondo argomento perché la rampa si misura sul piano orizzontale, e `vE` per primo perché la rotta parte da nord.\n\nSono esattamente le convenzioni che si sbagliano, e i casi di prova — livellato, salita, discesa, 45° — sono scelti per coglierle una a una."
+        }
+      ]
     },
     {
-      "id": "m04-e4",
-      "tipo": "write",
-      "testo": "Converti gli angoli di rampa da gradi a radianti e calcola la velocità verticale di salita `vz = V · sin(gamma)`.",
-      "setup": "V = np.array([100., 150., 200., 250.])       # m/s\ngamma_deg = np.array([0., 3., 6., 9.])       # gradi\n",
-      "starter": "gamma = \nvz = \n",
-      "test": "assert np.isclose(gamma[1], np.deg2rad(3.0)), 'gamma deve essere in radianti'\nassert vz.shape == (4,), f'shape sbagliata: {vz.shape}'\nassert np.isclose(vz[0], 0.0)\nassert np.isclose(vz[1], 150.0 * np.sin(np.deg2rad(3.0))), f'vz[1] atteso 7.85, hai {vz[1]}'\nassert np.isclose(vz[3], 250.0 * np.sin(np.deg2rad(9.0)))",
-      "hint": ["np.deg2rad converte l'intero array in un colpo solo.", "vz = V * np.sin(gamma), con gamma gia in radianti."],
-      "soluzione": "gamma = np.deg2rad(gamma_deg)\nvz = V * np.sin(gamma)",
-      "spiegazione": "Il pattern corretto: converti una volta sola appena hai i dati, poi lavora solo in radianti. Il suffisso _deg sul nome originale rende impossibile confondere le due unità più avanti nel codice."
+      "id": "m04-explog",
+      "comando": "np.exp / np.log",
+      "titolo": "exp e log — decadimenti e inversioni",
+      "esercizi": [
+        {
+          "id": "m04-el-1",
+          "tipo": "write",
+          "testo": "Calcola `rho`, la densità dell'aria con l'atmosfera esponenziale: `rho = 1.225 · e^(−h/8400)`.",
+          "setup": "h = np.array([0., 5000., 10000., 20000.])\n",
+          "starter": "rho = \n",
+          "test": "assert np.allclose(rho, 1.225*np.exp(-h/8400.))\nassert np.isclose(rho[0], 1.225), 'al suolo vale 1.225'\nassert rho[3] < rho[2] < rho[1] < rho[0], 'deve calare con la quota'",
+          "hint": [
+            "np.exp(x) e' e elevato a x.",
+            "rho = 1.225 * np.exp(-h/8400.)"
+          ],
+          "soluzione": "rho = 1.225 * np.exp(-h / 8400.)",
+          "spiegazione": "Il controllo che al suolo esca esattamente 1.225 verifica il segno dell'esponente: con `+h` la densità crescerebbe con la quota."
+        },
+        {
+          "id": "m04-el-2",
+          "tipo": "predict",
+          "testo": "`np.log` è il logaritmo in quale base?",
+          "opzioni": [
+            "naturale, base e",
+            "base 10",
+            "base 2",
+            "dipende dal dtype"
+          ],
+          "risposta": "naturale, base e",
+          "spiegazione": "Su molte calcolatrici `log` significa base 10 e `ln` la naturale: qui è il contrario. Per la base 10 servono `np.log10`, per la base 2 `np.log2`. Confonderli sbaglia i risultati di un fattore 2.3, senza nessun errore."
+        },
+        {
+          "id": "m04-el-3",
+          "tipo": "write",
+          "testo": "**Altimetro barometrico.**\n\nInverti la formula barometrica: ricava `h` dalle pressioni misurate, con `h = −H · ln(p/p0)`.",
+          "setup": "p0 = 101325.0\nH  = 8400.0\np  = np.array([101325., 89876., 79501., 70109.])\n",
+          "starter": "h = \n",
+          "test": "assert np.isclose(h[0], 0.), f'alla pressione al suolo la quota e 0, hai {h[0]}'\nassert np.allclose(h, -H*np.log(p/p0))\nassert h[3] > h[2] > h[1] > h[0], 'la quota cresce al calare della pressione'",
+          "hint": [
+            "np.log e' il logaritmo naturale, quello che serve qui.",
+            "h = -H * np.log(p/p0)"
+          ],
+          "soluzione": "h = -H * np.log(p / p0)",
+          "spiegazione": "È quello che fa un altimetro barometrico. Con `np.log10` avresti ottenuto quote sbagliate di un fattore 2.3, e nessun avviso."
+        },
+        {
+          "id": "m04-el-4",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.log(0)` ?",
+          "opzioni": [
+            "-inf, con un RuntimeWarning ma senza eccezione",
+            "solleva ValueError",
+            "nan senza avvisi",
+            "0.0"
+          ],
+          "risposta": "-inf, con un RuntimeWarning ma senza eccezione",
+          "spiegazione": "Il calcolo prosegue e l'infinito si propaga a valle. `np.log(-1)` dà invece `nan`. Se un `nan` compare dal nulla in fondo a una catena, cerca a monte un logaritmo o una radice con argomento fuori dominio."
+        },
+        {
+          "id": "m04-el-5",
+          "tipo": "write",
+          "testo": "Verifica che `exp` e `log` siano una l'inversa dell'altra: calcola `andata`, `ritorno` e `tornano`.",
+          "setup": "x = np.array([0.5, 1.0, 2.0, 10.0])\n",
+          "starter": "andata = \nritorno = \ntornano = \n",
+          "test": "assert np.allclose(andata, np.exp(x))\nassert np.allclose(ritorno, x)\nassert bool(tornano) is True",
+          "hint": [
+            "andata = np.exp(x); ritorno = np.log(andata)",
+            "tornano = np.allclose(ritorno, x)"
+          ],
+          "soluzione": "andata = np.exp(x)\nritorno = np.log(andata)\ntornano = np.allclose(ritorno, x)",
+          "spiegazione": "Il confronto con `allclose` è d'obbligo: il giro andata-ritorno introduce un errore dell'ordine di 10⁻¹⁶, e con `==` la verifica fallirebbe."
+        },
+        {
+          "id": "m04-el-6",
+          "tipo": "write",
+          "testo": "Calcola `H_stimata`, l'altezza di scala dedotta da due misure di pressione a quote note:\n\n`H = (h2 − h1) / ln(p1/p2)`",
+          "setup": "h1, p1 = 0.0, 101325.0\nh2, p2 = 5000.0, 54019.9\n",
+          "starter": "H_stimata = \n",
+          "test": "assert np.isclose(H_stimata, (h2-h1)/np.log(p1/p2)), f'formula sbagliata: {H_stimata}'\nassert 7900. < H_stimata < 8100., f'attesa circa 7950 m, hai {H_stimata}'",
+          "hint": [
+            "H_stimata = (h2 - h1) / np.log(p1/p2)"
+          ],
+          "soluzione": "H_stimata = (h2 - h1) / np.log(p1 / p2)",
+          "spiegazione": "Circa 7950 m, vicino agli 8400 del modello isotermo: la differenza c'è perché l'atmosfera vera non è a temperatura costante. Stimare un parametro da due misure è il modo più diretto di controllare se un modello regge sui dati."
+        },
+        {
+          "id": "m04-el-7",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare il rapporto di pressione in decibel: `dB = 20 · log10(p/p0)`. Usa il logaritmo sbagliato. Correggilo.",
+          "setup": "p0 = 101325.0\np  = np.array([101325., 50000., 10132.5])\n",
+          "starter": "dB = 20 * np.log(p/p0)\n",
+          "test": "assert np.allclose(dB, 20*np.log10(p/p0))\nassert np.isclose(dB[0], 0.), 'al rapporto unitario i decibel sono 0'\nassert np.isclose(dB[2], -20.), f'a un decimo il rapporto e -20 dB, hai {dB[2]}'",
+          "hint": [
+            "I decibel usano il logaritmo in base 10.",
+            "np.log10"
+          ],
+          "soluzione": "dB = 20 * np.log10(p / p0)",
+          "spiegazione": "Il caso a un decimo lo coglie subito: deve dare esattamente −20 dB. Con il logaritmo naturale uscirebbe −46, un numero plausibile che nessuno metterebbe in discussione senza quel controllo."
+        },
+        {
+          "id": "m04-el-8",
+          "tipo": "apply",
+          "testo": "**Equazione di Tsiolkovsky.**\n\nIl `Δv` di uno stadio vale `Isp · g0 · ln(m0/mf)`.\n\nCalcola `rapporto` (la frazione di massa `m0/mf`), `dv` per ogni configurazione, e `migliore`, l'indice della configurazione con `Δv` massimo.",
+          "setup": "g0  = 9.80665\nIsp = np.array([300., 300., 450., 450.])   # s\nm0  = np.array([10000., 12000., 10000., 12000.])\nmf  = np.array([2000., 2000., 3000., 2500.])\n",
+          "starter": "rapporto = \ndv = \nmigliore = \n",
+          "test": "assert np.allclose(rapporto, m0/mf)\nassert np.allclose(dv, Isp*g0*np.log(m0/mf))\nassert int(migliore) == int(np.argmax(Isp*g0*np.log(m0/mf))), f'indice sbagliato: {migliore}'\nassert int(migliore) == 3, f'la quarta configurazione ha il dv maggiore, hai {migliore}'\nassert dv[3] > 6900., 'il dv migliore supera i 6900 m/s'",
+          "hint": [
+            "rapporto = m0/mf; dv = Isp * g0 * np.log(rapporto)",
+            "migliore = dv.argmax()"
+          ],
+          "soluzione": "rapporto = m0 / mf\ndv = Isp * g0 * np.log(rapporto)\nmigliore = dv.argmax()",
+          "spiegazione": "Il logaritmo è il motivo per cui il `Δv` cresce così lentamente con la massa di propellente: raddoppiare il rapporto di massa non raddoppia il `Δv`. Confrontando le prime due configurazioni si vede: più propellente a parità di `Isp` rende poco, mentre passare da 300 a 450 secondi di impulso specifico cambia tutto.\n\nÈ la ragione fisica per cui si spinge sui motori efficienti invece che sui serbatoi grandi."
+        }
+      ]
     },
     {
-      "id": "m04-e5",
-      "tipo": "debug",
-      "testo": "Questo codice deve dare l'angolo di rampa in gradi a partire dalle componenti di velocità. Non solleva errori, ma il risultato è sbagliato: per una discesa (`vD` positivo verso il basso) dovrebbe uscire un angolo **negativo**, e invece esce positivo.",
-      "setup": "vN = np.array([200., 180., 150.])    # nord, m/s\nvE = np.array([0., 50., 80.])        # est, m/s\nvD = np.array([5., 10., 15.])        # verso il basso, m/s\n",
-      "starter": "gamma_deg = np.rad2deg(np.arctan2(vD, np.hypot(vN, vE)))\n",
-      "test": "assert np.all(gamma_deg < 0), 'con vD positivo (discesa) la rampa deve essere negativa'\nassert np.isclose(gamma_deg[0], np.rad2deg(np.arctan2(-5.0, 200.0))), f'valore sbagliato: {gamma_deg[0]}'\nassert np.isclose(gamma_deg[2], np.rad2deg(np.arctan2(-15.0, np.hypot(150.0, 80.0))))",
-      "hint": ["vD e' positivo verso il basso, ma la rampa e' positiva verso l'alto.", "Serve il segno meno: np.arctan2(-vD, ...)."],
-      "soluzione": "gamma_deg = np.rad2deg(np.arctan2(-vD, np.hypot(vN, vE)))",
-      "spiegazione": "Un errore di convenzione, non di sintassi: nella terna NED l'asse D punta verso il basso, mentre l'angolo di rampa si misura positivo in salita. Errori di questo tipo non producono eccezioni e sopravvivono a lungo — l'unica difesa è controllare che il segno del risultato abbia senso fisico."
+      "id": "m04-sqrtabs",
+      "comando": "np.sqrt / np.abs",
+      "titolo": "sqrt e abs — radici e valori assoluti",
+      "esercizi": [
+        {
+          "id": "m04-sa-1",
+          "tipo": "write",
+          "testo": "Calcola `V`, la velocità da pressione dinamica e densità: `V = √(2q/ρ)`.",
+          "setup": "q   = np.array([3920., 8820., 15680.])\nrho = 1.225\n",
+          "starter": "V = \n",
+          "test": "assert np.allclose(V, np.sqrt(2*q/rho))\nassert np.isclose(V[0], 80.), f'atteso 80 m/s, hai {V[0]}'",
+          "hint": [
+            "np.sqrt(2*q/rho)"
+          ],
+          "soluzione": "V = np.sqrt(2 * q / rho)",
+          "spiegazione": "L'inversa della pressione dinamica. Il primo caso torna esattamente 80 m/s, il valore da cui era stata calcolata `q`."
+        },
+        {
+          "id": "m04-sa-2",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.sqrt(-1)` ?",
+          "opzioni": [
+            "nan, con un RuntimeWarning",
+            "solleva ValueError",
+            "1j, un numero complesso",
+            "-1.0"
+          ],
+          "risposta": "nan, con un RuntimeWarning",
+          "spiegazione": "Su un array reale la radice di un negativo dà `nan` e il calcolo prosegue. Per ottenere il complesso serve un input complesso, per esempio `np.sqrt(np.array([-1+0j]))`."
+        },
+        {
+          "id": "m04-sa-3",
+          "tipo": "write",
+          "testo": "Calcola `scarto`, il valore assoluto della differenza fra misurato e atteso.",
+          "setup": "misurato = np.array([0.031, 0.022, 0.035, 0.019])\natteso   = np.array([0.030, 0.025, 0.033, 0.022])\n",
+          "starter": "scarto = \n",
+          "test": "assert np.allclose(scarto, np.abs(misurato - atteso))\nassert np.all(scarto >= 0)\nassert np.isclose(scarto[1], 0.003)",
+          "hint": [
+            "np.abs(misurato - atteso)"
+          ],
+          "soluzione": "scarto = np.abs(misurato - atteso)",
+          "spiegazione": "Il valore assoluto rende gli scarti confrontabili senza che i segni opposti si compensino."
+        },
+        {
+          "id": "m04-sa-4",
+          "tipo": "write",
+          "testo": "Trova in `peggiore` l'indice dello scarto **relativo** più grande, e in `err_max` il suo valore in percentuale.",
+          "setup": "misurato = np.array([0.031, 0.022, 0.035, 0.019])\natteso   = np.array([0.030, 0.025, 0.033, 0.022])\n",
+          "starter": "rel = \npeggiore = \nerr_max = \n",
+          "test": "assert np.allclose(rel, np.abs(misurato-atteso)/atteso)\nassert int(peggiore) == int(np.argmax(np.abs(misurato-atteso)/atteso)), f'indice sbagliato: {peggiore}'\nassert int(peggiore) == 3, f'atteso indice 3, hai {peggiore}'\nassert np.isclose(err_max, rel[3]*100)\nassert 13. < err_max < 14., f'circa 13.6%, hai {err_max}'",
+          "hint": [
+            "rel = np.abs(misurato - atteso) / atteso",
+            "peggiore = rel.argmax(); err_max = rel[peggiore] * 100"
+          ],
+          "soluzione": "rel = np.abs(misurato - atteso) / atteso\npeggiore = rel.argmax()\nerr_max = rel[peggiore] * 100",
+          "spiegazione": "Lo scarto **relativo** ordina diversamente da quello assoluto: qui il punto peggiore in assoluto è il secondo, ma in percentuale è il quarto, perché il valore atteso è più piccolo. Su grandezze di ordini diversi è sempre il relativo che conta."
+        },
+        {
+          "id": "m04-sa-5",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare la resistenza aerodinamica, che si oppone sempre al moto: in discesa il segno deve invertirsi. Con `v` negativo dà un valore positivo. Correggilo.",
+          "setup": "rho, CdA = 1.225, 0.3\nv = np.array([100., 50., -50., -100.])\n",
+          "starter": "D = 0.5 * rho * CdA * v**2\n",
+          "test": "assert np.allclose(D, 0.5*rho*CdA*v*np.abs(v))\nassert D[0] > 0 and D[3] < 0, 'la resistenza deve cambiare segno con la velocita'\nassert np.isclose(np.abs(D[0]), np.abs(D[3])), 'a parita di modulo deve avere lo stesso valore'",
+          "hint": [
+            "v**2 e' sempre positivo: la forza punterebbe sempre nello stesso verso.",
+            "Serve v * np.abs(v), che conserva il segno di v."
+          ],
+          "soluzione": "D = 0.5 * rho * CdA * v * np.abs(v)",
+          "spiegazione": "`v * |v|` ha lo stesso modulo di `v²` ma conserva il segno. Senza, in discesa la resistenza spingerebbe verso il basso e il corpo accelererebbe all'infinito — un errore che si vede solo quando la simulazione supera l'apogeo."
+        },
+        {
+          "id": "m04-sa-6",
+          "tipo": "predict",
+          "testo": "Quale espressione dà il modulo di un vettore 3D dalle componenti `x`, `y`, `z` ?",
+          "opzioni": [
+            "np.sqrt(x**2 + y**2 + z**2)",
+            "np.abs(x + y + z)",
+            "np.sqrt(np.abs(x + y + z))",
+            "np.abs(x**2 + y**2 + z**2)"
+          ],
+          "risposta": "np.sqrt(x**2 + y**2 + z**2)",
+          "spiegazione": "Il valore assoluto non c'entra: i quadrati sono già positivi. `np.abs` serve quando devi conservare un segno o misurare uno scarto, non per costruire un modulo."
+        },
+        {
+          "id": "m04-sa-7",
+          "tipo": "apply",
+          "testo": "**Numero di Mach e velocità del suono.**\n\nLa velocità del suono vale `a = √(γ·R·T)` con `γ = 1.4` e `R = 287`.\n\nCalcola `a`, `mach`, e `supersonici`, quanti punti superano Mach 1.",
+          "setup": "gam, R = 1.4, 287.0\nT = np.array([288.15, 262.2, 236.2, 216.65])\nV = np.array([200., 250., 300., 350.])\n",
+          "starter": "a = \nmach = \nsupersonici = \n",
+          "test": "assert np.allclose(a, np.sqrt(gam*R*T))\nassert np.isclose(a[0], 340.29, atol=0.1), f'al suolo circa 340.3 m/s, hai {a[0]}'\nassert np.allclose(mach, V/a)\nassert int(supersonici) == int((V/a > 1).sum())\nassert int(supersonici) == 1, f'atteso 1 punto supersonico, hai {supersonici}'\nassert 0.97 < (V/a)[2] < 0.98, 'il terzo punto e transonico, appena sotto Mach 1'",
+          "hint": [
+            "a = np.sqrt(gam*R*T), poi mach = V/a",
+            "supersonici = (mach > 1).sum()"
+          ],
+          "soluzione": "a = np.sqrt(gam * R * T)\nmach = V / a\nsupersonici = (mach > 1).sum()",
+          "spiegazione": "Al suolo la velocita del suono esce 340.3 m/s, il valore tabulato: buon segno che le costanti sono giuste.\n\nIl terzo punto e quello interessante: 300 m/s a 236 K danno Mach 0.974, appena sotto l'unita. Un solo punto e davvero supersonico, non due, e la differenza sta tutta nella temperatura: la velocita del suono dipende solo da quella, e cala con la quota. Lo stesso velivolo, salendo a velocita costante, vede il proprio Mach crescere senza accelerare — ed e il motivo per cui il regime transonico si incontra salendo, non solo spingendo."
+        }
+      ]
     },
     {
-      "id": "m04-e6",
-      "tipo": "write",
-      "testo": "**Altimetro barometrico.**\n\nUn sensore misura le pressioni `p`. Ricava le quote corrispondenti invertendo la formula barometrica:\n\n`h = −H · ln(p / p0)`",
-      "setup": "p0 = 101325.0    # Pa, livello del mare\nH  = 8400.0      # m, altezza di scala\np  = np.array([101325., 89876., 79501., 70109., 61660.])\n",
-      "starter": "h = \n",
-      "test": "assert h.shape == (5,), f'shape sbagliata: {h.shape}'\nassert np.isclose(h[0], 0.0), f'alla pressione al suolo la quota deve essere 0, hai {h[0]}'\nassert np.isclose(h[1], -H * np.log(89876.0 / p0))\nassert h[4] > h[0], 'la quota deve crescere al calare della pressione'",
-      "hint": ["np.log e' il logaritmo naturale, quello che serve qui.", "h = -H * np.log(p / p0)"],
-      "soluzione": "h = -H * np.log(p / p0)",
-      "spiegazione": "Attenzione a np.log: è il logaritmo naturale, non in base 10. Sulle calcolatrici 'log' di solito significa base 10 e 'ln' la naturale, quindi la convenzione qui è invertita rispetto all'abitudine. Con np.log10 avresti ottenuto quote sbagliate di un fattore 2.3, senza nessun errore."
-    },
-    {
-      "id": "m04-e7",
-      "tipo": "apply",
-      "difficolta": 3,
-      "testo": "**Dal vettore velocità alle componenti in terna terrestre.**\n\nDati modulo della velocità `V`, angolo di rampa `gamma_deg` e rotta `chi_deg`, calcola le tre componenti NED:\n\n- `vN = V · cos(γ) · cos(χ)`\n- `vE = V · cos(γ) · sin(χ)`\n- `vD = −V · sin(γ)`\n\nRicorda: gli angoli arrivano in gradi.",
-      "setup": "V = np.array([200., 200., 250., 250.])         # m/s\ngamma_deg = np.array([0., 5., -3., 10.])       # rampa, gradi\nchi_deg = np.array([0., 90., 180., 45.])       # rotta, gradi\n",
-      "starter": "vN = \nvE = \nvD = \n",
-      "test": "g = np.deg2rad(gamma_deg); c = np.deg2rad(chi_deg)\nassert vN.shape == (4,) and vE.shape == (4,) and vD.shape == (4,)\nassert np.allclose(vN, V * np.cos(g) * np.cos(c)), 'vN sbagliata'\nassert np.allclose(vE, V * np.cos(g) * np.sin(c)), 'vE sbagliata'\nassert np.allclose(vD, -V * np.sin(g)), 'vD sbagliata'\nassert np.isclose(vN[0], 200.0), 'primo caso: volo livellato verso nord'\nassert vD[2] > 0, 'terzo caso: rampa negativa = discesa, quindi vD positivo'\nassert np.isclose(np.hypot(np.hypot(vN[3], vE[3]), vD[3]), 250.0), 'il modulo deve conservarsi'",
-      "hint": [
-        "Converti entrambi gli angoli in radianti prima di usarli.",
-        "Le tre formule si scrivono tali e quali: cos(gamma) compare in vN e vE, il segno meno solo in vD."
-      ],
-      "soluzione": "gamma = np.deg2rad(gamma_deg)\nchi = np.deg2rad(chi_deg)\nvN = V * np.cos(gamma) * np.cos(chi)\nvE = V * np.cos(gamma) * np.sin(chi)\nvD = -V * np.sin(gamma)",
-      "spiegazione": "Quattro condizioni di volo trattate insieme, senza cicli. L'ultimo controllo del test è quello che vale davvero: il modulo del vettore ricomposto deve tornare uguale a V. È una verifica che puoi sempre fare sulle trasformazioni fra terne, e coglie sia errori di segno sia conversioni di unità dimenticate."
+      "id": "m04-hypot",
+      "comando": "np.hypot",
+      "titolo": "np.hypot — il modulo, senza overflow",
+      "esercizi": [
+        {
+          "id": "m04-hy-1",
+          "tipo": "write",
+          "testo": "Calcola `modulo`, il modulo del vettore di componenti `x` e `y`, usando la funzione dedicata.",
+          "setup": "x = np.array([3., 5., 8.])\ny = np.array([4., 12., 15.])\n",
+          "starter": "modulo = \n",
+          "test": "assert np.allclose(modulo, [5., 13., 17.]), f'attesi [5 13 17], hai {modulo}'",
+          "hint": [
+            "np.hypot(x, y) calcola sqrt(x**2 + y**2)."
+          ],
+          "soluzione": "modulo = np.hypot(x, y)",
+          "spiegazione": "Le tre terne pitagoriche tornano esatte: 3-4-5, 5-12-13, 8-15-17."
+        },
+        {
+          "id": "m04-hy-2",
+          "tipo": "predict",
+          "testo": "Perché `np.hypot(x, y)` è preferibile a `np.sqrt(x**2 + y**2)` ?",
+          "opzioni": [
+            "evita l'overflow quando i valori sono molto grandi",
+            "e' matematicamente diverso e piu preciso",
+            "accetta array mentre sqrt no",
+            "e' significativamente piu veloce"
+          ],
+          "risposta": "evita l'overflow quando i valori sono molto grandi",
+          "spiegazione": "Elevare al quadrato un numero vicino al massimo rappresentabile produce `inf`, e la radice di `inf` resta `inf`. `hypot` riscala internamente per evitarlo. Sui numeri di tutti i giorni il risultato è identico."
+        },
+        {
+          "id": "m04-hy-3",
+          "tipo": "write",
+          "testo": "Dimostra la differenza: con valori enormi, calcola `ingenuo` e `robusto` e confronta.",
+          "setup": "x = np.array([1e200])\ny = np.array([1e200])\n",
+          "starter": "ingenuo = \nrobusto = \nsolo_uno_valido = \n",
+          "test": "assert np.isinf(ingenuo[0]), 'il calcolo ingenuo deve andare in overflow'\nassert np.isfinite(robusto[0]), 'hypot deve restare finito'\nassert np.isclose(robusto[0], 1e200*np.sqrt(2))\nassert bool(solo_uno_valido) is True",
+          "hint": [
+            "ingenuo = np.sqrt(x**2 + y**2) — il quadrato di 1e200 supera il massimo float64.",
+            "robusto = np.hypot(x, y); solo_uno_valido = np.isinf(ingenuo[0]) and np.isfinite(robusto[0])"
+          ],
+          "soluzione": "ingenuo = np.sqrt(x**2 + y**2)\nrobusto = np.hypot(x, y)\nsolo_uno_valido = bool(np.isinf(ingenuo[0]) and np.isfinite(robusto[0]))",
+          "spiegazione": "`(1e200)²` vale 10⁴⁰⁰, oltre il massimo float64 di circa 1.8·10³⁰⁸: diventa `inf`, e la radice non lo recupera. `hypot` riscala prima di elevare al quadrato e restituisce il valore giusto.\n\nÈ un caso limite raro in aeronautica, ma illustra il principio: le funzioni dedicate esistono perché la formula ovvia ha punti in cui cede."
+        },
+        {
+          "id": "m04-hy-4",
+          "tipo": "write",
+          "testo": "Calcola `velocita_suolo`, il modulo della velocità sul piano orizzontale, dalle componenti nord ed est.",
+          "setup": "vN = np.array([200., 180., 150., 0.])\nvE = np.array([0., 50., 80., 120.])\n",
+          "starter": "velocita_suolo = \n",
+          "test": "assert np.allclose(velocita_suolo, np.hypot(vN, vE))\nassert np.isclose(velocita_suolo[0], 200.)\nassert np.isclose(velocita_suolo[3], 120.)",
+          "hint": [
+            "np.hypot(vN, vE)"
+          ],
+          "soluzione": "velocita_suolo = np.hypot(vN, vE)",
+          "spiegazione": "È la grandezza che compare come secondo argomento di `arctan2` quando si calcola l'angolo di rampa: la proiezione della velocità sul piano orizzontale."
+        },
+        {
+          "id": "m04-hy-5",
+          "tipo": "apply",
+          "testo": "**Modulo in tre dimensioni.**\n\n`hypot` accetta due argomenti. Per un vettore 3D si annida.\n\nCalcola `orizzontale` (il modulo sul piano), `V3` (il modulo completo) e `coincide`, `True` se `V3` coincide con la formula diretta con `sqrt`.",
+          "setup": "vN = np.array([200., 180., 150.])\nvE = np.array([0., 50., 80.])\nvD = np.array([-10., 5., -15.])\n",
+          "starter": "orizzontale = \nV3 = \ncoincide = \n",
+          "test": "assert np.allclose(orizzontale, np.hypot(vN, vE))\nassert np.allclose(V3, np.sqrt(vN**2 + vE**2 + vD**2))\nassert bool(coincide) is True\nassert np.isclose(V3[0], np.hypot(200., 10.))",
+          "hint": [
+            "orizzontale = np.hypot(vN, vE), poi V3 = np.hypot(orizzontale, vD)",
+            "coincide = np.allclose(V3, np.sqrt(vN**2 + vE**2 + vD**2))"
+          ],
+          "soluzione": "orizzontale = np.hypot(vN, vE)\nV3 = np.hypot(orizzontale, vD)\ncoincide = np.allclose(V3, np.sqrt(vN**2 + vE**2 + vD**2))",
+          "spiegazione": "Annidare `hypot` conserva la robustezza a ogni passo, mentre la formula con `sqrt` eleva al quadrato tre volte prima di sommare. Il risultato è identico sui numeri normali — il confronto lo verifica — ma la strada annidata regge anche sui casi estremi.\n\nPer vettori con molte componenti conviene comunque `np.linalg.norm`, che vedrai nel modulo 7."
+        }
+      ]
     }
   ]
 }
