@@ -183,9 +183,15 @@ async function vistaModulo(id) {
     <h2>Esercizi</h2>
     <p class="muto">Una raccolta per comando: aprine una per allenarti su quel comando soltanto.</p>
     ${racc}
-    <h2>Percorso di apprendimento</h2>
-    <p class="muto">Un esercizio per comando a rotazione, finché non li sai tutti.</p>
-    ${cartaPercorso(id, m)}`;
+    ${
+      // Il percorso ruota sui comandi: su un cantiere, che ha una fase sola,
+      // sarebbe un ciclo da un argomento e due esercizi. Non si mostra.
+      m.cantiere || m.raccolte.length < 2
+        ? ""
+        : `<h2>Percorso di apprendimento</h2>
+           <p class="muto">Un esercizio per comando a rotazione, finché non li sai tutti.</p>
+           ${cartaPercorso(id, m)}`
+    }`;
 }
 
 function cartaPercorso(id, m) {
