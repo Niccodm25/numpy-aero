@@ -69,7 +69,8 @@ VOCABOLARIO = {
             "time", "atol", "rtol", "int16"},
     "m12": {"dir", "help", "info", "searchsorted", "unique", "clip", "isin",
             "apply_along_axis", "sort", "lexsort", "return_counts", "return_index",
-            "return_inverse", "block",
+            "return_inverse", "block", "side", "startswith", "argwhere", "nanmedian",
+            "nanargmax", "argpartition", "ptp",
             "lookfor"}  # la lezione insegna che e' stata rimossa in 2.0,
 }
 
