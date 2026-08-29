@@ -19,118 +19,807 @@
     {
       "id": "m09-l1",
       "titolo": "Leggere un file di misure",
-      "md": "`np.loadtxt` legge dati numerici da testo:\n\n```\ndati = np.loadtxt(\"volo.csv\", delimiter=\",\", skiprows=1)\n```\n\nI tre parametri che userai sempre:\n\n- **`delimiter`** — `\",\"` per CSV. Di default separa su spazi bianchi.\n- **`skiprows`** — quante righe di intestazione saltare.\n- **`usecols`** — quali colonne tenere, es. `usecols=(0, 2)`.\n\nIl risultato è una matrice `(righe, colonne)`. Le grandezze si estraggono per colonna, come nel modulo 2:\n\n```\nt, h, mach = dati[:, 0], dati[:, 1], dati[:, 2]\n```\n\nOppure, in un colpo solo, con `unpack=True`, che restituisce le colonne già separate:\n\n```\nt, h, mach = np.loadtxt(\"volo.csv\", delimiter=\",\", skiprows=1, unpack=True)\n```\n\n### loadtxt o genfromtxt\n\n`loadtxt` **fallisce** se incontra un campo vuoto o non numerico. `genfromtxt` è più tollerante: al posto dei campi mancanti mette `np.nan`, che è spesso esattamente quello che vuoi.\n\n```\nnp.genfromtxt(\"volo.csv\", delimiter=\",\", skiprows=1)   # buchi -> nan\n```\n\nRegola pratica: `loadtxt` quando i dati sono puliti e vuoi accorgerti se non lo sono; `genfromtxt` quando sai già che ci sono buchi.\n\n### In questo corso: StringIO\n\nQui non c'è un filesystem con i tuoi file, quindi gli esercizi passano il testo direttamente con `io.StringIO`, che fa sembrare una stringa un file. Funziona identico:\n\n```\nimport io\ndati = np.loadtxt(io.StringIO(testo), delimiter=\",\", skiprows=1)\n```\n\nÈ anche il modo giusto di scrivere test per il tuo codice di caricamento, senza dover creare file veri.\n\n### Salvare\n\n```\nnp.savetxt(\"out.csv\", dati, delimiter=\",\", header=\"t,h,mach\")\nnp.save(\"dati.npy\", dati)      # binario, esatto e veloce\nnp.load(\"dati.npy\")\n```\n\nIl formato `.npy` conserva shape e dtype esatti e non perde cifre. Per risultati intermedi è sempre preferibile al testo.",
+      "md": "`np.loadtxt` legge dati numerici da testo:\n\n```\ndati = np.loadtxt(\"volo.csv\", delimiter=\",\", skiprows=1)\n```\n\nI tre parametri che userai sempre:\n\n- **`delimiter`** — `\",\"` per CSV. Di default separa su spazi bianchi.\n- **`skiprows`** — quante righe di intestazione saltare.\n- **`usecols`** — quali colonne tenere, es. `usecols=(0, 2)`.\n\nIl risultato è una matrice `(righe, colonne)`. Le grandezze si estraggono per colonna, come nel modulo 2:\n\n```\nt, h, mach = dati[:, 0], dati[:, 1], dati[:, 2]\n```\n\nOppure, in un colpo solo, con `unpack=True`, che restituisce le colonne già separate:\n\n```\nt, h, mach = np.loadtxt(\"volo.csv\", delimiter=\",\", skiprows=1, unpack=True)\n```\n\n### loadtxt o genfromtxt\n\n`loadtxt` **fallisce** se incontra un campo vuoto o non numerico. `genfromtxt` è più tollerante: al posto dei campi mancanti mette `np.nan`, che è spesso esattamente quello che vuoi.\n\n```\nnp.genfromtxt(\"volo.csv\", delimiter=\",\")   # buchi -> nan\n```\n\nRegola pratica: `loadtxt` quando i dati sono puliti e vuoi accorgerti se non lo sono; `genfromtxt` quando sai già che ci sono buchi.\n\nAttenzione a un dettaglio che costa sempre dieci minuti: le righe di intestazione si saltano con `skiprows` in `loadtxt` e con `skip_header` in `genfromtxt`. Sono due funzioni scritte in momenti diversi e i nomi non sono stati allineati.\n\n### In questo corso: StringIO\n\nQui non c'è un filesystem con i tuoi file, quindi gli esercizi passano il testo direttamente con `io.StringIO`, che fa sembrare una stringa un file. Funziona identico:\n\n```\nimport io\ndati = np.loadtxt(io.StringIO(testo), delimiter=\",\", skiprows=1)\n```\n\nÈ anche il modo giusto di scrivere test per il tuo codice di caricamento, senza dover creare file veri.\n\n### Salvare\n\n```\nnp.savetxt(\"out.csv\", dati, delimiter=\",\", header=\"t,h,mach\")\nnp.save(\"dati.npy\", dati)      # binario, esatto e veloce\nnp.load(\"dati.npy\")\n```\n\nIl formato `.npy` conserva shape e dtype esatti e non perde cifre. Per risultati intermedi è sempre preferibile al testo.",
       "demo": "import io\ntesto = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n\"\n\ndati = np.loadtxt(io.StringIO(testo), delimiter=\",\", skiprows=1)\nprint(\"shape:\", dati.shape)\nprint(dati)\n\nt, h, mach = np.loadtxt(io.StringIO(testo), delimiter=\",\", skiprows=1, unpack=True)\nprint(\"\\ncolonne separate:\", t, h, mach)\n\nbucato = \"1.0,2.0\\n3.0,\\n5.0,6.0\\n\"\nprint(\"\\ncon genfromtxt un campo vuoto diventa nan:\")\nprint(np.genfromtxt(io.StringIO(bucato), delimiter=\",\"))"
     },
     {
       "id": "m09-l2",
       "titolo": "NaN: il valore che non è uguale a se stesso",
-      "md": "`np.nan` (*Not a Number*) rappresenta un dato mancante o un risultato indefinito. Ha una proprietà che sorprende sempre:\n\n```\nnp.nan == np.nan     # False\n```\n\nNon è un capriccio: lo impone lo standard IEEE 754. \"Valore sconosciuto\" non può essere uguale a un altro valore sconosciuto.\n\n### Conseguenza pratica\n\n**Non puoi cercare i NaN con `==`.**\n\n```\ndati == np.nan       # tutto False, sempre, anche dove ci sono nan\nnp.isnan(dati)       # la maschera corretta\n```\n\nÈ un errore che non solleva niente: la maschera esce tutta `False` e sembra che i dati siano puliti.\n\n### Il NaN è contagioso\n\nQualsiasi operazione che coinvolge un NaN restituisce NaN:\n\n```\nnp.array([1., 2., np.nan]).mean()    # nan\n```\n\nUn solo valore mancante in mille rende `nan` la media di tutti e mille. Questo è in realtà un bene: **è la sicurezza che un dato mancante non passi inosservato**. Il pericolo è a valle, quando quel `nan` finisce in un grafico o in una tabella senza che nessuno lo guardi.\n\n### isfinite copre anche gli infiniti\n\n```\nnp.isfinite(dati)    # False sia sui nan sia sui +-inf\n```\n\nGli infiniti nascono da divisioni per zero o da `np.log(0)`. Se stai ripulendo dati veri, `isfinite` è il controllo più completo.\n\n### I valori sentinella\n\nMolti strumenti scrivono un valore convenzionale al posto del dato mancante: `-99`, `-999`, `9999`. Sono peggio dei NaN, perché entrano nelle medie senza farsi notare. **Convertili in NaN appena leggi i dati:**\n\n```\nq[q == -99.0] = np.nan\n```",
+      "md": "`np.nan` (*Not a Number*) rappresenta un dato mancante o un risultato indefinito. Ha una proprietà che sorprende sempre:\n\n```\nnp.nan == np.nan     # False\n```\n\nNon è un capriccio: lo impone lo standard IEEE 754. \"Valore sconosciuto\" non può essere uguale a un altro valore sconosciuto.\n\n### Conseguenza pratica\n\n**Non puoi cercare i NaN con `==`.**\n\n```\ndati == np.nan       # tutto False, sempre, anche dove ci sono nan\nnp.isnan(dati)       # la maschera corretta\n```\n\nÈ un errore che non solleva niente: la maschera esce tutta `False` e sembra che i dati siano puliti.\n\n### Il NaN è contagioso\n\nQualsiasi operazione che coinvolge un NaN restituisce NaN:\n\n```\nnp.array([1., 2., np.nan]).mean()    # nan\n```\n\nUn solo valore mancante in mille rende `nan` la media di tutti e mille. Questo è in realtà un bene: **è la sicurezza che un dato mancante non passi inosservato**. Il pericolo è a valle, quando quel `nan` finisce in un grafico o in una tabella senza che nessuno lo guardi.\n\n### isfinite copre anche gli infiniti\n\n```\nnp.isfinite(dati)    # False sia sui nan sia sui +-inf\n```\n\nGli infiniti nascono da divisioni per zero o da `np.log(0)`. Se stai ripulendo dati veri, `isfinite` è il controllo più completo.\n\n### I valori sentinella\n\nMolti strumenti scrivono un valore convenzionale al posto del dato mancante: `-99`, `-999`, `9999`. Sono peggio dei NaN, perché entrano nelle medie senza farsi notare. **Convertili in NaN appena leggi i dati:**\n\n```\nq = np.where(q == -99.0, np.nan, q)\n```",
       "demo": "print(\"np.nan == np.nan:\", np.nan == np.nan)\n\nd = np.array([1., 2., np.nan, 4.])\nprint(\"\\nd == np.nan :\", d == np.nan, \" <- inutile\")\nprint(\"np.isnan(d) :\", np.isnan(d), \" <- corretto\")\n\nprint(\"\\nmedia con un nan:\", d.mean())\nprint(\"quanti mancanti:\", np.isnan(d).sum())\n\ne = np.array([1., np.inf, np.nan])\nprint(\"\\nisnan:   \", np.isnan(e))\nprint(\"isfinite:\", np.isfinite(e), \" <- coglie anche l'infinito\")"
     },
     {
       "id": "m09-l3",
       "titolo": "Le funzioni nan-aware",
-      "md": "Per ogni riduzione esiste la versione che ignora i NaN, con il prefisso `nan`:\n\n```\nnp.mean(x)     -> np.nanmean(x)\nnp.std(x)      -> np.nanstd(x)\nnp.max(x)      -> np.nanmax(x)\nnp.sum(x)      -> np.nansum(x)\nnp.argmax(x)   -> np.nanargmax(x)\n```\n\nCalcolano usando solo i valori validi, come se i mancanti non ci fossero.\n\n### Sono funzioni, non metodi\n\n```\nx.nanmean()      # AttributeError, non esiste\nnp.nanmean(x)    # corretto\n```\n\nGli array hanno `x.mean()` come metodo, ma le versioni nan-aware esistono solo come funzioni di NumPy.\n\n### Funzionano con axis\n\n```\nnp.nanmean(CL, axis=1)\n```\n\nStessa semantica del modulo 5: l'asse che passi è quello che sparisce. Su una matrice di prove con qualche misura persa, questa è la riga che ti dà la media corretta per ogni condizione.\n\n### La decisione che devi prendere tu\n\nIgnorare i mancanti **non è sempre giusto.** Se su 8 ripetizioni ne mancano 6, `nanmean` ti dà comunque un numero, calcolato su due misure, e non ti dice che è fragile.\n\nControlla sempre **quanti** dati validi sono rimasti:\n\n```\nvalidi = np.isfinite(CL).sum(axis=1)\n```\n\nUna media su due campioni e una su otto non hanno lo stesso peso, e nessuna funzione `nan*` te lo ricorderà.\n\n### Il caso limite\n\nSe una riga è tutta NaN, `nanmean` restituisce `nan` e stampa un `RuntimeWarning: Mean of empty slice`. È il comportamento corretto — non c'è niente da mediare — ma è un avviso, non un errore: il programma prosegue.",
-      "demo": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71]])\n\nprint(\"media normale per riga:\", CL.mean(axis=1))\nprint(\"nanmean per riga:      \", np.nanmean(CL, axis=1).round(4))\nprint(\"\\nvalidi per riga:\", np.isfinite(CL).sum(axis=1))\nprint(\"deviazione campionaria:\", np.nanstd(CL, axis=1, ddof=1).round(5))"
+      "md": "Per ogni riduzione esiste la versione che ignora i NaN, con il prefisso `nan`:\n\n```\nnp.mean(x)     -> np.nanmean(x)\nnp.std(x)      -> np.nanstd(x)\nnp.max(x)      -> np.nanmax(x)\nnp.sum(x)      -> np.nansum(x)\nnp.argmax(x)   -> np.nanargmax(x)\n```\n\nCalcolano usando solo i valori validi, come se i mancanti non ci fossero.\n\n### Sono funzioni, non metodi\n\n```\nx.nanmean()      # AttributeError, non esiste\nnp.nanmean(x)    # corretto\n```\n\nGli array hanno `x.mean()` come metodo, ma le versioni nan-aware esistono solo come funzioni di NumPy.\n\n### Funzionano con axis\n\n```\nnp.nanmean(CL, axis=1)\n```\n\nStessa semantica del modulo 5: l'asse che passi è quello che sparisce. Su una matrice di prove con qualche misura persa, questa è la riga che ti dà la media corretta per ogni condizione.\n\n### La decisione che devi prendere tu\n\nIgnorare i mancanti **non è sempre giusto.** Se su 8 ripetizioni ne mancano 6, `nanmean` ti dà comunque un numero, calcolato su due misure, e non ti dice che è fragile.\n\nControlla sempre **quanti** dati validi sono rimasti:\n\n```\nvalidi = np.isfinite(CL).sum(axis=1)\n```\n\nUna media su due campioni e una su otto non hanno lo stesso peso, e nessuna funzione `nan*` te lo ricorderà.\n\n### I due casi limite\n\nSe una riga è tutta NaN, `nanmean` restituisce `nan` e stampa un `RuntimeWarning: Mean of empty slice`. È il comportamento corretto — non c'è niente da mediare — ma è un avviso, non un errore: il programma prosegue.\n\n`np.nansum` di una riga tutta NaN invece restituisce **`0.0`**, senza nessun avviso. È coerente con l'idea che la somma di niente è zero, ma è la trappola peggiore del modulo: uno zero è un numero plausibile in quasi tutti i contesti.",
+      "demo": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71]])\n\nprint(\"media normale per riga:\", CL.mean(axis=1))\nprint(\"nanmean per riga:      \", np.nanmean(CL, axis=1).round(4))\nprint(\"\\nvalidi per riga:\", np.isfinite(CL).sum(axis=1))\nprint(\"deviazione campionaria:\", np.nanstd(CL, axis=1, ddof=1).round(5))\n\nvuoto = np.array([np.nan, np.nan])\nprint(\"\\nnansum di tutti nan:\", np.nansum(vuoto), \" <- zero, senza avvisi\")"
     }
   ],
-  "esercizi": [
+  "raccolte": [
     {
-      "id": "m09-e1",
-      "tipo": "predict",
-      "testo": "Quanto vale `np.nan == np.nan` ?",
-      "opzioni": [
-        "False",
-        "True",
-        "nan",
-        "solleva un errore"
-      ],
-      "risposta": "False",
-      "spiegazione": "Lo impone lo standard IEEE 754: un valore sconosciuto non può essere dichiarato uguale a un altro valore sconosciuto. Di conseguenza i NaN non si cercano mai con ==, ma con np.isnan — una maschera costruita con == esce tutta False e sembra che i dati siano puliti."
+      "id": "m09-loadtxt",
+      "comando": "np.loadtxt",
+      "titolo": "loadtxt — leggere un file pulito",
+      "esercizi": [
+        {
+          "id": "m09-lt-1",
+          "tipo": "write",
+          "testo": "Carica il testo `csv` in `dati`. Le colonne sono separate da virgola e non c'è intestazione.",
+          "setup": "import io\ncsv = \"0.0,0.0\\n10.0,3000.0\\n20.0,6000.0\\n\"\n",
+          "starter": "dati = \n",
+          "test": "assert dati.shape == (3, 2), f'attesa shape (3, 2), hai {dati.shape}'\nassert np.allclose(dati[:, 1], [0., 3000., 6000.])",
+          "hint": [
+            "np.loadtxt(io.StringIO(csv), delimiter=\",\")"
+          ],
+          "soluzione": "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\")",
+          "spiegazione": "Il risultato è sempre una matrice `(righe, colonne)`. `io.StringIO` fa sembrare una stringa un file: nell'app non c'è un filesystem, ma è anche il modo giusto di scrivere test per il tuo codice di caricamento senza creare file veri."
+        },
+        {
+          "id": "m09-lt-2",
+          "tipo": "predict",
+          "testo": "Che cosa succede se leggi con `np.loadtxt` un CSV che ha una riga di intestazione, senza passare `skiprows` ?",
+          "opzioni": [
+            "solleva un errore di conversione: l'intestazione non e' un numero",
+            "l'intestazione viene ignorata automaticamente",
+            "l'intestazione diventa una riga di nan",
+            "l'intestazione diventa una riga di zeri"
+          ],
+          "risposta": "solleva un errore di conversione: l'intestazione non e' un numero",
+          "spiegazione": "`loadtxt` non tollera nulla che non sia un numero, intestazioni comprese. Qui l'intransigenza è utile: l'errore arriva subito e in chiaro, invece di produrre una riga sbagliata che ti accorgi di avere dieci calcoli più a valle."
+        },
+        {
+          "id": "m09-lt-3",
+          "tipo": "write",
+          "testo": "Salta l'intestazione e ottieni le tre colonne già separate in `t`, `h` e `mach`, in una sola chiamata.",
+          "setup": "import io\ncsv = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n30.0,9000.0,0.78\\n40.0,10500.0,0.82\\n\"\n",
+          "starter": "t, h, mach = \n",
+          "test": "assert t.shape == (5,) and h.shape == (5,) and mach.shape == (5,)\nassert np.allclose(t, [0., 10., 20., 30., 40.]), f't sbagliato: {t}'\nassert np.allclose(h, [0., 3000., 6000., 9000., 10500.]), f'h sbagliato: {h}'\nassert np.isclose(mach[-1], 0.82)",
+          "hint": [
+            "unpack=True restituisce le colonne separate invece della matrice.",
+            "np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, unpack=True)"
+          ],
+          "soluzione": "t, h, mach = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, unpack=True)",
+          "spiegazione": "`unpack=True` trasporta la matrice prima di restituirla, così l'assegnazione multipla prende una colonna per nome. È la forma compatta di `dati[:, 0], dati[:, 1], dati[:, 2]`.\n\nHa un difetto: se il file cambia numero di colonne, l'assegnazione fallisce con un messaggio poco chiaro. Con la matrice e gli slice l'errore è più leggibile."
+        },
+        {
+          "id": "m09-lt-4",
+          "tipo": "write",
+          "testo": "Ti servono solo tempo e mach, non la quota. Leggi **solo** la prima e la terza colonna in `ridotto`.",
+          "setup": "import io\ncsv = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n30.0,9000.0,0.78\\n40.0,10500.0,0.82\\n\"\n",
+          "starter": "ridotto = \n",
+          "test": "assert ridotto.shape == (5, 2), f'attesa shape (5, 2), hai {ridotto.shape}'\nassert np.allclose(ridotto[:, 0], [0., 10., 20., 30., 40.])\nassert np.allclose(ridotto[:, 1], [0.20, 0.45, 0.63, 0.78, 0.82]), 'la seconda colonna deve essere il mach, non la quota'",
+          "hint": [
+            "usecols prende una tupla di indici di colonna.",
+            "np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, usecols=(0, 2))"
+          ],
+          "soluzione": "ridotto = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, usecols=(0, 2))",
+          "spiegazione": "Su un file di telemetria da centinaia di colonne, `usecols` è la differenza fra caricare 40 MB e caricarne 2. Le colonne escono nell'ordine in cui le chiedi, non nell'ordine del file."
+        },
+        {
+          "id": "m09-lt-5",
+          "tipo": "debug",
+          "testo": "Questo codice deve leggere un CSV separato da virgole, ma solleva un errore. Correggilo.",
+          "setup": "import io\ncsv = \"0.0,0.0\\n10.0,3000.0\\n20.0,6000.0\\n\"\n",
+          "starter": "dati = np.loadtxt(io.StringIO(csv))\n",
+          "test": "assert dati.shape == (3, 2), f'attesa shape (3, 2), hai {dati.shape}'\nassert np.allclose(dati[:, 1], [0., 3000., 6000.])",
+          "hint": [
+            "Di default loadtxt separa sugli spazi bianchi, non sulle virgole.",
+            "np.loadtxt(io.StringIO(csv), delimiter=\",\")"
+          ],
+          "soluzione": "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\")",
+          "spiegazione": "Senza `delimiter`, ogni riga viene vista come un unico campo `\"0.0,0.0\"` e la conversione a float fallisce. È un errore rumoroso, quindi innocuo. Il caso pericoloso è il contrario: un file separato da **tabulazioni** letto con il default funziona, ma se poi qualcuno esporta lo stesso file con la virgola il tuo codice si rompe."
+        },
+        {
+          "id": "m09-lt-6",
+          "tipo": "predict",
+          "testo": "Il file contiene la riga `20.0,,0.63` — la quota non è stata registrata. Che cosa fa `np.loadtxt` ?",
+          "opzioni": [
+            "solleva ValueError: non sa convertire un campo vuoto",
+            "mette np.nan al posto del campo vuoto",
+            "mette 0.0 al posto del campo vuoto",
+            "salta la riga e continua"
+          ],
+          "risposta": "solleva ValueError: non sa convertire un campo vuoto",
+          "spiegazione": "È la differenza che separa le due funzioni: `loadtxt` si ferma, `genfromtxt` mette `np.nan` e prosegue.\n\nNessuna delle due è \"giusta\": dipende da cosa vuoi. Se ti aspetti dati puliti, la fermata di `loadtxt` è un controllo di qualità gratuito. Se sai già che ci sono buchi, ti serve `genfromtxt`."
+        },
+        {
+          "id": "m09-lt-7",
+          "tipo": "write",
+          "testo": "Carica il file e conta in `n_alto` quante righe hanno quota superiore a 5000 m.",
+          "setup": "import io\ncsv = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n30.0,9000.0,0.78\\n40.0,10500.0,0.82\\n\"\n",
+          "starter": "dati = \nh = \nn_alto = \n",
+          "test": "assert dati.shape == (5, 3), f'attesa shape (5, 3), hai {dati.shape} — hai saltato l intestazione?'\nassert np.allclose(h, [0., 3000., 6000., 9000., 10500.])\nassert int(n_alto) == 3, f'attese 3 righe sopra 5000 m, hai {n_alto}'",
+          "hint": [
+            "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1)",
+            "h = dati[:, 1]; n_alto = (h > 5000.).sum()"
+          ],
+          "soluzione": "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1)\nh = dati[:, 1]\nn_alto = (h > 5000.).sum()",
+          "spiegazione": "Dal momento in cui i dati sono in un array, tutto quello che hai imparato nei moduli 2 e 5 si applica identico. Il caricamento non è una fase a parte: è solo la riga che trasforma del testo in qualcosa su cui puoi lavorare."
+        },
+        {
+          "id": "m09-lt-8",
+          "tipo": "apply",
+          "testo": "**Prima lettura di un profilo di salita.**\n\nCarica la telemetria e ricava le grandezze di sintesi.\n\nCalcola `t`, `h`, `mach` (le tre colonne), `mach_max`, `h_machmax` (la quota nell'istante di mach massimo) e `h_media`.",
+          "setup": "import io\ncsv = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n30.0,9000.0,0.78\\n40.0,10500.0,0.82\\n\"\n",
+          "starter": "t, h, mach = \nmach_max = \nh_machmax = \nh_media = \n",
+          "test": "assert t.shape == (5,) and h.shape == (5,) and mach.shape == (5,)\nassert np.allclose(h, [0., 3000., 6000., 9000., 10500.])\nassert np.isclose(mach_max, 0.82), f'mach massimo atteso 0.82, hai {mach_max}'\nassert np.isclose(h_machmax, 10500.), f'quota attesa 10500.0 m, hai {h_machmax}'\nassert np.isclose(h_media, 5700.), f'quota media attesa 5700.0 m, hai {h_media}'",
+          "hint": [
+            "t, h, mach = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, unpack=True)",
+            "h_machmax = h[mach.argmax()]; h_media = h.mean()"
+          ],
+          "soluzione": "t, h, mach = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1, unpack=True)\nmach_max = mach.max()\nh_machmax = h[mach.argmax()]\nh_media = h.mean()",
+          "spiegazione": "`argmax` su una colonna e indicizzazione su un'altra: è il modo di rispondere a \"dove\" e non solo \"quanto\", e funziona perché le colonne restano allineate riga per riga.\n\nLa quota media di 5700 m è il numero meno utile dei tre: è la media di un profilo di salita, cioè un valore che non corrisponde a nessun istante di volo. Le medie su serie non stazionarie vanno guardate con sospetto."
+        }
+      ]
     },
     {
-      "id": "m09-e2",
-      "tipo": "predict",
-      "testo": "Quanto vale `np.array([1., 2., np.nan, 4.]).mean()` ?",
-      "opzioni": [
-        "nan",
-        "2.3333",
-        "7.0",
-        "solleva un errore"
-      ],
-      "risposta": "nan",
-      "spiegazione": "Il NaN è contagioso: qualsiasi operazione che lo coinvolge dà NaN. È una protezione, non un difetto — segnala che i dati sono incompleti. Per calcolare comunque serve np.nanmean, e in quel caso conviene controllare quanti valori validi sono rimasti."
+      "id": "m09-genfromtxt",
+      "comando": "np.genfromtxt",
+      "titolo": "genfromtxt — leggere un file con dei buchi",
+      "esercizi": [
+        {
+          "id": "m09-gf-1",
+          "tipo": "write",
+          "testo": "Questo file ha due campi vuoti. Caricalo in `dati` senza che la lettura fallisca.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,,0.45\\n20.0,6000.0,\\n30.0,9000.0,0.78\\n\"\n",
+          "starter": "dati = \n",
+          "test": "assert dati.shape == (4, 3), f'attesa shape (4, 3), hai {dati.shape}'\nassert int(np.isnan(dati).sum()) == 2, f'attesi 2 nan, hai {int(np.isnan(dati).sum())}'\nassert np.isnan(dati[1, 1]) and np.isnan(dati[2, 2])",
+          "hint": [
+            "loadtxt si ferma sui campi vuoti, genfromtxt no.",
+            "np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")"
+          ],
+          "soluzione": "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")",
+          "spiegazione": "I buchi diventano `np.nan` e la matrice mantiene la sua forma rettangolare: nessuna riga viene scartata, nessun indice si sposta. È esattamente quello che serve, perché la riga 1 ha comunque un tempo e un mach validi."
+        },
+        {
+          "id": "m09-gf-2",
+          "tipo": "predict",
+          "testo": "Su un file con un campo vuoto, qual è la differenza fra `np.loadtxt` e `np.genfromtxt` ?",
+          "opzioni": [
+            "loadtxt solleva un errore, genfromtxt mette nan e prosegue",
+            "entrambe mettono nan, ma genfromtxt e' piu veloce",
+            "loadtxt mette zero, genfromtxt mette nan",
+            "entrambe sollevano un errore"
+          ],
+          "risposta": "loadtxt solleva un errore, genfromtxt mette nan e prosegue",
+          "spiegazione": "La scelta è una decisione, non una preferenza. `loadtxt` ti fa da controllo di qualità: se il file dovrebbe essere pulito e non lo è, vuoi saperlo. `genfromtxt` è la scelta giusta quando il buco è previsto e il resto della riga ti serve lo stesso."
+        },
+        {
+          "id": "m09-gf-3",
+          "tipo": "write",
+          "testo": "Carica il file e conta i mancanti: `n_mancanti` in totale e `per_colonna`, quanti ne ha ciascuna delle tre colonne.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,,0.45\\n20.0,6000.0,\\n30.0,,0.78\\n40.0,10500.0,\\n\"\n",
+          "starter": "dati = \nn_mancanti = \nper_colonna = \n",
+          "test": "assert dati.shape == (5, 3)\nassert int(n_mancanti) == 4, f'attesi 4 mancanti, hai {n_mancanti}'\nassert np.array_equal(per_colonna, [0, 2, 2]), f'attesi [0, 2, 2], hai {per_colonna}'",
+          "hint": [
+            "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")",
+            "np.isnan(dati).sum() per il totale, e con axis=0 per colonna."
+          ],
+          "soluzione": "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")\nn_mancanti = np.isnan(dati).sum()\nper_colonna = np.isnan(dati).sum(axis=0)",
+          "spiegazione": "Contare i mancanti **per colonna** è il primo gesto dopo aver caricato dati veri: dice quale sensore ha smesso di funzionare. Qui il tempo è integro e due grandezze hanno perso il 40% delle letture — una campagna da rifare, non da mediare.\n\nL'asse che passi è quello che sparisce: `axis=0` riduce le righe e lascia un valore per colonna."
+        },
+        {
+          "id": "m09-gf-4",
+          "tipo": "write",
+          "testo": "Leggi solo la colonna della quota (indice 1) in `h`, tollerando i buchi.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,,0.45\\n20.0,6000.0,\\n30.0,9000.0,0.78\\n\"\n",
+          "starter": "h = \n",
+          "test": "assert h.shape == (4,), f'attesa shape (4,), hai {h.shape}'\nassert np.isnan(h[1]), 'la seconda quota manca e deve essere nan'\nassert np.allclose(h[[0, 2, 3]], [0., 6000., 9000.])",
+          "hint": [
+            "usecols funziona anche in genfromtxt.",
+            "np.genfromtxt(io.StringIO(grezzo), delimiter=\",\", usecols=1)"
+          ],
+          "soluzione": "h = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\", usecols=1)",
+          "spiegazione": "Con un solo indice, `usecols` restituisce un array a una dimensione invece di una matrice a una colonna. È comodo, ma è anche una shape che cambia in base a quanti indici passi: se il numero di colonne è deciso a runtime, meglio passare sempre una tupla."
+        },
+        {
+          "id": "m09-gf-5",
+          "tipo": "debug",
+          "testo": "Questo codice fallisce perché il file ha dei campi vuoti. Correggilo in modo che i buchi diventino `np.nan`.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,,0.45\\n20.0,6000.0,\\n30.0,9000.0,0.78\\n\"\n",
+          "starter": "dati = np.loadtxt(io.StringIO(grezzo), delimiter=\",\")\n",
+          "test": "assert dati.shape == (4, 3), f'attesa shape (4, 3), hai {dati.shape}'\nassert int(np.isnan(dati).sum()) == 2, f'attesi 2 nan, hai {int(np.isnan(dati).sum())}'",
+          "hint": [
+            "Serve la funzione tollerante.",
+            "np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")"
+          ],
+          "soluzione": "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")",
+          "spiegazione": "Sostituire `loadtxt` con `genfromtxt` è il riflesso giusto, ma va accompagnato da una scelta consapevole: adesso il programma non fallisce più, quindi tocca a te contare i `nan` e decidere se i dati bastano. Hai spostato il controllo dalla libreria a te stesso."
+        },
+        {
+          "id": "m09-gf-6",
+          "tipo": "predict",
+          "testo": "Il file contiene `3.0,ERR` — lo strumento ha scritto una parola invece di un numero. Che cosa fa `np.genfromtxt` con `delimiter=\",\"` ?",
+          "opzioni": [
+            "mette nan al posto di ERR: qualunque campo non convertibile diventa nan",
+            "solleva un errore come loadtxt",
+            "converte ERR in 0.0",
+            "salta l'intera riga"
+          ],
+          "risposta": "mette nan al posto di ERR: qualunque campo non convertibile diventa nan",
+          "spiegazione": "La tolleranza di `genfromtxt` non riguarda solo i campi vuoti: **tutto** ciò che non si converte a float diventa `nan`. È potente e pericoloso insieme — se sbagli `delimiter`, ottieni una matrice di `nan` invece di un errore, e la scopri solo contando."
+        },
+        {
+          "id": "m09-gf-7",
+          "tipo": "write",
+          "testo": "Carica il file, estrai la colonna del mach (indice 2) e calcola `mach_medio` sui soli valori validi, più `validi`, quanti ne sono rimasti.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,3000.0,\\n20.0,6000.0,0.60\\n30.0,9000.0,0.80\\n40.0,10500.0,\\n\"\n",
+          "starter": "dati = \nmach = \nmach_medio = \nvalidi = \n",
+          "test": "assert dati.shape == (5, 3)\nassert int(np.isnan(mach).sum()) == 2\nassert np.isclose(mach_medio, 0.5333333333333333), f'media attesa 0.53333, hai {mach_medio}'\nassert int(validi) == 3, f'attesi 3 valori validi, hai {validi}'",
+          "hint": [
+            "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\"); mach = dati[:, 2]",
+            "np.nanmean(mach) e np.isfinite(mach).sum()"
+          ],
+          "soluzione": "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")\nmach = dati[:, 2]\nmach_medio = np.nanmean(mach)\nvalidi = np.isfinite(mach).sum()",
+          "spiegazione": "La media dei tre mach validi vale 0.533, ma quei tre sono 0.20, 0.60 e 0.80: due letture perse su cinque, e proprio nella parte alta del profilo. Il numero esiste, il conteggio dei validi dice quanto vale.\n\nRiportare la media senza il conteggio è la forma più comune di disonestà involontaria in una riduzione dati."
+        },
+        {
+          "id": "m09-gf-8",
+          "tipo": "apply",
+          "testo": "**Telemetria con buchi e sentinelle insieme.**\n\nQuesto file ha due problemi diversi: campi vuoti, che `genfromtxt` converte in `nan`, e il valore sentinella `-99.0` che lo strumento scrive quando la lettura del mach non è valida.\n\nCalcola `dati`, `mach` (la colonna 2 con le sentinelle già convertite in `nan`), `mancanti_mach`, `mach_medio` e `mach_max`.",
+          "setup": "import io\ngrezzo = \"0.0,0.0,0.20\\n10.0,3000.0,\\n20.0,6000.0,0.63\\n30.0,,0.78\\n40.0,10500.0,0.82\\n50.0,11000.0,-99.0\\n\"\n",
+          "starter": "dati = \nmach = \nmancanti_mach = \nmach_medio = \nmach_max = \n",
+          "test": "assert dati.shape == (6, 3), f'attesa shape (6, 3), hai {dati.shape}'\nassert int(np.isnan(dati).sum()) == 2, 'genfromtxt deve aver prodotto 2 nan dai campi vuoti'\nassert mach.shape == (6,)\nassert int(mancanti_mach) == 2, f'attesi 2 mach mancanti, hai {mancanti_mach}'\nassert int((mach == -99.0).sum()) == 0, 'la sentinella -99 deve essere diventata nan'\nassert np.isclose(mach_medio, 0.6075), f'media attesa 0.6075, hai {mach_medio}'\nassert np.isclose(mach_max, 0.82), f'massimo atteso 0.82, hai {mach_max}'",
+          "hint": [
+            "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")",
+            "mach = np.where(dati[:, 2] == -99.0, np.nan, dati[:, 2])",
+            "Poi np.isnan(mach).sum(), np.nanmean(mach), np.nanmax(mach)."
+          ],
+          "soluzione": "dati = np.genfromtxt(io.StringIO(grezzo), delimiter=\",\")\nmach = np.where(dati[:, 2] == -99.0, np.nan, dati[:, 2])\nmancanti_mach = np.isnan(mach).sum()\nmach_medio = np.nanmean(mach)\nmach_max = np.nanmax(mach)",
+          "spiegazione": "I due guasti hanno gravità opposta. Il campo vuoto è già `nan` appena letto e non può ingannarti. La sentinella `-99.0` è un numero perfettamente valido: senza la conversione, `mach_medio` uscirebbe **-16.0** e `mach_max` sarebbe comunque 0.82, quindi il massimo non ti avviserebbe di niente.\n\nLa regola operativa è: **converti le sentinelle nella riga subito dopo la lettura**, prima che qualunque calcolo le veda. Ogni riga di distanza fra la lettura e la conversione è una riga in cui qualcuno può inserire una media."
+        }
+      ]
     },
     {
-      "id": "m09-e3",
-      "tipo": "predict",
-      "testo": "Perché `np.nanmean` si scrive come funzione e non come metodo dell'array?",
-      "opzioni": [
-        "gli array hanno .mean() ma non .nanmean(): le versioni nan esistono solo come funzioni",
-        "e' una scelta di stile, entrambe le forme funzionano",
-        "perche nanmean richiede sempre il parametro axis",
-        "perche nanmean restituisce un tipo diverso"
-      ],
-      "risposta": "gli array hanno .mean() ma non .nanmean(): le versioni nan esistono solo come funzioni",
-      "spiegazione": "x.nanmean() solleva AttributeError. È una asimmetria dell'API che confonde spesso: mean, std, max esistono in entrambe le forme, le loro varianti nan-aware solo come np.nan*."
+      "id": "m09-salvare",
+      "comando": "np.savetxt",
+      "titolo": "savetxt, save, load — scrivere i risultati",
+      "esercizi": [
+        {
+          "id": "m09-sv-1",
+          "tipo": "write",
+          "testo": "Scrivi `dati` dentro `buf` in formato CSV, separando i campi con la virgola.",
+          "setup": "import io\ndati = np.array([[0., 0.20], [10., 0.45], [20., 0.63]])\nbuf = io.StringIO()\n",
+          "starter": "\n",
+          "test": "testo = buf.getvalue()\nassert testo != '', 'non hai scritto niente in buf'\nassert ',' in testo, 'i campi devono essere separati da virgola'\nrileggo = np.loadtxt(io.StringIO(testo), delimiter=',')\nassert rileggo.shape == (3, 2), f'shape sbagliata dopo la rilettura: {rileggo.shape}'\nassert np.allclose(rileggo, dati)",
+          "hint": [
+            "np.savetxt(destinazione, array, delimiter=\",\")",
+            "np.savetxt(buf, dati, delimiter=\",\")"
+          ],
+          "soluzione": "np.savetxt(buf, dati, delimiter=\",\")",
+          "spiegazione": "L'ordine degli argomenti è l'opposto di `loadtxt`: prima **dove** scrivi, poi **cosa**. È l'ordine di tutte le funzioni di scrittura, ma dopo dieci righe di `loadtxt` la mano va da sola nel verso sbagliato.\n\nIl formato di default è `%.18e`, cioè notazione esponenziale a 18 cifre: illeggibile, ma non perde niente."
+        },
+        {
+          "id": "m09-sv-2",
+          "tipo": "write",
+          "testo": "Scrivi `dati` in `buf` con la virgola come separatore e l'intestazione `tempo,mach`.",
+          "setup": "import io\ndati = np.array([[0., 0.20], [10., 0.45], [20., 0.63]])\nbuf = io.StringIO()\n",
+          "starter": "\n",
+          "test": "testo = buf.getvalue()\nassert 'tempo,mach' in testo, 'manca l intestazione'\nassert testo.startswith('# '), 'savetxt antepone # all intestazione'\nrileggo = np.loadtxt(io.StringIO(testo), delimiter=',')\nassert rileggo.shape == (3, 2), f'shape sbagliata: {rileggo.shape} — loadtxt salta da solo le righe che iniziano con #'\nassert np.allclose(rileggo, dati)",
+          "hint": [
+            "Il parametro si chiama header.",
+            "np.savetxt(buf, dati, delimiter=\",\", header=\"tempo,mach\")"
+          ],
+          "soluzione": "np.savetxt(buf, dati, delimiter=\",\", header=\"tempo,mach\")",
+          "spiegazione": "`savetxt` antepone `# ` all'intestazione, e `loadtxt` salta di default le righe che iniziano con `#`. Il giro completo scrivi-e-rileggi funziona senza passare `skiprows`.\n\nIl rovescio: quel `# ` davanti al primo nome di colonna manda in confusione i fogli di calcolo e le librerie di terzi, che leggono la prima colonna come `\"# tempo\"`. Se il file deve uscire dal tuo codice, tienilo presente."
+        },
+        {
+          "id": "m09-sv-3",
+          "tipo": "predict",
+          "testo": "Che cosa scrive `np.savetxt` dove l'array contiene `np.nan` ?",
+          "opzioni": [
+            "la stringa nan, che rileggendo torna a essere np.nan",
+            "un campo vuoto",
+            "solleva un errore",
+            "scrive 0.0"
+          ],
+          "risposta": "la stringa nan, che rileggendo torna a essere np.nan",
+          "spiegazione": "Il giro completo conserva i mancanti: `savetxt` scrive `nan` e `loadtxt` lo rilegge come `np.nan`, senza bisogno di `genfromtxt`.\n\nÈ un motivo in più per convertire subito le sentinelle: un `-99.0` salvato resta `-99.0` per sempre, e il file che passi al collega porta il guasto con sé."
+        },
+        {
+          "id": "m09-sv-4",
+          "tipo": "write",
+          "testo": "Fai il giro completo: scrivi `dati` in `buf` come CSV, poi rileggi il contenuto in `rileggo` e verifica in `identico` che l'array sia tornato uguale.\n\nIl testo scritto ti viene dato in `contenuto()`.",
+          "setup": "import io\ndati = np.array([[0., 0.20], [10., 0.45], [20., 0.63]])\nbuf = io.StringIO()\ndef contenuto():\n    return buf.getvalue()\n",
+          "starter": "rileggo = \nidentico = \n",
+          "test": "assert rileggo.shape == (3, 2), f'attesa shape (3, 2), hai {rileggo.shape}'\nassert np.allclose(rileggo, dati)\nassert bool(identico) is True",
+          "hint": [
+            "Prima np.savetxt(buf, dati, delimiter=\",\"), poi rileggi contenuto() con loadtxt.",
+            "rileggo = np.loadtxt(io.StringIO(contenuto()), delimiter=\",\"); identico = np.allclose(rileggo, dati)"
+          ],
+          "soluzione": "np.savetxt(buf, dati, delimiter=\",\")\nrileggo = np.loadtxt(io.StringIO(contenuto()), delimiter=\",\")\nidentico = np.allclose(rileggo, dati)",
+          "spiegazione": "Il giro scrivi-e-rileggi è il test che dovresti scrivere ogni volta che produci un formato di scambio: verifica il salvataggio e il caricamento insieme, e coglie gli errori di separatore, di intestazione e di precisione tutti in una riga.\n\nNota `allclose` e non `array_equal`: dopo un passaggio per il testo i float possono differire nell'ultima cifra. Con il formato di default qui non succede, ma se abbassi la precisione di scrittura succede eccome."
+        },
+        {
+          "id": "m09-sv-5",
+          "tipo": "predict",
+          "testo": "Perché per un risultato intermedio conviene `np.save` (`.npy`) invece di `np.savetxt` (`.csv`) ?",
+          "opzioni": [
+            "il binario conserva shape e dtype esatti e non perde cifre",
+            "il csv non puo contenere numeri decimali",
+            "np.save comprime il file",
+            "np.savetxt funziona solo su array a una dimensione"
+          ],
+          "risposta": "il binario conserva shape e dtype esatti e non perde cifre",
+          "spiegazione": "Il testo è per gli esseri umani e per lo scambio fra programmi diversi; il binario è per i tuoi risultati intermedi. Un `.npy` rilegge una matrice `(3, 4, 5)` di `float32` esattamente com'era: `savetxt` non salva nemmeno le dimensioni oltre la seconda, e appiattisce tutto."
+        },
+        {
+          "id": "m09-sv-6",
+          "tipo": "predict",
+          "testo": "Dopo `np.save(\"x.npy\", a)`, che cosa restituisce `np.load(\"x.npy\")` ?",
+          "opzioni": [
+            "un array identico ad a, con la stessa shape e lo stesso dtype",
+            "sempre un array a una dimensione, da rimodellare a mano",
+            "una lista Python",
+            "un array di float64, qualunque fosse il dtype di partenza"
+          ],
+          "risposta": "un array identico ad a, con la stessa shape e lo stesso dtype",
+          "spiegazione": "È la ragione per cui `.npy` esiste: nel file c'è un'intestazione che descrive shape e dtype, quindi il caricamento non deve indovinare niente. Con il testo, invece, ogni informazione che non sia il valore numerico va ricostruita a mano dal tuo codice."
+        },
+        {
+          "id": "m09-sv-7",
+          "tipo": "write",
+          "testo": "Esporta solo le righe utilizzabili: scrivi in `buf`, come CSV, le sole righe di `dati` che **non** contengono nessun `nan`. Metti la selezione in `pulite`.",
+          "setup": "import io\ndati = np.array([[0., 0.20], [10., np.nan], [20., 0.63], [30., np.nan], [40., 0.82]])\nbuf = io.StringIO()\n",
+          "starter": "pulite = \n",
+          "test": "assert pulite.shape == (3, 2), f'attese 3 righe complete, hai {pulite.shape}'\nassert np.allclose(pulite[:, 0], [0., 20., 40.])\nrileggo = np.loadtxt(io.StringIO(buf.getvalue()), delimiter=',')\nassert rileggo.shape == (3, 2), 'devi scrivere pulite in buf, separando con la virgola'\nassert np.allclose(rileggo, pulite)",
+          "hint": [
+            "Una riga e' completa se tutti i suoi valori sono finiti: np.isfinite(dati).all(axis=1)",
+            "pulite = dati[np.isfinite(dati).all(axis=1)], poi np.savetxt(buf, pulite, delimiter=\",\")"
+          ],
+          "soluzione": "pulite = dati[np.isfinite(dati).all(axis=1)]\nnp.savetxt(buf, pulite, delimiter=\",\")",
+          "spiegazione": "`np.isfinite(dati).all(axis=1)` riduce ogni riga a un solo booleano — completa oppure no — e quella maschera seleziona le righe.\n\nScartare le righe incomplete è una scelta legittima solo se la dichiari: qui perdi due istanti su cinque, e chi riceve il file non ha modo di saperlo. Un'alternativa più onesta è esportare tutto con i `nan` dentro, e lasciare la decisione a valle."
+        },
+        {
+          "id": "m09-sv-8",
+          "tipo": "apply",
+          "testo": "**Esportare una riduzione.**\n\nDa tre configurazioni misurate con ripetizioni, produci la tabella di sintesi e salvala.\n\nCalcola `media` (il CL medio di ogni configurazione, ignorando i mancanti), `validi` (quante misure valide per configurazione), `tabella` — una matrice `(3, 2)` con media e conteggio affiancati — e scrivila in `buf` come CSV con intestazione `CL_medio,n_validi`.",
+          "setup": "import io\nCL = np.array([[0.20, 0.22, np.nan, 0.21, 0.21],\n               [0.45, np.nan, 0.46, np.nan, np.nan],\n               [0.70, 0.72, 0.71, 0.71, 0.71]])\nbuf = io.StringIO()\n",
+          "starter": "media = \nvalidi = \ntabella = \n",
+          "test": "assert np.allclose(media, [0.21, 0.455, 0.71]), f'medie sbagliate: {media} — hai usato mean invece di nanmean?'\nassert np.array_equal(validi, [4, 2, 5]), f'conteggio sbagliato: {validi}'\nassert tabella.shape == (3, 2), f'attesa shape (3, 2), hai {tabella.shape}'\ntesto = buf.getvalue()\nassert 'CL_medio,n_validi' in testo, 'manca l intestazione'\nrileggo = np.loadtxt(io.StringIO(testo), delimiter=',')\nassert rileggo.shape == (3, 2)\nassert np.allclose(rileggo[:, 0], [0.21, 0.455, 0.71])\nassert np.allclose(rileggo[:, 1], [4., 2., 5.])",
+          "hint": [
+            "media = np.nanmean(CL, axis=1); validi = np.isfinite(CL).sum(axis=1)",
+            "tabella = np.column_stack((media, validi))",
+            "np.savetxt(buf, tabella, delimiter=\",\", header=\"CL_medio,n_validi\")"
+          ],
+          "soluzione": "media = np.nanmean(CL, axis=1)\nvalidi = np.isfinite(CL).sum(axis=1)\ntabella = np.column_stack((media, validi))\nnp.savetxt(buf, tabella, delimiter=\",\", header=\"CL_medio,n_validi\")",
+          "spiegazione": "La colonna `n_validi` è la ragione d'essere di questa tabella. Senza, la configurazione 1 sembra buona quanto le altre: 0.455 è un numero pulito, calcolato su due misure sole.\n\n`column_stack` affianca i due vettori come colonne. Il conteggio, che è intero, diventa `float` nella matrice — è il prezzo di mettere in un unico array cose di natura diversa, ed è un motivo per cui in un progetto vero questa tabella finirebbe in un DataFrame invece che in un array NumPy."
+        }
+      ]
     },
     {
-      "id": "m09-e4",
-      "tipo": "write",
-      "testo": "Il sensore ha scritto `-99.0` dove la lettura è mancata. Costruisci `q_pulito`, con quei valori sostituiti da `np.nan`, e conta quante letture mancano in `n_mancanti`.\n\nNon modificare `quota`.",
-      "setup": "quota = np.array([0., 3000., -99., 9000., 10500., -99., 4000.])\n",
-      "starter": "q_pulito = \nn_mancanti = \n",
-      "test": "assert int(n_mancanti) == 2, f'attese 2 letture mancanti, hai {n_mancanti}'\nassert int(np.isnan(q_pulito).sum()) == 2, 'i valori -99 devono essere diventati nan'\nassert np.isclose(q_pulito[0], 0.) and np.isclose(q_pulito[3], 9000.), 'i valori validi non devono cambiare'\nassert int((quota == -99.0).sum()) == 2, 'quota non doveva essere modificato'",
-      "hint": [
-        "np.where(condizione, np.nan, valore) costruisce un array nuovo senza toccare l'originale.",
-        "Per contare: (quota == -99.0).sum(), oppure np.isnan sul risultato."
-      ],
-      "soluzione": "q_pulito = np.where(quota == -99.0, np.nan, quota)\nn_mancanti = np.isnan(q_pulito).sum()",
-      "spiegazione": "I valori sentinella sono più pericolosi dei NaN proprio perché sono numeri validi: entrano nelle medie senza farsi notare, e una quota media di -99 su un volo di crociera è un errore che qualcuno prima o poi pubblica. Convertirli appena leggi i dati è la regola."
+      "id": "m09-isnan",
+      "comando": "np.isnan",
+      "titolo": "isnan — trovare i mancanti (e perché == non funziona)",
+      "esercizi": [
+        {
+          "id": "m09-in-1",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.nan == np.nan` ?",
+          "opzioni": [
+            "False",
+            "True",
+            "nan",
+            "solleva un errore"
+          ],
+          "risposta": "False",
+          "spiegazione": "Lo impone lo standard IEEE 754: un valore sconosciuto non può essere dichiarato uguale a un altro valore sconosciuto.\n\nDi conseguenza i NaN non si cercano mai con `==`, ma con `np.isnan` — una maschera costruita con `==` esce tutta `False` e sembra che i dati siano puliti."
+        },
+        {
+          "id": "m09-in-2",
+          "tipo": "debug",
+          "testo": "Questo codice dovrebbe contare le letture mancanti. Restituisce sempre 0, anche se i NaN ci sono. Correggilo.",
+          "setup": "q = np.array([0., 3000., np.nan, 9000., np.nan, 4000.])\n",
+          "starter": "n = (q == np.nan).sum()\n",
+          "test": "assert int(n) == 2, f'attese 2 letture mancanti, hai {n}'",
+          "hint": [
+            "np.nan non e' uguale a se stesso, quindi il confronto e' sempre False.",
+            "np.isnan(q) costruisce la maschera corretta."
+          ],
+          "soluzione": "n = np.isnan(q).sum()",
+          "spiegazione": "La maschera `q == np.nan` esce tutta `False` e il conteggio dà 0: sembra che i dati siano completi. È l'errore più insidioso del modulo, perché il sintomo è l'assenza di sintomi.\n\nNessun avviso, nessuna eccezione, nessuna shape sbagliata: solo un controllo di qualità che risponde sempre \"tutto a posto\"."
+        },
+        {
+          "id": "m09-in-3",
+          "tipo": "write",
+          "testo": "Costruisci `mancanti`, la maschera booleana dei valori mancanti, e `n_mancanti`, quanti sono.",
+          "setup": "q = np.array([0., 3000., np.nan, 9000., np.nan, 4000.])\n",
+          "starter": "mancanti = \nn_mancanti = \n",
+          "test": "assert mancanti.dtype == bool, 'mancanti deve essere una maschera booleana'\nassert np.array_equal(mancanti, [False, False, True, False, True, False])\nassert int(n_mancanti) == 2, f'attesi 2 mancanti, hai {n_mancanti}'",
+          "hint": [
+            "np.isnan(q)",
+            "n_mancanti = mancanti.sum()"
+          ],
+          "soluzione": "mancanti = np.isnan(q)\nn_mancanti = mancanti.sum()",
+          "spiegazione": "`isnan` restituisce una maschera booleana della stessa shape dell'array: da lì in poi vale tutto quello che sai dal modulo 2 — contare con `.sum()`, selezionare, negare con `~`."
+        },
+        {
+          "id": "m09-in-4",
+          "tipo": "write",
+          "testo": "Il sensore ha scritto `-99.0` dove la lettura è mancata. Costruisci `q_pulito`, con quei valori sostituiti da `np.nan`, e conta quante letture mancano in `n_mancanti`.\n\nNon modificare `quota`.",
+          "setup": "quota = np.array([0., 3000., -99., 9000., 10500., -99., 4000.])\n",
+          "starter": "q_pulito = \nn_mancanti = \n",
+          "test": "assert int(n_mancanti) == 2, f'attese 2 letture mancanti, hai {n_mancanti}'\nassert int(np.isnan(q_pulito).sum()) == 2, 'i valori -99 devono essere diventati nan'\nassert np.isclose(q_pulito[0], 0.) and np.isclose(q_pulito[3], 9000.), 'i valori validi non devono cambiare'\nassert int((quota == -99.0).sum()) == 2, 'quota non doveva essere modificato'",
+          "hint": [
+            "np.where(condizione, np.nan, valore) costruisce un array nuovo senza toccare l'originale.",
+            "q_pulito = np.where(quota == -99.0, np.nan, quota); poi conta con np.isnan."
+          ],
+          "soluzione": "q_pulito = np.where(quota == -99.0, np.nan, quota)\nn_mancanti = np.isnan(q_pulito).sum()",
+          "spiegazione": "I valori sentinella sono più pericolosi dei NaN proprio perché sono numeri validi: entrano nelle medie senza farsi notare, e una quota media di -99 su un volo di crociera è un errore che qualcuno prima o poi pubblica.\n\nNota che qui `==` funziona benissimo: `-99.0` è un numero normale. È solo il `nan` a non essere confrontabile."
+        },
+        {
+          "id": "m09-in-5",
+          "tipo": "write",
+          "testo": "Costruisci `puliti`, il sottoinsieme dei soli valori presenti, e calcola `quanti` e `media`.",
+          "setup": "q = np.array([100., np.nan, 300., 400., np.nan, 200.])\n",
+          "starter": "puliti = \nquanti = \nmedia = \n",
+          "test": "assert puliti.shape == (4,), f'attesi 4 valori validi, hai shape {puliti.shape}'\nassert np.allclose(puliti, [100., 300., 400., 200.])\nassert int(quanti) == 4\nassert np.isclose(media, 250.), f'media attesa 250.0, hai {media}'",
+          "hint": [
+            "La negazione di una maschera si scrive con ~ : q[~np.isnan(q)]",
+            "quanti = puliti.size (oppure len); media = puliti.mean()"
+          ],
+          "soluzione": "puliti = q[~np.isnan(q)]\nquanti = puliti.size\nmedia = puliti.mean()",
+          "spiegazione": "Filtrare e poi usare `mean` normale dà lo stesso numero di `np.nanmean(q)`, con una differenza importante: qui **l'array cambia lunghezza**, quindi non è più allineato con il tempo o con le altre colonne.\n\nUsa il filtro quando ti serve solo la statistica; usa `nanmean` quando i dati devono restare al loro posto."
+        },
+        {
+          "id": "m09-in-6",
+          "tipo": "predict",
+          "testo": "Quanto vale `np.array([1., 2., np.nan, 4.]).mean()` ?",
+          "opzioni": [
+            "nan",
+            "2.3333",
+            "7.0",
+            "solleva un errore"
+          ],
+          "risposta": "nan",
+          "spiegazione": "Il NaN è contagioso: qualsiasi operazione che lo coinvolge dà NaN. È una protezione, non un difetto — segnala che i dati sono incompleti.\n\nUn solo mancante su mille rende `nan` la media di tutti e mille. Il pericolo non è qui: è a valle, quando quel `nan` finisce in un grafico o in una tabella e nessuno lo guarda."
+        },
+        {
+          "id": "m09-in-7",
+          "tipo": "write",
+          "testo": "Trova **dove** sono i buchi: costruisci `indici`, gli indici delle letture mancanti, e `primo`, l'indice del primo.",
+          "setup": "q = np.array([100., 200., np.nan, 400., 500., np.nan, 700.])\n",
+          "starter": "indici = \nprimo = \n",
+          "test": "assert np.array_equal(np.asarray(indici).ravel(), [2, 5]), f'attesi gli indici [2, 5], hai {indici}'\nassert int(primo) == 2, f'atteso 2, hai {primo}'",
+          "hint": [
+            "np.nonzero su una maschera booleana da gli indici dei True.",
+            "indici = np.nonzero(np.isnan(q))[0]; primo = indici[0]"
+          ],
+          "soluzione": "indici = np.nonzero(np.isnan(q))[0]\nprimo = indici[0]",
+          "spiegazione": "`nonzero` restituisce una **tupla** di array, uno per dimensione: su un array a una dimensione serve `[0]` per estrarne gli indici. È una forma scomoda che diventa naturale quando lavori su matrici, dove ti restituisce righe e colonne separate.\n\nSapere dove sono i buchi, e non solo quanti, è quello che ti dice se il sensore ha perso letture sparse o si è spento per un intervallo intero."
+        },
+        {
+          "id": "m09-in-8",
+          "tipo": "write",
+          "testo": "Controlla due serie prima di elaborarle: calcola `ha_buchi_a` e `ha_buchi_b`, `True` se la serie contiene almeno un mancante.",
+          "setup": "a = np.array([1., 2., 3., 4.])\nb = np.array([1., np.nan, 3., 4.])\n",
+          "starter": "ha_buchi_a = \nha_buchi_b = \n",
+          "test": "assert bool(ha_buchi_a) is False, 'la serie a e completa'\nassert bool(ha_buchi_b) is True, 'la serie b ha un mancante'",
+          "hint": [
+            "np.isnan(a).any()"
+          ],
+          "soluzione": "ha_buchi_a = np.isnan(a).any()\nha_buchi_b = np.isnan(b).any()",
+          "spiegazione": "`np.isnan(x).any()` è la riga da mettere in cima a qualunque funzione che riceve dati dall'esterno: costa niente e decide se il resto del codice può usare `mean` o deve usare `nanmean`."
+        },
+        {
+          "id": "m09-in-9",
+          "tipo": "predict",
+          "testo": "Che cosa restituisce `np.isnan(q)` su un array di 6 float con 2 mancanti?",
+          "opzioni": [
+            "un array booleano di 6 elementi, con 2 True",
+            "un array di 2 elementi con gli indici dei mancanti",
+            "il numero 2",
+            "un array di 4 elementi con i soli valori validi"
+          ],
+          "risposta": "un array booleano di 6 elementi, con 2 True",
+          "spiegazione": "È una maschera, non un filtro: stessa shape dell'array di partenza, quindi resta allineata con le altre colonne dello stesso dataset.\n\nDa lì scegli tu: `.sum()` per contare, `~maschera` per selezionare i validi, `np.nonzero` per gli indici."
+        },
+        {
+          "id": "m09-in-10",
+          "tipo": "write",
+          "testo": "Su una matrice di prove — 3 configurazioni in riga, 4 ripetizioni in colonna — calcola `per_riga`, quante misure mancano a ciascuna configurazione, e `totale`.",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, 0.46, np.nan],\n               [0.70, 0.72, 0.71, 0.71]])\n",
+          "starter": "per_riga = \ntotale = \n",
+          "test": "assert np.array_equal(per_riga, [1, 2, 0]), f'attesi [1, 2, 0], hai {per_riga}'\nassert int(totale) == 3, f'attesi 3 mancanti in tutto, hai {totale}'",
+          "hint": [
+            "np.isnan(CL) ha la stessa shape della matrice.",
+            "per_riga = np.isnan(CL).sum(axis=1); totale = np.isnan(CL).sum()"
+          ],
+          "soluzione": "per_riga = np.isnan(CL).sum(axis=1)\ntotale = np.isnan(CL).sum()",
+          "spiegazione": "`axis=1` riduce le colonne e lascia un valore per riga: è la stessa semantica del modulo 5, e vale identica su una maschera booleana perché `True` somma come 1.\n\nLa configurazione 1 ha perso metà delle ripetizioni. Qualunque media su quella riga andrà accompagnata da questo numero."
+        },
+        {
+          "id": "m09-in-11",
+          "tipo": "debug",
+          "testo": "Questo codice dovrebbe tenere solo le letture valide, ma `puliti` esce lungo quanto l'originale, con i `nan` ancora dentro. Correggilo.",
+          "setup": "q = np.array([100., np.nan, 300., 400., np.nan, 200.])\n",
+          "starter": "puliti = q[q != np.nan]\n",
+          "test": "assert puliti.shape == (4,), f'attesi 4 valori validi, hai shape {puliti.shape}'\nassert np.allclose(puliti, [100., 300., 400., 200.])\nassert int(np.isnan(puliti).sum()) == 0",
+          "hint": [
+            "Con nan ogni confronto e' False, quindi != e' sempre True: la maschera tiene tutto.",
+            "puliti = q[~np.isnan(q)]"
+          ],
+          "soluzione": "puliti = q[~np.isnan(q)]",
+          "spiegazione": "È la versione gemella dell'errore con `==`, e più subdola: `q != np.nan` esce tutta `True`, quindi il filtro **funziona** — restituisce un array, della lunghezza giusta, senza avvisi. Solo che non filtra niente.\n\nCon `==` almeno il conteggio zero fa sospettare. Qui non c'è nessun segnale, e il `nan` prosegue nel calcolo successivo."
+        },
+        {
+          "id": "m09-in-12",
+          "tipo": "apply",
+          "testo": "**Ripulire una colonna prima di usarla.**\n\nLa colonna arriva con due guasti diversi: la sentinella `-999.0` dello strumento e dei `nan` già presenti nel file.\n\nCalcola `q` (la colonna con le sentinelle convertite in `nan`), `mancanti`, `frazione_persa` (la quota di letture perse, fra 0 e 1), `utilizzabile` (`True` se ne mancano meno del 30%) e `media`, calcolata sui soli valori validi.",
+          "setup": "grezza = np.array([1200., -999., 1450., np.nan, 1500., 1550., -999., 1600., 1650., 1700.])\n",
+          "starter": "q = \nmancanti = \nfrazione_persa = \nutilizzabile = \nmedia = \n",
+          "test": "assert q.shape == (10,)\nassert int((q == -999.0).sum()) == 0, 'le sentinelle devono essere diventate nan'\nassert int(mancanti) == 3, f'attesi 3 mancanti, hai {mancanti}'\nassert np.isclose(frazione_persa, 0.3), f'attesa 0.3, hai {frazione_persa}'\nassert bool(utilizzabile) is False, 'con il 30% perso la serie non passa la soglia del 30%'\nassert np.isclose(media, 1521.4285714285713), f'media attesa 1521.43, hai {media}'",
+          "hint": [
+            "q = np.where(grezza == -999.0, np.nan, grezza)",
+            "mancanti = np.isnan(q).sum(); frazione_persa = mancanti / q.size",
+            "utilizzabile = frazione_persa < 0.30; media = np.nanmean(q)"
+          ],
+          "soluzione": "q = np.where(grezza == -999.0, np.nan, grezza)\nmancanti = np.isnan(q).sum()\nfrazione_persa = mancanti / q.size\nutilizzabile = frazione_persa < 0.30\nmedia = np.nanmean(q)",
+          "spiegazione": "Il punto è l'ordine: la conversione delle sentinelle viene **prima** di qualunque conteggio, altrimenti `frazione_persa` uscirebbe 0.1 invece di 0.3 e la serie passerebbe il controllo.\n\nSenza la conversione, `media` sarebbe **1180.2** invece di 1521.4: un valore plausibile, dell'ordine di grandezza giusto, sbagliato del 22%. È esattamente il tipo di errore che sopravvive a una revisione.\n\nE nota che `media` viene calcolata comunque, anche se `utilizzabile` è `False`. NumPy non ha nessun modo di collegare le due cose: quella decisione è tua, e va scritta a mano ogni volta."
+        }
+      ]
     },
     {
-      "id": "m09-e5",
-      "tipo": "debug",
-      "testo": "Questo codice dovrebbe contare le letture mancanti. Restituisce sempre 0, anche se i NaN ci sono. Correggilo.",
-      "setup": "q = np.array([0., 3000., np.nan, 9000., np.nan, 4000.])\n",
-      "starter": "n = (q == np.nan).sum()\n",
-      "test": "assert int(n) == 2, f'attese 2 letture mancanti, hai {n}'",
-      "hint": [
-        "np.nan non e' uguale a se stesso, quindi il confronto e' sempre False.",
-        "np.isnan(q) costruisce la maschera corretta."
-      ],
-      "soluzione": "n = np.isnan(q).sum()",
-      "spiegazione": "La maschera q == np.nan esce tutta False e il conteggio dà 0: sembra che i dati siano completi. È l'errore più insidioso del modulo, perché il sintomo è l'assenza di sintomi."
+      "id": "m09-isfinite",
+      "comando": "np.isfinite",
+      "titolo": "isfinite — il controllo che copre anche gli infiniti",
+      "esercizi": [
+        {
+          "id": "m09-fi-1",
+          "tipo": "write",
+          "testo": "Costruisci `validi`, la maschera dei valori utilizzabili, e conta quanti sono in `n_validi`.",
+          "setup": "q = np.array([1.2, np.nan, 3.4, np.inf, 5.6, 7.8])\n",
+          "starter": "validi = \nn_validi = \n",
+          "test": "assert validi.dtype == bool\nassert np.array_equal(validi, [True, False, True, False, True, True])\nassert int(n_validi) == 4, f'attesi 4 valori validi, hai {n_validi}'",
+          "hint": [
+            "np.isfinite(q) e False sia sui nan sia sugli infiniti.",
+            "n_validi = validi.sum()"
+          ],
+          "soluzione": "validi = np.isfinite(q)\nn_validi = validi.sum()",
+          "spiegazione": "`isfinite` è il complemento di \"nan oppure infinito\". Su dati veri è il controllo da usare di default: `isnan` risponde a una domanda più stretta di quella che ti interessa davvero, cioè «posso farci un calcolo?»."
+        },
+        {
+          "id": "m09-fi-2",
+          "tipo": "predict",
+          "testo": "Su `np.array([1., np.inf, np.nan])`, che cosa danno rispettivamente `np.isnan` e `np.isfinite` ?",
+          "opzioni": [
+            "isnan da [F, F, T] e isfinite da [T, F, F]",
+            "danno lo stesso risultato",
+            "isnan da [F, T, T] e isfinite da [T, F, F]",
+            "isnan da [F, F, T] e isfinite da [T, T, F]"
+          ],
+          "risposta": "isnan da [F, F, T] e isfinite da [T, F, F]",
+          "spiegazione": "L'infinito **non** è un NaN: è un valore ben definito, con un segno, che si propaga nei calcoli con regole proprie. `isnan` lo lascia passare, `isfinite` no.\n\nÈ la ragione per cui `~np.isnan(x)` e `np.isfinite(x)` non sono la stessa maschera, anche se in un dataset senza infiniti coincidono."
+        },
+        {
+          "id": "m09-fi-3",
+          "tipo": "write",
+          "testo": "Costruisci `puliti`, i soli valori finiti di `q`, e calcola `media`.",
+          "setup": "q = np.array([100., np.inf, 300., np.nan, 500., 100.])\n",
+          "starter": "puliti = \nmedia = \n",
+          "test": "assert puliti.shape == (4,), f'attesi 4 valori finiti, hai shape {puliti.shape}'\nassert np.allclose(puliti, [100., 300., 500., 100.])\nassert np.isclose(media, 250.), f'media attesa 250.0, hai {media}'",
+          "hint": [
+            "puliti = q[np.isfinite(q)] — qui la maschera non va negata.",
+            "media = puliti.mean()"
+          ],
+          "soluzione": "puliti = q[np.isfinite(q)]\nmedia = puliti.mean()",
+          "spiegazione": "Nota la differenza di segno rispetto a `isnan`: `q[~np.isnan(q)]` tiene i **non**-mancanti, `q[np.isfinite(q)]` tiene direttamente i validi. Con `isfinite` la maschera si legge nel verso giusto, ed è un motivo in più per preferirlo.\n\nQui il filtro è indispensabile: `np.nanmean` toglierebbe il `nan` ma non l'infinito, e la media uscirebbe `inf`."
+        },
+        {
+          "id": "m09-fi-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve calcolare la media dei valori utilizzabili, ma restituisce `inf`. Il filtro toglie i mancanti e lascia passare l'infinito. Correggilo.",
+          "setup": "q = np.array([100., np.inf, 300., np.nan, 500., 100.])\n",
+          "starter": "media = q[~np.isnan(q)].mean()\n",
+          "test": "assert np.isclose(media, 250.), f'media attesa 250.0, hai {media}'",
+          "hint": [
+            "isnan non coglie gli infiniti.",
+            "media = q[np.isfinite(q)].mean()"
+          ],
+          "soluzione": "media = q[np.isfinite(q)].mean()",
+          "spiegazione": "Qui almeno il sintomo è evidente: una media `inf` non passa inosservata. Il caso cattivo è quando gli infiniti sono di segno opposto e si compensano parzialmente, o quando finiscono in una somma che li assorbe — allora ottieni un numero, e nessun indizio.\n\nRegola: se i dati possono contenere infiniti, il filtro giusto è `isfinite`, non `~isnan`."
+        },
+        {
+          "id": "m09-fi-5",
+          "tipo": "write",
+          "testo": "Su una matrice di prove, calcola `validi_per_riga` e `affidabile`, la maschera delle configurazioni con **almeno 3** misure utilizzabili.",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, np.inf, np.nan],\n               [0.70, 0.72, 0.71, 0.71]])\n",
+          "starter": "validi_per_riga = \naffidabile = \n",
+          "test": "assert np.array_equal(validi_per_riga, [3, 1, 4]), f'attesi [3, 1, 4], hai {validi_per_riga}'\nassert affidabile.dtype == bool\nassert np.array_equal(affidabile, [True, False, True]), f'attesi [True, False, True], hai {affidabile}'",
+          "hint": [
+            "validi_per_riga = np.isfinite(CL).sum(axis=1)",
+            "affidabile = validi_per_riga >= 3"
+          ],
+          "soluzione": "validi_per_riga = np.isfinite(CL).sum(axis=1)\naffidabile = validi_per_riga >= 3",
+          "spiegazione": "La riga 1 ha un solo valore utilizzabile su quattro: `np.isnan` ne avrebbe contati due, perché l'infinito gli sfugge.\n\nÈ questa la riga che decide se una media ha senso, e va calcolata **prima** di guardare le medie — altrimenti il numero che hai già sotto gli occhi influenza la soglia che scegli."
+        },
+        {
+          "id": "m09-fi-6",
+          "tipo": "predict",
+          "testo": "Da dove arrivano gli infiniti in un array di misure ridotte?",
+          "opzioni": [
+            "da divisioni per zero e da np.log(0) nei calcoli a valle",
+            "dal file: gli strumenti scrivono inf al posto dei dati mancanti",
+            "da np.genfromtxt, che converte i campi vuoti in inf",
+            "da overflow di np.array, che satura a inf"
+          ],
+          "risposta": "da divisioni per zero e da np.log(0) nei calcoli a valle",
+          "spiegazione": "Quasi mai arrivano dal file: nascono nel **tuo** codice. Un rapporto portanza/resistenza calcolato dove la resistenza è zero, un rapporto di pressioni con il denominatore azzerato da una lettura mancante convertita male.\n\nÈ il motivo per cui `isfinite` va usato sui risultati intermedi, non solo appena dopo la lettura."
+        },
+        {
+          "id": "m09-fi-7",
+          "tipo": "apply",
+          "testo": "**Efficienza aerodinamica con un denominatore nullo.**\n\nDa portanza e resistenza misurate, calcola l'efficienza `L/D`. Una delle prove ha resistenza nulla — un guasto della cella di carico — e un'altra ha la portanza mancante.\n\nCalcola `E` (il rapporto grezzo, infiniti e nan compresi), `utilizzabili` (la maschera dei valori finiti), `n_scartati`, `E_media` e `E_max`, entrambe sui soli valori utilizzabili.",
+          "setup": "L = np.array([1200., 1400., np.nan, 1600., 1500.])\nD = np.array([80., 0., 95., 100., 90.])\n",
+          "starter": "E = \nutilizzabili = \nn_scartati = \nE_media = \nE_max = \n",
+          "test": "assert E.shape == (5,)\nassert np.isclose(E[0], 15.0)\nassert not np.isfinite(E[1]), 'la seconda prova ha resistenza nulla: il rapporto e infinito'\nassert np.isnan(E[2]), 'la terza prova ha portanza mancante'\nassert np.array_equal(utilizzabili, [True, False, False, True, True])\nassert int(n_scartati) == 2, f'attese 2 prove scartate, hai {n_scartati}'\nassert np.isclose(E_media, 15.888888888888888), f'media attesa 15.889, hai {E_media}'\nassert np.isclose(E_max, 16.666666666666668), f'massimo atteso 16.667, hai {E_max}'",
+          "hint": [
+            "E = L / D — la divisione per zero da inf, non un errore.",
+            "utilizzabili = np.isfinite(E); n_scartati = (~utilizzabili).sum()",
+            "E_media = E[utilizzabili].mean(); E_max = E[utilizzabili].max()"
+          ],
+          "soluzione": "E = L / D\nutilizzabili = np.isfinite(E)\nn_scartati = (~utilizzabili).sum()\nE_media = E[utilizzabili].mean()\nE_max = E[utilizzabili].max()",
+          "spiegazione": "I due guasti entrano nello stesso array per strade diverse: il `nan` viene dal dato mancante e si propaga, l'`inf` nasce nella divisione. Una sola maschera li coglie entrambi.\n\nProva a immaginare il risultato senza il filtro: `E.max()` darebbe `inf`, e in un rapporto di prova quel numero verrebbe letto come \"efficienza altissima, configurazione ottima\". Il massimo vero è 16.7, ottenuto dalla quinta prova.\n\nLa divisione per zero, ricorda, **non solleva niente** su array NumPy: stampa un `RuntimeWarning` e prosegue. Il programma non si ferma, e sta a te accorgertene."
+        }
+      ]
     },
     {
-      "id": "m09-e6",
-      "tipo": "write",
-      "testo": "**Leggere un file di misure.**\n\nIl testo `csv` ha un'intestazione e tre colonne separate da virgola. Caricalo in `dati` ed estrai le tre colonne in `t`, `h` e `mach`.",
-      "setup": "import io\ncsv = \"tempo,quota,mach\\n0.0,0.0,0.20\\n10.0,3000.0,0.45\\n20.0,6000.0,0.63\\n30.0,9000.0,0.78\\n40.0,10500.0,0.82\\n\"\n",
-      "starter": "dati = \nt = \nh = \nmach = \n",
-      "test": "assert dati.shape == (5, 3), f'shape sbagliata: {dati.shape} — hai saltato l intestazione?'\nassert np.allclose(t, [0., 10., 20., 30., 40.]), f't sbagliato: {t}'\nassert np.allclose(h, [0., 3000., 6000., 9000., 10500.]), f'h sbagliato: {h}'\nassert np.isclose(mach[-1], 0.82)",
-      "hint": [
-        "np.loadtxt(io.StringIO(csv), delimiter=',', skiprows=1)",
-        "Le colonne si estraggono con dati[:, 0], dati[:, 1], dati[:, 2]."
-      ],
-      "soluzione": "dati = np.loadtxt(io.StringIO(csv), delimiter=\",\", skiprows=1)\nt = dati[:, 0]\nh = dati[:, 1]\nmach = dati[:, 2]",
-      "spiegazione": "Senza skiprows=1 loadtxt inciampa sull'intestazione e solleva un errore di conversione. Esiste anche la forma compatta con unpack=True, che restituisce direttamente le tre colonne separate: t, h, mach = np.loadtxt(..., unpack=True)."
-    },
-    {
-      "id": "m09-e7",
-      "tipo": "apply",
-      "difficolta": 3,
-      "testo": "**Riduzione di una campagna con dati mancanti.**\n\n`CL` contiene 3 configurazioni (righe) misurate con 5 ripetizioni (colonne). Alcune misure sono andate perse e valgono `np.nan`.\n\nCalcola:\n\n- `media`: il CL medio di ogni configurazione, ignorando i mancanti\n- `validi`: quante misure valide ha ciascuna configurazione\n- `sigma`: la deviazione standard **campionaria** di ogni configurazione, ignorando i mancanti\n- `affidabile`: maschera booleana, `True` per le configurazioni con **almeno 4** misure valide\n\nL'ultimo punto è quello che conta: una media su due campioni e una su cinque non valgono uguale, e nessuna funzione `nan*` te lo ricorda.",
-      "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21, 0.21],\n               [0.45, np.nan, 0.46, np.nan, np.nan],\n               [0.70, 0.72, 0.71, 0.71, 0.71]])\n",
-      "starter": "media = \nvalidi = \nsigma = \naffidabile = \n",
-      "test": "assert media.shape == (3,), f'attesi 3 valori, shape {media.shape}'\nassert np.allclose(media, [0.21, 0.455, 0.71]), f'medie sbagliate: {media} — hai usato mean invece di nanmean?'\nassert np.array_equal(validi, [4, 2, 5]), f'conteggio sbagliato: {validi}'\nassert sigma.shape == (3,), 'sigma deve avere 3 valori'\nassert np.allclose(sigma, np.nanstd(CL, axis=1, ddof=1)), 'serve la deviazione campionaria nan-aware: nanstd con ddof=1'\nassert affidabile.dtype == bool, 'affidabile deve essere una maschera booleana'\nassert np.array_equal(affidabile, [True, False, True]), f'la configurazione 1 ha solo 2 misure: {affidabile}'",
-      "hint": [
-        "np.nanmean(CL, axis=1) e np.nanstd(CL, axis=1, ddof=1). Le versioni nan sono funzioni, non metodi.",
-        "Per contare i validi: np.isfinite(CL).sum(axis=1). La maschera e' validi >= 4."
-      ],
-      "soluzione": "media = np.nanmean(CL, axis=1)\nvalidi = np.isfinite(CL).sum(axis=1)\nsigma = np.nanstd(CL, axis=1, ddof=1)\naffidabile = validi >= 4",
-      "spiegazione": "La configurazione 1 ottiene comunque una media, 0.455, calcolata su due sole misure: un numero che sembra buono come gli altri e non lo è. La colonna `validi` è ciò che distingue una riduzione dati onesta da una che nasconde il problema.\n\nNota che `np.isfinite` copre anche gli infiniti, non solo i NaN: su dati veri, dove una divisione per zero può produrre `inf`, è il controllo più completo di `~np.isnan`."
+      "id": "m09-nanmean",
+      "comando": "np.nanmean",
+      "titolo": "nanmean e le altre nan-aware — ridurre ignorando i buchi",
+      "esercizi": [
+        {
+          "id": "m09-nm-1",
+          "tipo": "write",
+          "testo": "Calcola `media`, la media dei soli valori presenti, senza filtrare l'array.",
+          "setup": "q = np.array([100., np.nan, 300., 400., np.nan, 200.])\n",
+          "starter": "media = \n",
+          "test": "assert np.isclose(media, 250.), f'media attesa 250.0, hai {media}'",
+          "hint": [
+            "np.nanmean(q)"
+          ],
+          "soluzione": "media = np.nanmean(q)",
+          "spiegazione": "Stesso risultato di `q[~np.isnan(q)].mean()`, in una riga sola e senza costruire un array intermedio. La differenza conta quando l'array è grande o quando devi ridurre lungo un asse."
+        },
+        {
+          "id": "m09-nm-2",
+          "tipo": "predict",
+          "testo": "Che cosa succede scrivendo `q.nanmean()` ?",
+          "opzioni": [
+            "AttributeError: gli array non hanno il metodo nanmean",
+            "funziona, ed e' equivalente a np.nanmean(q)",
+            "funziona ma ignora il parametro axis",
+            "restituisce nan"
+          ],
+          "risposta": "AttributeError: gli array non hanno il metodo nanmean",
+          "spiegazione": "È un'asimmetria dell'API che confonde spesso: `mean`, `std`, `max`, `sum` esistono sia come metodo sia come funzione, le loro varianti nan-aware **solo** come funzioni `np.nan*`.\n\nAlmeno l'errore è immediato e chiaro. Il rischio vero è l'opposto: scrivere `q.mean()` per abitudine quando servirebbe `np.nanmean(q)`."
+        },
+        {
+          "id": "m09-nm-3",
+          "tipo": "write",
+          "testo": "Confronta le due somme sullo stesso array: `somma_normale` con il metodo dell'array, `somma_nan` ignorando i mancanti.",
+          "setup": "q = np.array([100., np.nan, 300., 400.])\n",
+          "starter": "somma_normale = \nsomma_nan = \n",
+          "test": "assert np.isnan(somma_normale), 'la somma normale deve essere nan'\nassert np.isclose(somma_nan, 800.), f'attesa 800.0, hai {somma_nan}'",
+          "hint": [
+            "somma_normale = q.sum()",
+            "somma_nan = np.nansum(q)"
+          ],
+          "soluzione": "somma_normale = q.sum()\nsomma_nan = np.nansum(q)",
+          "spiegazione": "Il `nan` che si propaga è la rete di sicurezza: `somma_normale` è inutilizzabile, ma è **onesta**. `nansum` ti dà un numero, e da quel momento in poi nessuno può più sapere che mancava una lettura.\n\nPassare alla versione nan-aware non è una correzione: è una decisione di scartare informazione, e va presa sapendo quanta."
+        },
+        {
+          "id": "m09-nm-4",
+          "tipo": "write",
+          "testo": "Trova il picco di temperatura ignorando le letture perse: calcola `t_max` e `t_min`.",
+          "setup": "T = np.array([288.1, np.nan, 301.5, 295.2, np.nan, 279.4])\n",
+          "starter": "t_max = \nt_min = \n",
+          "test": "assert np.isclose(t_max, 301.5), f'massimo atteso 301.5, hai {t_max}'\nassert np.isclose(t_min, 279.4), f'minimo atteso 279.4, hai {t_min}'",
+          "hint": [
+            "np.nanmax(T) per il massimo.",
+            "Per il minimo, o la funzione gemella, o il minimo dei soli valori finiti: T[np.isfinite(T)].min()"
+          ],
+          "soluzione": "t_max = np.nanmax(T)\nt_min = T[np.isfinite(T)].min()",
+          "spiegazione": "Il prefisso `nan` esiste per tutta la famiglia delle riduzioni, minimo compreso. Ma vale la pena sapere che la strada del filtro esplicito funziona sempre e non richiede di ricordare quali varianti esistono: `T[np.isfinite(T)]` seguito da qualunque riduzione normale."
+        },
+        {
+          "id": "m09-nm-5",
+          "tipo": "write",
+          "testo": "Calcola la dispersione delle misure valide: `sigma`, la deviazione standard **campionaria** (`ddof=1`), e `n`, su quante misure è calcolata.",
+          "setup": "CL = np.array([0.212, np.nan, 0.219, 0.208, 0.215, np.nan])\n",
+          "starter": "sigma = \nn = \n",
+          "test": "assert np.isclose(sigma, np.nanstd(CL, ddof=1)), 'serve la deviazione campionaria: ddof=1'\nassert np.isclose(sigma, 0.004654746681256317), f'sigma attesa 0.004655, hai {sigma}'\nassert int(n) == 4, f'attese 4 misure valide, hai {n}'",
+          "hint": [
+            "np.nanstd(CL, ddof=1)",
+            "n = np.isfinite(CL).sum()"
+          ],
+          "soluzione": "sigma = np.nanstd(CL, ddof=1)\nn = np.isfinite(CL).sum()",
+          "spiegazione": "`ddof=1` divide per n−1 invece che per n, ed è la scelta corretta quando le misure sono un campione e non l'intera popolazione — cioè sempre, in laboratorio.\n\nQui il divisore è 3, non 5: `nanstd` conta i validi, non gli elementi. Il che rende ancora più importante riportare `n` accanto a `sigma`: con 4 misure una deviazione standard è un'indicazione, non una stima."
+        },
+        {
+          "id": "m09-nm-6",
+          "tipo": "write",
+          "testo": "Riduci per configurazione: `media` (una media per riga, ignorando i mancanti) e `per_condizione` (una media per colonna).",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71]])\n",
+          "starter": "media = \nper_condizione = \n",
+          "test": "assert media.shape == (3,), f'attesa shape (3,), hai {media.shape}'\nassert np.allclose(media, [0.21, 0.4566666666666667, 0.71]), f'medie sbagliate: {media}'\nassert per_condizione.shape == (4,), f'attesa shape (4,), hai {per_condizione.shape}'\nassert np.allclose(per_condizione, [0.45, 0.47, 0.585, 0.46]), f'medie sbagliate: {per_condizione}'",
+          "hint": [
+            "L'asse che passi e' quello che sparisce.",
+            "np.nanmean(CL, axis=1) per riga, np.nanmean(CL, axis=0) per colonna."
+          ],
+          "soluzione": "media = np.nanmean(CL, axis=1)\nper_condizione = np.nanmean(CL, axis=0)",
+          "spiegazione": "Stessa semantica del modulo 5: `axis=1` riduce le colonne e lascia un valore per riga.\n\nGuarda `per_condizione[2]`: vale 0.585, la media di due sole configurazioni invece di tre, perché la terza ripetizione della prima configurazione manca. È un valore che **rompe la simmetria** della tabella e che nessuno noterebbe leggendo solo i quattro numeri."
+        },
+        {
+          "id": "m09-nm-7",
+          "tipo": "predict",
+          "testo": "Che cosa restituisce `np.nanmean` su una riga in cui **tutti** i valori sono `nan` ?",
+          "opzioni": [
+            "nan, con un RuntimeWarning: il programma prosegue",
+            "0.0, senza avvisi",
+            "solleva un errore e ferma il programma",
+            "salta la riga, restituendo un array piu corto"
+          ],
+          "risposta": "nan, con un RuntimeWarning: il programma prosegue",
+          "spiegazione": "Il risultato è corretto — non c'è niente da mediare — ma è un **avviso**, non un errore: il calcolo continua e quel `nan` finisce nel vettore dei risultati insieme agli altri.\n\nSe stai riducendo cento configurazioni, quell'unico avviso scorre via nel log e ti resta un `nan` in mezzo a novantanove numeri."
+        },
+        {
+          "id": "m09-nm-8",
+          "tipo": "predict",
+          "testo": "E `np.nansum` su una riga tutta `nan` ?",
+          "opzioni": [
+            "0.0, senza nessun avviso",
+            "nan, con un RuntimeWarning",
+            "nan, senza avvisi",
+            "solleva un errore"
+          ],
+          "risposta": "0.0, senza nessun avviso",
+          "spiegazione": "È la trappola peggiore del modulo. La logica è coerente — la somma di nessun elemento è zero — ma il risultato è indistinguibile da una misura reale che vale zero: nessun `nan`, nessun avviso, nessun modo di accorgersene guardando il numero.\n\nUn sensore spento per un'intera acquisizione produce un consumo totale di 0.0 kg, e il bilancio torna. L'unica difesa è contare i validi: `np.isfinite(x).sum()`."
+        },
+        {
+          "id": "m09-nm-9",
+          "tipo": "debug",
+          "testo": "Questa riduzione dovrebbe dare la media di ogni configurazione, ma restituisce `nan` dove ci sono misure perse. Correggila.",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21],\n               [0.45, np.nan, 0.46, 0.46],\n               [0.70, 0.72, 0.71, 0.71]])\n",
+          "starter": "media = CL.mean(axis=1)\n",
+          "test": "assert media.shape == (3,)\nassert np.allclose(media, [0.21, 0.4566666666666667, 0.71]), f'medie sbagliate: {media}'\nassert int(np.isnan(media).sum()) == 0, 'nessuna media deve restare nan'",
+          "hint": [
+            "Le versioni nan-aware sono funzioni di NumPy, non metodi dell'array.",
+            "media = np.nanmean(CL, axis=1)"
+          ],
+          "soluzione": "media = np.nanmean(CL, axis=1)",
+          "spiegazione": "Il passaggio da `.mean()` a `np.nanmean()` cambia anche la forma della chiamata: l'array smette di essere il soggetto e diventa il primo argomento. È il motivo per cui la correzione non è mai un semplice prefisso da aggiungere.\n\nE resta la domanda che nessuna funzione ti fa: adesso che i `nan` non ci sono più, su quante misure sono calcolate queste medie?"
+        },
+        {
+          "id": "m09-nm-10",
+          "tipo": "write",
+          "testo": "Accompagna sempre la media con il suo peso: calcola `media`, `validi` e `affidabile`, la maschera delle configurazioni con **almeno 4** misure valide.",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21, 0.21],\n               [0.45, np.nan, 0.46, np.nan, np.nan],\n               [0.70, 0.72, 0.71, 0.71, 0.71]])\n",
+          "starter": "media = \nvalidi = \naffidabile = \n",
+          "test": "assert np.allclose(media, [0.21, 0.455, 0.71]), f'medie sbagliate: {media}'\nassert np.array_equal(validi, [4, 2, 5]), f'conteggio sbagliato: {validi}'\nassert affidabile.dtype == bool\nassert np.array_equal(affidabile, [True, False, True]), f'la configurazione 1 ha solo 2 misure: {affidabile}'",
+          "hint": [
+            "media = np.nanmean(CL, axis=1); validi = np.isfinite(CL).sum(axis=1)",
+            "affidabile = validi >= 4"
+          ],
+          "soluzione": "media = np.nanmean(CL, axis=1)\nvalidi = np.isfinite(CL).sum(axis=1)\naffidabile = validi >= 4",
+          "spiegazione": "La configurazione 1 ottiene comunque una media, 0.455, calcolata su due sole misure: un numero che sembra buono come gli altri e non lo è.\n\nLa colonna `validi` è ciò che distingue una riduzione dati onesta da una che nasconde il problema. Scrivila accanto a ogni media, sempre — è una riga di codice, e ti risparmia la telefonata di chi ha usato quel 0.455 per dimensionare qualcosa."
+        },
+        {
+          "id": "m09-nm-11",
+          "tipo": "apply",
+          "testo": "**Riduzione completa di una campagna con sensori intermittenti.**\n\nQuattro configurazioni, sei ripetizioni. La configurazione 3 non è stata misurata affatto: la riga è tutta `nan`.\n\nCalcola `validi` (misure valide per configurazione), `media` e `sigma` (deviazione campionaria) per configurazione, `misurate` (la maschera delle configurazioni con almeno una misura) e `cl_max`, il CL massimo dell'intera campagna ignorando i mancanti.",
+          "setup": "CL = np.array([[0.20, 0.22, np.nan, 0.21, 0.21, 0.20],\n               [0.45, np.nan, 0.46, np.nan, 0.44, 0.45],\n               [0.70, 0.72, 0.71, 0.71, 0.71, 0.71],\n               [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan]])\n",
+          "starter": "validi = \nmedia = \nsigma = \nmisurate = \ncl_max = \n",
+          "test": "assert np.array_equal(validi, [5, 4, 6, 0]), f'conteggio sbagliato: {validi}'\nassert misurate.dtype == bool\nassert np.array_equal(misurate, [True, True, True, False]), f'la configurazione 3 non e stata misurata: {misurate}'\nassert np.allclose(media[:3], [0.208, 0.45, 0.71]), f'medie sbagliate: {media[:3]}'\nassert np.isnan(media[3]), 'la riga tutta nan deve dare nan, non 0.0'\nassert np.allclose(sigma[:3], np.nanstd(CL, axis=1, ddof=1)[:3]), 'serve nanstd con ddof=1'\nassert np.isclose(cl_max, 0.72), f'massimo atteso 0.72, hai {cl_max}'",
+          "hint": [
+            "validi = np.isfinite(CL).sum(axis=1); misurate = validi > 0",
+            "media = np.nanmean(CL, axis=1); sigma = np.nanstd(CL, axis=1, ddof=1)",
+            "cl_max = np.nanmax(CL)"
+          ],
+          "soluzione": "validi = np.isfinite(CL).sum(axis=1)\nmedia = np.nanmean(CL, axis=1)\nsigma = np.nanstd(CL, axis=1, ddof=1)\nmisurate = validi > 0\ncl_max = np.nanmax(CL)",
+          "spiegazione": "La riga tutta `nan` è il caso limite che chiude il modulo. `nanmean` restituisce `nan` e stampa un avviso; `nanstd` fa lo stesso. Se avessi usato `np.nansum` per la stessa riga otterresti **0.0**, un numero, senza nemmeno l'avviso.\n\nL'ordine giusto è quello della soluzione: **prima `validi`, poi tutto il resto.** Il conteggio è l'unico risultato che non può mentirti, perché non dipende da come una funzione tratta i casi degenerati.\n\nE nota che `cl_max` scavalca allegramente la configurazione mancante: una riduzione su tutta la campagna non si accorge di niente. Sono le riduzioni **per configurazione** a rivelare i buchi, ed è per questo che si guardano per prime."
+        }
+      ]
     }
   ]
 }
