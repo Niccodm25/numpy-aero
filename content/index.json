@@ -14,11 +14,10 @@
         "p04",
         "p05",
         "p06",
-        "p07"
+        "p07",
+        "p08"
       ],
-      "prossimi": [
-        "File e contesti — open, with, leggere e scrivere testo"
-      ]
+      "prossimi": []
     },
     {
       "id": "ambienti",
@@ -154,6 +153,12 @@
       "id": "p07",
       "file": "p07-import.json",
       "titolo": "import e libreria standard",
+      "disponibile": true
+    },
+    {
+      "id": "p08",
+      "file": "p08-file.json",
+      "titolo": "File e contesti",
       "disponibile": true
     },
     {

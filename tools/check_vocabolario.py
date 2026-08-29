@@ -128,6 +128,17 @@ VOCAB_PY = {
         "year", "month", "day", "days", "seconds", "hours", "minutes",
         "m",  # alias di math nell'esercizio sull'import con as
     },
+    "p08": {
+        "open", "read", "readline", "readlines", "write", "writelines",
+        "seek", "getvalue", "closed", "close", "encoding", "mode",
+        "rstrip", "lstrip", "StringIO", "io",
+        "dump", "load",
+        "pathlib", "Path", "name", "stem", "suffix", "suffixes", "parts",
+        "parent", "with_suffix",
+        # citato nella prosa: l'esercizio dice proprio che questo lettore
+        # scritto a mano e' cio' che np.loadtxt fa da solo
+        "loadtxt",
+    },
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]

@@ -1,0 +1,838 @@
+{
+ "id": "p08",
+ "titolo": "File e contesti",
+ "perche": "Aprire, leggere, scrivere — e le tre cose che costano care: un file aperto senza with resta aperto se qualcosa esplode, il modo \"w\" svuota il file prima ancora che tu scriva, e senza encoding=\"utf-8\" un file con accenti scritto qui non si rilegge altrove. Alla fine il lettore di dati incolonnati scritto a mano, che e' quello che np.loadtxt fa per te.",
+ "funzioni": [
+  "open",
+  "with",
+  "read",
+  "readline",
+  "readlines",
+  "write",
+  "writelines",
+  "encoding",
+  "json.dump",
+  "json.load",
+  "io.StringIO"
+ ],
+ "lezioni": [
+  {
+   "id": "p08-l1",
+   "titolo": "with: il file si chiude da solo",
+   "md": "```\nwith open(\"dati.txt\") as f:\n    testo = f.read()\n# qui f e' gia' chiuso, comunque sia andata\n```\n\n`with` garantisce la chiusura: anche se dentro il blocco esplode un'eccezione, il file viene chiuso mentre l'errore risale. È il `finally` del modulo sugli errori, già scritto per te.\n\n### Senza with\n\n```\nf = open(\"dati.txt\")\ntesto = f.read()\nf.close()          # se sopra esplode qualcosa, questa riga non viene mai eseguita\n```\n\nUn file lasciato aperto trattiene una risorsa del sistema operativo, e su Windows lo tiene **bloccato**: nessun altro programma può riscriverlo finché il tuo non termina. In scrittura è peggio — quello che hai scritto può restare in un buffer e non arrivare mai sul disco.\n\n**In Python un file si apre solo con `with`.** Non ci sono eccezioni sensate a questa regola.\n\n### Cosa restituisce open\n\nUn **oggetto file**, non il contenuto. Il contenuto arriva chiamando `read()`, o scorrendo l'oggetto riga per riga.\n\n### Un file-like che non è un file\n\n```\nimport io\nf = io.StringIO(\"a\\nb\\n\")\nf.read()          # 'a\\nb\\n'\n```\n\n`io.StringIO` si comporta come un file aperto in lettura, ma sta in memoria. Serve a due cose: **provare** codice che legge file senza avere un file, e passare del testo a una funzione che si aspetta un file.\n\nGli esercizi di questo modulo lo usano per questo: il codice che scrivi è identico a quello che useresti su un file vero.\n\n### La testina di lettura\n\n```\nf.read()          # tutto il contenuto\nf.read()          # ''  <- vuoto: sei gia' alla fine\nf.seek(0)         # torna all'inizio\n```\n\nUn file ha una **posizione corrente** che avanza man mano che leggi. Leggere due volte senza tornare indietro dà una stringa vuota la seconda volta, e non solleva niente: è la causa più comune del \"il file risulta vuoto\" quando invece non lo è.",
+   "demo": "import io\n\nf = io.StringIO(\"a\\nb\\nc\\n\")\nprint(\"primo read: \", repr(f.read()))\nprint(\"secondo read:\", repr(f.read()), \"<- la testina e' alla fine\")\nf.seek(0)\nprint(\"dopo seek(0):\", repr(f.read()))\n\nwith io.StringIO(\"q\\n\") as g:\n    print(\"\\ndentro il with:\", repr(g.read()))\nprint(\"chiuso dopo il with:\", g.closed)"
+  },
+  {
+   "id": "p08-l2",
+   "titolo": "Leggere: quattro modi, uno solo giusto per i file grandi",
+   "md": "```\nf.read()          # tutto in una stringa sola\nf.readline()      # una riga, compreso il \\n finale\nf.readlines()     # tutte le righe, in una lista\nfor riga in f:    # una riga alla volta, senza caricare tutto\n    ...\n```\n\n`read()` e `readlines()` caricano **tutto in memoria**: su un file da un giga non è quello che vuoi. Scorrere il file con un `for` legge un pezzo alla volta, e la memoria usata resta costante qualunque sia la dimensione.\n\nÈ la scelta di default: `for riga in f` finché non hai un motivo per fare diversamente.\n\n### Il \\n resta attaccato\n\n```\nfor riga in f:\n    riga            # 'a\\n'   <- c'e' il ritorno a capo\n    riga.strip()    # 'a'\n```\n\nOgni riga letta conserva il suo `\\n` finale, tranne l'ultima se il file non finisce con un a capo. Confrontare `riga == \"fine\"` fallisce silenziosamente perché la riga vale `\"fine\\n\"`: `strip()` va messo quasi sempre.\n\n### rstrip contro strip\n\n```\nriga.strip()             # toglie spazi e a capo da entrambi i lati\nriga.rstrip(\"\\n\")        # toglie SOLO l'a capo finale\n```\n\nSu dati incolonnati a spazi fissi, `strip()` toglierebbe anche l'indentazione che porta informazione. `rstrip(\"\\n\")` è la scelta prudente quando gli spazi contano.\n\n### La riga vuota alla fine\n\n```\n\"a\\nb\\n\".split(\"\\n\")       # ['a', 'b', '']   <- una stringa vuota in coda\n\"a\\nb\\n\".splitlines()      # ['a', 'b']\n```\n\nUn file di testo finisce quasi sempre con un a capo, quindi `split(\"\\n\")` produce un elemento vuoto finale che poi rompe la conversione a numero. `splitlines()` non ha questo problema, ed è la funzione giusta per spezzare del testo in righe.",
+   "demo": "import io\n\ndef apri():\n    return io.StringIO(\"quota,mach\\n9000,0.82\\n3000,0.40\\n\")\n\nwith apri() as f:\n    print(\"tutto:\", repr(f.read()))\n\nwith apri() as f:\n    print(\"\\nriga per riga:\")\n    for riga in f:\n        print(\"  \", repr(riga))\n\nprint(\"\\nsplit lascia il vuoto finale:\", \"a\\nb\\n\".split(\"\\n\"))\nprint(\"splitlines no:             \", \"a\\nb\\n\".splitlines())"
+  },
+  {
+   "id": "p08-l3",
+   "titolo": "Scrivere: il modo di apertura decide tutto",
+   "md": "```\nopen(\"f.txt\")            # 'r'  lettura, il default\nopen(\"f.txt\", \"w\")       # scrittura: SVUOTA il file se esiste\nopen(\"f.txt\", \"a\")       # aggiunge in fondo\nopen(\"f.txt\", \"x\")       # crea, e fallisce se esiste gia'\n```\n\n**`\"w\"` cancella il contenuto** appena il file viene aperto, prima ancora che tu scriva qualcosa. Non c'è conferma e non c'è modo di annullare: aprire per sbaglio in `\"w\"` un file di dati lo perde. Quando non vuoi sovrascrivere niente, `\"x\"` fallisce invece di distruggere.\n\n### write non aggiunge l'a capo\n\n```\nf.write(\"riga\")          # nessun \\n\nf.write(\"riga\\n\")        # cosi'\n```\n\nAl contrario di `print`. Dimenticarlo produce un file di una riga sola lunghissima, che si scopre solo riaprendolo.\n\n`write` restituisce il **numero di caratteri scritti**, che non serve quasi mai.\n\n### writelines non è quello che sembra\n\n```\nf.writelines([\"a\", \"b\"])       # scrive 'ab', non 'a\\nb'\nf.writelines([\"a\\n\", \"b\\n\"])   # cosi'\n```\n\nIl nome inganna: non aggiunge nessun a capo, si limita a scrivere le stringhe una dopo l'altra. È `write` in un ciclo, e conviene scriverlo così.\n\n### L'encoding\n\n```\nopen(\"f.txt\", encoding=\"utf-8\")\n```\n\nSenza `encoding`, Python usa quello di sistema — che su Windows italiano **non** è UTF-8. Un file con accenti scritto su un computer e letto su un altro diventa illeggibile, e l'errore arriva a metà lettura con un messaggio su un byte inatteso.\n\n**Metti sempre `encoding=\"utf-8\"`**, in lettura e in scrittura. È l'unica cosa di questa lezione che va ricordata a memoria.",
+   "demo": "import io\n\nbuf = io.StringIO()\nbuf.write(\"prima\")\nbuf.write(\"seconda\\n\")\nprint(\"senza a capo si attaccano:\", repr(buf.getvalue()))\n\nbuf2 = io.StringIO()\nbuf2.writelines([\"a\", \"b\"])\nprint(\"\\nwritelines non aggiunge \\\\n:\", repr(buf2.getvalue()))\n\nbuf3 = io.StringIO()\nfor riga in [\"a\", \"b\"]:\n    buf3.write(riga + \"\\n\")\nprint(\"con il ciclo esplicito:    \", repr(buf3.getvalue()))"
+  },
+  {
+   "id": "p08-l4",
+   "titolo": "Da un file di testo ai dati",
+   "md": "Un file di dati incolonnati si legge sempre con la stessa struttura:\n\n```\nrighe = []\nwith open(\"volo.csv\", encoding=\"utf-8\") as f:\n    intestazione = f.readline().strip().split(\",\")\n    for riga in f:\n        campi = riga.strip().split(\",\")\n        righe.append([float(c) for c in campi])\n```\n\nQuattro passi: togliere l'a capo, spezzare sul separatore, convertire, accumulare. L'intestazione si legge **prima** del ciclo, con un `readline()`: dopo, il `for` riparte da dove la testina si è fermata.\n\n### Le righe che non devi elaborare\n\n```\nfor riga in f:\n    riga = riga.strip()\n    if not riga or riga.startswith(\"#\"):\n        continue\n    ...\n```\n\nRighe vuote e commenti vanno saltati **prima** della conversione, altrimenti `float(\"\")` solleva `ValueError` su un file perfettamente valido. È il primo controllo da scrivere, non l'ultimo da aggiungere.\n\n### Convertire senza fermarsi\n\n```\ntry:\n    valori.append(float(c))\nexcept ValueError:\n    scartate.append((numero_riga, c))\n```\n\nÈ il lettore robusto del modulo sugli errori applicato qui: i dati buoni proseguono e quelli sporchi restano visibili, con il numero di riga per poterli andare a guardare.\n\n### Con NumPy, dopo\n\nTutto questo, nel modulo 9 di NumPy, diventa `np.loadtxt` o `np.genfromtxt`, che fanno gli stessi quattro passi con una chiamata. Scriverlo a mano una volta serve a sapere **cosa** stanno facendo — e a capire perché falliscono su un file con una riga sporca.\n\n### json su file\n\n```\nwith open(\"conf.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump(conf, f, indent=2)\n\nwith open(\"conf.json\", encoding=\"utf-8\") as f:\n    conf = json.load(f)\n```\n\n`dump` e `load` — senza la `s` — lavorano direttamente sul file. Sono le versioni che userai davvero; `dumps` e `loads` servono quando il JSON deve andare in una stringa.",
+   "demo": "import io\n\nsorgente = \"# quota in m, mach\\n\\n9000,0.82\\n3000,0.40\\nabc,0.5\\n\"\n\nvalidi = []\nscartate = []\nwith io.StringIO(sorgente) as f:\n    for n, riga in enumerate(f, start=1):\n        riga = riga.strip()\n        if not riga or riga.startswith(\"#\"):\n            continue\n        campi = riga.split(\",\")\n        try:\n            validi.append((float(campi[0]), float(campi[1])))\n        except ValueError:\n            scartate.append((n, riga))\n\nprint(\"validi:  \", validi)\nprint(\"scartate:\", scartate)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p08-with",
+   "comando": "with e open",
+   "titolo": "with — il file si chiude da solo",
+   "esercizi": [
+    {
+     "id": "p08-wi-1",
+     "tipo": "write",
+     "testo": "Leggi tutto il contenuto usando `with`, e metti il testo in `testo`.",
+     "setup": "import io\nsorgente = io.StringIO(\"a\\nb\\n\")\n",
+     "starter": "with \n    testo = \n",
+     "test": "assert testo == 'a\\nb\\n', f'atteso il contenuto intero, hai {testo!r}'",
+     "hint": [
+      "with sorgente as f:",
+      "testo = f.read()"
+     ],
+     "soluzione": "with sorgente as f:\n    testo = f.read()",
+     "spiegazione": "`with` garantisce la chiusura anche se dentro il blocco esplode qualcosa: è il `finally` del modulo sugli errori, già scritto. In Python un file si apre solo così — non ci sono eccezioni sensate a questa regola."
+    },
+    {
+     "id": "p08-wi-2",
+     "tipo": "predict",
+     "testo": "Cosa succede al file se dentro il blocco `with` viene sollevata un'eccezione?",
+     "opzioni": [
+      "viene chiuso lo stesso, mentre l'eccezione risale",
+      "resta aperto finche' il programma non termina",
+      "l'eccezione viene soppressa e il file chiuso",
+      "il file viene chiuso solo se l'eccezione e' catturata"
+     ],
+     "risposta": "viene chiuso lo stesso, mentre l'eccezione risale",
+     "spiegazione": "Viene chiuso lo stesso, mentre l'eccezione risale. È esattamente il comportamento di `finally`, ed è la ragione per cui `with` esiste: la pulizia non dipende dal fatto che il tuo codice arrivi in fondo."
+    },
+    {
+     "id": "p08-wi-3",
+     "tipo": "write",
+     "testo": "Verifica che il file sia chiuso dopo il blocco: metti in `chiuso` il controllo.",
+     "setup": "import io\nsorgente = io.StringIO(\"a\\n\")\n",
+     "starter": "with sorgente as f:\n    testo = f.read()\nchiuso = \n",
+     "test": "assert chiuso is True, 'dopo il with il file deve essere chiuso'\nassert testo == 'a\\n', 'il contenuto deve essere stato letto'",
+     "hint": [
+      "L'attributo e' closed.",
+      "chiuso = f.closed"
+     ],
+     "soluzione": "with sorgente as f:\n    testo = f.read()\nchiuso = f.closed",
+     "spiegazione": "`True`. Un file lasciato aperto trattiene una risorsa del sistema, e su Windows lo tiene **bloccato**: nessun altro programma può riscriverlo finché il tuo non termina. In scrittura è peggio, perché quello che hai scritto può restare in un buffer e non arrivare mai sul disco."
+    },
+    {
+     "id": "p08-wi-4",
+     "tipo": "predict",
+     "testo": "Leggi due volte di fila con `read()` senza fare altro. Cosa restituisce la seconda?",
+     "opzioni": [
+      "la stringa vuota: la testina e' gia' alla fine",
+      "di nuovo tutto il contenuto",
+      "solleva un errore perche' il file e' esaurito",
+      "None"
+     ],
+     "risposta": "la stringa vuota: la testina e' gia' alla fine",
+     "spiegazione": "La stringa vuota: la testina di lettura è già alla fine e non torna indietro da sola. Non solleva niente, ed è la causa più comune del \"il file risulta vuoto\" quando invece non lo è."
+    },
+    {
+     "id": "p08-wi-5",
+     "tipo": "write",
+     "testo": "Leggi due volte davvero: la prima direttamente, la seconda dopo aver riportato la testina all'inizio.",
+     "setup": "import io\nsorgente = io.StringIO(\"dati\\n\")\n",
+     "starter": "with sorgente as f:\n    primo = \n    vuoto = \n    \n    secondo = \n",
+     "test": "assert primo == 'dati\\n', f'atteso il contenuto, hai {primo!r}'\nassert vuoto == '', f'attesa la stringa vuota, hai {vuoto!r}'\nassert secondo == 'dati\\n', f'dopo seek(0) atteso di nuovo il contenuto, hai {secondo!r}'",
+     "hint": [
+      "Il metodo e' seek.",
+      "f.seek(0) fra la seconda e la terza lettura."
+     ],
+     "soluzione": "with sorgente as f:\n    primo = f.read()\n    vuoto = f.read()\n    f.seek(0)\n    secondo = f.read()",
+     "spiegazione": "`seek(0)` riporta la posizione a zero. Su un file vero è economico; su uno stream di rete spesso non è possibile affatto, ed è il motivo per cui conviene leggere una volta e tenere il risultato."
+    },
+    {
+     "id": "p08-wi-6",
+     "tipo": "predict",
+     "testo": "Cosa restituisce `open(\"dati.txt\")` ?",
+     "opzioni": [
+      "un oggetto file",
+      "il contenuto come stringa",
+      "la lista delle righe",
+      "il percorso assoluto del file"
+     ],
+     "risposta": "un oggetto file",
+     "spiegazione": "Un **oggetto file**, non il contenuto. Il contenuto arriva chiamando `read()`, oppure scorrendo l'oggetto riga per riga. È la stessa distinzione fra la funzione e la sua chiamata: `open` apre, non legge."
+    },
+    {
+     "id": "p08-wi-7",
+     "tipo": "debug",
+     "testo": "Questo codice non chiude il file se la conversione fallisce: `float(\"abc\")` solleva `ValueError` prima di arrivare a `close`. Riscrivilo con `with`, togliendo la conversione.",
+     "setup": "import io\nsorgente = io.StringIO(\"abc\\n\")\n",
+     "starter": "f = sorgente\ntesto = f.read()\nvalore = float(testo.strip())\nf.close()\nchiuso = f.closed\n",
+     "test": "assert chiuso is True, 'il file deve risultare chiuso'\nassert testo == 'abc\\n', f'atteso il contenuto, hai {testo!r}'",
+     "hint": [
+      "Sostituisci apertura e close con un blocco with.",
+      "with sorgente as f: testo = f.read()"
+     ],
+     "soluzione": "with sorgente as f:\n    testo = f.read()\nchiuso = f.closed",
+     "spiegazione": "Con `with` la `close` non serve più, e soprattutto non può essere saltata: qui `float(\"abc\")` solleva `ValueError` prima di arrivarci. Il file resterebbe aperto per tutto il resto del programma."
+    },
+    {
+     "id": "p08-wi-8",
+     "tipo": "write",
+     "testo": "Un oggetto file-like non è un file: verifica che `io.StringIO` risponda a `read` come farebbe un file.",
+     "setup": "import io\n",
+     "starter": "def prime_righe(f, n):\n    \nsorgente = io.StringIO(\"a\\nb\\nc\\n\")\nprime = \n",
+     "test": "assert prime == ['a', 'b'], f'attesa [a, b], hai {prime}'\nassert prime_righe(io.StringIO(\"x\\n\"), 5) == ['x'], 'se le righe sono meno di n, restituisce quelle che ci sono'",
+     "hint": [
+      "Scorri f con un for e fermati dopo n righe.",
+      "prime = prime_righe(sorgente, 2)"
+     ],
+     "soluzione": "def prime_righe(f, n):\n    out = []\n    for riga in f:\n        if len(out) >= n:\n            break\n        out.append(riga.strip())\n    return out\nsorgente = io.StringIO(\"a\\nb\\nc\\n\")\nprime = prime_righe(sorgente, 2)",
+     "spiegazione": "Il codice che scrivi è identico. È il motivo per cui `StringIO` serve davvero: **provare** una funzione che legge file senza avere un file, e passare del testo a una funzione che si aspetta un file. Tutti gli esercizi di questo modulo lo usano per questo."
+    }
+   ]
+  },
+  {
+   "id": "p08-leggere",
+   "comando": "read e readline",
+   "titolo": "leggere — e l'a capo che resta attaccato",
+   "esercizi": [
+    {
+     "id": "p08-le-1",
+     "tipo": "write",
+     "testo": "Leggi le righe in una lista con il metodo dedicato, in `righe`.",
+     "setup": "import io\nsorgente = io.StringIO(\"a\\nb\\nc\\n\")\n",
+     "starter": "with sorgente as f:\n    righe = \n",
+     "test": "assert righe == ['a\\n', 'b\\n', 'c\\n'], f'attesa [a\\\\n, b\\\\n, c\\\\n], hai {righe}'",
+     "hint": [
+      "Il metodo e' readlines.",
+      "righe = f.readlines()"
+     ],
+     "soluzione": "with sorgente as f:\n    righe = f.readlines()",
+     "spiegazione": "`['a\\n', 'b\\n', 'c\\n']`: l'a capo resta attaccato a ogni riga. `readlines` carica **tutto** in memoria, quindi va bene su file piccoli e male su file grandi."
+    },
+    {
+     "id": "p08-le-2",
+     "tipo": "predict",
+     "testo": "Perché `for riga in f` è preferibile a `f.readlines()` su un file grande?",
+     "opzioni": [
+      "legge un pezzo alla volta: la memoria resta costante",
+      "e' piu' veloce a parita' di memoria",
+      "readlines salta l'ultima riga",
+      "readlines non funziona su file di testo"
+     ],
+     "risposta": "legge un pezzo alla volta: la memoria resta costante",
+     "spiegazione": "Perché legge un pezzo alla volta: la memoria usata resta costante qualunque sia la dimensione del file, mentre `readlines` carica tutto. Su un file da un giga la differenza è fra funzionare e non funzionare."
+    },
+    {
+     "id": "p08-le-3",
+     "tipo": "write",
+     "testo": "Scorri il file riga per riga e costruisci `pulite`, le righe senza l'a capo.",
+     "setup": "import io\nsorgente = io.StringIO(\"alfa\\nbeta\\n\")\n",
+     "starter": "pulite = []\nwith sorgente as f:\n    for \n",
+     "test": "assert pulite == ['alfa', 'beta'], f'attesa [alfa, beta], hai {pulite}'",
+     "hint": [
+      "for riga in f:",
+      "pulite.append(riga.strip())"
+     ],
+     "soluzione": "pulite = []\nwith sorgente as f:\n    for riga in f:\n        pulite.append(riga.strip())",
+     "spiegazione": "`strip()` va messo quasi sempre: senza, ogni riga porta il suo `\\n` e un confronto come `riga == \"fine\"` fallisce in silenzio perché la riga vale `\"fine\\n\"`."
+    },
+    {
+     "id": "p08-le-4",
+     "tipo": "write",
+     "testo": "Leggi **solo la prima riga** — l'intestazione — e poi il resto con un ciclo.",
+     "setup": "import io\nsorgente = io.StringIO(\"quota,mach\\n9000,0.82\\n3000,0.40\\n\")\n",
+     "starter": "with sorgente as f:\n    intestazione = \n    resto = []\n    for \n",
+     "test": "assert intestazione == ['quota', 'mach'], f'attesa [quota, mach], hai {intestazione}'\nassert resto == ['9000,0.82', '3000,0.40'], f'attesa due righe di dati, hai {resto}'",
+     "hint": [
+      "intestazione = f.readline().strip().split(\",\")",
+      "Poi il for parte dalla riga successiva."
+     ],
+     "soluzione": "with sorgente as f:\n    intestazione = f.readline().strip().split(\",\")\n    resto = []\n    for riga in f:\n        resto.append(riga.strip())",
+     "spiegazione": "`readline()` legge una riga e lascia la testina dopo di essa, quindi il `for` riparte da lì. È la struttura standard di ogni lettore di file con intestazione, e funziona proprio perché la posizione è condivisa."
+    },
+    {
+     "id": "p08-le-5",
+     "tipo": "predict",
+     "testo": "`\"a\\nb\\n\".split(\"\\n\")` cosa restituisce?",
+     "opzioni": [
+      "['a', 'b', '']",
+      "['a', 'b']",
+      "['a\\n', 'b\\n']",
+      "['a', 'b', None]"
+     ],
+     "risposta": "['a', 'b', '']",
+     "spiegazione": "`['a', 'b', '']`: una stringa vuota in coda, perché il testo finisce con un a capo. Quel vuoto poi fa esplodere `float(\"\")` su un file perfettamente valido. `splitlines()` non ha questo problema, ed è la funzione giusta per spezzare del testo in righe."
+    },
+    {
+     "id": "p08-le-6",
+     "tipo": "write",
+     "testo": "Confronta i due modi di spezzare il testo in righe.",
+     "setup": "testo = \"a\\nb\\n\"\n",
+     "starter": "con_split = \ncon_splitlines = \n",
+     "test": "assert con_split == ['a', 'b', ''], f'attesa [a, b, stringa vuota], hai {con_split}'\nassert con_splitlines == ['a', 'b'], f'attesa [a, b], hai {con_splitlines}'",
+     "hint": [
+      "testo.split(\"\\n\")",
+      "testo.splitlines()"
+     ],
+     "soluzione": "con_split = testo.split(\"\\n\")\ncon_splitlines = testo.splitlines()",
+     "spiegazione": "`split(\"\\n\")` lascia un vuoto in coda, `splitlines()` no. Su un file di testo, che finisce quasi sempre con un a capo, la differenza è una riga fantasma che poi va gestita in tutto il resto del codice."
+    },
+    {
+     "id": "p08-le-7",
+     "tipo": "write",
+     "testo": "Salta le righe vuote e i commenti, e conta in `utili` quante righe restano.",
+     "setup": "import io\nsorgente = io.StringIO(\"# commento\\n\\n9000\\n3000\\n\")\n",
+     "starter": "utili = 0\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert utili == 2, f'attese 2 righe utili, hai {utili}'",
+     "hint": [
+      "riga = riga.strip(); if not riga or riga.startswith(\"#\"): continue",
+      "utili = utili + 1"
+     ],
+     "soluzione": "utili = 0\nwith sorgente as f:\n    for riga in f:\n        riga = riga.strip()\n        if not riga or riga.startswith(\"#\"):\n            continue\n        utili = utili + 1",
+     "spiegazione": "2. Il controllo va **prima** della conversione: `float(\"\")` su una riga vuota solleva `ValueError` su un file valido. È il primo controllo da scrivere in un lettore, non l'ultimo da aggiungere quando qualcosa esplode."
+    },
+    {
+     "id": "p08-le-8",
+     "tipo": "write",
+     "testo": "Numera le righe da 1 mentre le leggi, e costruisci `numerate`.",
+     "setup": "import io\nsorgente = io.StringIO(\"alfa\\nbeta\\n\")\n",
+     "starter": "numerate = []\nwith sorgente as f:\n    for \n",
+     "test": "assert numerate == [(1, 'alfa'), (2, 'beta')], f'attesa [(1, alfa), (2, beta)], hai {numerate}'",
+     "hint": [
+      "for n, riga in enumerate(f, start=1):",
+      "numerate.append((n, riga.strip()))"
+     ],
+     "soluzione": "numerate = []\nwith sorgente as f:\n    for n, riga in enumerate(f, start=1):\n        numerate.append((n, riga.strip()))",
+     "spiegazione": "`enumerate(f, start=1)` funziona su un file come su una lista, perché un file è iterabile. Il numero di riga è l'informazione che serve in ogni messaggio d'errore su un file di dati: senza, \"conversione fallita\" non aiuta nessuno."
+    },
+    {
+     "id": "p08-le-9",
+     "tipo": "write",
+     "testo": "`rstrip` invece di `strip`: togli solo l'a capo, conservando l'indentazione a sinistra.",
+     "setup": "riga = \"   valore   \\n\"\n",
+     "starter": "con_strip = \ncon_rstrip = \n",
+     "test": "assert con_strip == 'valore', f'atteso \\'valore\\', hai {con_strip!r}'\nassert con_rstrip == '   valore   ', f'attesi gli spazi conservati, hai {con_rstrip!r}'",
+     "hint": [
+      "riga.strip()",
+      "riga.rstrip(\"\\n\")"
+     ],
+     "soluzione": "con_strip = riga.strip()\ncon_rstrip = riga.rstrip(\"\\n\")",
+     "spiegazione": "Su dati incolonnati a spazi fissi, `strip()` toglierebbe anche l'indentazione che porta informazione — la posizione della colonna. `rstrip(\"\\n\")` è la scelta prudente quando gli spazi contano."
+    },
+    {
+     "id": "p08-le-10",
+     "tipo": "write",
+     "testo": "Conta righe e caratteri di un file in un solo passaggio.",
+     "setup": "import io\nsorgente = io.StringIO(\"alfa\\nbeta\\n\")\n",
+     "starter": "n_righe = 0\nn_caratteri = 0\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert n_righe == 2, f'attese 2 righe, hai {n_righe}'\nassert n_caratteri == 10, f'attesi 10 caratteri, hai {n_caratteri}'",
+     "hint": [
+      "n_righe = n_righe + 1",
+      "n_caratteri = n_caratteri + len(riga)"
+     ],
+     "soluzione": "n_righe = 0\nn_caratteri = 0\nwith sorgente as f:\n    for riga in f:\n        n_righe = n_righe + 1\n        n_caratteri = n_caratteri + len(riga)",
+     "spiegazione": "Due righe e nove caratteri, a capo compresi. Un solo passaggio perché la testina non torna indietro: contare due volte richiederebbe un `seek(0)` in mezzo, o tenere il contenuto in memoria."
+    }
+   ]
+  },
+  {
+   "id": "p08-scrivere",
+   "comando": "write",
+   "titolo": "scrivere — e il modo che svuota il file",
+   "esercizi": [
+    {
+     "id": "p08-sc-1",
+     "tipo": "write",
+     "testo": "Scrivi due righe e recupera il contenuto prodotto, in `contenuto`.",
+     "setup": "import io\nbuf = io.StringIO()\n",
+     "starter": "buf.write(\nbuf.write(\ncontenuto = \n",
+     "test": "assert contenuto == 'a\\nb\\n', f'atteso \\'a\\\\nb\\\\n\\', hai {contenuto!r}'",
+     "hint": [
+      "buf.write(\"a\\\\n\")",
+      "contenuto = buf.getvalue()"
+     ],
+     "soluzione": "buf.write(\"a\\n\")\nbuf.write(\"b\\n\")\ncontenuto = buf.getvalue()",
+     "spiegazione": "`write` **non** aggiunge l'a capo, al contrario di `print`: va messo a mano. Dimenticarlo produce un file di una riga sola lunghissima, che si scopre solo riaprendolo."
+    },
+    {
+     "id": "p08-sc-2",
+     "tipo": "predict",
+     "testo": "Il modo di apertura `\"w\"` su un file che esiste già: cosa fa?",
+     "opzioni": [
+      "lo svuota subito, prima ancora che tu scriva",
+      "aggiunge in fondo al contenuto esistente",
+      "solleva un errore perche' il file esiste",
+      "chiede conferma"
+     ],
+     "risposta": "lo svuota subito, prima ancora che tu scriva",
+     "spiegazione": "Lo **svuota** appena viene aperto, prima ancora che tu scriva qualcosa. Non c'è conferma e non c'è modo di annullare: aprire per sbaglio in `\"w\"` un file di dati lo perde. Quando non vuoi sovrascrivere niente, `\"x\"` fallisce invece di distruggere."
+    },
+    {
+     "id": "p08-sc-3",
+     "tipo": "predict",
+     "testo": "Vuoi scrivere un file **senza** rischiare di sovrascriverne uno esistente. Quale modo usi?",
+     "opzioni": [
+      "\"x\": crea e fallisce se il file esiste gia'",
+      "\"w\", che protegge i file esistenti",
+      "\"a\", che non tocca il contenuto",
+      "\"r+\", l'unico che permette di scrivere"
+     ],
+     "risposta": "\"x\": crea e fallisce se il file esiste gia'",
+     "spiegazione": "`\"x\"`: crea il file e solleva `FileExistsError` se c'è già. È la scelta giusta per i risultati di un'elaborazione lunga, dove sovrascrivere per sbaglio significa rifare tutto."
+    },
+    {
+     "id": "p08-sc-4",
+     "tipo": "predict",
+     "testo": "`f.writelines([\"a\", \"b\"])` cosa scrive?",
+     "opzioni": [
+      "ab",
+      "a\\nb\\n",
+      "a\\nb",
+      "['a', 'b']"
+     ],
+     "risposta": "ab",
+     "spiegazione": "`ab`. Il nome inganna: `writelines` non aggiunge nessun a capo, si limita a scrivere le stringhe una dopo l'altra. È `write` dentro un ciclo, e conviene scriverlo così — almeno il ciclo si vede."
+    },
+    {
+     "id": "p08-sc-5",
+     "tipo": "write",
+     "testo": "Scrivi una lista di valori, una riga ciascuno, con un ciclo esplicito.",
+     "setup": "import io\nbuf = io.StringIO()\nvalori = [9000, 3000]\n",
+     "starter": "for \ncontenuto = \n",
+     "test": "assert contenuto == '9000\\n3000\\n', f'atteso \\'9000\\\\n3000\\\\n\\', hai {contenuto!r}'",
+     "hint": [
+      "for v in valori: buf.write(str(v) + \"\\\\n\")",
+      "contenuto = buf.getvalue()"
+     ],
+     "soluzione": "for v in valori:\n    buf.write(str(v) + \"\\n\")\ncontenuto = buf.getvalue()",
+     "spiegazione": "Il ciclo con `+ \"\\n\"` dice quello che fa. `writelines` avrebbe richiesto di aggiungere l'a capo a ogni elemento prima di chiamarla, il che rende il vantaggio nullo."
+    },
+    {
+     "id": "p08-sc-6",
+     "tipo": "write",
+     "testo": "Componi il contenuto **prima** e scrivilo in una volta sola.",
+     "setup": "import io\nbuf = io.StringIO()\nvalori = [9000, 3000]\n",
+     "starter": "testo = \nbuf.write(testo)\ncontenuto = \n",
+     "test": "assert contenuto == '9000\\n3000\\n', f'atteso \\'9000\\\\n3000\\\\n\\', hai {contenuto!r}'",
+     "hint": [
+      "\"\\\\n\".join([str(v) for v in valori]) e poi un a capo finale.",
+      "testo = \"\\\\n\".join([str(v) for v in valori]) + \"\\\\n\""
+     ],
+     "soluzione": "testo = \"\\n\".join([str(v) for v in valori]) + \"\\n\"\nbuf.write(testo)\ncontenuto = buf.getvalue()",
+     "spiegazione": "`\"\\n\".join(...)` costruisce il testo, e una sola `write` lo scrive. Su molte righe è più veloce di una chiamata per riga, e il testo risultante si può controllare prima di toccare il file — che è il vantaggio vero."
+    },
+    {
+     "id": "p08-sc-7",
+     "tipo": "predict",
+     "testo": "Perché va sempre passato `encoding=\"utf-8\"` a `open` ?",
+     "opzioni": [
+      "senza, Python usa quello di sistema, che su Windows non e' UTF-8",
+      "e' obbligatorio: senza, open solleva un errore",
+      "rende la lettura piu' veloce",
+      "serve solo per i file binari"
+     ],
+     "risposta": "senza, Python usa quello di sistema, che su Windows non e' UTF-8",
+     "spiegazione": "Perché senza, Python usa quello di sistema — che su Windows italiano **non** è UTF-8. Un file con accenti scritto su un computer e letto su un altro diventa illeggibile, e l'errore arriva a metà lettura con un messaggio su un byte inatteso."
+    },
+    {
+     "id": "p08-sc-8",
+     "tipo": "write",
+     "testo": "Scrivi una tabella incolonnata: nome largo 10 a sinistra, valore con due decimali.",
+     "setup": "import io\nbuf = io.StringIO()\ndati = [(\"quota\", 9000.0), (\"mach\", 0.82)]\n",
+     "starter": "for \ncontenuto = \n",
+     "test": "assert contenuto == 'quota       9000.00\\nmach           0.82\\n', f'atteso il testo incolonnato, hai {contenuto!r}'",
+     "hint": [
+      "f\"{nome:<10}{valore:>9.2f}\\\\n\"",
+      "for nome, valore in dati:"
+     ],
+     "soluzione": "for nome, valore in dati:\n    buf.write(f\"{nome:<10}{valore:>9.2f}\\n\")\ncontenuto = buf.getvalue()",
+     "spiegazione": "Il formato dentro la f-string e il `\\n` esplicito: sono le due cose che rendono un file di testo leggibile. È lo stesso allineamento del modulo sulle f-string, applicato all'uscita su file."
+    }
+   ]
+  },
+  {
+   "id": "p08-parsing",
+   "comando": "dal testo ai dati",
+   "titolo": "strip, split, convert: il lettore a mano",
+   "esercizi": [
+    {
+     "id": "p08-pa-1",
+     "tipo": "write",
+     "testo": "Leggi un file a colonne separate da virgola e costruisci `righe`, la lista delle liste di float.",
+     "setup": "import io\nsorgente = io.StringIO(\"9000,0.82\\n3000,0.40\\n\")\n",
+     "starter": "righe = []\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert righe == [[9000.0, 0.82], [3000.0, 0.4]], f'attesa [[9000.0, 0.82], [3000.0, 0.4]], hai {righe}'",
+     "hint": [
+      "campi = riga.strip().split(\",\")",
+      "righe.append([float(c) for c in campi])"
+     ],
+     "soluzione": "righe = []\nwith sorgente as f:\n    for riga in f:\n        campi = riga.strip().split(\",\")\n        righe.append([float(c) for c in campi])",
+     "spiegazione": "Quattro passi in ordine fisso: togliere l'a capo, spezzare sul separatore, convertire, accumulare. È la struttura di ogni lettore di dati incolonnati, e cambia solo il separatore."
+    },
+    {
+     "id": "p08-pa-2",
+     "tipo": "write",
+     "testo": "Leggi l'intestazione e costruisci `record`, la lista dei dizionari colonna → valore.",
+     "difficolta": 2,
+     "setup": "import io\nsorgente = io.StringIO(\"quota,mach\\n9000,0.82\\n3000,0.40\\n\")\n",
+     "starter": "record = []\nwith sorgente as f:\n    intestazione = \n    for riga in f:\n        \n",
+     "test": "assert record == [{'quota': 9000.0, 'mach': 0.82}, {'quota': 3000.0, 'mach': 0.4}], f'attesi due record, hai {record}'",
+     "hint": [
+      "intestazione = f.readline().strip().split(\",\")",
+      "valori = [float(c) for c in riga.strip().split(\",\")]; record.append(dict(zip(intestazione, valori)))"
+     ],
+     "soluzione": "record = []\nwith sorgente as f:\n    intestazione = f.readline().strip().split(\",\")\n    for riga in f:\n        valori = [float(c) for c in riga.strip().split(\",\")]\n        record.append(dict(zip(intestazione, valori)))",
+     "spiegazione": "`dict(zip(intestazione, valori))` per ogni riga: il codice smette di dipendere dall'ordine delle colonne. Se domani il file ne aggiunge una in mezzo, `r[\"mach\"]` continua a funzionare mentre `campi[1]` no."
+    },
+    {
+     "id": "p08-pa-3",
+     "tipo": "write",
+     "testo": "Estrai una sola colonna: costruisci `quote`, i valori della prima colonna come float.",
+     "setup": "import io\nsorgente = io.StringIO(\"9000,0.82\\n3000,0.40\\n\")\n",
+     "starter": "with sorgente as f:\n    quote = \n",
+     "test": "assert quote == [9000.0, 3000.0], f'attesa [9000.0, 3000.0], hai {quote}'",
+     "hint": [
+      "Una comprehension direttamente su f.",
+      "quote = [float(riga.split(\",\")[0]) for riga in f]"
+     ],
+     "soluzione": "with sorgente as f:\n    quote = [float(riga.split(\",\")[0]) for riga in f]",
+     "spiegazione": "Una comprehension sulle righe. Su un file grande questa forma legge una riga alla volta e non tiene niente in memoria oltre al risultato, al contrario di caricare tutto e poi filtrare."
+    },
+    {
+     "id": "p08-pa-4",
+     "tipo": "write",
+     "testo": "Separatore diverso: leggi un file a punto e virgola e somma la seconda colonna.",
+     "setup": "import io\nsorgente = io.StringIO(\"a;10\\nb;20\\n\")\n",
+     "starter": "totale = 0.0\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert totale == 30.0, f'atteso 30.0, hai {totale}'",
+     "hint": [
+      "riga.strip().split(\";\")",
+      "totale = totale + float(campi[1])"
+     ],
+     "soluzione": "totale = 0.0\nwith sorgente as f:\n    for riga in f:\n        campi = riga.strip().split(\";\")\n        totale = totale + float(campi[1])",
+     "spiegazione": "Il separatore è un parametro, non una costante: file esportati da fogli di calcolo italiani usano il punto e virgola perché la virgola è il separatore decimale. Scriverlo in una variabile invece che a mano rende il lettore riusabile."
+    },
+    {
+     "id": "p08-pa-5",
+     "tipo": "write",
+     "testo": "Colonne separate da spazi in numero variabile: `split()` senza argomenti li gestisce tutti.",
+     "setup": "riga = \"9000   0.82    alta\\n\"\n",
+     "starter": "campi = \nquanti = \n",
+     "test": "assert campi == ['9000', '0.82', 'alta'], f'attesa [9000, 0.82, alta], hai {campi}'\nassert quanti == 3, f'attesi 3 campi, hai {quanti}'",
+     "hint": [
+      "split() senza argomenti.",
+      "campi = riga.split()"
+     ],
+     "soluzione": "campi = riga.split()\nquanti = len(campi)",
+     "spiegazione": "`split()` senza argomenti spezza su qualunque sequenza di spazi e scarta i vuoti, mentre `split(\" \")` produce stringhe vuote dove ci sono due spazi di fila. È l'unica differenza fra i due, e su dati incolonnati a mano decide se funziona o no."
+    },
+    {
+     "id": "p08-pa-6",
+     "tipo": "write",
+     "testo": "Salta commenti e righe vuote, poi converti: costruisci `valori`.",
+     "setup": "import io\nsorgente = io.StringIO(\"# quote\\n\\n9000\\n3000\\n\")\n",
+     "starter": "valori = []\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert valori == [9000.0, 3000.0], f'attesa [9000.0, 3000.0], hai {valori}'",
+     "hint": [
+      "riga = riga.strip(); if not riga or riga.startswith(\"#\"): continue",
+      "valori.append(float(riga))"
+     ],
+     "soluzione": "valori = []\nwith sorgente as f:\n    for riga in f:\n        riga = riga.strip()\n        if not riga or riga.startswith(\"#\"):\n            continue\n        valori.append(float(riga))",
+     "spiegazione": "Il filtro **prima** della conversione. È la differenza fra un lettore che regge un file scritto da un umano — con commenti e righe vuote — e uno che esplode alla prima riga di intestazione lasciata lì."
+    },
+    {
+     "id": "p08-pa-7",
+     "tipo": "write",
+     "testo": "Lettore robusto: converti quello che si può e registra il resto con il numero di riga.",
+     "difficolta": 2,
+     "setup": "import io\nsorgente = io.StringIO(\"9000\\nabc\\n3000\\n\")\n",
+     "starter": "validi = []\nscartate = []\nwith sorgente as f:\n    for n, riga in enumerate(f, start=1):\n        \n",
+     "test": "assert validi == [9000.0, 3000.0], f'attesa [9000.0, 3000.0], hai {validi}'\nassert scartate == [(2, 'abc')], f'attesa [(2, abc)], hai {scartate}'",
+     "hint": [
+      "try: validi.append(float(riga.strip()))",
+      "except ValueError: scartate.append((n, riga.strip()))"
+     ],
+     "soluzione": "validi = []\nscartate = []\nwith sorgente as f:\n    for n, riga in enumerate(f, start=1):\n        try:\n            validi.append(float(riga.strip()))\n        except ValueError:\n            scartate.append((n, riga.strip()))",
+     "spiegazione": "Il numero di riga è l'informazione che rende il registro utile: senza, \"conversione fallita\" non dice dove guardare. È il lettore del modulo sugli errori, applicato a un file vero."
+    },
+    {
+     "id": "p08-pa-8",
+     "tipo": "predict",
+     "testo": "Tutto questo, nel modulo 9 di NumPy, diventa `np.loadtxt`. Perché vale la pena averlo scritto a mano?",
+     "opzioni": [
+      "perche' loadtxt fa questi stessi passi, e sapere quali sono spiega perche' fallisce",
+      "perche' loadtxt e' piu' lento",
+      "perche' loadtxt non gestisce i file CSV",
+      "non vale la pena: e' tempo perso"
+     ],
+     "risposta": "perche' loadtxt fa questi stessi passi, e sapere quali sono spiega perche' fallisce",
+     "spiegazione": "Perché `loadtxt` fa esattamente questi quattro passi, e sapere quali sono è ciò che permette di capire **perché** fallisce su un certo file — una riga sporca, un separatore diverso, un'intestazione non dichiarata. Chi non l'ha mai scritto a mano, davanti a quell'errore, non ha ipotesi."
+    },
+    {
+     "id": "p08-pa-9",
+     "tipo": "write",
+     "testo": "Scrivi i dati e rileggili: verifica che il giro completo conservi i valori.",
+     "difficolta": 2,
+     "setup": "import io\nvalori = [9000.0, 3000.5]\n",
+     "starter": "buf = io.StringIO()\nfor \nbuf.seek(0)\nriletti = \nuguali = \n",
+     "test": "assert riletti == [9000.0, 3000.5], f'attesa [9000.0, 3000.5], hai {riletti}'\nassert uguali is True, 'i valori devono sopravvivere al giro'",
+     "hint": [
+      "buf.write(str(v) + \"\\\\n\") per ogni valore, poi buf.seek(0)",
+      "riletti = [float(r) for r in buf]"
+     ],
+     "soluzione": "buf = io.StringIO()\nfor v in valori:\n    buf.write(str(v) + \"\\n\")\nbuf.seek(0)\nriletti = [float(r) for r in buf]\nuguali = riletti == valori",
+     "spiegazione": "Il controllo di andata e ritorno è quello che va fatto una volta su qualunque formato di salvataggio. Qui i float tornano identici perché `repr` li scrive con tutte le cifre; con `f\"{v:.2f}\"` non tornerebbero, e il confronto lo direbbe subito."
+    },
+    {
+     "id": "p08-pa-10",
+     "tipo": "apply",
+     "testo": "**Un lettore completo.**\n\nDa un file con intestazione, commenti, righe vuote e una riga sporca, ricava:\n\n- `record`: i dizionari colonna → valore delle righe valide\n- `scartate`: le coppie `(numero_riga, testo)` di quelle non convertibili\n- `media_quota`: la media delle quote valide",
+     "difficolta": 3,
+     "setup": "import io\nsorgente = io.StringIO(\"quota,mach\\n# prova del 29/08\\n\\n9000,0.82\\nabc,0.5\\n3000,0.40\\n\")\n",
+     "starter": "record = []\nscartate = []\nwith sorgente as f:\n    intestazione = \n    for n, riga in enumerate(f, start=2):\n        \nmedia_quota = \n",
+     "test": "assert record == [{'quota': 9000.0, 'mach': 0.82}, {'quota': 3000.0, 'mach': 0.4}], f'attesi due record, hai {record}'\nassert scartate == [(5, 'abc,0.5')], f'attesa [(5, abc,0.5)], hai {scartate}'\nassert media_quota == 6000.0, f'attesa 6000.0, hai {media_quota}'",
+     "hint": [
+      "Prima strip, poi il salto di vuote e commenti, poi il try sulla conversione.",
+      "record.append(dict(zip(intestazione, valori))); media_quota = sum(r[\"quota\"] for r in record) / len(record)"
+     ],
+     "soluzione": "record = []\nscartate = []\nwith sorgente as f:\n    intestazione = f.readline().strip().split(\",\")\n    for n, riga in enumerate(f, start=2):\n        riga = riga.strip()\n        if not riga or riga.startswith(\"#\"):\n            continue\n        try:\n            valori = [float(c) for c in riga.split(\",\")]\n        except ValueError:\n            scartate.append((n, riga))\n            continue\n        record.append(dict(zip(intestazione, valori)))\nmedia_quota = sum([r[\"quota\"] for r in record]) / len(record)",
+     "spiegazione": "Due record buoni, una riga scartata con il suo numero, e la media calcolata solo su quello che è passato.\n\nL'ordine dei controlli è tutto: prima si toglie l'a capo, poi si scartano commenti e vuote, poi si converte dentro un `try`. Invertire gli ultimi due passi farebbe finire ogni riga di commento fra le scartate, e il registro degli errori diventerebbe illeggibile proprio quando serve.\n\nÈ il modulo 9 di NumPy scritto a mano — con la differenza che qui vedi ogni decisione, mentre `genfromtxt` le prende per te secondo i suoi parametri."
+    }
+   ]
+  },
+  {
+   "id": "p08-json",
+   "comando": "json.dump e json.load",
+   "titolo": "json su file — salvare e riprendere",
+   "esercizi": [
+    {
+     "id": "p08-jf-1",
+     "tipo": "write",
+     "testo": "Salva un dizionario su un file-like con `json.dump`, e recupera il testo prodotto.",
+     "setup": "import io, json\nbuf = io.StringIO()\nconf = {\"quota\": 9000}\n",
+     "starter": "testo = \n",
+     "test": "assert testo == '{\"quota\": 9000}', f'atteso il JSON, hai {testo!r}'",
+     "hint": [
+      "json.dump(conf, buf)",
+      "testo = buf.getvalue()"
+     ],
+     "soluzione": "json.dump(conf, buf)\ntesto = buf.getvalue()",
+     "spiegazione": "`dump` — senza la `s` — scrive direttamente sul file. È la versione che userai davvero; `dumps` serve quando il JSON deve finire in una stringa, per esempio per mandarlo in rete."
+    },
+    {
+     "id": "p08-jf-2",
+     "tipo": "write",
+     "testo": "Rileggi il JSON dal file-like con `json.load`.",
+     "setup": "import io, json\nsorgente = io.StringIO('{\"quota\": 9000}')\n",
+     "starter": "conf = \n",
+     "test": "assert conf == {'quota': 9000}, f'atteso il dizionario, hai {conf}'",
+     "hint": [
+      "json.load(sorgente)",
+      "Nota che non c'e' la s finale."
+     ],
+     "soluzione": "conf = json.load(sorgente)",
+     "spiegazione": "`load` legge dal file e restituisce l'oggetto Python. La coppia `dump`/`load` è la forma normale per un file di configurazione o per lo stato di un programma — è così che questa app salva i tuoi progressi."
+    },
+    {
+     "id": "p08-jf-3",
+     "tipo": "write",
+     "testo": "Salva in modo leggibile e ordinato, poi rileggi: verifica che il giro conservi i dati.",
+     "setup": "import io, json\nconf = {\"b\": 1, \"a\": 2}\n",
+     "starter": "buf = io.StringIO()\n\ntesto = buf.getvalue()\nbuf.seek(0)\ntornato = \nuguale = \n",
+     "test": "assert testo.startswith('{\\n  \"a\": 2'), f'atteso JSON indentato e ordinato, hai {testo!r}'\nassert uguale is True, 'i dati devono sopravvivere al giro'",
+     "hint": [
+      "json.dump(conf, buf, indent=2, sort_keys=True)",
+      "tornato = json.load(buf); uguale = tornato == conf"
+     ],
+     "soluzione": "buf = io.StringIO()\njson.dump(conf, buf, indent=2, sort_keys=True)\ntesto = buf.getvalue()\nbuf.seek(0)\ntornato = json.load(buf)\nuguale = tornato == conf",
+     "spiegazione": "`indent` per leggerlo a mano, `sort_keys` per poter confrontare due salvataggi. Senza il secondo, gli stessi dati salvati due volte possono differire nell'ordine e un confronto testuale li dichiara diversi."
+    },
+    {
+     "id": "p08-jf-4",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `json.dump` e `json.dumps` ?",
+     "opzioni": [
+      "dump scrive su un file, dumps restituisce una stringa",
+      "dumps e' la versione veloce di dump",
+      "dump serve per i dizionari, dumps per le liste",
+      "dumps aggiunge l'indentazione, dump no"
+     ],
+     "risposta": "dump scrive su un file, dumps restituisce una stringa",
+     "spiegazione": "`dump` scrive su un file, `dumps` restituisce una **s**tringa. La stessa distinzione vale per `load` e `loads`. La `s` finale è l'unica cosa che le separa nel nome, ed è il motivo per cui si sbagliano di continuo."
+    },
+    {
+     "id": "p08-jf-5",
+     "tipo": "write",
+     "testo": "Un file JSON malformato: cattura l'errore e metti in `esito` la stringa `\"corrotto\"`.",
+     "setup": "import io, json\nsorgente = io.StringIO('{\"quota\": ')\n",
+     "starter": "try:\n    conf = json.load(sorgente)\n    esito = \"ok\"\nexcept \n    esito = \n",
+     "test": "assert esito == 'corrotto', f'atteso \\'corrotto\\', hai {esito!r}'",
+     "hint": [
+      "except ValueError:",
+      "esito = \"corrotto\""
+     ],
+     "soluzione": "try:\n    conf = json.load(sorgente)\n    esito = \"ok\"\nexcept ValueError:\n    esito = \"corrotto\"",
+     "spiegazione": "`JSONDecodeError` discende da `ValueError`, quindi catturare `ValueError` basta. È il controllo da mettere attorno a ogni caricamento di configurazione: un file troncato a metà — perché il programma è stato interrotto mentre scriveva — è un caso normale, non teorico."
+    },
+    {
+     "id": "p08-jf-6",
+     "tipo": "write",
+     "testo": "Carica una configurazione con valori di riserva: `leggi_conf(f)` restituisce il dizionario caricato, o quello di default se il file è illeggibile.",
+     "difficolta": 2,
+     "setup": "import io, json\ndefault = {\"quota\": 0}\n",
+     "starter": "def leggi_conf(f):\n    \nbuona = \nrotta = \n",
+     "test": "assert buona == {'quota': 9000}, f'atteso il file buono, hai {buona}'\nassert rotta == {'quota': 0}, f'attesi i valori di riserva, hai {rotta}'",
+     "hint": [
+      "try: return json.load(f) / except ValueError: return default",
+      "buona = leggi_conf(io.StringIO('{\"quota\": 9000}')); rotta = leggi_conf(io.StringIO('{'))"
+     ],
+     "soluzione": "def leggi_conf(f):\n    try:\n        return json.load(f)\n    except ValueError:\n        return default\nbuona = leggi_conf(io.StringIO('{\"quota\": 9000}'))\nrotta = leggi_conf(io.StringIO('{'))",
+     "spiegazione": "Un caricamento che non può fallire è quello che serve a un programma che deve partire comunque. La scelta va dichiarata: se la configurazione è obbligatoria, l'errore va lasciato esplodere invece di partire con valori che l'utente non ha scelto."
+    },
+    {
+     "id": "p08-jf-7",
+     "tipo": "write",
+     "testo": "JSON per righe: ogni riga del file è un oggetto JSON a sé. Caricali tutti in `record`.",
+     "setup": "import io, json\nsorgente = io.StringIO('{\"q\": 9000}\\n{\"q\": 3000}\\n')\n",
+     "starter": "record = []\nwith sorgente as f:\n    for riga in f:\n        \n",
+     "test": "assert record == [{'q': 9000}, {'q': 3000}], f'attesi due record, hai {record}'",
+     "hint": [
+      "Ogni riga e' una stringa JSON: serve json.loads.",
+      "record.append(json.loads(riga))"
+     ],
+     "soluzione": "record = []\nwith sorgente as f:\n    for riga in f:\n        record.append(json.loads(riga))",
+     "spiegazione": "È il formato JSON Lines, usato per i log e per i dati che si scrivono man mano: si può aggiungere una riga senza rileggere e riscrivere tutto il file, e una riga corrotta non rende illeggibili le altre. Qui serve `loads` — con la `s` — perché ogni riga è una stringa."
+    },
+    {
+     "id": "p08-jf-8",
+     "tipo": "apply",
+     "testo": "**Salvare e riprendere lo stato.**\n\nCome fa questa app con i tuoi progressi: salva uno stato, ricaricalo e verifica cosa è cambiato.\n\n- `testo`: il JSON con chiavi ordinate\n- `tornato`: lo stato ricaricato\n- `identico`: se il ricaricato è uguale all'originale\n- `perse`: la lista ordinata delle chiavi il cui tipo è cambiato",
+     "difficolta": 3,
+     "setup": "import io, json\nstato = {\"modulo\": \"p08\", \"fatti\": 12, \"posizione\": (3, 4), \"nota\": None}\n",
+     "starter": "buf = io.StringIO()\n\ntesto = buf.getvalue()\nbuf.seek(0)\ntornato = \nidentico = \nperse = \n",
+     "test": "assert isinstance(testo, str) and '\"posizione\"' in testo, 'testo deve essere il JSON dello stato'\nassert identico is False, 'lo stato ricaricato non e identico'\nassert perse == ['posizione'], f'attesa [posizione], hai {perse}'\nassert tornato['fatti'] == 12, 'i numeri devono sopravvivere'",
+     "hint": [
+      "json.dump(stato, buf, sort_keys=True), poi buf.seek(0) e json.load(buf)",
+      "perse = sorted([k for k in stato if type(stato[k]) is not type(tornato[k])])"
+     ],
+     "soluzione": "buf = io.StringIO()\njson.dump(stato, buf, sort_keys=True)\ntesto = buf.getvalue()\nbuf.seek(0)\ntornato = json.load(buf)\nidentico = tornato == stato\nperse = sorted([k for k in stato if type(stato[k]) is not type(tornato[k])])",
+     "spiegazione": "Lo stato non torna identico, e la chiave che cambia è quella con la tupla — `list` invece di `tuple`. Le altre attraversano il formato intatte.\n\nÈ il controllo da fare **prima** di affidare a un formato dei dati che ti servono: non \"si salva\", ma cosa esattamente non sopravvive. Qui la risposta è una chiave sola; con oggetti di classi tue non ne sopravvivrebbe nessuna, e `json.dump` te lo direbbe subito con un `TypeError`."
+    }
+   ]
+  },
+  {
+   "id": "p08-percorsi",
+   "comando": "pathlib",
+   "titolo": "percorsi — comporli senza incollare stringhe",
+   "esercizi": [
+    {
+     "id": "p08-pe-1",
+     "tipo": "write",
+     "testo": "Da un percorso, ricava il nome del file, il nome senza estensione, e l'estensione.",
+     "setup": "from pathlib import Path\np = Path(\"dati/volo.csv\")\n",
+     "starter": "nome = \nsenza_estensione = \nestensione = \n",
+     "test": "assert nome == 'volo.csv', f'atteso volo.csv, hai {nome!r}'\nassert senza_estensione == 'volo', f'atteso volo, hai {senza_estensione!r}'\nassert estensione == '.csv', f'atteso .csv col punto, hai {estensione!r}'",
+     "hint": [
+      "Gli attributi sono name, stem e suffix.",
+      "nome = p.name"
+     ],
+     "soluzione": "nome = p.name\nsenza_estensione = p.stem\nestensione = p.suffix",
+     "spiegazione": "`volo.csv`, `volo`, `.csv`. L'estensione **comprende** il punto: `suffix` vale `\".csv\"` e non `\"csv\"`, ed è la distinzione che rompe i confronti scritti a mente."
+    },
+    {
+     "id": "p08-pe-2",
+     "tipo": "predict",
+     "testo": "Perché si usa `pathlib` invece di comporre i percorsi con `+` fra stringhe?",
+     "opzioni": [
+      "il separatore cambia col sistema operativo, e pathlib lo mette da se'",
+      "pathlib e' piu' veloce",
+      "le stringhe non possono contenere le barre",
+      "pathlib controlla che il file esista"
+     ],
+     "risposta": "il separatore cambia col sistema operativo, e pathlib lo mette da se'",
+     "spiegazione": "Perché il separatore cambia col sistema — barra rovesciata su Windows, normale altrove — e `pathlib` lo mette da sé. Un percorso composto a mano con `\"cartella\" + \"/\" + \"file\"` funziona finché non gira su un altro sistema, e allora fallisce con un file non trovato."
+    },
+    {
+     "id": "p08-pe-3",
+     "tipo": "write",
+     "testo": "Componi un percorso con l'operatore dedicato e verificane le parti.",
+     "setup": "from pathlib import Path\n",
+     "starter": "p = \npezzi = \n",
+     "test": "assert pezzi == ('dati', 'volo.csv'), f'attesa (dati, volo.csv), hai {pezzi}'",
+     "hint": [
+      "Path(\"dati\") / \"volo.csv\"",
+      "pezzi = p.parts"
+     ],
+     "soluzione": "p = Path(\"dati\") / \"volo.csv\"\npezzi = p.parts",
+     "spiegazione": "L'operatore `/` compone i percorsi, e sceglie il separatore giusto per il sistema su cui gira. `.parts` restituisce i pezzi come tupla — ed è quello che si controlla nei test, proprio perché non dipende dal sistema."
+    },
+    {
+     "id": "p08-pe-4",
+     "tipo": "write",
+     "testo": "Cambia l'estensione di un file da `.csv` a `.json`, mantenendo il resto.",
+     "setup": "from pathlib import Path\np = Path(\"dati/volo.csv\")\n",
+     "starter": "nuovo = \nnome_nuovo = \n",
+     "test": "assert nome_nuovo == 'volo.json', f'atteso volo.json, hai {nome_nuovo!r}'\nassert p.name == 'volo.csv', 'il percorso di partenza non deve cambiare'",
+     "hint": [
+      "Il metodo e' with_suffix.",
+      "nuovo = p.with_suffix(\".json\"); nome_nuovo = nuovo.name"
+     ],
+     "soluzione": "nuovo = p.with_suffix(\".json\")\nnome_nuovo = nuovo.name",
+     "spiegazione": "`with_suffix` restituisce un percorso **nuovo**: i percorsi di `pathlib` sono immutabili, come le stringhe. È la stessa regola dei metodi di stringa — il risultato va riassegnato, non basta chiamare il metodo."
+    },
+    {
+     "id": "p08-pe-5",
+     "tipo": "predict",
+     "testo": "`Path(\"volo.tar.gz\").suffix` cosa vale?",
+     "opzioni": [
+      ".gz",
+      ".tar.gz",
+      ".tar",
+      "['.tar', '.gz']"
+     ],
+     "risposta": ".gz",
+     "spiegazione": "`.gz`, solo l'ultima estensione. Per averle tutte c'è `suffixes`, che restituisce `['.tar', '.gz']`, e `stem` in questo caso vale `volo.tar` — non `volo`. Sui nomi a doppia estensione le tre proprietà smettono di comportarsi come ci si aspetta."
+    },
+    {
+     "id": "p08-pe-6",
+     "tipo": "write",
+     "testo": "Verifica il caso della doppia estensione: ricava suffisso, elenco dei suffissi e nome senza l'ultima estensione.",
+     "setup": "from pathlib import Path\np = Path(\"volo.tar.gz\")\n",
+     "starter": "ultimo = \ntutti = \nbase = \n",
+     "test": "assert ultimo == '.gz', f'atteso .gz, hai {ultimo!r}'\nassert tutti == ['.tar', '.gz'], f'attesa [.tar, .gz], hai {tutti}'\nassert base == 'volo.tar', f'atteso volo.tar, hai {base!r}'",
+     "hint": [
+      "Gli attributi sono suffix, suffixes e stem.",
+      "tutti = p.suffixes"
+     ],
+     "soluzione": "ultimo = p.suffix\ntutti = p.suffixes\nbase = p.stem",
+     "spiegazione": "`.gz`, `['.tar', '.gz']`, `volo.tar`. Se il tuo codice si aspetta `volo` da `stem`, su un file compresso ottiene `volo.tar` e costruisce un nome sbagliato — senza sollevare niente, perché è una stringa valida."
+    },
+    {
+     "id": "p08-pe-7",
+     "tipo": "write",
+     "testo": "Risali di un livello: ricava il nome della cartella che contiene il file.",
+     "setup": "from pathlib import Path\np = Path(\"progetto/dati/volo.csv\")\n",
+     "starter": "cartella = \nsopra = \n",
+     "test": "assert cartella == 'dati', f'attesa dati, hai {cartella!r}'\nassert sopra == 'progetto', f'attesa progetto, hai {sopra!r}'",
+     "hint": [
+      "p.parent e' il percorso della cartella.",
+      "cartella = p.parent.name; sopra = p.parent.parent.name"
+     ],
+     "soluzione": "cartella = p.parent.name\nsopra = p.parent.parent.name",
+     "spiegazione": "`.parent` è il percorso della cartella, e `.name` ne dà il nome. Concatenandoli — `p.parent.parent` — si risale di due, ed è il modo di costruire percorsi relativi a un file senza scrivere `\"..\"` a mano."
+    },
+    {
+     "id": "p08-pe-8",
+     "tipo": "write",
+     "testo": "Costruisci il nome del file di uscita da quello di ingresso: stessa cartella, stesso nome, estensione `.out`.",
+     "setup": "from pathlib import Path\ningresso = Path(\"dati/volo.csv\")\n",
+     "starter": "uscita = \nparti = \n",
+     "test": "assert parti == ('dati', 'volo.out'), f'attesa (dati, volo.out), hai {parti}'",
+     "hint": [
+      "with_suffix cambia l'estensione mantenendo il resto.",
+      "uscita = ingresso.with_suffix(\".out\"); parti = uscita.parts"
+     ],
+     "soluzione": "uscita = ingresso.with_suffix(\".out\")\nparti = uscita.parts",
+     "spiegazione": "Deriva il nome invece di scriverlo: se il file di ingresso cambia, quello di uscita lo segue. Scrivere a mano `\"dati/volo.out\"` funziona una volta sola, e la seconda produce un risultato che sovrascrive il primo."
+    },
+    {
+     "id": "p08-pe-9",
+     "tipo": "write",
+     "testo": "Filtra un elenco di nomi tenendo solo quelli con estensione `.csv`.",
+     "setup": "from pathlib import Path\nnomi = [\"volo.csv\", \"note.txt\", \"prova.CSV\", \"dati.json\"]\n",
+     "starter": "csv = \n",
+     "test": "assert csv == ['volo.csv', 'prova.CSV'], f'attesa [volo.csv, prova.CSV], hai {csv}'",
+     "hint": [
+      "Path(n).suffix.lower() == \".csv\"",
+      "csv = [n for n in nomi if Path(n).suffix.lower() == \".csv\"]"
+     ],
+     "soluzione": "csv = [n for n in nomi if Path(n).suffix.lower() == \".csv\"]",
+     "spiegazione": "Il confronto va fatto su `suffix`, che comprende il punto, e conviene abbassare a minuscolo: un file chiamato `VOLO.CSV` esiste eccome, e su Windows è lo stesso file di `volo.csv` mentre su Linux no. Confrontare l'estensione senza `lower()` è un filtro che funziona sui tuoi file e non su quelli di qualcun altro."
+    },
+    {
+     "id": "p08-pe-10",
+     "tipo": "apply",
+     "testo": "**Nomi di uscita da un elenco di ingressi.**\n\nDa un elenco di file di dati, costruisci:\n\n- `ridotti`: per ogni `.csv`, il nome del file ridotto — stesso nome con estensione `.json`\n- `saltati`: i nomi che non sono `.csv`\n- `cartelle`: l'insieme ordinato delle cartelle coinvolte",
+     "difficolta": 3,
+     "setup": "from pathlib import Path\nfile = [\"dati/volo1.csv\", \"note/appunti.txt\", \"dati/volo2.csv\"]\n",
+     "starter": "ridotti = \nsaltati = \ncartelle = \n",
+     "test": "assert ridotti == ['volo1.json', 'volo2.json'], f'attesa [volo1.json, volo2.json], hai {ridotti}'\nassert saltati == ['note/appunti.txt'], f'attesa [note/appunti.txt], hai {saltati}'\nassert cartelle == ['dati', 'note'], f'attesa [dati, note], hai {cartelle}'",
+     "hint": [
+      "ridotti = [Path(f).with_suffix(\".json\").name for f in file if Path(f).suffix == \".csv\"]",
+      "cartelle = sorted(set([Path(f).parent.name for f in file]))"
+     ],
+     "soluzione": "ridotti = [Path(f).with_suffix(\".json\").name for f in file if Path(f).suffix == \".csv\"]\nsaltati = [f for f in file if Path(f).suffix != \".csv\"]\ncartelle = sorted(set([Path(f).parent.name for f in file]))",
+     "spiegazione": "Tutti e tre i risultati derivano dai percorsi di partenza, senza una stringa composta a mano. È quello che rende lo script riusabile: cambia l'elenco dei file e tutto il resto segue.\n\n`cartelle` esce come lista ordinata di un insieme, perché la stessa cartella compare più volte e l'ordine di un insieme non è definito — la stessa combinazione `sorted(set(...))` del modulo sulle collezioni, qui applicata a dei percorsi."
+    }
+   ]
+  }
+ ]
+}
