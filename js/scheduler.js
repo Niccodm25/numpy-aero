@@ -24,6 +24,9 @@ export function grade(s, ok, hint = 0) {
   } else {
     n.box = Math.min(MASTERED, s.box + 1);
   }
+  // "fatto" non si perde piu: nella lista degli esercizi conta se l'hai
+  // completato almeno una volta, non quanto sei stato bravo di recente.
+  if (n.box >= MASTERED) n.fatto = true;
   return n;
 }
 
@@ -50,7 +53,9 @@ export function pickNext(states, escludi = null) {
 export const LEECH = 4;
 export const isLeech = (s) => s.errori >= LEECH;
 
+/** Avanzamento mostrato nelle liste: conta gli esercizi completati almeno una
+ *  volta. La coda di ripasso usa invece le scatole, che possono retrocedere. */
 export function progress(states, ids) {
-  const done = ids.filter((id) => states[id] && isMastered(states[id])).length;
+  const done = ids.filter((id) => states[id] && states[id].fatto).length;
   return { done, tot: ids.length, pct: ids.length ? done / ids.length : 0 };
 }

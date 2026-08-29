@@ -146,3 +146,10 @@ textarea {
 .nav a { text-decoration: none; font-size: .9rem; }
 ul { padding-left: 1.2rem; }
 li { margin: .25rem 0; }
+
+/* Azione secondaria dentro una riga di testo, non un vero bottone */
+button.minuscolo {
+  min-height: 0; padding: .1rem .45rem; margin-left: .4rem;
+  font-size: .72rem; font-weight: 500; color: var(--tx2);
+  background: none; border: 1px solid var(--bordo);
+}

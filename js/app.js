@@ -107,7 +107,7 @@ async function home() {
       return `<div class="card muto">${m.titolo} <span class="pill">in arrivo</span></div>`;
     const mod = await modulo(m.id);
     const pr = L.progress(stati, mod.esercizi.map((e) => e.id));
-    const etichetta = m.cantiere ? "fasi completate" : "esercizi padroneggiati";
+    const etichetta = m.cantiere ? "fasi completate" : "esercizi completati";
     return `<a class="card" href="#/m/${m.id}">
       <strong>${m.titolo}</strong>
       <div class="muto">${pr.done} / ${pr.tot} ${etichetta}</div>
@@ -169,7 +169,7 @@ async function vistaModulo(id) {
       const pr = L.progress(stati, r.esercizi.map((e) => e.id));
       return `<a class="card" href="#/r/${id}/${r.id}">
         <strong><code>${r.comando}</code></strong>
-        <div class="muto">${r.esercizi.length} esercizi · ${pr.done} padroneggiati</div>
+        <div class="muto">${r.esercizi.length} esercizi · ${pr.done} fatti</div>
         <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
       </a>`;
     })
@@ -261,7 +261,8 @@ async function vistaPercorso(mid) {
   const testata = `
     <div class="nav">
       <a href="#/m/${mid}">‹ ${m.titolo}</a>
-      <span class="muto">ciclo ${p.ciclo}${p.chiusura ? " · chiusura" : ""}</span>
+      <span class="muto">ciclo ${p.ciclo}${p.chiusura ? " · chiusura" : ""}
+        <button id="azzera" class="minuscolo">azzera</button></span>
     </div>
     <div class="barra grande"><i style="width:${pct}%"></i></div>
     <p class="muto" id="stato-percorso">${pct}% · ${p.fatti} di ${P.proiezione(p)} esercizi previsti</p>`;
@@ -288,6 +289,19 @@ async function vistaPercorso(mid) {
     b.textContent = "Avanti ›";
     b.onclick = () => vistaPercorso(mid);
     azioni.appendChild(b);
+  };
+
+  // montaEsercizio riscrive tutta la pagina, quindi il pulsante di azzeramento
+  // va ricollegato dopo ogni render.
+  const collegaAzzera = () => {
+    const b = app.querySelector("#azzera");
+    if (!b) return;
+    b.onclick = () => {
+      if (!confirm("Azzerare il percorso e ricominciare dal primo ciclo?")) return;
+      delete dati.percorsi[mid];
+      salva();
+      vistaPercorso(mid);
+    };
   };
 
   // L'intestazione e' costruita prima della risposta: senza questo aggiornamento
@@ -335,6 +349,8 @@ async function vistaPercorso(mid) {
       avanti(azioni);
     },
   });
+
+  collegaAzzera();
 }
 
 async function vistaRaccolta(mid, rid) {
@@ -346,7 +362,7 @@ async function vistaRaccolta(mid, rid) {
     .map((e, i) => {
       const s = stato(e.id);
       return `<a class="card" href="#/e/${mid}/${e.id}">
-        <span class="pill ${L.isMastered(s) ? "ok" : s.errori ? "warn" : ""}">${etichetta(s)}</span>
+        <span class="pill ${classePill(s)}">${etichetta(s)}</span>
         <strong> ${i + 1}.</strong> ${primaRiga(e.testo)}
       </a>`;
     })
@@ -411,12 +427,9 @@ async function vistaEsercizio(mid, eid) {
     es,
     testata: `<div class="nav">
         <a href="#/m/${mid}">‹ ${m.titolo}</a>
-        <span class="pill ${L.isMastered(s) ? "ok" : ""}">${etichetta(s)}</span>
-      </div>
-      ${L.isLeech(s) && !L.isMastered(s)
-        ? `<div class="esito ko">Hai sbagliato questo esercizio ${s.errori} volte.
-           Il problema è il concetto, non l'esercizio: <a href="#/m/${mid}">rileggi le lezioni del modulo</a> prima di riprovare.</div>`
-        : ""}`,
+        <span class="pill ${classePill(s)}">${etichetta(s)}</span>
+      </div>`,
+    conSoluzione: true,
     dopoCorretto: (azioni) => azioni.appendChild(bottoneAvanti(m, mid, es)),
   });
 }
@@ -428,8 +441,14 @@ async function vistaEsercizio(mid, eid) {
  *
  * unTentativo: nel percorso la risposta conta una volta sola, e uno sbaglio
  * mostra subito la soluzione invece di lasciar riprovare.
+ * conSoluzione: negli esercizi liberi la soluzione si puo aprire quando vuoi,
+ * senza dover prima sbagliare.
  */
-function montaEsercizio({ mid, m, es, testata, unTentativo = false, dopoCorretto, dopoSbagliato }) {
+function montaEsercizio({
+  mid, m, es, testata,
+  unTentativo = false, conSoluzione = false,
+  dopoCorretto, dopoSbagliato,
+}) {
   const eid = es.id;
   let hint = 0;
   let chiuso = false;
@@ -461,7 +480,8 @@ function montaEsercizio({ mid, m, es, testata, unTentativo = false, dopoCorretto
   }
 
   azioni.innerHTML = `<button class="primario" id="ver">Verifica</button>
-    ${es.hint?.length ? `<button id="hint">Suggerimento</button>` : ""}`;
+    ${es.hint?.length ? `<button id="hint">Suggerimento</button>` : ""}
+    ${conSoluzione && es.soluzione ? `<button id="sol">Soluzione</button>` : ""}`;
 
   const btnHint = azioni.querySelector("#hint");
   if (btnHint)
@@ -470,6 +490,21 @@ function montaEsercizio({ mid, m, es, testata, unTentativo = false, dopoCorretto
       esito.insertAdjacentHTML("beforebegin", `<div class="card muto">${md(es.hint[hint])}</div>`);
       hint++;
       if (hint >= es.hint.length) btnHint.disabled = true;
+    };
+
+  const btnSol = azioni.querySelector("#sol");
+  if (btnSol)
+    btnSol.onclick = () => {
+      btnSol.disabled = true;
+      // Aprire la soluzione conta come essersi fatti aiutare: l'esercizio
+      // non viene dato per saputo solo perche' hai ricopiato la risposta.
+      hint = Math.max(hint, 1);
+      esito.insertAdjacentHTML(
+        "beforebegin",
+        `<div class="card"><p class="muto">Soluzione</p>
+         <pre><code>${escapeHtml(es.soluzione)}</code></pre>
+         ${md(es.spiegazione || "")}</div>`
+      );
     };
 
   azioni.querySelector("#ver").onclick = async () => {
@@ -565,8 +600,10 @@ function inserisci(ta, testo) {
   ta.focus();
 }
 
-const etichetta = (s) =>
-  L.isMastered(s) ? "fatto" : s.tentativi === 0 ? "nuovo" : `box ${s.box}/${L.MASTERED}`;
+// Nella lista degli esercizi si dice solo a che punto sei, non quanto hai
+// sbagliato: contare gli errori davanti a chi studia non aiuta nessuno.
+const etichetta = (s) => (s.fatto ? "fatto" : s.tentativi === 0 ? "nuovo" : "aperto");
+const classePill = (s) => (s.fatto ? "ok" : s.tentativi ? "warn" : "");
 
 const escapeHtml = (s = "") =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

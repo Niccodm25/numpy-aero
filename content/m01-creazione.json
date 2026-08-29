@@ -24,19 +24,19 @@
     {
       "id": "m01-l2",
       "titolo": "Costruire array da zero",
-      "md": "Quattro costruttori coprono quasi tutti i casi. Nota che la **shape si passa come tupla**.\n\n```\nnp.zeros((3, 4))      # 3 righe, 4 colonne, tutti 0.0\nnp.ones(5)            # 5 elementi a 1.0 (shape 1D: basta il numero)\nnp.full((2, 2), 9.81) # riempi con un valore\nnp.eye(3)             # identità 3x3\n```\n\n### L'errore classico\n\n```\nnp.zeros(3, 4)   # ERRORE\nnp.zeros((3, 4)) # giusto\n```\n\nIl secondo argomento di `zeros` non è una dimensione, è il `dtype`. Scrivendo `np.zeros(3, 4)` stai dicendo \"array di 3 elementi con dtype 4\", e NumPy protesta.\n\n### A cosa servono davvero\n\n`zeros` è il modo standard di **preallocare** un risultato che riempirai dopo (una traiettoria integrata passo per passo, per esempio). `eye` ti serve ogni volta che costruisci una matrice di stato o una matrice di rotazione identità.",
+      "md": "Quattro costruttori coprono quasi tutti i casi. Nota che la **shape si passa come tupla**.\n\n```\nnp.zeros((3, 4))      # 3 righe, 4 colonne, tutti 0.0\nnp.ones(5)            # 5 elementi a 1.0 (shape 1D: basta il numero)\nnp.full((2, 2), 9.81) # riempi con un valore\nnp.eye(3)             # identità 3x3\n```\n\n### L'errore classico\n\n```\nnp.zeros(3, 4)   # ERRORE\nnp.zeros((3, 4)) # giusto\n```\n\nIl secondo argomento di `zeros` non è una dimensione, è il `dtype`. Scrivendo `np.zeros(3, 4)` stai dicendo \"array di 3 elementi con dtype 4\", e NumPy protesta.\n\n### A cosa servono davvero\n\n`zeros` è il modo standard di **preallocare** un risultato che riempirai dopo (una traiettoria integrata passo per passo, per esempio). `eye` ti serve ogni volta che costruisci una matrice di stato o una matrice di rotazione identità.\n\n### Copiare la forma di un altro array\n\nOgni costruttore ha una variante `_like` che prende shape e dtype da un array esistente:\n\n```\nnp.zeros_like(a)    # zeri, stessa forma e tipo di a\nnp.ones_like(a)\nnp.full_like(a, 9.81)\n```\n\nServe quando prepari un risultato che deve combaciare con un dato di ingresso: resta corretto anche se domani quel dato cambia lunghezza, mentre `np.zeros(41)` va aggiornato a mano.\n\n### Spostare la diagonale\n\n`np.eye` accetta un parametro `k` che sposta la diagonale di uni:\n\n```\nnp.eye(4)        # diagonale principale\nnp.eye(4, k=1)   # una posizione piu in alto\nnp.eye(4, k=-1)  # una piu in basso\n```\n\nLe diagonali spostate servono a costruire operatori di differenza finita e matrici di scorrimento senza scrivere gli elementi uno per uno.",
       "demo": "print(np.zeros((3, 4)))\nprint()\nprint(np.full((2, 2), 9.81))\nprint()\nprint(np.eye(3))"
     },
     {
       "id": "m01-l3",
       "titolo": "arange vs linspace: quale, e quando",
-      "md": "Sono i due modi di generare una sequenza, e la scelta sbagliata è una delle cause di bug più frequenti.\n\n```\nnp.arange(inizio, fine, passo)   # decidi il PASSO, la fine e' esclusa\nnp.linspace(inizio, fine, punti) # decidi QUANTI PUNTI, la fine e' inclusa\n```\n\n### Due trappole di arange\n\n**1. L'estremo destro è escluso.** `np.arange(0, 11000, 1000)` non contiene 11000: si ferma a 10000, e ottieni 11 valori invece dei 12 che ti aspettavi.\n\n**2. Con passo decimale il numero di elementi non è prevedibile.** Il passo viene sommato in virgola mobile, e l'errore si accumula:\n\n```\nprint(len(np.arange(0, 1.1, 0.1)))\n```\n\nPuò uscire 11 o 12 a seconda dell'arrotondamento. Su una griglia di quote o di angoli d'incidenza, questo significa un array della dimensione sbagliata che poi non si allinea con gli altri.\n\n### La regola\n\n**Passo intero e non ti serve l'estremo → `arange`. In tutti gli altri casi → `linspace`.**\n\nCon `linspace` decidi tu quanti punti escono, quindi la shape è garantita. Per un dominio fisico (quote, angoli, tempo) è quasi sempre la scelta giusta.",
+      "md": "Sono i due modi di generare una sequenza, e la scelta sbagliata è una delle cause di bug più frequenti.\n\n```\nnp.arange(inizio, fine, passo)   # decidi il PASSO, la fine e' esclusa\nnp.linspace(inizio, fine, punti) # decidi QUANTI PUNTI, la fine e' inclusa\n```\n\n### Due trappole di arange\n\n**1. L'estremo destro è escluso.** `np.arange(0, 11000, 1000)` non contiene 11000: si ferma a 10000, e ottieni 11 valori invece dei 12 che ti aspettavi.\n\n**2. Con passo decimale il numero di elementi non è prevedibile.** Il passo viene sommato in virgola mobile, e l'errore si accumula:\n\n```\nprint(len(np.arange(0, 1.1, 0.1)))\n```\n\nPuò uscire 11 o 12 a seconda dell'arrotondamento. Su una griglia di quote o di angoli d'incidenza, questo significa un array della dimensione sbagliata che poi non si allinea con gli altri.\n\n### La regola\n\n**Passo intero e non ti serve l'estremo → `arange`. In tutti gli altri casi → `linspace`.**\n\nCon `linspace` decidi tu quanti punti escono, quindi la shape è garantita. Per un dominio fisico (quote, angoli, tempo) è quasi sempre la scelta giusta.\n\n### Farsi restituire anche il passo\n\n```\nh, passo = np.linspace(0, 11000, 23, retstep=True)\n```\n\nCon `retstep=True` la funzione restituisce una **tupla**: l'array e la distanza fra due punti consecutivi. Utile quando il passo ti serve dopo — per una derivata numerica, per esempio — ed evita di ricalcolarlo a mano sbagliando l'off-by-one.",
       "demo": "print(\"arange(0, 11000, 1000):\", np.arange(0, 11000, 1000))\nprint(\"quanti elementi:\", len(np.arange(0, 11000, 1000)))\nprint()\nprint(\"linspace(0, 11000, 12):\", np.linspace(0, 11000, 12))\nprint(\"quanti elementi:\", len(np.linspace(0, 11000, 12)))\nprint()\nprint(\"trappola float, len(arange(0, 1.1, 0.1)) =\", len(np.arange(0, 1.1, 0.1)))"
     },
     {
       "id": "m01-l4",
       "titolo": "shape, ndim, dtype: i tre attributi da controllare sempre",
-      "md": "Quando qualcosa non torna, il primo gesto è stampare questi tre valori. Risolvono la maggior parte dei bug.\n\n```\na = np.linspace(0, 11000, 12)\nprint(a.shape)  # (12,)  <- tupla, sempre\nprint(a.ndim)   # 1      <- numero di dimensioni\nprint(a.dtype)  # float64\n```\n\n### shape è una tupla\n\n`(12,)` con la virgola è una tupla di un elemento: array 1D di 12 valori. Non confonderlo con `(12, 1)`, che è una **matrice colonna** 2D. Sono cose diverse e si comportano diversamente nelle operazioni. Nel modulo sul broadcasting questa distinzione diventerà centrale.\n\n### dtype: il tipo si decide alla creazione\n\nNumPy sceglie il tipo più generale che contiene tutti i valori:\n\n```\nnp.array([1, 2, 3])     # int64\nnp.array([1, 2, 3.0])   # float64  <- un solo float \"contagia\" tutto\n```\n\n**Il rischio con gli interi:** un array `int64` tronca le assegnazioni decimali senza avvisarti.\n\n```\na = np.zeros(3, dtype=int)\na[0] = 2.7\nprint(a)   # [2 0 0]  <- il 2.7 e' diventato 2\n```\n\n### La regola per l'ingegneria\n\n**Se rappresenta una quantità fisica, deve essere float.** Scrivi `0.0` invece di `0`, o forza il tipo con `dtype=float`. Gli interi vanno bene per indici, contatori e maschere, non per quote, forze o velocità.",
+      "md": "Quando qualcosa non torna, il primo gesto è stampare questi tre valori. Risolvono la maggior parte dei bug.\n\n```\na = np.linspace(0, 11000, 12)\nprint(a.shape)  # (12,)  <- tupla, sempre\nprint(a.ndim)   # 1      <- numero di dimensioni\nprint(a.dtype)  # float64\n```\n\n### shape è una tupla\n\n`(12,)` con la virgola è una tupla di un elemento: array 1D di 12 valori. Non confonderlo con `(12, 1)`, che è una **matrice colonna** 2D. Sono cose diverse e si comportano diversamente nelle operazioni. Nel modulo sul broadcasting questa distinzione diventerà centrale.\n\n### dtype: il tipo si decide alla creazione\n\nNumPy sceglie il tipo più generale che contiene tutti i valori:\n\n```\nnp.array([1, 2, 3])     # int64\nnp.array([1, 2, 3.0])   # float64  <- un solo float \"contagia\" tutto\n```\n\n**Il rischio con gli interi:** un array `int64` tronca le assegnazioni decimali senza avvisarti.\n\n```\na = np.zeros(3, dtype=int)\na[0] = 2.7\nprint(a)   # [2 0 0]  <- il 2.7 e' diventato 2\n```\n\n### La regola per l'ingegneria\n\n**Se rappresenta una quantità fisica, deve essere float.** Scrivi `0.0` invece di `0`, o forza il tipo con `dtype=float`. Gli interi vanno bene per indici, contatori e maschere, non per quote, forze o velocità.\n\n### size: quanti elementi in tutto\n\n```\nA = np.zeros((3, 4))\nA.shape   # (3, 4)   come sono disposti\nA.size    # 12       quanti sono\nA.ndim    # 2        su quanti assi\n```\n\n`size` e' sempre il prodotto degli elementi di `shape`.\n\n### Confrontare due float: mai con ==\n\nAppena costruisci array in virgola mobile ti servira' confrontarli, e l'operatore `==` non va bene:\n\n```\n0.1 + 0.2 == 0.3          # False\nnp.isclose(0.1 + 0.2, 0.3)  # True\n```\n\nIl motivo e' che `0.1` in base 2 e' periodico, come `1/3` in base 10: in 64 bit se ne conserva un'approssimazione, e la somma di due approssimazioni non e' l'approssimazione della somma. Il confronto con `==` e' vero solo se i bit coincidono esattamente, cosa che dopo qualsiasi catena di operazioni non e' garantita.\n\n```\nnp.isclose(a, b)    # confronto elemento per elemento, con tolleranza\nnp.allclose(a, b)   # un solo True/False: sono vicini TUTTI gli elementi?\n```\n\n**Usa `isclose` quando ti serve una risposta per elemento, `allclose` quando ne vuoi una sola.** Il modulo 11 tornera' sul perche' e su come si sceglie la tolleranza; per ora basta sapere che i float non si confrontano mai con `==`.",
       "demo": "a = np.linspace(0, 11000, 12)\nprint(\"shape:\", a.shape, \"| ndim:\", a.ndim, \"| dtype:\", a.dtype)\n\nprint(\"\\nint o float?\")\nprint(np.array([1, 2, 3]).dtype)\nprint(np.array([1, 2, 3.0]).dtype)\n\nprint(\"\\ntroncamento silenzioso:\")\nb = np.zeros(3, dtype=int)\nb[0] = 2.7\nprint(b)"
     }
   ],
@@ -464,30 +464,30 @@
         {
           "id": "m01-eye-4",
           "tipo": "write",
-          "testo": "Verifica che l'identità sia l'elemento neutro: calcola `P`, il prodotto matriciale fra `A` e l'identità dell'ordine giusto, e `uguale`, un booleano che dice se `P` coincide con `A`.",
-          "setup": "A = np.array([[2., 1., 0.],\n              [1., 3., 5.],\n              [0., 4., 1.]])\n",
-          "starter": "I = \nP = \nuguale = \n",
-          "test": "assert I.shape == (3, 3)\nassert P.shape == (3, 3)\nassert np.allclose(P, A), 'A @ I deve dare A'\nassert bool(uguale) is True",
+          "testo": "Crea `I5`, l'identità 5×5, e leggi i suoi tre attributi: `forma`, `dimensioni` e `elementi`.",
+          "setup": "",
+          "starter": "I5 = \nforma = \ndimensioni = \nelementi = \n",
+          "test": "assert I5.shape == (5, 5), f'shape sbagliata: {I5.shape}'\nassert tuple(forma) == (5, 5)\nassert int(dimensioni) == 2, f'una matrice ha 2 assi, hai {dimensioni}'\nassert int(elementi) == 25, f'attesi 25 elementi, hai {elementi}'\nassert I5.dtype == np.float64",
           "hint": [
-            "L'identita deve avere lo stesso ordine di A: np.eye(3), oppure np.eye(A.shape[0]).",
-            "Il prodotto matriciale e' @, non *. E il confronto va fatto con np.allclose."
+            "np.eye(5), poi i tre attributi shape, ndim e size.",
+            "forma = I5.shape; dimensioni = I5.ndim; elementi = I5.size"
           ],
-          "soluzione": "I = np.eye(A.shape[0])\nP = A @ I\nuguale = np.allclose(P, A)",
-          "spiegazione": "Due cose che torneranno: `@` è il prodotto matriciale mentre `*` è elemento per elemento, e i confronti fra float si fanno con `allclose`, mai con `==`."
+          "soluzione": "I5 = np.eye(5)\nforma = I5.shape\ndimensioni = I5.ndim\nelementi = I5.size",
+          "spiegazione": "Venticinque elementi di cui solo cinque diversi da zero: l'identità è quasi tutta vuota. Su matrici grandi questo spreco conta, ed è il motivo per cui esistono i formati sparsi — ma per le dimensioni dell'ingegneria di tutti i giorni `np.eye` va benissimo."
         },
         {
           "id": "m01-eye-5",
           "tipo": "apply",
-          "testo": "**Matrice di rotazione a rotazione nulla.**\n\nCostruisci `R`, la matrice di rotazione 2×2 per un angolo `th`, e verifica in `neutra` che con `th = 0` coincida con l'identità.\n\n`R = [[cos, −sin], [sin, cos]]`",
-          "setup": "th = 0.0\n",
-          "starter": "R = \nI = \nneutra = \n",
-          "test": "assert R.shape == (2, 2), f'shape sbagliata: {R.shape}'\nassert np.allclose(R, np.eye(2)), f'con th=0 la rotazione e l identita, hai {R}'\nassert I.shape == (2, 2)\nassert bool(neutra) is True",
+          "testo": "**Stato iniziale di una simulazione.**\n\nPrepara i tre array che servono a far partire un modello di stato a 4 variabili con 2 comandi:\n\n- `A`: l'identità 4×4, il punto di partenza prima di inserire le derivate\n- `x0`: lo stato iniziale, 4 zeri\n- `u`: i comandi, 2 valori pari a 1.0\n\nPoi verifica in `coerente` che `A` abbia tante righe quante sono le variabili di stato.",
+          "setup": "n_stati = 4\nn_comandi = 2\n",
+          "starter": "A = \nx0 = \nu = \ncoerente = \n",
+          "test": "assert A.shape == (4, 4), f'shape sbagliata: {A.shape}'\nassert np.isclose(A[0, 0], 1.0) and np.isclose(A[0, 1], 0.0)\nassert x0.shape == (4,) and np.all(x0 == 0.0)\nassert u.shape == (2,) and np.all(u == 1.0)\nassert A.dtype == np.float64 and x0.dtype == np.float64\nassert bool(coerente) is True",
           "hint": [
-            "R = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])",
-            "I = np.eye(2), poi neutra = np.allclose(R, I)"
+            "np.eye(n_stati), np.zeros(n_stati), np.ones(n_comandi).",
+            "coerente = A.shape[0] == n_stati"
           ],
-          "soluzione": "R = np.array([[np.cos(th), -np.sin(th)],\n              [np.sin(th),  np.cos(th)]])\nI = np.eye(2)\nneutra = np.allclose(R, I)",
-          "spiegazione": "Con angolo nullo il coseno vale 1 e il seno 0, quindi la rotazione degenera nell'identità. È il controllo di sanità più veloce su qualsiasi matrice di trasformazione che scrivi: metti l'angolo a zero e deve uscire l'identità."
+          "soluzione": "A = np.eye(n_stati)\nx0 = np.zeros(n_stati)\nu = np.ones(n_comandi)\ncoerente = A.shape[0] == n_stati",
+          "spiegazione": "Tre costruttori diversi per tre ruoli diversi: l'identità come matrice di partenza, gli zeri per uno stato ancora vuoto, gli uni per comandi unitari.\n\nCostruire le dimensioni da `n_stati` e `n_comandi` invece che scrivere 4 e 2 significa che il giorno in cui il modello cresce a sei variabili non devi cercare i numeri sparsi nel codice. È il motivo per cui il controllo finale confronta la shape con la variabile, non con una costante."
         }
       ]
     },
@@ -1062,16 +1062,16 @@
         {
           "id": "m01-dtype-8",
           "tipo": "apply",
-          "testo": "**Preparare dati misti al calcolo.**\n\nDa un file arrivano tre array: quote intere, velocità float e una maschera booleana. Portali tutti nel tipo giusto per il calcolo e verifica.\n\nCostruisci `h` (float64 dalle quote), `n_validi` (quanti elementi di `valida` sono veri) e `energia` (`v²/2 + 9.81·h`, solo se tutti i tipi sono corretti).",
-          "setup": "quote = np.array([0, 1000, 2000, 3000], dtype=np.int32)\nv = np.array([50., 80., 110., 140.])\nvalida = np.array([True, True, False, True])\n",
-          "starter": "h = \nn_validi = \nenergia = \n",
-          "test": "assert h.dtype == np.float64, f'h deve essere float64, hai {h.dtype}'\nassert np.allclose(h, [0., 1000., 2000., 3000.])\nassert int(n_validi) == 3, f'attesi 3 validi, hai {n_validi}'\nassert energia.dtype == np.float64\nassert np.allclose(energia, v**2/2 + 9.81*h)\nassert np.isclose(energia[1], 80.**2/2 + 9810.), f'secondo valore sbagliato: {energia[1]}'",
+          "testo": "**Preparare dati misti al calcolo.**\n\nDa un file arrivano quote in interi a 32 bit e velocità già in virgola mobile.\n\nPorta le quote in `h` come `float64`, verifica in `tipi_ok` che sia `h` sia `v` siano float64, e calcola `energia`, l'energia specifica `v²/2 + 9.81·h`.",
+          "setup": "quote = np.array([0, 1000, 2000, 3000], dtype=np.int32)\nv = np.array([50., 80., 110., 140.])\n",
+          "starter": "h = \ntipi_ok = \nenergia = \n",
+          "test": "assert h.dtype == np.float64, f'h deve essere float64, hai {h.dtype}'\nassert np.allclose(h, [0., 1000., 2000., 3000.])\nassert quote.dtype == np.int32, 'l array originale non doveva cambiare'\nassert bool(tipi_ok) is True\nassert energia.dtype == np.float64\nassert np.allclose(energia, v**2/2 + 9.81*h)\nassert np.isclose(energia[1], 80.**2/2 + 9810.), f'secondo valore sbagliato: {energia[1]}'",
           "hint": [
-            "h = quote.astype(float). Su un array booleano, sum() conta i True.",
-            "n_validi = valida.sum(), poi energia = v**2/2 + 9.81*h"
+            "h = quote.astype(np.float64) — astype crea un array nuovo, l'originale resta.",
+            "tipi_ok = h.dtype == np.float64 and v.dtype == np.float64"
           ],
-          "soluzione": "h = quote.astype(float)\nn_validi = valida.sum()\nenergia = v**2/2 + 9.81*h",
-          "spiegazione": "Tre tipi diversi usati per quello che sanno fare: gli interi per i dati grezzi, i float per il calcolo, i booleani per contare. `valida.sum()` funziona perché `True` vale 1 — è il modo idiomatico di contare quanti elementi soddisfano una condizione."
+          "soluzione": "h = quote.astype(np.float64)\ntipi_ok = h.dtype == np.float64 and v.dtype == np.float64\nenergia = v**2/2 + 9.81*h",
+          "spiegazione": "Gli interi vanno bene per i dati grezzi, i float per il calcolo. `astype` copia sempre, quindi l'array originale resta disponibile.\n\nIl controllo sui tipi prima del conto è una riga che previene una classe intera di errori: se `h` fosse rimasto intero, ogni assegnazione decimale successiva verrebbe troncata senza il minimo avviso."
         }
       ]
     }
