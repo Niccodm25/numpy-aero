@@ -116,6 +116,18 @@ VOCAB_PY = {
         # su NameError e sui refusi
         "nome_inesistente", "rigaa",
     },
+    "p07": {
+        # i moduli e i nomi che se ne importano
+        "math", "json", "statistics", "random", "collections", "itertools",
+        "datetime", "date", "timedelta", "Counter", "pairwise", "accumulate",
+        "sqrt", "hypot", "degrees", "radians", "sin", "pi", "floor", "ceil",
+        "trunc", "isclose", "fsum", "isnan", "nan", "inf", "comb", "factorial",
+        "dumps", "loads", "indent", "sort_keys",
+        "mean", "median", "stdev", "pstdev", "randint", "sample", "seed", "most_common",
+        "isoformat", "fromisoformat", "strftime", "strptime", "total_seconds",
+        "year", "month", "day", "days", "seconds", "hours", "minutes",
+        "m",  # alias di math nell'esercizio sull'import con as
+    },
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]

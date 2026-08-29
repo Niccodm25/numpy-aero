@@ -1,0 +1,829 @@
+{
+ "id": "p07",
+ "titolo": "import e libreria standard",
+ "perche": "Le tre forme di import e cosa costa ciascuna, poi i moduli che userai davvero: math per gli scalari, json per salvare, statistics, random, Counter e itertools. Il filo conduttore e' che meta' di quello che hai scritto a mano nei moduli precedenti esiste gia' scritto meglio — e che trovarlo e' una competenza, non una memoria.",
+ "funzioni": [
+  "import",
+  "from",
+  "as",
+  "math",
+  "json",
+  "statistics",
+  "random",
+  "Counter",
+  "itertools"
+ ],
+ "lezioni": [
+  {
+   "id": "p07-l1",
+   "titolo": "Le tre forme di import, e quale usare",
+   "md": "```\nimport math                  # il modulo intero\nmath.sqrt(2)\n\nfrom math import sqrt        # un solo nome\nsqrt(2)\n\nimport numpy as np           # con un alias\nnp.array([1, 2])\n```\n\nLa prima forma è quella di default: `math.sqrt` dice da dove viene la funzione, e chi legge il codice non deve chiedersi cosa sia `sqrt`.\n\nLa seconda accorcia, e conviene solo quando usi quel nome in continuazione. Ha un costo: `sqrt` da sola non dice più di quale libreria sia, e due `from ... import` diversi possono importare lo stesso nome, con il secondo che sovrascrive il primo **senza nessun avviso**.\n\nLa terza è la convenzione delle librerie scientifiche: `np`, `pd`, `plt` sono alias che tutti riconoscono. Inventarne di nuovi non aiuta nessuno.\n\n### La forma da non usare\n\n```\nfrom math import *\n```\n\nImporta tutto in blocco. Ti ritrovi decine di nomi di cui non sai l'origine, e ogni successivo `import *` può sovrascriverne alcuni. Quando poi leggi `pow(2, 3)` non c'è modo di sapere se sia quella di `math` o quella incorporata di Python — che hanno comportamenti diversi.\n\n### Dove Python cerca i moduli\n\nQuando scrivi `import math`, Python cerca in ordine: i moduli incorporati, poi la **cartella corrente**, poi le cartelle dei pacchetti installati.\n\nLa cartella corrente prima dei pacchetti installati ha una conseguenza pratica: un tuo file chiamato `math.py` **sostituisce** il modulo di sistema, e il messaggio d'errore che ne segue non nomina mai il tuo file. È la ragione per cui i file non vanno chiamati come moduli noti — `random.py`, `json.py`, `test.py`.\n\n### Un import costa una volta sola\n\nPython importa ogni modulo la prima volta e poi lo tiene in memoria: dieci `import math` in dieci file caricano il modulo una volta. Non c'è motivo di evitare gli import per prestazioni, e c'è un motivo per metterli **tutti in cima al file**, che è la convenzione: si vede a colpo d'occhio da cosa dipende quel codice.",
+   "demo": "import math\nprint(\"math.sqrt(2) =\", math.sqrt(2))\n\nfrom math import sqrt\nprint(\"sqrt(2)      =\", sqrt(2))\n\nprint(\"\\nsono lo stesso oggetto:\", math.sqrt is sqrt)\nprint(\"il modulo si chiama:   \", math.__name__)\n\n# pow incorporata e pow di math non sono la stessa cosa\nprint(\"\\npow(2, 3)      =\", pow(2, 3), type(pow(2, 3)).__name__)\nprint(\"math.pow(2, 3) =\", math.pow(2, 3), type(math.pow(2, 3)).__name__)"
+  },
+  {
+   "id": "p07-l2",
+   "titolo": "math: quello che serve prima di NumPy",
+   "md": "```\nimport math\n\nmath.pi            # 3.141592653589793\nmath.sqrt(2)\nmath.hypot(3, 4)   # 5.0   la radice della somma dei quadrati\nmath.degrees(x)    # da radianti a gradi\nmath.radians(x)    # e ritorno\nmath.sin(x)        # le trigonometriche vogliono RADIANTI\n```\n\n**Tutte le funzioni trigonometriche lavorano in radianti.** Passare gradi non solleva niente e restituisce un numero: `math.sin(90)` vale 0.894, non 1.\n\n### Arrotondare in tre modi diversi\n\n```\nmath.floor(-1.5)   # -2   verso il basso\nmath.ceil(-1.5)    # -1   verso l'alto\nmath.trunc(-1.5)   # -1   verso lo zero\nround(-1.5)        # -2   al pari piu' vicino\n```\n\nQuattro risultati diversi sullo stesso numero. Su valori negativi la differenza fra `floor` e `trunc` è di un'unità intera, e sceglierne uno a caso è un errore sistematico.\n\n### isclose, senza scriverselo\n\n```\nmath.isclose(0.1 + 0.2, 0.3)    # True\n```\n\nÈ il confronto per tolleranza che nel modulo 1 hai scritto a mano con `abs(a - b) < 1e-9`. Ha gli stessi parametri `rel_tol` e `abs_tol` che ritroverai in `np.isclose`.\n\n### fsum, quando la somma conta\n\n```\nv = [1, 1e100, 1, -1e100] * 10\nsum(v)         # 9.0    <- sbagliato\nmath.fsum(v)   # 20.0   <- corretto\n```\n\n`sum` accumula in ordine e perde le cifre piccole quando incontra numeri enormi; `fsum` tiene traccia dei resti. La differenza si vede solo su dati con ordini di grandezza molto diversi — cioè esattamente quando conta.\n\n### math contro NumPy\n\n`math` lavora su **un numero alla volta**: `math.sqrt([1, 4])` solleva `TypeError`. `np.sqrt` lavora su interi array. Quando arriverai a NumPy, `math` resterà utile solo per gli scalari.",
+   "demo": "import math\nprint(\"sin(90 gradi) sbagliato:\", math.sin(90))\nprint(\"sin(90 gradi) giusto:  \", math.sin(math.radians(90)))\n\nprint(\"\\narrotondamenti di -1.5:\")\nprint(\"  floor\", math.floor(-1.5), \" ceil\", math.ceil(-1.5), \" trunc\", math.trunc(-1.5), \" round\", round(-1.5))\n\nv = [1, 1e100, 1, -1e100] * 10\nprint(\"\\nsum: \", sum(v))\nprint(\"fsum:\", math.fsum(v))"
+  },
+  {
+   "id": "p07-l3",
+   "titolo": "json: il formato in cui viaggiano i dati",
+   "md": "```\nimport json\n\ntesto = json.dumps({\"quota\": 9000})    # da oggetto Python a stringa\ndato = json.loads('{\"quota\": 9000}')   # e ritorno\n```\n\n`dumps` **s**crive una stringa, `loads` la **l**egge. Le versioni senza `s` finale — `json.dump` e `json.load` — lavorano direttamente su un file, e le userai nel modulo sui file.\n\nÈ il formato in cui questa app salva i tuoi progressi, e quello di quasi tutte le API.\n\n### Cosa sopravvive al viaggio e cosa no\n\n| Python | JSON | e al ritorno |\n|---|---|---|\n| `dict` | oggetto | `dict` |\n| `list` | array | `list` |\n| **`tuple`** | array | **`list`** |\n| `str`, `int`, `float`, `bool` | uguali | uguali |\n| `None` | `null` | `None` |\n\nLa riga che conta è la terza: una **tupla diventa una lista** e non torna più indietro. JSON non ha il concetto di tupla, e la conversione avviene in silenzio.\n\nLe chiavi dei dizionari diventano sempre **stringhe**: `{1: \"a\"}` torna come `{\"1\": \"a\"}`.\n\n### Cosa non passa affatto\n\nSet, funzioni, oggetti di classi tue: `json.dumps` solleva `TypeError`. È uno dei rari casi in cui l'errore arriva subito e dice esattamente cosa non sa serializzare.\n\n### Leggibile o compatto\n\n```\njson.dumps(d, indent=2)      # leggibile, per un file che aprirai a mano\njson.dumps(d, sort_keys=True) # chiavi ordinate: due file confrontabili\njson.dumps(d)                 # compatto, per la rete\n```\n\n`sort_keys=True` serve più di quanto sembri: senza, due salvataggi degli stessi dati possono differire nell'ordine e un confronto testuale li dichiara diversi.",
+   "demo": "import json\n\nd = {\"quota\": 9000, \"coord\": (1.0, 2.0), \"nota\": None}\ntesto = json.dumps(d)\nprint(\"scritto:\", testo)\n\ntornato = json.loads(testo)\nprint(\"letto:  \", tornato)\nprint(\"\\nla tupla e' tornata come\", type(tornato[\"coord\"]).__name__)\n\nprint(\"\\nleggibile:\")\nprint(json.dumps({\"b\": 1, \"a\": 2}, indent=2, sort_keys=True))\n\ntry:\n    json.dumps({1, 2})\nexcept TypeError as e:\n    print(\"\\nun set non passa:\", e)"
+  },
+  {
+   "id": "p07-l4",
+   "titolo": "statistics, random, collections, itertools",
+   "md": "### statistics: le statistiche su liste\n\n```\nimport statistics\nstatistics.mean([1, 2, 3])       # 2\nstatistics.median([1, 3, 2])     # 2\nstatistics.stdev([1, 2, 3, 4])   # campionaria, con n-1\nstatistics.pstdev(v)             # di popolazione, con n\n```\n\n`stdev` divide per `n-1` e `pstdev` per `n`: è la stessa distinzione che in NumPy si fa con `ddof`. Sceglierne una a caso cambia il risultato di qualche punto percentuale su campioni piccoli.\n\n### random: numeri casuali per liste\n\n```\nimport random\nrandom.seed(42)                  # riproducibilita'\nrandom.random()                  # fra 0 e 1\nrandom.randint(1, 6)             # ESTREMI INCLUSI, al contrario di range\nrandom.choice([1, 2, 3])\nrandom.sample(popolazione, 3)    # senza ripetizioni\n```\n\n`random.randint(1, 6)` include il 6, mentre `range(1, 6)` si ferma a 5. Due funzioni della stessa libreria standard con convenzioni opposte: è il tipo di dettaglio che si controlla nella docstring invece che ricordarlo.\n\n### collections.Counter: contare, in una riga\n\n```\nfrom collections import Counter\nCounter(\"aabbbc\")                # {'b': 3, 'a': 2, 'c': 1}\nCounter(codici).most_common(2)   # i due piu' frequenti\n```\n\nÈ lo schema `conteggi.get(c, 0) + 1` che hai scritto a mano, già fatto. `most_common` restituisce coppie ordinate per frequenza decrescente.\n\n### itertools: scorrere in modi utili\n\n```\nfrom itertools import pairwise, accumulate, chain\nlist(pairwise([1, 2, 3]))     # [(1, 2), (2, 3)]   coppie consecutive\nlist(accumulate([1, 2, 3]))   # [1, 3, 6]          somme progressive\nlist(chain([1], [2, 3]))      # [1, 2, 3]          concatena sequenze\n```\n\n`pairwise` è la differenza fra elementi consecutivi senza indici, `accumulate` è la somma cumulata: entrambe le hai scritte a mano nel modulo sul controllo di flusso, ed entrambe hanno un equivalente in NumPy — `np.diff` e `np.cumsum`.\n\nQuesto è il punto del modulo: gran parte di quello che stai per scrivere esiste già, e trovarlo è una competenza.",
+   "demo": "import statistics, random\nfrom collections import Counter\nfrom itertools import pairwise, accumulate\n\nprint(\"media:\", statistics.mean([1, 2, 3]), \" stdev:\", round(statistics.stdev([1, 2, 3, 4]), 4))\n\nrandom.seed(42)\nprint(\"\\nrandint(1, 6) include il 6:\", [random.randint(1, 6) for _ in range(8)])\n\nprint(\"\\nCounter:\", Counter(\"aabbbc\").most_common(2))\nprint(\"pairwise:\", list(pairwise([0, 500, 1200])))\nprint(\"accumulate:\", list(accumulate([10, 20, 30])))"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p07-import",
+   "comando": "import",
+   "titolo": "import — le tre forme e dove cerca",
+   "esercizi": [
+    {
+     "id": "p07-im-1",
+     "tipo": "write",
+     "testo": "Importa `math` e calcola la radice di 2 in `r`, usando il nome del modulo.",
+     "setup": "",
+     "starter": "import \nr = \n",
+     "test": "assert abs(r - 1.4142135623730951) < 1e-15, f'attesa la radice di 2, hai {r}'",
+     "hint": [
+      "import math",
+      "r = math.sqrt(2)"
+     ],
+     "soluzione": "import math\nr = math.sqrt(2)",
+     "spiegazione": "`math.sqrt` dice da dove viene la funzione. È la forma di default proprio per questo: chi legge il codice non deve chiedersi cosa sia `sqrt` né dove cercarla."
+    },
+    {
+     "id": "p07-im-2",
+     "tipo": "write",
+     "testo": "Importa **solo** `sqrt` da `math` e usalo senza il prefisso, in `r`.",
+     "setup": "",
+     "starter": "from \nr = \n",
+     "test": "assert abs(r - 1.4142135623730951) < 1e-15, f'attesa la radice di 2, hai {r}'",
+     "hint": [
+      "from math import sqrt",
+      "r = sqrt(2)"
+     ],
+     "soluzione": "from math import sqrt\nr = sqrt(2)",
+     "spiegazione": "`from math import sqrt` porta dentro un nome solo. Accorcia, e costa: `sqrt` da sola non dice più di quale libreria sia, e un secondo `from ... import sqrt` la sovrascriverebbe senza nessun avviso."
+    },
+    {
+     "id": "p07-im-3",
+     "tipo": "write",
+     "testo": "Importa `math` con l'alias `m` e ricava `pi_greco`.",
+     "setup": "",
+     "starter": "import \npi_greco = \n",
+     "test": "assert abs(pi_greco - 3.141592653589793) < 1e-15, f'atteso pi greco, hai {pi_greco}'",
+     "hint": [
+      "import math as m",
+      "pi_greco = m.pi"
+     ],
+     "soluzione": "import math as m\npi_greco = m.pi",
+     "spiegazione": "L'alias è la convenzione delle librerie scientifiche: `np`, `pd`, `plt` sono riconosciuti da tutti. Inventarne di nuovi per moduli noti non aiuta nessuno — `m` per `math` qui è un esercizio, in codice vero sarebbe rumore."
+    },
+    {
+     "id": "p07-im-4",
+     "tipo": "predict",
+     "testo": "Perché `from math import *` è da evitare?",
+     "opzioni": [
+      "porta dentro nomi di origine ignota, che import successivi possono sovrascrivere",
+      "e' molto piu' lento",
+      "e' stato rimosso in Python 3",
+      "importa solo meta' del modulo"
+     ],
+     "risposta": "porta dentro nomi di origine ignota, che import successivi possono sovrascrivere",
+     "spiegazione": "Perché porta dentro decine di nomi di cui non conosci l'origine, e un secondo `import *` può sovrascriverne alcuni in silenzio. Leggendo `pow(2, 3)` non c'è modo di sapere se sia quella di `math` o quella incorporata — e non fanno la stessa cosa."
+    },
+    {
+     "id": "p07-im-5",
+     "tipo": "write",
+     "testo": "Verifica che le due forme diano lo **stesso oggetto**: importa `math` e anche `sqrt` da `math`, e metti in `identici` il confronto di identità.",
+     "setup": "",
+     "starter": "import \nfrom \nidentici = \n",
+     "test": "assert identici is True, 'le due forme legano lo stesso oggetto'",
+     "hint": [
+      "import math e poi from math import sqrt",
+      "identici = math.sqrt is sqrt"
+     ],
+     "soluzione": "import math\nfrom math import sqrt\nidentici = math.sqrt is sqrt",
+     "spiegazione": "`True`: `from math import sqrt` non copia niente, lega un secondo nome allo stesso oggetto funzione. È la stessa cosa dell'assegnazione `b = a` sulle liste — e per questo `is` è il confronto giusto qui."
+    },
+    {
+     "id": "p07-im-6",
+     "tipo": "predict",
+     "testo": "Dove cerca Python quando scrivi `import math` ?",
+     "opzioni": [
+      "prima gli incorporati, poi la cartella corrente, poi i pacchetti installati",
+      "solo nella cartella di installazione di Python",
+      "solo nella cartella corrente",
+      "in ordine alfabetico fra tutte le cartelle del sistema"
+     ],
+     "risposta": "prima gli incorporati, poi la cartella corrente, poi i pacchetti installati",
+     "spiegazione": "Prima i moduli incorporati, poi la **cartella corrente**, poi i pacchetti installati. È l'ordine che rende pericoloso un file chiamato `math.py`: sostituisce il modulo di sistema, e l'errore che ne segue non nomina mai il tuo file."
+    },
+    {
+     "id": "p07-im-7",
+     "tipo": "predict",
+     "testo": "Hai un file `random.py` nella cartella del progetto, e `import random` smette di funzionare. Perché?",
+     "opzioni": [
+      "il tuo file sostituisce il modulo di sistema, perche' la cartella corrente viene prima",
+      "Python rifiuta i nomi di file uguali ai moduli noti",
+      "il modulo random e' stato disinstallato",
+      "serve rinominare l'import, non il file"
+     ],
+     "risposta": "il tuo file sostituisce il modulo di sistema, perche' la cartella corrente viene prima",
+     "spiegazione": "Perché la cartella corrente viene cercata prima dei pacchetti installati: il tuo file **è** il modulo `random` per quel programma. L'errore che ne segue parla di attributi mancanti e non nomina mai il tuo file, ed è uno degli errori più difficili da riconoscere la prima volta."
+    },
+    {
+     "id": "p07-im-8",
+     "tipo": "write",
+     "testo": "Un modulo è un oggetto come gli altri: metti in `nome` il nome del modulo `math` e in `ha_sqrt` il controllo che contenga `sqrt`.",
+     "setup": "import math\n",
+     "starter": "nome = \nha_sqrt = \n",
+     "test": "assert nome == 'math', f'atteso math, hai {nome!r}'\nassert ha_sqrt is True, 'math contiene sqrt'",
+     "hint": [
+      "nome = math.__name__",
+      "ha_sqrt = hasattr(math, \"sqrt\")"
+     ],
+     "soluzione": "nome = math.__name__\nha_sqrt = hasattr(math, \"sqrt\")",
+     "spiegazione": "`math.__name__` e `hasattr` funzionano su un modulo come su qualunque altro oggetto. È lo stesso `dir` del modulo 12 di NumPy, applicato qui: un modulo si esplora, non si impara a memoria."
+    },
+    {
+     "id": "p07-im-9",
+     "tipo": "write",
+     "testo": "Importa due nomi con un solo `from`, e usali entrambi.",
+     "setup": "",
+     "starter": "from \nr = \nangolo = \n",
+     "test": "assert abs(r - 1.4142135623730951) < 1e-15, f'attesa la radice di 2, hai {r}'\nassert abs(angolo - 180.0) < 1e-12, f'attesi 180.0 gradi, hai {angolo}'",
+     "hint": [
+      "from math import sqrt, degrees, pi",
+      "angolo = degrees(pi)"
+     ],
+     "soluzione": "from math import sqrt, degrees, pi\nr = sqrt(2)\nangolo = degrees(pi)",
+     "spiegazione": "Un solo `from` con più nomi separati da virgola. Vale la regola di prima: conviene solo per nomi che userai spesso, e ogni nome importato così è un nome in più di cui, leggendo, non si vede l'origine."
+    },
+    {
+     "id": "p07-im-10",
+     "tipo": "predict",
+     "testo": "Dieci file dello stesso programma fanno `import math`. Quante volte il modulo viene caricato?",
+     "opzioni": [
+      "una sola: il modulo viene tenuto in memoria dopo il primo import",
+      "dieci, una per file",
+      "dipende dall'ordine dei file",
+      "una per ogni funzione che lo usa"
+     ],
+     "risposta": "una sola: il modulo viene tenuto in memoria dopo il primo import",
+     "spiegazione": "Una sola: Python lo importa la prima volta e poi lo tiene in memoria. Non c'è motivo di evitare gli import per prestazioni, e c'è un motivo per metterli tutti in cima al file — si vede a colpo d'occhio da cosa dipende quel codice."
+    }
+   ]
+  },
+  {
+   "id": "p07-math",
+   "comando": "math",
+   "titolo": "math — radianti, arrotondamenti, fsum",
+   "esercizi": [
+    {
+     "id": "p07-ma-1",
+     "tipo": "write",
+     "testo": "Calcola l'ipotenusa di un triangolo 3-4 con la funzione dedicata, in `ip`.",
+     "setup": "import math\n",
+     "starter": "ip = \n",
+     "test": "assert abs(ip - 5.0) < 1e-12, f'attesa 5.0, hai {ip}'",
+     "hint": [
+      "La funzione si chiama hypot.",
+      "ip = math.hypot(3, 4)"
+     ],
+     "soluzione": "ip = math.hypot(3, 4)",
+     "spiegazione": "5.0. `math.hypot` calcola la radice della somma dei quadrati **senza** passare per quadrati intermedi enormi: su valori molto grandi `sqrt(a**2 + b**2)` può traboccare, mentre `hypot` no."
+    },
+    {
+     "id": "p07-ma-2",
+     "tipo": "predict",
+     "testo": "Quanto vale `math.sin(90)` ?",
+     "opzioni": [
+      "circa 0.894: l'argomento e' in radianti, non in gradi",
+      "1.0",
+      "0.0",
+      "errore: l'argomento deve essere fra -1 e 1"
+     ],
+     "risposta": "circa 0.894: l'argomento e' in radianti, non in gradi",
+     "spiegazione": "Circa 0.894, non 1: le funzioni trigonometriche lavorano in **radianti**, e 90 radianti sono quattordici giri e mezzo. Non solleva niente e restituisce un numero plausibile — è la conversione dimenticata più costosa del modulo."
+    },
+    {
+     "id": "p07-ma-3",
+     "tipo": "write",
+     "testo": "Calcola il seno di 90 **gradi** correttamente, in `s`.",
+     "setup": "import math\n",
+     "starter": "s = \n",
+     "test": "assert abs(s - 1.0) < 1e-12, f'atteso 1.0, hai {s}'",
+     "hint": [
+      "math.radians converte da gradi a radianti.",
+      "s = math.sin(math.radians(90))"
+     ],
+     "soluzione": "s = math.sin(math.radians(90))",
+     "spiegazione": "1.0, a meno dell'ultimo bit. La conversione va fatta esplicitamente con `radians`: non esiste una variante in gradi delle trigonometriche, ed è una scelta deliberata — un solo modo di chiamarle, e la conversione visibile dove avviene."
+    },
+    {
+     "id": "p07-ma-4",
+     "tipo": "write",
+     "testo": "Arrotonda `-1.5` nei quattro modi e metti i risultati in `giu`, `su`, `zero` e `pari`.",
+     "setup": "import math\nx = -1.5\n",
+     "starter": "giu = \nsu = \nzero = \npari = \n",
+     "test": "assert giu == -2, f'floor atteso -2, hai {giu}'\nassert su == -1, f'ceil atteso -1, hai {su}'\nassert zero == -1, f'trunc atteso -1, hai {zero}'\nassert pari == -2, f'round atteso -2, hai {pari}'",
+     "hint": [
+      "math.floor, math.ceil, math.trunc",
+      "round e' incorporata, senza math."
+     ],
+     "soluzione": "giu = math.floor(x)\nsu = math.ceil(x)\nzero = math.trunc(x)\npari = round(x)",
+     "spiegazione": "-2, -1, -1, -2. Quattro risultati su tre valori diversi, dallo stesso numero. Su valori negativi la differenza fra `floor` e `trunc` è di un'unità intera, e sceglierne uno a caso produce un errore sistematico che punta sempre nello stesso verso."
+    },
+    {
+     "id": "p07-ma-5",
+     "tipo": "write",
+     "testo": "Usa il confronto per tolleranza della libreria standard invece di scriverlo a mano.",
+     "setup": "import math\na = 0.1 + 0.2\nb = 0.3\n",
+     "starter": "vicini = \nesatti = \n",
+     "test": "assert vicini is True, 'con la tolleranza i due valori coincidono'\nassert esatti is False, 'con == no'",
+     "hint": [
+      "vicini = math.isclose(a, b)",
+      "esatti = a == b"
+     ],
+     "soluzione": "vicini = math.isclose(a, b)\nesatti = a == b",
+     "spiegazione": "`math.isclose` è quello che nel modulo 1 hai scritto come `abs(a - b) < 1e-9`. Ha i parametri `rel_tol` e `abs_tol`, gli stessi che ritroverai in `np.isclose` con nomi appena diversi — e la stessa insidia: vicino a zero conta solo quella assoluta."
+    },
+    {
+     "id": "p07-ma-6",
+     "tipo": "write",
+     "testo": "Confronta `sum` e `math.fsum` su dati con ordini di grandezza molto diversi.",
+     "setup": "import math\nv = [1, 1e100, 1, -1e100] * 10\n",
+     "starter": "ingenua = \nesatta = \n",
+     "test": "assert ingenua == 9.0, f'sum attesa 9.0, hai {ingenua}'\nassert esatta == 20.0, f'fsum attesa 20.0, hai {esatta}'",
+     "hint": [
+      "ingenua = sum(v)",
+      "esatta = math.fsum(v)"
+     ],
+     "soluzione": "ingenua = sum(v)\nesatta = math.fsum(v)",
+     "spiegazione": "9.0 contro 20.0. `sum` accumula in ordine e le venti unità spariscono ogni volta che incontrano 1e100: sommate a un numero di quella scala, cadono sotto la risoluzione e non tornano più. `fsum` tiene traccia dei resti e recupera il valore esatto."
+    },
+    {
+     "id": "p07-ma-7",
+     "tipo": "predict",
+     "testo": "`math.sqrt([1, 4])` cosa fa?",
+     "opzioni": [
+      "TypeError: math lavora su un numero alla volta",
+      "restituisce [1.0, 2.0]",
+      "restituisce 2.23...",
+      "restituisce None"
+     ],
+     "risposta": "TypeError: math lavora su un numero alla volta",
+     "spiegazione": "Solleva `TypeError`: `math` lavora su **un numero alla volta**. È la differenza che rende necessario NumPy — `np.sqrt` accetta un array intero e restituisce un array. Quando arriverai lì, `math` resterà utile solo per gli scalari."
+    },
+    {
+     "id": "p07-ma-8",
+     "tipo": "write",
+     "testo": "Calcola la distanza fra due punti nel piano usando `hypot` sulle differenze.",
+     "setup": "import math\na = (1.0, 2.0)\nb = (4.0, 6.0)\n",
+     "starter": "d = \n",
+     "test": "assert abs(d - 5.0) < 1e-12, f'attesa 5.0, hai {d}'",
+     "hint": [
+      "Le differenze sono b[0] - a[0] e b[1] - a[1].",
+      "d = math.hypot(b[0] - a[0], b[1] - a[1])"
+     ],
+     "soluzione": "d = math.hypot(b[0] - a[0], b[1] - a[1])",
+     "spiegazione": "5.0. `hypot` accetta anche più di due argomenti, quindi la stessa forma vale in tre dimensioni. È il conto che in NumPy diventa `np.linalg.norm(b - a)` su due array."
+    },
+    {
+     "id": "p07-ma-9",
+     "tipo": "write",
+     "testo": "Metti in `inf_pos` l'infinito e in `e_nan` il controllo che `math.nan` sia effettivamente un NaN.",
+     "setup": "import math\n",
+     "starter": "inf_pos = \ne_nan = \nsi_confronta = \n",
+     "test": "assert inf_pos == float('inf'), f'atteso infinito, hai {inf_pos}'\nassert e_nan is True, 'math.nan e un NaN'\nassert si_confronta is False, 'un NaN non e uguale a se stesso'",
+     "hint": [
+      "inf_pos = math.inf; e_nan = math.isnan(math.nan)",
+      "si_confronta = math.nan == math.nan"
+     ],
+     "soluzione": "inf_pos = math.inf\ne_nan = math.isnan(math.nan)\nsi_confronta = math.nan == math.nan",
+     "spiegazione": "`math.inf` e `math.nan` sono i valori speciali dei float. `math.isnan` esiste perché `math.nan == math.nan` è **False**: un NaN non è uguale a sé stesso, e il confronto diretto non lo trova mai. È la stessa regola che governa `np.isnan` nel modulo 9 di NumPy."
+    },
+    {
+     "id": "p07-ma-10",
+     "tipo": "write",
+     "testo": "Quante combinazioni di 2 elementi da 5, e quanto vale 5 fattoriale?",
+     "setup": "import math\n",
+     "starter": "c = \nf = \n",
+     "test": "assert c == 10, f'attese 10 combinazioni, hai {c}'\nassert f == 120, f'atteso 120, hai {f}'",
+     "hint": [
+      "Le funzioni sono comb e factorial.",
+      "c = math.comb(5, 2)"
+     ],
+     "soluzione": "c = math.comb(5, 2)\nf = math.factorial(5)",
+     "spiegazione": "10 e 120. Sono in `math` da Python 3.8: prima si scrivevano a mano, e infatti trovi ancora in giro implementazioni ricorsive del fattoriale. È un caso concreto della regola del modulo 12 di NumPy — controllare se esiste già, prima di scriverlo."
+    }
+   ]
+  },
+  {
+   "id": "p07-json",
+   "comando": "json",
+   "titolo": "json — cosa sopravvive al viaggio",
+   "esercizi": [
+    {
+     "id": "p07-js-1",
+     "tipo": "write",
+     "testo": "Converti il dizionario in stringa JSON in `testo`, e riportalo indietro in `tornato`.",
+     "setup": "import json\nd = {\"quota\": 9000}\n",
+     "starter": "testo = \ntornato = \n",
+     "test": "assert isinstance(testo, str), f'testo deve essere una stringa, hai {type(testo).__name__}'\nassert tornato == {'quota': 9000}, f'atteso il dizionario di partenza, hai {tornato}'",
+     "hint": [
+      "testo = json.dumps(d)",
+      "tornato = json.loads(testo)"
+     ],
+     "soluzione": "testo = json.dumps(d)\ntornato = json.loads(testo)",
+     "spiegazione": "`dumps` **s**crive una stringa, `loads` la legge. Le versioni senza `s` finale lavorano su un file, e le userai nel modulo sui file. È il formato in cui questa app salva i tuoi progressi."
+    },
+    {
+     "id": "p07-js-2",
+     "tipo": "predict",
+     "testo": "Un dizionario contiene una tupla. Cosa torna indietro dopo `dumps` e `loads` ?",
+     "opzioni": [
+      "una lista: JSON non ha le tuple",
+      "una tupla, invariata",
+      "una stringa",
+      "TypeError: le tuple non sono serializzabili"
+     ],
+     "risposta": "una lista: JSON non ha le tuple",
+     "spiegazione": "Una **lista**. JSON non ha il concetto di tupla, quindi la converte in array e al ritorno diventa una lista. La conversione avviene in silenzio, ed è il motivo per cui un salvataggio-ricaricamento può cambiare il tipo dei tuoi dati senza dirlo."
+    },
+    {
+     "id": "p07-js-3",
+     "tipo": "write",
+     "testo": "Verifica la conversione: salva un dizionario con una tupla, ricaricalo, e metti in `tipo_dopo` il nome del tipo che è tornato.",
+     "setup": "import json\nd = {\"coord\": (1.0, 2.0)}\n",
+     "starter": "tornato = \ntipo_dopo = \n",
+     "test": "assert tipo_dopo == 'list', f'atteso list, hai {tipo_dopo!r}'\nassert tornato['coord'] == [1.0, 2.0], f'atteso [1.0, 2.0], hai {tornato[\"coord\"]}'",
+     "hint": [
+      "tornato = json.loads(json.dumps(d))",
+      "tipo_dopo = type(tornato[\"coord\"]).__name__"
+     ],
+     "soluzione": "tornato = json.loads(json.dumps(d))\ntipo_dopo = type(tornato[\"coord\"]).__name__",
+     "spiegazione": "`list`. Se il tuo codice dopo il ricaricamento si aspetta una tupla — per usarla come chiave di dizionario, per esempio — fallisce con `TypeError` in un punto lontano dal salvataggio. La conversione va conosciuta, non scoperta."
+    },
+    {
+     "id": "p07-js-4",
+     "tipo": "predict",
+     "testo": "Un dizionario con chiavi numeriche, `{1: \"a\"}`, cosa diventa dopo un giro in JSON?",
+     "opzioni": [
+      "{\"1\": \"a\"}: le chiavi diventano stringhe",
+      "{1: \"a\"}, invariato",
+      "TypeError: le chiavi devono essere stringhe",
+      "[[1, \"a\"]]"
+     ],
+     "risposta": "{\"1\": \"a\"}: le chiavi diventano stringhe",
+     "spiegazione": "`{\"1\": \"a\"}`: le chiavi diventano sempre **stringhe**. In JSON le chiavi di un oggetto sono stringhe per definizione, e la conversione è silenziosa in andata e non si inverte al ritorno."
+    },
+    {
+     "id": "p07-js-5",
+     "tipo": "write",
+     "testo": "Scrivi JSON leggibile: usa l'indentazione a 2 spazi e le chiavi ordinate, in `testo`.",
+     "setup": "import json\nd = {\"b\": 1, \"a\": 2}\n",
+     "starter": "testo = \n",
+     "test": "assert testo == '{\\n  \"a\": 2,\\n  \"b\": 1\\n}', f'atteso JSON indentato e ordinato, hai {testo!r}'",
+     "hint": [
+      "I parametri sono indent e sort_keys.",
+      "json.dumps(d, indent=2, sort_keys=True)"
+     ],
+     "soluzione": "testo = json.dumps(d, indent=2, sort_keys=True)",
+     "spiegazione": "`indent` rende il file leggibile a mano, `sort_keys` lo rende **confrontabile**: senza, due salvataggi degli stessi dati possono differire nell'ordine e un confronto testuale li dichiara diversi. Vale ogni volta che il file finisce sotto controllo di versione."
+    },
+    {
+     "id": "p07-js-6",
+     "tipo": "write",
+     "testo": "Un `set` non è serializzabile. Cattura l'errore e metti in `tipo_errore` il nome del tipo.",
+     "setup": "import json\n",
+     "starter": "try:\n    json.dumps({1, 2})\nexcept \n    tipo_errore = \n",
+     "test": "assert tipo_errore == 'TypeError', f'atteso TypeError, hai {tipo_errore!r}'",
+     "hint": [
+      "except TypeError as e:",
+      "tipo_errore = type(e).__name__"
+     ],
+     "soluzione": "try:\n    json.dumps({1, 2})\nexcept TypeError as e:\n    tipo_errore = type(e).__name__",
+     "spiegazione": "`TypeError`, ed è uno dei rari casi in cui l'errore arriva subito e dice esattamente cosa non sa serializzare. Set, funzioni e oggetti di classi tue non passano: se ti servono, vanno convertiti prima — un set in lista, per esempio."
+    },
+    {
+     "id": "p07-js-7",
+     "tipo": "write",
+     "testo": "Rendi serializzabile un set convertendolo in lista ordinata, e verifica il giro completo.",
+     "setup": "import json\ns = {3, 1, 2}\n",
+     "starter": "pronto = \ntesto = \ntornato = \n",
+     "test": "assert pronto == [1, 2, 3], f'attesa [1, 2, 3], hai {pronto}'\nassert tornato == [1, 2, 3], f'atteso [1, 2, 3] dopo il giro, hai {tornato}'",
+     "hint": [
+      "pronto = sorted(s)",
+      "testo = json.dumps(pronto); tornato = json.loads(testo)"
+     ],
+     "soluzione": "pronto = sorted(s)\ntesto = json.dumps(pronto)\ntornato = json.loads(testo)",
+     "spiegazione": "Convertire prima di serializzare è la soluzione normale. `sorted` e non `list`: un set non ha ordine, quindi `list(s)` produrrebbe un file diverso a ogni esecuzione — di nuovo il problema della confrontabilità."
+    },
+    {
+     "id": "p07-js-8",
+     "tipo": "write",
+     "testo": "Leggi una stringa JSON annidata ed estraine la quota del secondo punto.",
+     "setup": "import json\ntesto = '{\"punti\": [{\"quota\": 3000}, {\"quota\": 9000}]}'\n",
+     "starter": "dato = \nq = \n",
+     "test": "assert q == 9000, f'attesa 9000, hai {q}'\nassert isinstance(dato, dict), 'loads deve restituire un dizionario'",
+     "hint": [
+      "dato = json.loads(testo)",
+      "q = dato[\"punti\"][1][\"quota\"]"
+     ],
+     "soluzione": "dato = json.loads(testo)\nq = dato[\"punti\"][1][\"quota\"]",
+     "spiegazione": "JSON annidato si legge come dizionari e liste annidate, perché è esattamente quello che `loads` restituisce. Nessuna API nuova: dopo il caricamento sono strutture Python normali."
+    },
+    {
+     "id": "p07-js-9",
+     "tipo": "write",
+     "testo": "JSON malformato: cattura l'errore di lettura e metti in `esito` la stringa `\"non valido\"`.",
+     "setup": "import json\ntesto = '{\"quota\": }'\n",
+     "starter": "try:\n    dato = json.loads(testo)\n    esito = \"ok\"\nexcept \n    esito = \n",
+     "test": "assert esito == 'non valido', f'atteso \\'non valido\\', hai {esito!r}'",
+     "hint": [
+      "JSONDecodeError discende da ValueError.",
+      "except ValueError: esito = \"non valido\""
+     ],
+     "soluzione": "try:\n    dato = json.loads(testo)\n    esito = \"ok\"\nexcept ValueError:\n    esito = \"non valido\"",
+     "spiegazione": "`json.JSONDecodeError` è una sottoclasse di `ValueError`, quindi catturare `ValueError` funziona — ed è quello che si fa quando non si vuole importare il nome specifico. È lo stesso ragionamento di `LookupError` per `KeyError` e `IndexError`."
+    },
+    {
+     "id": "p07-js-10",
+     "tipo": "apply",
+     "testo": "**Un salvataggio che sopravvive al ricaricamento.**\n\nSalva e ricarica una configurazione, poi verifica cosa è cambiato:\n\n- `testo`: il JSON con chiavi ordinate\n- `tornato`: la configurazione ricaricata\n- `uguale`: se il dizionario ricaricato è identico all'originale\n- `cambiati`: la lista ordinata delle chiavi il cui **tipo** è cambiato nel viaggio",
+     "difficolta": 3,
+     "setup": "import json\nconf = {\"quota\": 9000, \"coord\": (1.0, 2.0), \"nome\": \"prova\", \"nota\": None}\n",
+     "starter": "testo = \ntornato = \nuguale = \ncambiati = \n",
+     "test": "assert isinstance(testo, str) and '\"coord\"' in testo, 'testo deve essere il JSON della configurazione'\nassert uguale is False, 'il dizionario ricaricato non e identico'\nassert cambiati == ['coord'], f'attesa [coord], hai {cambiati}'\nassert tornato['coord'] == [1.0, 2.0], 'coord deve tornare come lista'",
+     "hint": [
+      "testo = json.dumps(conf, sort_keys=True); tornato = json.loads(testo)",
+      "cambiati = sorted([k for k in conf if type(conf[k]) is not type(tornato[k])])"
+     ],
+     "soluzione": "testo = json.dumps(conf, sort_keys=True)\ntornato = json.loads(testo)\nuguale = tornato == conf\ncambiati = sorted([k for k in conf if type(conf[k]) is not type(tornato[k])])",
+     "spiegazione": "Il dizionario non è identico, e la sola chiave a cambiare tipo è quella con la tupla: `coord` parte come `tuple` e torna come `list`. Le altre — numeri, stringhe, `None` — attraversano il formato intatte.\n\nÈ il controllo da fare una volta su qualunque formato di salvataggio: non \"funziona\", ma *cosa esattamente non sopravvive*. Qui la risposta è breve; con un formato binario o con oggetti di classi tue sarebbe molto più lunga."
+    }
+   ]
+  },
+  {
+   "id": "p07-statistics",
+   "comando": "statistics e random",
+   "titolo": "statistics e random — e i loro tranelli",
+   "esercizi": [
+    {
+     "id": "p07-rs-1",
+     "tipo": "write",
+     "testo": "Calcola media e mediana di `dati` con `statistics`.",
+     "setup": "import statistics\ndati = [1, 2, 3]\n",
+     "starter": "media = \nmediana = \n",
+     "test": "assert media == 2, f'attesa 2, hai {media}'\nassert mediana == 2, f'attesa 2, hai {mediana}'",
+     "hint": [
+      "statistics.mean e statistics.median",
+      "media = statistics.mean(dati)"
+     ],
+     "soluzione": "media = statistics.mean(dati)\nmediana = statistics.median(dati)",
+     "spiegazione": "Media 2 e mediana 2. Su una lista breve `statistics` è più diretto di `sum(v) / len(v)`, e sulla lista vuota solleva un errore esplicito invece di dividere per zero."
+    },
+    {
+     "id": "p07-rs-2",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `statistics.stdev` e `statistics.pstdev` ?",
+     "opzioni": [
+      "stdev divide per n-1 (campione), pstdev per n (popolazione)",
+      "pstdev e' piu' precisa",
+      "stdev accetta anche liste vuote",
+      "sono la stessa funzione con due nomi"
+     ],
+     "risposta": "stdev divide per n-1 (campione), pstdev per n (popolazione)",
+     "spiegazione": "`stdev` divide per `n-1` — deviazione **campionaria** — e `pstdev` per `n`, di popolazione. È la stessa distinzione che in NumPy si fa con `ddof`. Su campioni piccoli la differenza è di qualche punto percentuale, e sceglierne una a caso è un errore che nessuno segnala."
+    },
+    {
+     "id": "p07-rs-3",
+     "tipo": "write",
+     "testo": "Calcola le due deviazioni standard di `dati` e mettile in `campionaria` e `popolazione`.",
+     "setup": "import statistics\ndati = [1, 2, 3, 4]\n",
+     "starter": "campionaria = \npopolazione = \n",
+     "test": "assert abs(campionaria - 1.2909944487358056) < 1e-12, f'attesa 1.29099, hai {campionaria}'\nassert abs(popolazione - 1.118033988749895) < 1e-12, f'attesa 1.11803, hai {popolazione}'",
+     "hint": [
+      "statistics.stdev e statistics.pstdev",
+      "campionaria = statistics.stdev(dati)"
+     ],
+     "soluzione": "campionaria = statistics.stdev(dati)\npopolazione = statistics.pstdev(dati)",
+     "spiegazione": "1.291 contro 1.118: quasi il 16% di differenza su quattro valori. Riportare l'una per l'altra in una relazione di laboratorio è un errore concreto, e il divisore va dichiarato insieme al numero."
+    },
+    {
+     "id": "p07-rs-4",
+     "tipo": "write",
+     "testo": "Genera in modo riproducibile: fissa il seme a 42 ed estrai `tiri`, cinque interi da 1 a 6.",
+     "setup": "import random\n",
+     "starter": "random.seed(42)\ntiri = \n",
+     "test": "assert len(tiri) == 5, f'attesi 5 tiri, hai {len(tiri)}'\nassert all(1 <= t <= 6 for t in tiri), f'tutti fra 1 e 6, hai {tiri}'\nimport random as _r\n_r.seed(42)\nassert tiri == [_r.randint(1, 6) for _ in range(5)], 'la sequenza deve essere quella del seme 42'",
+     "hint": [
+      "random.randint(1, 6)",
+      "tiri = [random.randint(1, 6) for _ in range(5)]"
+     ],
+     "soluzione": "random.seed(42)\ntiri = [random.randint(1, 6) for _ in range(5)]",
+     "spiegazione": "Il seme rende la sequenza ripetibile, esattamente come `default_rng(42)` in NumPy. La differenza è che qui il seme è **globale**: qualunque altra parte del programma che usi `random` consuma dalla stessa sequenza, ed è il difetto che NumPy ha risolto con i generatori indipendenti."
+    },
+    {
+     "id": "p07-rs-5",
+     "tipo": "predict",
+     "testo": "`random.randint(1, 6)` può restituire 6?",
+     "opzioni": [
+      "si': randint include entrambi gli estremi",
+      "no: come range, l'estremo destro e' escluso",
+      "solo se il seme e' fissato",
+      "no: restituisce sempre fra 1 e 5"
+     ],
+     "risposta": "si': randint include entrambi gli estremi",
+     "spiegazione": "Sì: `randint` include **entrambi** gli estremi, al contrario di `range(1, 6)` che si ferma a 5. Due convenzioni opposte nella stessa libreria standard, ed è il tipo di dettaglio che si controlla nella docstring invece di ricordarlo."
+    },
+    {
+     "id": "p07-rs-6",
+     "tipo": "write",
+     "testo": "Estrai 3 elementi **distinti** da una popolazione di 10, in modo riproducibile con seme 1.",
+     "setup": "import random\npopolazione = list(range(10))\n",
+     "starter": "random.seed(1)\nscelti = \n",
+     "test": "assert len(scelti) == 3, f'attesi 3 elementi, hai {len(scelti)}'\nassert len(set(scelti)) == 3, 'gli elementi devono essere distinti'\nimport random as _r\n_r.seed(1)\nassert scelti == _r.sample(popolazione, 3), 'usa random.sample con seme 1'",
+     "hint": [
+      "La funzione e' sample.",
+      "scelti = random.sample(popolazione, 3)"
+     ],
+     "soluzione": "random.seed(1)\nscelti = random.sample(popolazione, 3)",
+     "spiegazione": "`sample` estrae senza ripetizioni, come `choice(..., replace=False)` in NumPy. `choice` di `random` invece estrae **un solo** elemento, non una lista: due librerie, due significati diversi per lo stesso nome."
+    },
+    {
+     "id": "p07-rs-7",
+     "tipo": "predict",
+     "testo": "Perché `np.random.default_rng()` è preferibile a `random.seed()` in una simulazione seria?",
+     "opzioni": [
+      "il seme di random e' globale: chiunque puo' consumarlo o rifissarlo",
+      "random e' molto piu' lento",
+      "random non accetta un seme",
+      "random genera numeri di qualita' peggiore"
+     ],
+     "risposta": "il seme di random e' globale: chiunque puo' consumarlo o rifissarlo",
+     "spiegazione": "Perché il seme di `random` è **globale**: qualunque libreria importata può consumare dalla stessa sequenza o rifissare il seme, e la riproducibilità salta in modi difficili da diagnosticare. È la stessa ragione per cui in NumPy l'interfaccia legacy è sconsigliata."
+    },
+    {
+     "id": "p07-rs-8",
+     "tipo": "write",
+     "testo": "Su una lista vuota `statistics.mean` solleva un errore invece di dividere per zero. Cattura e metti in `esito` la stringa `\"vuota\"`.",
+     "setup": "import statistics\n",
+     "starter": "try:\n    statistics.mean([])\n    esito = \"ok\"\nexcept \n    esito = \n",
+     "test": "assert esito == 'vuota', f'atteso \\'vuota\\', hai {esito!r}'",
+     "hint": [
+      "StatisticsError discende da ValueError.",
+      "except ValueError: esito = \"vuota\""
+     ],
+     "soluzione": "try:\n    statistics.mean([])\n    esito = \"ok\"\nexcept ValueError:\n    esito = \"vuota\"",
+     "spiegazione": "`StatisticsError` discende da `ValueError`, quindi catturare `ValueError` basta. Sollevare invece di restituire `nan` è una scelta: una media su zero valori non ha un valore giusto, e inventarne uno nasconderebbe il problema."
+    }
+   ]
+  },
+  {
+   "id": "p07-collections",
+   "comando": "collections e itertools",
+   "titolo": "Counter, pairwise, accumulate",
+   "esercizi": [
+    {
+     "id": "p07-ci-1",
+     "tipo": "write",
+     "testo": "Conta le occorrenze con `Counter` invece che a mano.",
+     "setup": "from collections import Counter\ncodici = [\"a\", \"b\", \"a\", \"c\", \"a\"]\n",
+     "starter": "conteggi = \n",
+     "test": "assert dict(conteggi) == {'a': 3, 'b': 1, 'c': 1}, f'attesi a:3 b:1 c:1, hai {dict(conteggi)}'",
+     "hint": [
+      "Counter accetta direttamente una sequenza.",
+      "conteggi = Counter(codici)"
+     ],
+     "soluzione": "conteggi = Counter(codici)",
+     "spiegazione": "È lo schema `conteggi.get(c, 0) + 1` del modulo sul controllo di flusso, già fatto e testato. `Counter` è un dizionario a tutti gli effetti: si legge, si scorre e si confronta come tale."
+    },
+    {
+     "id": "p07-ci-2",
+     "tipo": "write",
+     "testo": "Trova i due codici più frequenti, con i loro conteggi.",
+     "setup": "from collections import Counter\ncodici = [\"a\", \"b\", \"a\", \"c\", \"a\", \"b\"]\n",
+     "starter": "primi = \n",
+     "test": "assert primi == [('a', 3), ('b', 2)], f'attesa [(a, 3), (b, 2)], hai {primi}'",
+     "hint": [
+      "Il metodo e' most_common.",
+      "primi = Counter(codici).most_common(2)"
+     ],
+     "soluzione": "primi = Counter(codici).most_common(2)",
+     "spiegazione": "`most_common(2)` restituisce coppie già ordinate per frequenza decrescente. È il `sorted(..., key=...)` su `argsort` negato del modulo 12 di NumPy, in una chiamata."
+    },
+    {
+     "id": "p07-ci-3",
+     "tipo": "predict",
+     "testo": "`Counter` su una chiave mai vista cosa restituisce?",
+     "opzioni": [
+      "0, senza sollevare KeyError",
+      "KeyError",
+      "None",
+      "aggiunge la chiave con valore 1"
+     ],
+     "risposta": "0, senza sollevare KeyError",
+     "spiegazione": "`0`, non `KeyError`: è la differenza rispetto a un dizionario normale, e il motivo per cui il conteggio si scrive `c[k] += 1` senza inizializzare niente. Attenzione che leggere una chiave assente **non** la aggiunge al Counter."
+    },
+    {
+     "id": "p07-ci-4",
+     "tipo": "write",
+     "testo": "Verifica il comportamento: leggi una chiave assente e metti in `assente` il valore, e in `ancora_fuori` il controllo che quella chiave non sia stata aggiunta.",
+     "setup": "from collections import Counter\nc = Counter([\"a\", \"a\"])\n",
+     "starter": "assente = \nancora_fuori = \n",
+     "test": "assert assente == 0, f'atteso 0, hai {assente}'\nassert ancora_fuori is True, 'la chiave non deve essere stata aggiunta'",
+     "hint": [
+      "assente = c[\"z\"]",
+      "ancora_fuori = \"z\" not in c"
+     ],
+     "soluzione": "assente = c[\"z\"]\nancora_fuori = \"z\" not in c",
+     "spiegazione": "0, e la chiave resta fuori. È il compromesso che rende `Counter` sicuro da leggere: risponde per le chiavi che non ha senza inquinarsi, al contrario di `defaultdict`, che invece le crea al primo accesso."
+    },
+    {
+     "id": "p07-ci-5",
+     "tipo": "write",
+     "testo": "Costruisci le coppie consecutive di `quote` con `pairwise`.",
+     "setup": "from itertools import pairwise\nquote = [0, 500, 1200]\n",
+     "starter": "coppie = \n",
+     "test": "assert coppie == [(0, 500), (500, 1200)], f'attesa [(0, 500), (500, 1200)], hai {coppie}'",
+     "hint": [
+      "pairwise restituisce un iteratore: serve list().",
+      "coppie = list(pairwise(quote))"
+     ],
+     "soluzione": "coppie = list(pairwise(quote))",
+     "spiegazione": "`[(0, 500), (500, 1200)]`. È il ciclo con `i` e `i+1` che hai scritto a mano, senza indici da sbagliare. La versione NumPy dello stesso concetto è `np.diff`, che restituisce direttamente le differenze."
+    },
+    {
+     "id": "p07-ci-6",
+     "tipo": "write",
+     "testo": "Ricava i dislivelli fra quote consecutive usando `pairwise`.",
+     "setup": "from itertools import pairwise\nquote = [0, 500, 1200]\n",
+     "starter": "salti = \n",
+     "test": "assert salti == [500, 700], f'attesa [500, 700], hai {salti}'",
+     "hint": [
+      "Una comprehension su pairwise.",
+      "salti = [b - a for a, b in pairwise(quote)]"
+     ],
+     "soluzione": "salti = [b - a for a, b in pairwise(quote)]",
+     "spiegazione": "`[500, 700]`. Due righe al posto di un ciclo con indici, e il codice dice cosa fa invece di come lo fa. In NumPy è `np.diff(quote)` — stessa idea, una chiamata sola, su array."
+    },
+    {
+     "id": "p07-ci-7",
+     "tipo": "write",
+     "testo": "Costruisci le somme progressive con `accumulate`.",
+     "setup": "from itertools import accumulate\nvalori = [10, 20, 30]\n",
+     "starter": "progressive = \n",
+     "test": "assert progressive == [10, 30, 60], f'attesa [10, 30, 60], hai {progressive}'",
+     "hint": [
+      "accumulate restituisce un iteratore.",
+      "progressive = list(accumulate(valori))"
+     ],
+     "soluzione": "progressive = list(accumulate(valori))",
+     "spiegazione": "`[10, 30, 60]`. È la somma cumulata che hai scritto a mano nel modulo sul controllo di flusso, e che in NumPy si chiama `np.cumsum`. Tre nomi diversi per la stessa operazione, in tre posti diversi."
+    },
+    {
+     "id": "p07-ci-8",
+     "tipo": "predict",
+     "testo": "Qual è il senso di questo modulo, viste `Counter`, `pairwise` e `accumulate` ?",
+     "opzioni": [
+      "gran parte di quello che stai per scrivere esiste gia': trovarlo e' la competenza",
+      "la libreria standard e' piu' veloce del codice scritto a mano",
+      "i cicli scritti a mano sono sempre sbagliati",
+      "queste funzioni sostituiscono NumPy"
+     ],
+     "risposta": "gran parte di quello che stai per scrivere esiste gia': trovarlo e' la competenza",
+     "spiegazione": "Che gran parte di quello che stai per scrivere esiste già. Le tre funzioni sostituiscono altrettanti cicli scritti a mano nei moduli precedenti — e trovarle è la competenza, non ricordarle: sono esattamente il metodo che il modulo 12 di NumPy insegna, applicato alla libreria standard."
+    }
+   ]
+  },
+  {
+   "id": "p07-datetime",
+   "comando": "datetime",
+   "titolo": "datetime — date, durate, formati",
+   "esercizi": [
+    {
+     "id": "p07-dt-1",
+     "tipo": "write",
+     "testo": "Costruisci la data del 29 agosto 2026 e ricavane anno, mese e giorno.",
+     "setup": "from datetime import date\n",
+     "starter": "d = \nanno = \nmese = \ngiorno = \n",
+     "test": "assert anno == 2026 and mese == 8 and giorno == 29, f'attesi 2026, 8, 29, hai {anno}, {mese}, {giorno}'",
+     "hint": [
+      "date(2026, 8, 29)",
+      "d.year, d.month, d.day"
+     ],
+     "soluzione": "d = date(2026, 8, 29)\nanno = d.year\nmese = d.month\ngiorno = d.day",
+     "spiegazione": "`date(anno, mese, giorno)`, in quest'ordine — non quello italiano né quello americano. Una data non valida, come il 31 febbraio, solleva `ValueError` alla costruzione: il controllo lo fa la libreria, non tu."
+    },
+    {
+     "id": "p07-dt-2",
+     "tipo": "write",
+     "testo": "Sottrai due date e metti in `giorni` il numero di giorni che le separano.",
+     "setup": "from datetime import date\na = date(2026, 2, 1)\nb = date(2026, 3, 1)\n",
+     "starter": "differenza = \ngiorni = \n",
+     "test": "assert giorni == 28, f'attesi 28 giorni, hai {giorni}'",
+     "hint": [
+      "differenza = b - a",
+      "giorni = differenza.days"
+     ],
+     "soluzione": "differenza = b - a\ngiorni = differenza.days",
+     "spiegazione": "28. La differenza fra due date è un `timedelta`, non un numero: `.days` ne estrae i giorni. Sottrarre date a mano — contando i giorni dei mesi e gli anni bisestili — è il tipo di conto che nessuno dovrebbe più scrivere."
+    },
+    {
+     "id": "p07-dt-3",
+     "tipo": "write",
+     "testo": "Aggiungi dieci giorni a una data, con `timedelta`.",
+     "setup": "from datetime import date, timedelta\nd = date(2026, 8, 29)\n",
+     "starter": "dopo = \n",
+     "test": "assert dopo == date(2026, 9, 8), f'attesa 2026-09-08, hai {dopo}'",
+     "hint": [
+      "timedelta(days=10)",
+      "dopo = d + timedelta(days=10)"
+     ],
+     "soluzione": "dopo = d + timedelta(days=10)",
+     "spiegazione": "Il 2026-09-08: il passaggio di mese è gestito dalla libreria. `timedelta` accetta `days`, `hours`, `minutes`, `seconds` e li somma tutti — ma **non** `months` né `years`, perché non hanno una durata fissa."
+    },
+    {
+     "id": "p07-dt-4",
+     "tipo": "predict",
+     "testo": "`timedelta(months=1)` cosa fa?",
+     "opzioni": [
+      "TypeError: timedelta non accetta i mesi, che non hanno durata fissa",
+      "aggiunge 30 giorni",
+      "aggiunge 31 giorni",
+      "aggiunge un mese di calendario"
+     ],
+     "risposta": "TypeError: timedelta non accetta i mesi, che non hanno durata fissa",
+     "spiegazione": "Solleva `TypeError`: `timedelta` non accetta i mesi, perché un mese non ha una durata fissa — 28, 30 o 31 giorni. È una limitazione deliberata: sommare \"un mese\" richiede una decisione che la libreria non può prendere al posto tuo."
+    },
+    {
+     "id": "p07-dt-5",
+     "tipo": "write",
+     "testo": "Formatta la data e l'ora nel formato italiano `29/08/2026 14:05`.",
+     "setup": "from datetime import datetime\nt = datetime(2026, 8, 29, 14, 5, 13)\n",
+     "starter": "testo = \n",
+     "test": "assert testo == '29/08/2026 14:05', f'atteso \\'29/08/2026 14:05\\', hai {testo!r}'",
+     "hint": [
+      "Il metodo e' strftime.",
+      "t.strftime(\"%d/%m/%Y %H:%M\")"
+     ],
+     "soluzione": "testo = t.strftime(\"%d/%m/%Y %H:%M\")",
+     "spiegazione": "`strftime` **f**ormatta verso una stringa: `%d/%m/%Y %H:%M`. I codici sono quelli del C e li ritroverai identici in mezzo mondo — `%Y` è l'anno a quattro cifre, `%y` a due, ed è la distinzione che ha prodotto il baco del 2000."
+    },
+    {
+     "id": "p07-dt-6",
+     "tipo": "write",
+     "testo": "Leggi una data scritta all'italiana e trasformala in un oggetto data.",
+     "setup": "from datetime import datetime\ntesto = \"29/08/2026\"\n",
+     "starter": "t = \nanno = \n",
+     "test": "assert anno == 2026, f'atteso 2026, hai {anno}'\nassert t.month == 8 and t.day == 29, f'attesi mese 8 e giorno 29, hai {t.month} e {t.day}'",
+     "hint": [
+      "datetime.strptime(testo, formato)",
+      "Il formato e' \"%d/%m/%Y\""
+     ],
+     "soluzione": "t = datetime.strptime(testo, \"%d/%m/%Y\")\nanno = t.year",
+     "spiegazione": "`strptime` **p**arsifica da una stringa, e vuole il formato esatto: se la stringa non corrisponde solleva `ValueError`. Le due funzioni sono simmetriche, e la `f` contro la `p` è l'unica cosa che le distingue nel nome."
+    },
+    {
+     "id": "p07-dt-7",
+     "tipo": "write",
+     "testo": "Usa il formato ISO, che è quello standard: scrivi la data e rileggila.",
+     "setup": "from datetime import date\nd = date(2026, 8, 29)\n",
+     "starter": "testo = \ntornata = \n",
+     "test": "assert testo == '2026-08-29', f'atteso \\'2026-08-29\\', hai {testo!r}'\nassert tornata == d, 'la data riletta deve coincidere'",
+     "hint": [
+      "d.isoformat() e date.fromisoformat(testo)",
+      "Sono l'una l'inversa dell'altra."
+     ],
+     "soluzione": "testo = d.isoformat()\ntornata = date.fromisoformat(testo)",
+     "spiegazione": "`2026-08-29`: anno-mese-giorno, sempre in quest'ordine e con gli zeri davanti. È l'unico formato che si ordina correttamente **come testo**, ed è la ragione per cui i nomi dei file datati si scrivono così."
+    },
+    {
+     "id": "p07-dt-8",
+     "tipo": "write",
+     "testo": "Calcola la durata di una prova in secondi, da due istanti.",
+     "setup": "from datetime import datetime\ninizio = datetime(2026, 1, 1, 10, 0, 0)\nfine = datetime(2026, 1, 1, 12, 0, 0)\n",
+     "starter": "durata = \nsecondi = \n",
+     "test": "assert secondi == 7200.0, f'attesi 7200.0, hai {secondi}'",
+     "hint": [
+      "durata = fine - inizio",
+      "secondi = durata.total_seconds()"
+     ],
+     "soluzione": "durata = fine - inizio\nsecondi = durata.total_seconds()",
+     "spiegazione": "7200 secondi. `total_seconds()` dà la durata completa come float; `.seconds` da solo darebbe solo la parte sotto il giorno, ed è l'attributo che si prende per sbaglio quando la durata supera le 24 ore."
+    }
+   ]
+  }
+ ]
+}

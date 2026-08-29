@@ -13,10 +13,10 @@
         "p03",
         "p04",
         "p05",
-        "p06"
+        "p06",
+        "p07"
       ],
       "prossimi": [
-        "import — moduli, from ... import, e cosa succede davvero quando importi",
         "File e contesti — open, with, leggere e scrivere testo"
       ]
     },
@@ -148,6 +148,12 @@
       "id": "p06",
       "file": "p06-errori.json",
       "titolo": "Leggere un errore",
+      "disponibile": true
+    },
+    {
+      "id": "p07",
+      "file": "p07-import.json",
+      "titolo": "import e libreria standard",
       "disponibile": true
     },
     {
