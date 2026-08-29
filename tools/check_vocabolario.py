@@ -59,7 +59,7 @@ VOCABOLARIO = {
             "diag", "matmul", "dot", "identity", "polyfit", "polyval",
             "rcond", "real", "imag"},
     "m08": {"diff", "gradient", "trapezoid", "trapz", "interp", "polyder",
-            "roots", "argsort"},
+            "roots", "argsort", "left", "right", "isreal"},
     "m09": {"loadtxt", "genfromtxt", "savetxt", "save", "load", "isnan",
             "isfinite", "nanmean", "nanstd", "nanmax", "nansum", "nanargmax",
             "nan", "inf", "delimiter", "skiprows", "unpack", "usecols", "header"},

@@ -39,116 +39,779 @@
       "demo": "alpha = np.array([-4., 0., 4., 8., 12., 16., 20.])\nCL = 0.11*alpha - 0.0035*alpha**2 + 0.02\n\np = np.polyfit(alpha, CL, 2)\nprint(\"coefficienti [a, b, c]:\", p.round(5))\nprint(\"cioe' CL =\", f\"{p[0]:.4f}*a^2 + {p[1]:.4f}*a + {p[2]:.4f}\")\n\nstaz = np.roots(np.polyder(p))\nprint(\"\\nincidenza di CL massimo:\", staz.round(3), \"gradi\")\nprint(\"CL massimo:\", np.polyval(p, staz[0]).round(4))\n\nprint(\"\\nCL a 10 gradi:\", np.polyval(p, 10.).round(4))"
     }
   ],
-  "esercizi": [
+  "raccolte": [
     {
-      "id": "m08-e1",
-      "tipo": "predict",
-      "testo": "Dato un array `h` di shape `(61,)`, che shape hanno rispettivamente `np.diff(h)` e `np.gradient(h)` ?",
-      "opzioni": [
-        "(60,) e (61,)",
-        "(61,) e (61,)",
-        "(60,) e (60,)",
-        "(61,) e (60,)"
-      ],
-      "risposta": "(60,) e (61,)",
-      "spiegazione": "diff calcola le differenze fra elementi consecutivi e perde un elemento. gradient usa differenze centrate all'interno e a un lato agli estremi, quindi ogni punto ottiene un valore e la shape si conserva."
+      "id": "m08-diff",
+      "comando": "np.diff",
+      "titolo": "diff — le differenze consecutive",
+      "esercizi": [
+        {
+          "id": "m08-df-1",
+          "tipo": "write",
+          "testo": "Calcola `salti`, la differenza fra ogni quota e quella precedente.",
+          "setup": "h = np.array([0., 500., 1200., 1800., 3000.])\n",
+          "starter": "salti = \n",
+          "test": "assert salti.shape == (4,), f'attesi 4 salti da 5 quote, hai {salti.shape}'\nassert np.allclose(salti, [500., 700., 600., 1200.])",
+          "hint": [
+            "np.diff(h)"
+          ],
+          "soluzione": "salti = np.diff(h)",
+          "spiegazione": "È la forma compatta di `h[1:] - h[:-1]` che hai visto nel modulo 2."
+        },
+        {
+          "id": "m08-df-2",
+          "tipo": "predict",
+          "testo": "Dato un array di shape `(61,)`, che shape ha `np.diff` del suo risultato?",
+          "opzioni": [
+            "(60,)",
+            "(61,)",
+            "(62,)",
+            "(59,)"
+          ],
+          "risposta": "(60,)",
+          "spiegazione": "`diff` perde sempre un elemento: con n valori ci sono n−1 intervalli. È l'off-by-one da tenere a mente quando confronti il risultato con l'array di partenza."
+        },
+        {
+          "id": "m08-df-3",
+          "tipo": "write",
+          "testo": "Verifica che `diff` sia equivalente agli slice sfalsati: calcola `con_diff`, `con_slice` e `uguali`.",
+          "setup": "h = np.array([0., 500., 1200., 1800., 3000.])\n",
+          "starter": "con_diff = \ncon_slice = \nuguali = \n",
+          "test": "assert np.allclose(con_diff, np.diff(h))\nassert np.allclose(con_slice, h[1:] - h[:-1])\nassert bool(uguali) is True",
+          "hint": [
+            "con_slice = h[1:] - h[:-1]",
+            "uguali = np.allclose(con_diff, con_slice)"
+          ],
+          "soluzione": "con_diff = np.diff(h)\ncon_slice = h[1:] - h[:-1]\nuguali = np.allclose(con_diff, con_slice)",
+          "spiegazione": "Sapere che sono la stessa cosa serve: il trucco degli slice sfalsati si generalizza a medie mobili e a differenze su passi maggiori, dove `diff` non arriva."
+        },
+        {
+          "id": "m08-df-4",
+          "tipo": "write",
+          "testo": "Verifica che il campionamento sia regolare: calcola `passi` e `regolare`, `True` se sono tutti uguali.",
+          "setup": "t = np.array([0., 0.5, 1.0, 1.5, 2.0, 2.5])\n",
+          "starter": "passi = \nregolare = \n",
+          "test": "assert passi.shape == (5,)\nassert np.allclose(passi, 0.5)\nassert bool(regolare) is True",
+          "hint": [
+            "passi = np.diff(t)",
+            "regolare = np.allclose(passi, passi[0])"
+          ],
+          "soluzione": "passi = np.diff(t)\nregolare = np.allclose(passi, passi[0])",
+          "spiegazione": "È il primo controllo su una serie temporale letta da file: molte funzioni assumono passo costante, e un buco nell'acquisizione lo rompe senza avvisare."
+        },
+        {
+          "id": "m08-df-5",
+          "tipo": "write",
+          "testo": "Trova i **buchi** nell'acquisizione: costruisci `passi` e `n_buchi`, quanti intervalli superano il doppio del passo nominale di 0.5 s.",
+          "setup": "t = np.array([0., 0.5, 1.0, 3.0, 3.5, 4.0, 7.0, 7.5])\npasso_nominale = 0.5\n",
+          "starter": "passi = \nn_buchi = \n",
+          "test": "assert passi.shape == (7,)\nassert int(n_buchi) == 2, f'attesi 2 buchi, hai {n_buchi}'\nassert np.isclose(passi.max(), 3.0)",
+          "hint": [
+            "passi = np.diff(t)",
+            "n_buchi = (passi > 2*passo_nominale).sum()"
+          ],
+          "soluzione": "passi = np.diff(t)\nn_buchi = (passi > 2*passo_nominale).sum()",
+          "spiegazione": "Due interruzioni da 2 e 3 secondi. Trovarle prima di elaborare evita di calcolare medie e derivate su una serie che ha dei salti — dove `gradient` produrrebbe numeri privi di senso proprio in quei punti."
+        },
+        {
+          "id": "m08-df-6",
+          "tipo": "predict",
+          "testo": "Che cosa fa `np.diff(a, n=2)` ?",
+          "opzioni": [
+            "applica diff due volte: le differenze delle differenze",
+            "salta un elemento ogni due",
+            "restituisce due array",
+            "calcola le differenze a distanza 2"
+          ],
+          "risposta": "applica diff due volte: le differenze delle differenze",
+          "spiegazione": "Il risultato ha due elementi in meno. È l'analogo discreto della derivata seconda: su una serie campionata a passo costante dice come varia la pendenza."
+        },
+        {
+          "id": "m08-df-7",
+          "tipo": "write",
+          "testo": "Verifica che la quota sia monotona crescente durante la salita: calcola `sempre_in_salita`.",
+          "setup": "h = np.array([0., 500., 1200., 1800., 3000., 4100.])\n",
+          "starter": "sempre_in_salita = \n",
+          "test": "assert bool(sempre_in_salita) is True\nassert bool(np.all(np.diff(h) > 0))",
+          "hint": [
+            "Tutte le differenze devono essere positive.",
+            "np.all(np.diff(h) > 0)"
+          ],
+          "soluzione": "sempre_in_salita = np.all(np.diff(h) > 0)",
+          "spiegazione": "`np.all(np.diff(x) > 0)` è la forma idiomatica per «strettamente crescente». Serve anche per verificare che una tabella sia ordinata prima di passarla a `np.interp`, che lo pretende senza controllarlo."
+        },
+        {
+          "id": "m08-df-8",
+          "tipo": "apply",
+          "testo": "**Consumo per tratta da un totalizzatore.**\n\nIl sensore riporta il carburante **consumato dall'inizio**. Ricava il consumo di ciascuna tratta e verifica la coerenza.\n\nCalcola `per_tratta`, `totale`, `coerente` (il totale coincide con l'ultimo cumulato) e `max_tratta`.",
+          "setup": "cumulato = np.array([0., 120., 460., 670., 1150., 1300.])\n",
+          "starter": "per_tratta = \ntotale = \ncoerente = \nmax_tratta = \n",
+          "test": "assert per_tratta.shape == (5,), f'attese 5 tratte da 6 letture, hai {per_tratta.shape}'\nassert np.allclose(per_tratta, [120., 340., 210., 480., 150.])\nassert np.isclose(totale, 1300.)\nassert bool(coerente) is True\nassert np.isclose(max_tratta, 480.)",
+          "hint": [
+            "per_tratta = np.diff(cumulato); totale = per_tratta.sum()",
+            "coerente = np.isclose(totale, cumulato[-1]); max_tratta = per_tratta.max()"
+          ],
+          "soluzione": "per_tratta = np.diff(cumulato)\ntotale = per_tratta.sum()\ncoerente = np.isclose(totale, cumulato[-1])\nmax_tratta = per_tratta.max()",
+          "spiegazione": "`diff` e `cumsum` sono l'una l'inversa dell'altra: sommare le differenze riporta all'ultimo cumulato, ed è il controllo di coerenza che chiude il conto.\n\nSe quel controllo fallisse significherebbe che il totalizzatore è stato azzerato a metà volo — un caso reale, che senza questa verifica produrrebbe una tratta con consumo negativo."
+        }
+      ]
     },
     {
-      "id": "m08-e2",
-      "tipo": "predict",
-      "testo": "Che cosa succede scrivendo `np.gradient(h)` invece di `np.gradient(h, t)`, con `t` campionato ogni 0.1 s?",
-      "opzioni": [
-        "la derivata esce 10 volte piu piccola, senza nessun errore",
-        "solleva un errore perche manca l'asse",
-        "il risultato e' identico",
-        "la derivata esce 10 volte piu grande"
-      ],
-      "risposta": "la derivata esce 10 volte piu piccola, senza nessun errore",
-      "spiegazione": "Senza t, gradient assume passo unitario e deriva rispetto all'indice, non al tempo. Con dt = 0.1 s il divisore giusto è 0.1 invece di 1, quindi il risultato è 10 volte più piccolo del vero. Nessun avviso: è un errore che si propaga fino in fondo."
+      "id": "m08-gradient",
+      "comando": "np.gradient",
+      "titolo": "gradient — derivare conservando la lunghezza",
+      "esercizi": [
+        {
+          "id": "m08-gr-1",
+          "tipo": "write",
+          "testo": "Calcola `v`, la derivata della quota rispetto al tempo.",
+          "setup": "t = np.linspace(0., 10., 11)\nh = 50.*t\n",
+          "starter": "v = \n",
+          "test": "assert v.shape == (11,), f'gradient conserva la lunghezza: atteso (11,), hai {v.shape}'\nassert np.allclose(v, 50.0)",
+          "hint": [
+            "np.gradient(h, t) — passa sempre anche l'asse."
+          ],
+          "soluzione": "v = np.gradient(h, t)",
+          "spiegazione": "Su una retta la derivata è costante ovunque, estremi compresi: 50 m/s."
+        },
+        {
+          "id": "m08-gr-2",
+          "tipo": "predict",
+          "testo": "Dato `h` di shape `(61,)`, che shape hanno rispettivamente `np.diff(h)` e `np.gradient(h)` ?",
+          "opzioni": [
+            "(60,) e (61,)",
+            "(61,) e (61,)",
+            "(60,) e (60,)",
+            "(61,) e (60,)"
+          ],
+          "risposta": "(60,) e (61,)",
+          "spiegazione": "`gradient` usa differenze centrate all'interno e a un solo lato agli estremi, quindi ogni punto ottiene un valore. È il motivo per cui il risultato resta allineato con l'array di partenza."
+        },
+        {
+          "id": "m08-gr-3",
+          "tipo": "predict",
+          "testo": "Che cosa succede scrivendo `np.gradient(h)` invece di `np.gradient(h, t)`, con `t` campionato ogni 0.1 s?",
+          "opzioni": [
+            "la derivata esce 10 volte piu piccola, senza nessun errore",
+            "solleva un errore perche manca l'asse",
+            "il risultato e' identico",
+            "la derivata esce 10 volte piu grande"
+          ],
+          "risposta": "la derivata esce 10 volte piu piccola, senza nessun errore",
+          "spiegazione": "Senza `t`, `gradient` assume passo unitario e deriva rispetto **all'indice**. Con dt = 0.1 il divisore giusto è 0.1 invece di 1. Nessun avviso: l'errore si propaga fino in fondo."
+        },
+        {
+          "id": "m08-gr-4",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare l'accelerazione dalla velocità campionata. I valori escono sbagliati di un fattore 4 — il campionamento è ogni 0.25 s. Correggilo.",
+          "setup": "t = np.arange(0., 5.25, 0.25)\nv = 100. + 8.*t\n",
+          "starter": "a = np.gradient(v)\n",
+          "test": "assert a.shape == v.shape\nassert np.allclose(a, 8.0), f'accelerazione attesa 8.0 ovunque, hai {a[:3]}'",
+          "hint": [
+            "Senza il secondo argomento deriva rispetto all'indice.",
+            "np.gradient(v, t)"
+          ],
+          "soluzione": "a = np.gradient(v, t)",
+          "spiegazione": "Con passo 0.25 s, dividere per 1 invece che per 0.25 dà un risultato quattro volte più piccolo. La shape è giusta, non c'è nessun avviso, e l'ordine di grandezza non è assurdo: è l'errore più insidioso del modulo."
+        },
+        {
+          "id": "m08-gr-5",
+          "tipo": "write",
+          "testo": "Verifica che la derivata sia esatta all'interno ma approssimata agli estremi: calcola `v`, `esatta_interno` e `estremi_diversi`.",
+          "setup": "t = np.linspace(0., 10., 11)\nh = 50.*t - 4.905*t**2\nvera = 50. - 9.81*t\n",
+          "starter": "v = \nesatta_interno = \nestremi_diversi = \n",
+          "test": "assert bool(esatta_interno) is True, 'le differenze centrate sono esatte su una parabola'\nassert bool(estremi_diversi) is True, 'agli estremi gradient usa una formula di ordine inferiore'",
+          "hint": [
+            "v = np.gradient(h, t)",
+            "esatta_interno = np.allclose(v[1:-1], vera[1:-1]); estremi_diversi = not np.isclose(v[0], vera[0])"
+          ],
+          "soluzione": "v = np.gradient(h, t)\nesatta_interno = np.allclose(v[1:-1], vera[1:-1])\nestremi_diversi = not np.isclose(v[0], vera[0])",
+          "spiegazione": "Le differenze centrate sono accurate al secondo ordine, quindi su una parabola danno il valore esatto. Agli estremi manca un vicino e NumPy ripiega su una formula a un lato, meno accurata.\n\nConseguenza pratica: **su dati reali il primo e l'ultimo punto di una derivata numerica sono i meno affidabili.** Se il risultato ti serve solo all'interno, scartali."
+        },
+        {
+          "id": "m08-gr-6",
+          "tipo": "write",
+          "testo": "Deriva due volte: da quota a velocità e poi ad accelerazione.",
+          "setup": "t = np.linspace(0., 20., 41)\nh = 200.*t - 4.905*t**2\n",
+          "starter": "v = \na = \n",
+          "test": "assert v.shape == (41,) and a.shape == (41,)\nassert np.allclose(v[1:-1], 200. - 9.81*t[1:-1])\nassert np.allclose(a[2:-2], -9.81), f'accelerazione attesa -9.81 all interno, hai {a[3]}'",
+          "hint": [
+            "v = np.gradient(h, t), poi a = np.gradient(v, t)"
+          ],
+          "soluzione": "v = np.gradient(h, t)\na = np.gradient(v, t)",
+          "spiegazione": "Derivare due volte amplifica il rumore: ogni derivazione lo moltiplica. Su dati sperimentali l'accelerazione ricavata così è spesso illeggibile, e va filtrata prima — o ricavata fittando un modello, come nella raccolta dei polinomi."
+        },
+        {
+          "id": "m08-gr-7",
+          "tipo": "predict",
+          "testo": "Perché `gradient` conserva la lunghezza dell'array mentre `diff` no?",
+          "opzioni": [
+            "usa differenze centrate all'interno e a un lato agli estremi, cosi ogni punto ha un valore",
+            "interpola un punto in piu alla fine",
+            "ripete l'ultimo valore",
+            "riempie il primo elemento con zero"
+          ],
+          "risposta": "usa differenze centrate all'interno e a un lato agli estremi, cosi ogni punto ha un valore",
+          "spiegazione": "Il vantaggio pratico è che il risultato resta **allineato** con l'array di partenza: puoi confrontarlo, mascherarlo, o metterlo in una tabella accanto ai dati senza riallineare gli indici."
+        },
+        {
+          "id": "m08-gr-8",
+          "tipo": "write",
+          "testo": "Trova l'istante di accelerazione massima usando il risultato allineato con `t`.",
+          "setup": "t = np.linspace(0., 10., 101)\nv = 100. + 20.*t - 1.5*t**2\n",
+          "starter": "a = \ni_max = \nt_max = \n",
+          "test": "assert a.shape == (101,)\nassert int(i_max) == int(a.argmax())\nassert np.isclose(t_max, t[a.argmax()])\nassert np.isclose(t_max, 0.0), 'l accelerazione decresce linearmente: il massimo e all inizio'",
+          "hint": [
+            "a = np.gradient(v, t)",
+            "i_max = a.argmax(); t_max = t[i_max]"
+          ],
+          "soluzione": "a = np.gradient(v, t)\ni_max = a.argmax()\nt_max = t[i_max]",
+          "spiegazione": "Poiché `gradient` conserva la lunghezza, l'indice trovato su `a` indicizza direttamente `t`. Con `diff` avresti dovuto decidere se il valore i-esimo si riferisce a `t[i]` o a `t[i+1]`, ed è lì che nascono gli errori di un passo."
+        },
+        {
+          "id": "m08-gr-9",
+          "tipo": "write",
+          "testo": "Su una serie a passo **non** costante, `gradient` funziona lo stesso purché tu gli passi l'asse. Calcola `v` e verifica in `corretta`.",
+          "setup": "t = np.array([0., 1., 3., 6., 10., 15.])\nh = 50.*t\n",
+          "starter": "v = \ncorretta = \n",
+          "test": "assert v.shape == (6,)\nassert np.allclose(v, 50.0), f'la velocita e costante a 50, hai {v}'\nassert bool(corretta) is True",
+          "hint": [
+            "np.gradient(h, t) usa i passi veri, anche se disuguali.",
+            "corretta = np.allclose(v, 50.0)"
+          ],
+          "soluzione": "v = np.gradient(h, t)\ncorretta = np.allclose(v, 50.0)",
+          "spiegazione": "Passando l'asse, `gradient` usa i passi effettivi fra i campioni e resta corretto anche con campionamento irregolare. È un motivo in più per non ometterlo mai: senza, qui otterresti valori senza senso e diversi punto per punto."
+        },
+        {
+          "id": "m08-gr-10",
+          "tipo": "predict",
+          "testo": "Quando conviene usare `diff` invece di `gradient` ?",
+          "opzioni": [
+            "quando ti interessano gli incrementi in se, non una derivata",
+            "quando i dati hanno passo costante",
+            "quando l'array e' molto lungo",
+            "mai: gradient e' sempre preferibile"
+          ],
+          "risposta": "quando ti interessano gli incrementi in se, non una derivata",
+          "spiegazione": "La distanza percorsa fra due punti, il consumo fra due letture, il passo di una griglia: sono differenze, non derivate. Per derivare rispetto a una variabile serve `gradient`."
+        },
+        {
+          "id": "m08-gr-11",
+          "tipo": "write",
+          "testo": "Confronta le due strade sulla stessa serie: `da_diff` (con il passo diviso a mano) e `da_gradient`, e verifica in `simili` che coincidano all'interno.",
+          "setup": "t = np.linspace(0., 10., 21)\nh = 3.*t\ndt = t[1] - t[0]\n",
+          "starter": "da_diff = \nda_gradient = \nsimili = \n",
+          "test": "assert da_diff.shape == (20,) and da_gradient.shape == (21,)\nassert np.allclose(da_diff, 3.0)\nassert np.allclose(da_gradient, 3.0)\nassert bool(simili) is True",
+          "hint": [
+            "da_diff = np.diff(h) / dt",
+            "da_gradient = np.gradient(h, t); simili = np.allclose(da_diff, da_gradient[:-1])"
+          ],
+          "soluzione": "da_diff = np.diff(h) / dt\nda_gradient = np.gradient(h, t)\nsimili = np.allclose(da_diff, da_gradient[:-1])",
+          "spiegazione": "Su una retta coincidono, ma hanno lunghezze diverse — ed è tutto il punto: per confrontarli devi tagliare un elemento, e decidere **quale**. Con `gradient` quella decisione non si pone."
+        },
+        {
+          "id": "m08-gr-12",
+          "tipo": "apply",
+          "testo": "**Riduzione di una traiettoria balistica.**\n\nDalla quota campionata ogni mezzo secondo, ricava velocità, accelerazione e apogeo.\n\nCalcola `v`, `acc`, `h_apogeo`, `t_apogeo`, e `v_apogeo`, la velocità verticale nell'istante di apogeo.",
+          "setup": "t = np.linspace(0., 60., 121)\nh = 294.3*t - 9.81/2*t**2\n",
+          "starter": "v = \nacc = \nh_apogeo = \nt_apogeo = \nv_apogeo = \n",
+          "test": "assert v.shape == (121,) and acc.shape == (121,), 'usa gradient, non diff: i risultati devono restare allineati con t'\nassert np.allclose(v[1:-1], 294.3 - 9.81*t[1:-1]), 'velocita sbagliata: hai passato t a gradient?'\nassert np.allclose(acc[2:-2], -9.81), f'accelerazione attesa -9.81 all interno, hai {acc[3]}'\nassert np.isclose(h_apogeo, 4414.5), f'apogeo atteso 4414.5 m, hai {h_apogeo}'\nassert np.isclose(t_apogeo, 30.0), f'istante atteso 30.0 s, hai {t_apogeo}'\nassert abs(v_apogeo) < 1e-6, 'all apogeo la velocita verticale deve essere nulla'",
+          "hint": [
+            "v = np.gradient(h, t); acc = np.gradient(v, t)",
+            "h_apogeo = h.max(); t_apogeo = t[h.argmax()]; v_apogeo = v[h.argmax()]"
+          ],
+          "soluzione": "v = np.gradient(h, t)\nacc = np.gradient(v, t)\nh_apogeo = h.max()\nt_apogeo = t[h.argmax()]\nv_apogeo = v[h.argmax()]",
+          "spiegazione": "L'ultimo controllo è il più interessante: all'apogeo la velocità verticale deve annullarsi, e infatti `v` in quel punto esce dell'ordine di 10⁻¹³ — zero a meno dell'arrotondamento.\n\nÈ una verifica di **coerenza fra due risultati indipendenti**: l'apogeo trovato cercando il massimo di `h`, e lo zero della derivata. Quando due strade diverse portano allo stesso punto, la riduzione è probabilmente giusta."
+        }
+      ]
     },
     {
-      "id": "m08-e3",
-      "tipo": "predict",
-      "testo": "Perché `np.trapz` è considerato obsoleto nel codice nuovo?",
-      "opzioni": [
-        "in NumPy 2.0 e' stato rinominato np.trapezoid",
-        "e' stato rimosso e non esiste piu",
-        "e' numericamente meno accurato di trapezoid",
-        "funziona solo con passo costante"
-      ],
-      "risposta": "in NumPy 2.0 e' stato rinominato np.trapezoid",
-      "spiegazione": "Stessa funzione, nome nuovo. trapz resta come alias deprecato, quindi il codice vecchio continua a girare, ma nel nuovo si usa trapezoid. È un esempio di quello che succede a ogni versione maggiore di una libreria: il modulo 12 insegna a verificarlo da solo."
+      "id": "m08-trapezoid",
+      "comando": "np.trapezoid",
+      "titolo": "trapezoid — integrare dati campionati",
+      "esercizi": [
+        {
+          "id": "m08-tz-1",
+          "tipo": "write",
+          "testo": "Calcola `area`, l'integrale di `y` rispetto a `x`.",
+          "setup": "x = np.array([0., 1., 2., 3.])\ny = np.array([0., 2., 4., 6.])\n",
+          "starter": "area = \n",
+          "test": "assert np.isclose(area, 9.0), f'attesa 9.0, hai {area}'",
+          "hint": [
+            "np.trapezoid(y, x) — prima i valori, poi le ascisse."
+          ],
+          "soluzione": "area = np.trapezoid(y, x)",
+          "spiegazione": "Il triangolo di base 3 e altezza 6 ha area 9: la regola dei trapezi è esatta su una funzione lineare."
+        },
+        {
+          "id": "m08-tz-2",
+          "tipo": "predict",
+          "testo": "Perché `np.trapz` è considerato obsoleto nel codice nuovo?",
+          "opzioni": [
+            "in NumPy 2.0 e' stato rinominato np.trapezoid",
+            "e' stato rimosso e non esiste piu",
+            "e' numericamente meno accurato",
+            "funziona solo con passo costante"
+          ],
+          "risposta": "in NumPy 2.0 e' stato rinominato np.trapezoid",
+          "spiegazione": "Stessa funzione, nome nuovo. `trapz` resta come alias deprecato, quindi il codice vecchio gira ancora. È un esempio di quello che succede a ogni versione maggiore di una libreria."
+        },
+        {
+          "id": "m08-tz-3",
+          "tipo": "predict",
+          "testo": "Che cosa restituisce `np.trapezoid(y, x)` ?",
+          "opzioni": [
+            "un solo numero: l'integrale su tutto l'intervallo",
+            "un array con l'integrale cumulato",
+            "un array lungo quanto y meno uno",
+            "una tupla con valore ed errore stimato"
+          ],
+          "risposta": "un solo numero: l'integrale su tutto l'intervallo",
+          "spiegazione": "Per la primitiva punto per punto serve la versione cumulata, che sta in SciPy. Con solo NumPy, l'approssimazione `np.cumsum(y[:-1] * np.diff(x))` è spesso sufficiente."
+        },
+        {
+          "id": "m08-tz-4",
+          "tipo": "write",
+          "testo": "**Impulso totale di un motore.**\n\nDal profilo di spinta campionato, calcola `impulso` in N·s e `spinta_media` in N.",
+          "setup": "t = np.array([0., 1., 2., 3., 4., 5.])\nF = np.array([0., 1200., 1500., 1500., 900., 0.])\n",
+          "starter": "impulso = \nspinta_media = \n",
+          "test": "assert np.isclose(impulso, 5100.0), f'impulso atteso 5100.0 N*s, hai {impulso}'\nassert np.isclose(spinta_media, 1020.0), f'spinta media attesa 1020.0 N, hai {spinta_media}'",
+          "hint": [
+            "impulso = np.trapezoid(F, t)",
+            "spinta_media = impulso / (t[-1] - t[0])"
+          ],
+          "soluzione": "impulso = np.trapezoid(F, t)\nspinta_media = impulso / (t[-1] - t[0])",
+          "spiegazione": "L'ordine degli argomenti è (valori, ascisse): prima cosa integri, poi rispetto a cosa. Invertirli dà un numero senza significato e nessun errore."
+        },
+        {
+          "id": "m08-tz-5",
+          "tipo": "write",
+          "testo": "Il passo non deve essere costante. Integra su ascisse irregolari e verifica in `esatta` che il risultato sia quello analitico.",
+          "setup": "x = np.array([0., 1., 3., 6., 10.])\ny = 2.*x\n",
+          "starter": "area = \nesatta = \n",
+          "test": "assert np.isclose(area, 100.0), f'attesa 100.0, hai {area}'\nassert bool(esatta) is True",
+          "hint": [
+            "np.trapezoid(y, x) usa i passi veri.",
+            "L'integrale di 2x da 0 a 10 vale 100. esatta = np.isclose(area, 100.0)"
+          ],
+          "soluzione": "area = np.trapezoid(y, x)\nesatta = np.isclose(area, 100.0)",
+          "spiegazione": "Su una funzione lineare la regola dei trapezi è esatta, qualunque sia la spaziatura. L'errore compare solo con la curvatura, e cala col quadrato del passo."
+        },
+        {
+          "id": "m08-tz-6",
+          "tipo": "write",
+          "testo": "Misura l'errore su una funzione curva: integra `y = x²` da 0 a 1 con 11 punti e confronta con il valore esatto 1/3.",
+          "setup": "x = np.linspace(0., 1., 11)\ny = x**2\nesatto = 1./3.\n",
+          "starter": "stima = \nerrore = \n",
+          "test": "assert np.isclose(stima, np.trapezoid(y, x))\nassert errore > 0, 'la regola dei trapezi sovrastima una funzione convessa'\nassert np.isclose(errore, 0.0016667, atol=1e-6), f'errore atteso circa 0.001667, hai {errore}'",
+          "hint": [
+            "stima = np.trapezoid(y, x)",
+            "errore = abs(stima - esatto)"
+          ],
+          "soluzione": "stima = np.trapezoid(y, x)\nerrore = abs(stima - esatto)",
+          "spiegazione": "L'errore vale 1.67e-3 con dieci intervalli. Per la regola dei trapezi vale (b-a)h^2/12 volte la derivata seconda: qui 1 x 0.01/12 x 2, che torna esatto.\n\nPoiche scala col **quadrato** del passo, raddoppiando i punti l'errore scende a un quarto: e il modo pratico di decidere quanti campioni servono.\n\nSu una funzione **convessa** i trapezi passano sopra la curva, quindi la stima e sempre in eccesso — infatti 0.335 contro 1/3."
+        },
+        {
+          "id": "m08-tz-7",
+          "tipo": "predict",
+          "testo": "Integrando un profilo di spinta **a gradino**, perché il risultato non coincide esattamente con il calcolo a mano?",
+          "opzioni": [
+            "i trapezi sostituiscono ogni salto con una rampa larga un passo di campionamento",
+            "trapezoid non accetta funzioni discontinue",
+            "l'errore e' dovuto alla virgola mobile",
+            "il risultato coincide sempre"
+          ],
+          "risposta": "i trapezi sostituiscono ogni salto con una rampa larga un passo di campionamento",
+          "spiegazione": "A ogni discontinuità si perde mezzo passo di area. È la lezione generale: **i metodi di integrazione assumono che la funzione sia regolare**, e su un gradino l'errore non cala riducendo il passo quanto ti aspetteresti. Se serve precisione, spezza l'integrale sui tratti continui."
+        },
+        {
+          "id": "m08-tz-8",
+          "tipo": "write",
+          "testo": "Calcola l'integrale cumulato con gli strumenti che hai: `cumulato`, la distanza percorsa fino a ogni istante, con l'approssimazione rettangolare.",
+          "setup": "t = np.linspace(0., 5., 6)\nv = np.array([100., 110., 120., 130., 140., 150.])\n",
+          "starter": "cumulato = \n",
+          "test": "assert cumulato.shape == (5,), f'l approssimazione rettangolare perde un punto: atteso (5,), hai {cumulato.shape}'\nassert np.allclose(cumulato, np.cumsum(v[:-1] * np.diff(t)))\nassert np.isclose(cumulato[0], 100.)",
+          "hint": [
+            "Ogni rettangolo e' valore per larghezza: v[:-1] * np.diff(t)",
+            "Poi np.cumsum per accumulare."
+          ],
+          "soluzione": "cumulato = np.cumsum(v[:-1] * np.diff(t))",
+          "spiegazione": "`trapezoid` dà solo il totale; per il profilo cumulato servono `diff` e `cumsum` insieme. È meno accurato dei trapezi — usa il valore a sinistra di ogni intervallo — ma è l'unica strada con solo NumPy.\n\nPer la versione accurata esiste `scipy.integrate.cumulative_trapezoid`."
+        },
+        {
+          "id": "m08-tz-9",
+          "tipo": "debug",
+          "testo": "Questo codice deve dare l'impulso in N·s. Gli argomenti sono invertiti e il risultato è privo di senso. Correggilo.",
+          "setup": "t = np.array([0., 1., 2., 3., 4., 5.])\nF = np.array([0., 1200., 1500., 1500., 900., 0.])\n",
+          "starter": "impulso = np.trapezoid(t, F)\n",
+          "test": "assert np.isclose(impulso, 5100.0), f'atteso 5100.0, hai {impulso}'",
+          "hint": [
+            "Prima cosa integri, poi rispetto a cosa.",
+            "np.trapezoid(F, t)"
+          ],
+          "soluzione": "impulso = np.trapezoid(F, t)",
+          "spiegazione": "Invertiti, integrerebbe il tempo rispetto alla spinta: un numero valido, con le unità sbagliate e nessun significato fisico. È il tipo di errore che si coglie solo controllando l'ordine di grandezza atteso."
+        },
+        {
+          "id": "m08-tz-10",
+          "tipo": "apply",
+          "testo": "**Bilancio di un motore a razzo.**\n\nDal profilo di spinta e dal consumo di propellente, calcola:\n\n- `impulso`: l'impulso totale in N·s\n- `propellente`: la massa bruciata, integrando la portata\n- `isp`: l'impulso specifico, `impulso / (propellente · 9.80665)` in secondi\n- `spinta_max`",
+          "setup": "t     = np.array([0., 1., 2., 3., 4., 5., 6.])\nF     = np.array([0., 1200., 1500., 1500., 1500., 900., 0.])\nmdot  = np.array([0., 0.55, 0.68, 0.68, 0.68, 0.41, 0.])\ng0 = 9.80665\n",
+          "starter": "impulso = \npropellente = \nisp = \nspinta_max = \n",
+          "test": "assert np.isclose(impulso, np.trapezoid(F, t))\nassert np.isclose(impulso, 6600.0), f'impulso atteso 6600 N*s, hai {impulso}'\nassert np.isclose(propellente, np.trapezoid(mdot, t))\nassert np.isclose(isp, impulso/(propellente*g0))\nassert 220. < isp < 230., f'impulso specifico atteso circa 225 s, hai {isp}'\nassert np.isclose(spinta_max, 1500.)",
+          "hint": [
+            "impulso = np.trapezoid(F, t); propellente = np.trapezoid(mdot, t)",
+            "isp = impulso / (propellente * g0); spinta_max = F.max()"
+          ],
+          "soluzione": "impulso = np.trapezoid(F, t)\npropellente = np.trapezoid(mdot, t)\nisp = impulso / (propellente * g0)\nspinta_max = F.max()",
+          "spiegazione": "Due integrali dello stesso tipo sulla stessa base temporale, e il loro rapporto è la grandezza che caratterizza il motore: circa 225 secondi, valore tipico di un propellente solido.\n\nL'impulso specifico si misura in **secondi** proprio perché è un rapporto fra un impulso e un peso: le unità si semplificano lasciando un tempo. Se ti uscisse un numero di ordine diverso — 2000 o 2 — l'errore è quasi sempre nel `g0` dimenticato o messo al posto sbagliato."
+        }
+      ]
     },
     {
-      "id": "m08-e4",
-      "tipo": "write",
-      "testo": "**Impulso totale di un motore a razzo.**\n\nDal profilo di spinta campionato, calcola `impulso` (in N·s) e `spinta_media` (in N, cioè l'impulso diviso la durata).",
-      "setup": "t = np.array([0., 1., 2., 3., 4., 5.])       # s\nF = np.array([0., 1200., 1500., 1500., 900., 0.])   # N\n",
-      "starter": "impulso = \nspinta_media = \n",
-      "test": "assert np.isclose(impulso, 5100.0), f'impulso atteso 5100.0 N*s, hai {impulso}'\nassert np.isclose(spinta_media, 1020.0), f'spinta media attesa 1020.0 N, hai {spinta_media}'",
-      "hint": [
-        "np.trapezoid(y, x) integra con la regola dei trapezi e restituisce un numero solo.",
-        "La durata e' t[-1] - t[0]."
-      ],
-      "soluzione": "impulso = np.trapezoid(F, t)\nspinta_media = impulso / (t[-1] - t[0])",
-      "spiegazione": "L'ordine degli argomenti è (valori, ascisse): prima cosa integri, poi rispetto a cosa. Invertendoli otterresti un numero senza significato, senza nessun errore. Nota che il passo qui è costante, ma trapezoid non lo richiede."
+      "id": "m08-interp",
+      "comando": "np.interp",
+      "titolo": "interp — leggere una tabella fra i punti",
+      "esercizi": [
+        {
+          "id": "m08-in-1",
+          "tipo": "write",
+          "testo": "Interpola il valore a `x = 1.5` fra i punti noti.",
+          "setup": "xp = np.array([0., 1., 2., 3.])\nfp = np.array([0., 10., 20., 30.])\n",
+          "starter": "y = \n",
+          "test": "assert np.isclose(y, 15.0), f'attesa 15.0, hai {y}'",
+          "hint": [
+            "L'ordine e': dove voglio, dove so, cosa so.",
+            "np.interp(1.5, xp, fp)"
+          ],
+          "soluzione": "y = np.interp(1.5, xp, fp)",
+          "spiegazione": "A metà fra 1 e 2 il valore è a metà fra 10 e 20: l'interpolazione è lineare."
+        },
+        {
+          "id": "m08-in-2",
+          "tipo": "predict",
+          "testo": "Qual è l'ordine degli argomenti di `np.interp` ?",
+          "opzioni": [
+            "dove voglio, dove so, cosa so",
+            "dove so, cosa so, dove voglio",
+            "cosa so, dove so, dove voglio",
+            "dove voglio, cosa so, dove so"
+          ],
+          "risposta": "dove voglio, dove so, cosa so",
+          "spiegazione": "`np.interp(x_richiesti, x_tabella, y_tabella)`. Invertire i primi due è l'errore classico, e spesso non solleva niente: ottieni numeri plausibili e sbagliati."
+        },
+        {
+          "id": "m08-in-3",
+          "tipo": "write",
+          "testo": "**Densità dell'aria a quote intermedie.**\n\nDalla tabella ISA, ricava le densità alle tre quote richieste.",
+          "setup": "h_tab   = np.array([0., 2000., 4000., 6000., 8000., 10000., 11000.])\nrho_tab = np.array([1.225, 1.007, 0.819, 0.660, 0.526, 0.414, 0.365])\nhq = np.array([1000., 5000., 9500.])\n",
+          "starter": "rho = \n",
+          "test": "assert rho.shape == (3,), f'shape sbagliata: {rho.shape}'\nassert np.allclose(rho, [1.116, 0.7395, 0.442]), f'valori sbagliati: {rho} — hai invertito gli argomenti?'",
+          "hint": [
+            "np.interp(hq, h_tab, rho_tab)"
+          ],
+          "soluzione": "rho = np.interp(hq, h_tab, rho_tab)",
+          "spiegazione": "Il primo argomento può essere un array: valuti tre punti — o mille — in una chiamata."
+        },
+        {
+          "id": "m08-in-4",
+          "tipo": "predict",
+          "testo": "Che cosa restituisce `np.interp` per un valore **fuori** dalla tabella?",
+          "opzioni": [
+            "il valore all'estremo piu vicino, costante, senza avvisare",
+            "solleva un errore",
+            "nan",
+            "estrapola linearmente"
+          ],
+          "risposta": "il valore all'estremo piu vicino, costante, senza avvisare",
+          "spiegazione": "**Non estrapola.** È una scelta prudente — l'estrapolazione lineare di dati fisici è quasi sempre sbagliata — ma significa che un valore fuori range passa inosservato: ottieni un numero plausibile invece di un errore."
+        },
+        {
+          "id": "m08-in-5",
+          "tipo": "write",
+          "testo": "Fai in modo che i valori fuori tabella diventino `np.nan` invece di essere silenziosamente appiattiti, e conta quante richieste cadono fuori dal dominio.",
+          "setup": "h_tab   = np.array([0., 5000., 11000.])\nrho_tab = np.array([1.225, 0.736, 0.365])\nhq = np.array([-500., 2500., 15000.])\n",
+          "starter": "rho = \nn_fuori = \n",
+          "test": "assert rho.shape == (3,)\nassert np.isnan(rho[0]) and np.isnan(rho[2]), 'i valori fuori tabella devono essere nan'\nassert np.isclose(rho[1], (1.225 + 0.736)/2)\nassert int(n_fuori) == 2, f'attesi 2 fuori tabella, hai {n_fuori}'",
+          "hint": [
+            "I parametri left e right decidono cosa restituire fuori dagli estremi.",
+            "np.interp(hq, h_tab, rho_tab, left=np.nan, right=np.nan); per contare usa una maschera sul dominio."
+          ],
+          "soluzione": "rho = np.interp(hq, h_tab, rho_tab, left=np.nan, right=np.nan)\nn_fuori = ((hq < h_tab[0]) | (hq > h_tab[-1])).sum()",
+          "spiegazione": "E spesso la scelta piu onesta: un `nan` si propaga e si fa notare, un valore appiattito no.\n\nIl conteggio pero conviene farlo sulla **maschera del dominio**, non cercando i nan nel risultato: cosi sai quante richieste erano fuori anche se decidi di non usare `left` e `right`."
+        },
+        {
+          "id": "m08-in-6",
+          "tipo": "write",
+          "testo": "Individua quali richieste cadono fuori dalla tabella **prima** di interpolare.",
+          "setup": "h_tab = np.array([0., 5000., 11000.])\nhq = np.array([-500., 2500., 8000., 15000.])\n",
+          "starter": "fuori = \nn_fuori = \n",
+          "test": "assert fuori.dtype == bool\nassert np.array_equal(fuori, [True, False, False, True])\nassert int(n_fuori) == 2",
+          "hint": [
+            "Una maschera con OR: sotto il primo estremo oppure sopra l'ultimo.",
+            "(hq < h_tab[0]) | (hq > h_tab[-1])"
+          ],
+          "soluzione": "fuori = (hq < h_tab[0]) | (hq > h_tab[-1])\nn_fuori = fuori.sum()",
+          "spiegazione": "Controllare il dominio prima di interpolare è più esplicito che scoprirlo dopo dai `nan`, e ti permette di decidere caso per caso — scartare, avvisare, o accettare l'appiattimento."
+        },
+        {
+          "id": "m08-in-7",
+          "tipo": "predict",
+          "testo": "Che cosa pretende `np.interp` dalla tabella `xp` ?",
+          "opzioni": [
+            "che sia crescente, e non lo verifica",
+            "che sia crescente, e solleva un errore altrimenti",
+            "niente: la ordina da sola",
+            "che abbia passo costante"
+          ],
+          "risposta": "che sia crescente, e non lo verifica",
+          "spiegazione": "Con una tabella in ordine decrescente o disordinata ottieni risultati privi di senso, senza nessun avviso. Se non sei sicuro dell'ordine dei dati letti da file, ordina prima con `np.argsort`."
+        },
+        {
+          "id": "m08-in-8",
+          "tipo": "debug",
+          "testo": "Questo codice deve interpolare la densità, ma la tabella arriva dal file in ordine **decrescente** di quota e i risultati sono sbagliati. Correggilo ordinando prima.",
+          "setup": "h_tab   = np.array([11000., 8000., 4000., 0.])\nrho_tab = np.array([0.365, 0.526, 0.819, 1.225])\nhq = np.array([2000., 6000.])\n",
+          "starter": "rho = np.interp(hq, h_tab, rho_tab)\n",
+          "test": "assert np.allclose(rho, [1.022, 0.6725]), f'valori sbagliati: {rho}'\nassert rho[0] > rho[1], 'la densita cala con la quota'",
+          "hint": [
+            "np.argsort(h_tab) da gli indici che ordinano la tabella.",
+            "idx = np.argsort(h_tab); np.interp(hq, h_tab[idx], rho_tab[idx])"
+          ],
+          "soluzione": "idx = np.argsort(h_tab)\nrho = np.interp(hq, h_tab[idx], rho_tab[idx])",
+          "spiegazione": "Gli indici di `argsort` vanno applicati a **entrambi** gli array, altrimenti separi le ascisse dai loro valori. È il fancy indexing del modulo 2 usato per riordinare due array allineati."
+        },
+        {
+          "id": "m08-in-9",
+          "tipo": "write",
+          "testo": "Infittisci una tabella grossolana: da 4 punti noti, ricava 13 valori equispaziati.",
+          "setup": "h_tab   = np.array([0., 4000., 8000., 12000.])\nT_tab   = np.array([288.15, 262.15, 236.15, 216.65])\n",
+          "starter": "h_fine = \nT_fine = \n",
+          "test": "assert h_fine.shape == (13,) and T_fine.shape == (13,)\nassert np.isclose(h_fine[0], 0.) and np.isclose(h_fine[-1], 12000.)\nassert np.isclose(T_fine[0], 288.15) and np.isclose(T_fine[-1], 216.65)\nassert np.allclose(T_fine, np.interp(h_fine, h_tab, T_tab))",
+          "hint": [
+            "h_fine = np.linspace(0., 12000., 13)",
+            "T_fine = np.interp(h_fine, h_tab, T_tab)"
+          ],
+          "soluzione": "h_fine = np.linspace(0., 12000., 13)\nT_fine = np.interp(h_fine, h_tab, T_tab)",
+          "spiegazione": "Infittire non aggiunge informazione: i punti nuovi stanno sui segmenti fra quelli noti. Serve quando devi allineare due tabelle campionate diversamente, non per migliorare l'accuratezza."
+        },
+        {
+          "id": "m08-in-10",
+          "tipo": "apply",
+          "testo": "**Pressione dinamica lungo un profilo di volo.**\n\nLe quote del volo non coincidono con quelle della tabella ISA. Interpola la densità e calcola la pressione dinamica.\n\nCalcola `rho`, `q`, `q_max`, `h_qmax` e `fuori_tabella`.",
+          "setup": "h_tab   = np.array([0., 2000., 4000., 6000., 8000., 10000., 11000.])\nrho_tab = np.array([1.225, 1.007, 0.819, 0.660, 0.526, 0.414, 0.365])\nh = np.array([500., 3000., 5500., 7000., 9000., 10500.])\nV = np.array([120., 180., 230., 250., 255., 250.])\n",
+          "starter": "rho = \nq = \nq_max = \nh_qmax = \nfuori_tabella = \n",
+          "test": "assert rho.shape == (6,)\nassert np.allclose(rho, np.interp(h, h_tab, rho_tab))\nassert np.allclose(q, 0.5*rho*V**2)\nassert np.isclose(q_max, q.max())\nassert np.isclose(h_qmax, h[q.argmax()])\nassert int(fuori_tabella) == 0, 'tutte le quote cadono dentro la tabella'\nassert np.isclose(h_qmax, 7000.), f'la pressione dinamica massima e a 7000 m, hai {h_qmax}'",
+          "hint": [
+            "rho = np.interp(h, h_tab, rho_tab); q = 0.5*rho*V**2",
+            "h_qmax = h[q.argmax()]; fuori_tabella = ((h < h_tab[0]) | (h > h_tab[-1])).sum()"
+          ],
+          "soluzione": "rho = np.interp(h, h_tab, rho_tab)\nq = 0.5*rho*V**2\nq_max = q.max()\nh_qmax = h[q.argmax()]\nfuori_tabella = ((h < h_tab[0]) | (h > h_tab[-1])).sum()",
+          "spiegazione": "Il massimo cade a 7000 m e non alla velocità massima: la densità cala più in fretta di quanto cresca `V²`, quindi il picco sta in mezzo. È lo stesso compromesso del max q di un lanciatore.\n\nIl controllo sul dominio vale zero qui, ma è la riga che ti salva quando il profilo di volo supera l'ultima riga della tabella e `interp` ti restituisce silenziosamente la densità della tropopausa."
+        }
+      ]
     },
     {
-      "id": "m08-e5",
-      "tipo": "write",
-      "testo": "**Densità dell'aria a quote intermedie.**\n\nDalla tabella ISA, ricava le densità alle tre quote richieste.",
-      "setup": "h_tab   = np.array([0., 2000., 4000., 6000., 8000., 10000., 11000.])\nrho_tab = np.array([1.225, 1.007, 0.819, 0.660, 0.526, 0.414, 0.365])\nhq = np.array([1000., 5000., 9500.])\n",
-      "starter": "rho = \n",
-      "test": "assert rho.shape == (3,), f'shape sbagliata: {rho.shape}'\nassert np.allclose(rho, [1.116, 0.7395, 0.442]), f'valori sbagliati: {rho} — hai invertito l ordine degli argomenti?'",
-      "hint": [
-        "L'ordine e': dove voglio, dove so, cosa so.",
-        "np.interp(hq, h_tab, rho_tab)"
-      ],
-      "soluzione": "rho = np.interp(hq, h_tab, rho_tab)",
-      "spiegazione": "Invertire i primi due argomenti è l'errore classico e spesso non solleva niente: ottieni numeri plausibili e sbagliati. Ricorda anche che interp non estrapola — fuori tabella restituisce il valore all'estremo, costante, senza avvisarti."
+      "id": "m08-polyfit",
+      "comando": "np.polyfit / polyval",
+      "titolo": "polyfit e polyval — fittare e valutare polinomi",
+      "esercizi": [
+        {
+          "id": "m08-pf-1",
+          "tipo": "write",
+          "testo": "Fitta una retta sui punti e ricava `p`, i due coefficienti.",
+          "setup": "x = np.array([0., 1., 2., 3., 4.])\ny = 3.*x + 2.\n",
+          "starter": "p = \n",
+          "test": "assert p.shape == (2,), f'una retta ha 2 coefficienti, hai {p.shape}'\nassert np.isclose(p[0], 3.0) and np.isclose(p[1], 2.0)",
+          "hint": [
+            "np.polyfit(x, y, 1) — il terzo argomento e' il grado."
+          ],
+          "soluzione": "p = np.polyfit(x, y, 1)",
+          "spiegazione": "I dati vengono esattamente dalla retta, quindi i coefficienti tornano esatti."
+        },
+        {
+          "id": "m08-pf-2",
+          "tipo": "predict",
+          "testo": "In che ordine `np.polyfit` restituisce i coefficienti?",
+          "opzioni": [
+            "dal grado piu alto al termine noto",
+            "dal termine noto al grado piu alto",
+            "in ordine casuale",
+            "dipende dal grado richiesto"
+          ],
+          "risposta": "dal grado piu alto al termine noto",
+          "spiegazione": "Per un polinomio di secondo grado, `p = [a, b, c]` significa `a·x² + b·x + c`. È l'ordine opposto a quello che userebbe chi parte dal termine costante, e va tenuto a mente leggendo i risultati."
+        },
+        {
+          "id": "m08-pf-3",
+          "tipo": "write",
+          "testo": "Valuta il polinomio fittato in punti nuovi: calcola `y_stimato` alle ascisse richieste.",
+          "setup": "x = np.array([0., 1., 2., 3., 4.])\ny = 3.*x + 2.\np = np.polyfit(x, y, 1)\nx_nuovi = np.array([0.5, 1.5, 10.])\n",
+          "starter": "y_stimato = \n",
+          "test": "assert y_stimato.shape == (3,)\nassert np.allclose(y_stimato, [3.5, 6.5, 32.0])",
+          "hint": [
+            "np.polyval(p, x_nuovi)"
+          ],
+          "soluzione": "y_stimato = np.polyval(p, x_nuovi)",
+          "spiegazione": "`polyval` valuta il polinomio ovunque, anche fuori dall'intervallo dei dati — a differenza di `interp`, che non estrapola. È potente e pericoloso: a `x = 10`, ben oltre i dati, il modello risponde comunque."
+        },
+        {
+          "id": "m08-pf-4",
+          "tipo": "write",
+          "testo": "Fitta una parabola sulla polare e ricava i tre coefficienti.",
+          "setup": "alpha = np.array([-4., 0., 4., 8., 12., 16., 20.])\nCL = 0.11*alpha - 0.0035*alpha**2 + 0.02\n",
+          "starter": "p = \n",
+          "test": "assert p.shape == (3,), f'un polinomio di grado 2 ha 3 coefficienti, hai {p.shape}'\nassert np.isclose(p[0], -0.0035, atol=1e-6), 'il primo coefficiente e quello di grado piu alto'\nassert np.isclose(p[1], 0.11, atol=1e-6)\nassert np.isclose(p[2], 0.02, atol=1e-6)",
+          "hint": [
+            "np.polyfit(alpha, CL, 2)"
+          ],
+          "soluzione": "p = np.polyfit(alpha, CL, 2)",
+          "spiegazione": "Il primo coefficiente è quello di `x²`. Il test lo verifica esplicitamente perché scambiare l'ordine è l'errore tipico nella lettura del risultato."
+        },
+        {
+          "id": "m08-pf-5",
+          "tipo": "write",
+          "testo": "Valuta la bontà del fit: calcola `predetto`, `residui` e `rms`.",
+          "setup": "alpha = np.array([-4., 0., 4., 8., 12., 16., 20.])\nCL = np.array([-0.476, 0.021, 0.404, 0.676, 0.836, 0.884, 0.821])\np = np.polyfit(alpha, CL, 2)\n",
+          "starter": "predetto = \nresidui = \nrms = \n",
+          "test": "assert predetto.shape == (7,)\nassert np.allclose(predetto, np.polyval(p, alpha))\nassert np.allclose(residui, CL - predetto)\nassert np.isclose(rms, np.sqrt((residui**2).mean()))\nassert rms < 0.01, f'il fit e buono, rms atteso piccolo, hai {rms}'",
+          "hint": [
+            "predetto = np.polyval(p, alpha)",
+            "residui = CL - predetto; rms = np.sqrt((residui**2).mean())"
+          ],
+          "soluzione": "predetto = np.polyval(p, alpha)\nresidui = CL - predetto\nrms = np.sqrt((residui**2).mean())",
+          "spiegazione": "Valutare il polinomio **sugli stessi punti** dei dati e confrontare è il modo standard di misurare la qualità del fit. Un residuo confrontabile con l'incertezza sperimentale è sano; molto più piccolo significa che stai fittando il rumore."
+        },
+        {
+          "id": "m08-pf-6",
+          "tipo": "predict",
+          "testo": "Perché alzare il grado del polinomio non migliora necessariamente il fit?",
+          "opzioni": [
+            "oltre il terzo o quarto grado il polinomio oscilla fra i punti, modellando il rumore",
+            "polyfit non accetta gradi superiori a 3",
+            "il calcolo diventa troppo lento",
+            "i coefficienti diventano complessi"
+          ],
+          "risposta": "oltre il terzo o quarto grado il polinomio oscilla fra i punti, modellando il rumore",
+          "spiegazione": "L'errore **sui punti che hai** cala sempre alzando il grado, fino ad annullarsi quando i coefficienti eguagliano i dati. Ma fra i punti la curva impazza. Su dati sperimentali un grado alto non è un fit migliore: è rumore preso per segnale."
+        },
+        {
+          "id": "m08-pf-7",
+          "tipo": "write",
+          "testo": "Confronta due gradi sullo stesso dato rumoroso: calcola `rms2` e `rms6`, e verifica in `sei_migliore_sui_punti` che il grado alto abbia residui minori.",
+          "setup": "x = np.linspace(0., 10., 8)\ny = np.array([0.1, 2.2, 3.7, 6.1, 7.9, 10.2, 11.8, 14.1])\n",
+          "starter": "rms2 = \nrms6 = \nsei_migliore_sui_punti = \n",
+          "test": "assert rms2 > rms6, 'il grado 6 aderisce meglio ai punti misurati'\nassert bool(sei_migliore_sui_punti) is True\nassert rms6 < 0.13 and rms2 > 0.16, f'rms attesi 0.169 e 0.123, hai {rms2} e {rms6}'",
+          "hint": [
+            "Per ciascun grado: p = np.polyfit(x, y, g); r = y - np.polyval(p, x); rms = np.sqrt((r**2).mean())",
+            "sei_migliore_sui_punti = rms6 < rms2"
+          ],
+          "soluzione": "p2 = np.polyfit(x, y, 2)\np6 = np.polyfit(x, y, 6)\nrms2 = np.sqrt(((y - np.polyval(p2, x))**2).mean())\nrms6 = np.sqrt(((y - np.polyval(p6, x))**2).mean())\nsei_migliore_sui_punti = rms6 < rms2",
+          "spiegazione": "Il grado 6 vince **sui punti misurati** — 0.123 contro 0.169 — e al grado 7 passerebbe esattamente per tutti e otto, azzerando il residuo.\n\nMa i dati sono in pratica una retta con rumore: la curva di grado 6 ha imparato il rumore, e fra i punti o appena fuori dall'intervallo da valori assurdi. Il miglioramento sui residui e reale e **non significa niente**.\n\nE il motivo per cui la bonta di un fit non si giudica mai solo dai residui sui dati usati per costruirlo."
+        },
+        {
+          "id": "m08-pf-8",
+          "tipo": "apply",
+          "testo": "**Pendenza della curva di portanza.**\n\nDai punti sperimentali, fitta una retta nel tratto lineare e ricava le grandezze aerodinamiche:\n\n- `p`: i coefficienti\n- `CL_alpha`: la pendenza, per grado\n- `alpha_zero`: l'incidenza di portanza nulla, in gradi\n- `rms`: la qualità del fit",
+          "setup": "alpha = np.array([-4., -2., 0., 2., 4., 6., 8.])\nCL    = np.array([-0.418, -0.202, 0.021, 0.238, 0.462, 0.679, 0.902])\n",
+          "starter": "p = \nCL_alpha = \nalpha_zero = \nrms = \n",
+          "test": "assert p.shape == (2,)\nassert np.isclose(CL_alpha, 0.11005357, atol=1e-6), f'pendenza attesa 0.11005, hai {CL_alpha}'\nassert np.isclose(alpha_zero, -p[1]/p[0], atol=1e-9)\nassert -0.2 < alpha_zero < -0.1, f'incidenza di portanza nulla attesa circa -0.18 gradi, hai {alpha_zero}'\nassert rms < 0.005, f'il fit deve essere buono, rms = {rms}'",
+          "hint": [
+            "p = np.polyfit(alpha, CL, 1); CL_alpha = p[0]",
+            "La portanza si annulla dove p[0]*a + p[1] = 0, cioe alpha_zero = -p[1]/p[0]"
+          ],
+          "soluzione": "p = np.polyfit(alpha, CL, 1)\nCL_alpha = p[0]\nalpha_zero = -p[1] / p[0]\nrms = np.sqrt(((CL - np.polyval(p, alpha))**2).mean())",
+          "spiegazione": "Due numeri che descrivono un profilo: pendenza 0.110 per grado — vicino al valore teorico di 2π per radiante, che fa 0.110 per grado — e portanza nulla a −0.18°, quasi simmetrico.\n\nL'incidenza di portanza nulla non è un dato misurato: è la **radice** della retta fittata, cioè un'informazione estratta dal modello. È il primo esempio di quello che la prossima raccolta fa in modo sistematico."
+        }
+      ]
     },
     {
-      "id": "m08-e6",
-      "tipo": "debug",
-      "testo": "Questo codice dovrebbe dare l'accelerazione a partire dalla velocità campionata. Non solleva errori, ma i valori sono sbagliati di un fattore 4 — il campionamento è ogni 0.25 s, non ogni secondo.",
-      "setup": "t = np.arange(0., 5.25, 0.25)          # s, passo 0.25\nv = 100. + 8.*t                        # m/s, accelerazione vera 8 m/s2\n",
-      "starter": "a = np.gradient(v)\n",
-      "test": "assert a.shape == v.shape, f'shape sbagliata: {a.shape}'\nassert np.allclose(a, 8.0), f'accelerazione attesa 8.0 m/s2 ovunque, hai {a[:3]}'",
-      "hint": [
-        "Senza il secondo argomento, gradient deriva rispetto all'indice.",
-        "np.gradient(v, t)"
-      ],
-      "soluzione": "a = np.gradient(v, t)",
-      "spiegazione": "Con passo 0.25 s, dividere per 1 invece che per 0.25 dà un risultato 4 volte più piccolo. È l'errore più insidioso di questo modulo perché il risultato ha la shape giusta, nessun avviso, e un ordine di grandezza non troppo lontano dal vero."
-    },
-    {
-      "id": "m08-e7",
-      "tipo": "write",
-      "testo": "**Incidenza di stallo dalla polare.**\n\nFitta un polinomio di **secondo grado** su `CL(alpha)`, poi trova l'incidenza a cui il CL è massimo — cioè dove la derivata del polinomio si annulla — e il valore del CL lì.",
-      "setup": "alpha = np.array([-4., 0., 4., 8., 12., 16., 20.])\nCL = 0.11*alpha - 0.0035*alpha**2 + 0.02\n",
-      "starter": "p = \nalpha_max = \nCL_max = \n",
-      "test": "assert p.shape == (3,), f'un polinomio di grado 2 ha 3 coefficienti, hai {p.shape}'\nassert np.isclose(p[0], -0.0035, atol=1e-6), 'il primo coefficiente e quello di grado piu alto'\nassert np.isclose(float(np.real(alpha_max)), 15.714285, atol=1e-4), f'incidenza attesa 15.71 gradi, hai {alpha_max}'\nassert np.isclose(float(np.real(CL_max)), 0.884286, atol=1e-5), f'CL massimo atteso 0.8843, hai {CL_max}'",
-      "hint": [
-        "np.polyfit(x, y, 2) da i tre coefficienti, dal grado piu alto al termine noto.",
-        "np.polyder(p) deriva, np.roots trova dove si annulla, np.polyval(p, x) valuta."
-      ],
-      "soluzione": "p = np.polyfit(alpha, CL, 2)\nalpha_max = np.roots(np.polyder(p))[0]\nCL_max = np.polyval(p, alpha_max)",
-      "spiegazione": "Il massimo cade a 15.71°, che non è nessuno dei punti campionati: con argmax avresti ottenuto 16°, il campione più vicino. Fittare e derivare analiticamente trova il massimo vero anche fra due misure — è il motivo per cui si fitta invece di cercare direttamente nei dati."
-    },
-    {
-      "id": "m08-e8",
-      "tipo": "apply",
-      "difficolta": 3,
-      "testo": "**Riduzione di una traiettoria balistica.**\n\nDalla quota campionata ogni secondo, ricava velocità e accelerazione, e trova l'apogeo.\n\nCalcola `v`, `acc`, `h_apogeo` e `t_apogeo`.\n\nUsa la derivata che conserva la lunghezza dell'array, così i tre risultati restano allineati con `t`.",
-      "setup": "t = np.linspace(0., 60., 121)           # s, campionato ogni 0.5 s\nh = 294.3*t - 9.81/2*t**2               # m\n",
-      "starter": "v = \nacc = \nh_apogeo = \nt_apogeo = \n",
-      "test": "assert v.shape == (121,) and acc.shape == (121,), 'i risultati devono restare allineati con t: usa gradient, non diff'\nassert np.allclose(v[1:-1], 294.3 - 9.81*t[1:-1]), 'velocita sbagliata: hai passato t a gradient?'\nassert np.allclose(acc[2:-2], -9.81), f'accelerazione attesa -9.81 all interno, hai {acc[3]}'\nassert np.isclose(h_apogeo, 4414.5), f'apogeo atteso 4414.5 m, hai {h_apogeo}'\nassert np.isclose(t_apogeo, 30.0), f'istante atteso 30.0 s, hai {t_apogeo}'\nassert abs(v[h.argmax()]) < 1e-6, 'all apogeo la velocita verticale deve essere nulla'",
-      "hint": [
-        "np.gradient(h, t) e poi np.gradient(v, t). Passa sempre t, altrimenti deriva rispetto all'indice.",
-        "L'apogeo e' il massimo di h; l'istante si trova con argmax usato come indice su t."
-      ],
-      "soluzione": "v = np.gradient(h, t)\nacc = np.gradient(v, t)\nh_apogeo = h.max()\nt_apogeo = t[h.argmax()]",
-      "spiegazione": "L'ultimo controllo è quello interessante: all'apogeo la velocità verticale deve annullarsi, e infatti `v[30]` esce dell'ordine di 10⁻¹³ — zero a meno dell'arrotondamento in virgola mobile. Verifiche di coerenza di questo tipo, che confrontano due risultati indipendenti, sono il modo più efficace di accorgersi che una riduzione dati è sbagliata.\n\nNota anche che l'accelerazione è esattamente -9.81 solo all'interno: agli estremi gradient usa differenze a un lato, meno accurate. Su dati reali i primi e gli ultimi punti di una derivata numerica sono sempre i meno affidabili."
+      "id": "m08-roots",
+      "comando": "np.polyder / np.roots",
+      "titolo": "polyder e roots — derivare e annullare un polinomio",
+      "esercizi": [
+        {
+          "id": "m08-rt-1",
+          "tipo": "write",
+          "testo": "Trova `r`, le radici del polinomio `x² − 5x + 6`.",
+          "setup": "p = np.array([1., -5., 6.])\n",
+          "starter": "r = \n",
+          "test": "assert r.shape == (2,)\nassert np.allclose(np.sort(r.real), [2., 3.]), f'attese 2 e 3, hai {r}'",
+          "hint": [
+            "np.roots(p)"
+          ],
+          "soluzione": "r = np.roots(p)",
+          "spiegazione": "I coefficienti vanno dal grado più alto al termine noto, come li restituisce `polyfit`."
+        },
+        {
+          "id": "m08-rt-2",
+          "tipo": "predict",
+          "testo": "Di che tipo è l'array restituito da `np.roots` ?",
+          "opzioni": [
+            "complesso, anche quando le radici sono reali",
+            "sempre float",
+            "float se le radici sono reali, complesso altrimenti",
+            "dipende dal dtype dei coefficienti"
+          ],
+          "risposta": "complesso, anche quando le radici sono reali",
+          "spiegazione": "La parte immaginaria può essere nulla, ma il tipo resta complesso. Per usarle come numeri veri serve `.real`, ed eventualmente filtrare con `np.isreal` quelle davvero reali."
+        },
+        {
+          "id": "m08-rt-3",
+          "tipo": "write",
+          "testo": "Estrai solo le radici **reali** e come numeri reali, non complessi.",
+          "setup": "p = np.array([1., 0., 1., 0., -2.])   # x^4 + x^2 - 2\n",
+          "starter": "r = \nreali = \n",
+          "test": "assert reali.dtype == np.float64, f'devono essere float, hai {reali.dtype}'\nassert reali.shape == (2,), f'attese 2 radici reali, hai {reali.shape}'\nassert np.allclose(np.sort(reali), [-1., 1.])",
+          "hint": [
+            "r = np.roots(p)",
+            "np.isreal(r) da una maschera; poi serve .real per convertire: r[np.isreal(r)].real"
+          ],
+          "soluzione": "r = np.roots(p)\nreali = r[np.isreal(r)].real",
+          "spiegazione": "Due passaggi distinti: `np.isreal` **filtra**, `.real` **converte**. Senza il secondo resteresti con numeri complessi a parte immaginaria nulla, che si propagano e fanno fallire i confronti a valle."
+        },
+        {
+          "id": "m08-rt-4",
+          "tipo": "write",
+          "testo": "Deriva il polinomio: calcola `dp`, i coefficienti della derivata di `2x³ − 3x² + 4x − 1`.",
+          "setup": "p = np.array([2., -3., 4., -1.])\n",
+          "starter": "dp = \n",
+          "test": "assert dp.shape == (3,), f'la derivata di un grado 3 e un grado 2: attesi 3 coefficienti, hai {dp.shape}'\nassert np.allclose(dp, [6., -6., 4.])",
+          "hint": [
+            "np.polyder(p)"
+          ],
+          "soluzione": "dp = np.polyder(p)",
+          "spiegazione": "`6x² − 6x + 4`: ogni coefficiente moltiplicato per il suo esponente, e il termine noto sparisce."
+        },
+        {
+          "id": "m08-rt-5",
+          "tipo": "write",
+          "testo": "**Il massimo di una curva fittata.**\n\nFitta una parabola, poi trova l'incidenza di CL massimo annullando la derivata, e il valore del CL lì.",
+          "setup": "alpha = np.array([-4., 0., 4., 8., 12., 16., 20.])\nCL = 0.11*alpha - 0.0035*alpha**2 + 0.02\n",
+          "starter": "p = \ndp = \nalpha_max = \nCL_max = \n",
+          "test": "assert p.shape == (3,) and dp.shape == (2,)\nassert np.isclose(float(np.real(alpha_max)), 15.714285, atol=1e-4), f'attesa 15.71 gradi, hai {alpha_max}'\nassert np.isclose(float(np.real(CL_max)), 0.884286, atol=1e-5), f'CL massimo atteso 0.8843, hai {CL_max}'",
+          "hint": [
+            "p = np.polyfit(alpha, CL, 2); dp = np.polyder(p)",
+            "alpha_max = np.roots(dp)[0]; CL_max = np.polyval(p, alpha_max)"
+          ],
+          "soluzione": "p = np.polyfit(alpha, CL, 2)\ndp = np.polyder(p)\nalpha_max = np.roots(dp)[0]\nCL_max = np.polyval(p, alpha_max)",
+          "spiegazione": "Il massimo cade a 15.71°, che **non è nessuno dei punti campionati**: con `argmax` avresti ottenuto 16°, il campione più vicino.\n\nFittare e derivare analiticamente trova il massimo vero anche fra due misure. È il motivo per cui si fitta invece di cercare direttamente nei dati — e vale ogni volta che la grandezza che ti serve è un punto stazionario."
+        },
+        {
+          "id": "m08-rt-6",
+          "tipo": "apply",
+          "testo": "**Autonomia massima.**\n\nIl consumo specifico in funzione della velocità è approssimato da una parabola. Trova la velocità di consumo minimo e il consumo lì, e verifica che sia davvero un minimo controllando il segno del coefficiente di grado più alto.\n\nCalcola `p`, `dp`, `V_ottima`, `c_min` e `e_minimo`.",
+          "setup": "V = np.array([100., 140., 180., 220., 260., 300.])\nc = np.array([0.082, 0.061, 0.052, 0.055, 0.070, 0.097])\n",
+          "starter": "p = \ndp = \nV_ottima = \nc_min = \ne_minimo = \n",
+          "test": "assert p.shape == (3,) and dp.shape == (2,)\nassert bool(e_minimo) is True, 'coefficiente di grado 2 positivo: la parabola ha la concavita verso l alto'\nassert np.isclose(float(np.real(V_ottima)), 190.0, atol=0.5), f'velocita ottima attesa 190 m/s, hai {V_ottima}'\nassert np.isclose(float(np.real(c_min)), 0.051625, atol=1e-4), f'consumo minimo atteso 0.0516, hai {c_min}'\nassert np.isclose(float(np.real(c_min)), float(np.polyval(p, np.real(V_ottima))))",
+          "hint": [
+            "p = np.polyfit(V, c, 2); dp = np.polyder(p)",
+            "V_ottima = np.roots(dp)[0]; c_min = np.polyval(p, V_ottima); e_minimo = p[0] > 0"
+          ],
+          "soluzione": "p = np.polyfit(V, c, 2)\ndp = np.polyder(p)\nV_ottima = np.roots(dp)[0]\nc_min = np.polyval(p, V_ottima)\ne_minimo = p[0] > 0",
+          "spiegazione": "190 m/s, fra i due punti misurati a 180 e 220: nessuna delle sei velocità provate è quella ottima, e solo il fit lo rivela.\n\nIl controllo su `p[0] > 0` è quello che distingue un **minimo** da un massimo: annullare la derivata trova un punto stazionario, non dice quale dei due sia. Su una parabola basta il segno del termine quadratico; su gradi più alti servirebbe la derivata seconda, cioè `np.polyder(p, 2)`."
+        }
+      ]
     }
   ]
 }
