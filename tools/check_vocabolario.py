@@ -64,7 +64,7 @@ VOCABOLARIO = {
             "isfinite", "nanmean", "nanstd", "nanmax", "nansum", "nanargmax",
             "nan", "inf", "delimiter", "skiprows", "unpack", "usecols", "header"},
     "m10": {"random", "default_rng", "normal", "uniform", "integers", "choice",
-            "quantile", "rng", "seed", "p"},
+            "quantile", "rng", "seed", "p", "endpoint", "replace"},
     "m11": {"isclose", "allclose", "finfo", "eps", "nbytes", "perf_counter",
             "time", "atol", "rtol"},
     "m12": {"dir", "help", "info", "searchsorted", "unique", "clip", "isin",
