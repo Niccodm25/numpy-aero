@@ -1,6 +1,6 @@
 {
-  "name": "NumPy per Aerospaziale",
-  "short_name": "NumPy Aero",
+  "name": "Strumenti per Ingegneria Aerospaziale",
+  "short_name": "Strumenti Aero",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

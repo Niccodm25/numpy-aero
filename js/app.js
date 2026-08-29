@@ -56,6 +56,7 @@ async function modulo(id) {
 async function route() {
   const p = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
   try {
+    if (p[0] === "ramo") return await vistaRamo(p[1]);
     if (p[0] === "m") return await vistaModulo(p[1]);
     if (p[0] === "r") return await vistaRaccolta(p[1], p[2]);
     if (p[0] === "p") return await vistaPercorso(p[1]);
@@ -99,28 +100,58 @@ async function registraSw() {
 
 // ---------- viste ----------
 
+// Un modulo appartiene a un ramo: serve per il link "indietro" della vista modulo.
+// L'indice tiene i moduli anche in una lista piatta, quindi qui si cerca a ritroso.
+const ramoDi = (idModulo) =>
+  (indice.rami || []).find((r) => (r.moduli || []).includes(idModulo));
+
+function indietroAlRamo(idModulo) {
+  const r = ramoDi(idModulo);
+  return r ? `<a href="#/ramo/${r.id}">‹ ${r.titolo}</a>` : `<a href="#/">‹ Home</a>`;
+}
+
+// Card di un modulo o di un cantiere. Il progresso costa un fetch del modulo,
+// quindi si calcola solo dentro un ramo, mai in home.
+async function cartaModulo(m) {
+  if (!m.disponibile)
+    return `<div class="card muto">${m.titolo} <span class="pill">in arrivo</span></div>`;
+  const mod = await modulo(m.id);
+  const pr = L.progress(stati, mod.esercizi.map((e) => e.id));
+  const etichetta = m.cantiere ? "fasi completate" : "esercizi completati";
+  return `<a class="card" href="#/m/${m.id}">
+    <strong>${m.titolo}</strong>
+    <div class="muto">${pr.done} / ${pr.tot} ${etichetta}</div>
+    <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
+  </a>`;
+}
+
 async function home() {
   const coda = L.reviewQueue(stati);
 
-  const riga = async (m) => {
-    if (!m.disponibile)
-      return `<div class="card muto">${m.titolo} <span class="pill">in arrivo</span></div>`;
-    const mod = await modulo(m.id);
-    const pr = L.progress(stati, mod.esercizi.map((e) => e.id));
-    const etichetta = m.cantiere ? "fasi completate" : "esercizi completati";
-    return `<a class="card" href="#/m/${m.id}">
-      <strong>${m.titolo}</strong>
-      <div class="muto">${pr.done} / ${pr.tot} ${etichetta}</div>
+  // In home il progresso di un ramo si somma sui suoi moduli: sono gia' in cache
+  // dopo la prima visita, e al primo avvio sono quattro fetch di file locali.
+  const cartaRamo = async (r) => {
+    if (!r.disponibile)
+      return `<div class="card muto">
+        <strong>${r.titolo}</strong> <span class="pill">in arrivo</span>
+        <div class="muto">${r.perche}</div>
+      </div>`;
+    const mods = await Promise.all(r.moduli.map(modulo));
+    const ids = mods.flatMap((m) => m.esercizi.map((e) => e.id));
+    const pr = L.progress(stati, ids);
+    return `<a class="card" href="#/ramo/${r.id}">
+      <strong>${r.titolo}</strong>
+      <div class="muto">${r.perche}</div>
+      <div class="muto">${pr.done} / ${pr.tot} esercizi completati</div>
       <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
     </a>`;
   };
 
-  const righe = await Promise.all(indice.moduli.filter((m) => !m.cantiere).map(riga));
-  const cantieri = await Promise.all(indice.moduli.filter((m) => m.cantiere).map(riga));
+  const rami = await Promise.all((indice.rami || []).map(cartaRamo));
 
   app.innerHTML = `
     <h1>${indice.titolo}</h1>
-    <p class="muto">Python e NumPy girano nel tuo browser. Niente da installare.</p>
+    <p class="muto">${indice.sottotitolo || ""}</p>
     ${
       coda.length
         ? `<a class="card" href="#/ripasso" style="border-color:var(--acc)">
@@ -129,14 +160,8 @@ async function home() {
            </a>`
         : ""
     }
-    <h2>Moduli</h2>
-    ${righe.join("")}
-    ${cantieri.length
-      ? `<h2>Cantieri</h2>
-         <p class="muto">Progetti aperti, da fare quando i moduli sono solidi.
-         Non entrano nella coda di ripasso.</p>
-         ${cantieri.join("")}`
-      : ""}
+    <h2>Rami</h2>
+    ${rami.join("")}
     <h2>Progressi</h2>
     <p class="muto">Salvati in questo browser. Esportali per spostarli sul telefono.</p>
     <p class="muto" id="sw"></p>
@@ -158,6 +183,34 @@ async function home() {
   };
 }
 
+async function vistaRamo(id) {
+  modoRipasso = false;
+  const r = (indice.rami || []).find((x) => x.id === id);
+  if (!r) throw new Error("Ramo sconosciuto: " + id);
+
+  const metaDi = (idm) => indice.moduli.find((m) => m.id === idm);
+  const metas = r.moduli.map(metaDi).filter(Boolean);
+  const righe = await Promise.all(metas.filter((m) => !m.cantiere).map(cartaModulo));
+  const cantieri = await Promise.all(metas.filter((m) => m.cantiere).map(cartaModulo));
+
+  app.innerHTML = `
+    <div class="nav"><a href="#/">‹ Rami</a></div>
+    <h1>${r.titolo}</h1>
+    <p>${r.perche}</p>
+    <h2>Moduli</h2>
+    ${righe.join("") || `<p class="muto">Nessun modulo ancora.</p>`}
+    ${cantieri.length
+      ? `<h2>Cantieri</h2>
+         <p class="muto">Progetti aperti, da fare quando i moduli sono solidi.
+         Non entrano nella coda di ripasso.</p>
+         ${cantieri.join("")}`
+      : ""}
+    ${(r.prossimi || []).length
+      ? `<h2>In arrivo</h2>
+         ${r.prossimi.map((t) => `<div class="card muto">${t}</div>`).join("")}`
+      : ""}`;
+}
+
 async function vistaModulo(id) {
   modoRipasso = false;
   const m = await modulo(id);
@@ -176,7 +229,7 @@ async function vistaModulo(id) {
     .join("");
 
   app.innerHTML = `
-    <div class="nav"><a href="#/">‹ Moduli</a></div>
+    <div class="nav">${indietroAlRamo(id)}</div>
     <h1>${m.titolo}</h1>
     <p>${m.perche}</p>
     <h2>Lezioni</h2>${lez}
@@ -414,7 +467,7 @@ async function vistaRipasso() {
   modoRipasso = true;
   const p = L.pickNext(stati);
   if (!p) {
-    app.innerHTML = `<div class="nav"><a href="#/">‹ Moduli</a></div>
+    app.innerHTML = `<div class="nav"><a href="#/">‹ Rami</a></div>
       <h1>Niente da ripassare</h1><p>Tutto quello che hai provato è padroneggiato.</p>`;
     return;
   }

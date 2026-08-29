@@ -1,5 +1,83 @@
 {
-  "titolo": "NumPy per Ingegneria Aerospaziale",
+  "titolo": "Strumenti per Ingegneria Aerospaziale",
+  "sottotitolo": "Quattro rami: le librerie con cui calcoli, e il sistema su cui gira il codice.",
+  "rami": [
+    {
+      "id": "libpy",
+      "titolo": "Librerie Python",
+      "perche": "Gli strumenti con cui si calcola. NumPy e' il primo perche' tutti gli altri gli stanno sopra.",
+      "disponibile": true,
+      "moduli": [
+        "m01",
+        "m02",
+        "m03",
+        "m04",
+        "m05",
+        "m06",
+        "m07",
+        "m08",
+        "m09",
+        "m10",
+        "m11",
+        "m12",
+        "c01",
+        "c02",
+        "c03"
+      ],
+      "prossimi": [
+        "Matplotlib — figure, assi, contour, diagramma V-n",
+        "SciPy — solve_ivp, minimize, interpolazione, signal"
+      ]
+    },
+    {
+      "id": "ambienti",
+      "titolo": "Ambienti e pacchetti",
+      "perche": "pip, venv, PATH, conda: quello che ti blocca quando il codice e' giusto ma non parte.",
+      "disponibile": false,
+      "moduli": [],
+      "prossimi": [
+        "Dove sta Python — PATH e i tre interpreti che hai installato",
+        "pip — install, list, freeze, e in quale Python",
+        "venv — creare, attivare, e perche' l'attivazione e' solo il PATH",
+        "requirements.txt — bloccare le versioni",
+        "Conflitti — ModuleNotFoundError con il pacchetto installato",
+        "conda — cosa risolve in piu', e come non mescolarlo con pip",
+        "VS Code — selezionare l'interprete"
+      ]
+    },
+    {
+      "id": "powershell",
+      "titolo": "PowerShell",
+      "perche": "La shell vera di Windows: oggetti invece di testo. cmd.exe resta una lezione sola.",
+      "disponibile": false,
+      "moduli": [],
+      "prossimi": [
+        "Navigazione e file",
+        "La pipeline a oggetti",
+        "Filtrare e ordinare",
+        "Testo, CSV, JSON",
+        "Script ed execution policy",
+        "Processi, servizi, variabili d'ambiente"
+      ]
+    },
+    {
+      "id": "linux",
+      "titolo": "Linux",
+      "perche": "Appena tocchi un cluster, un Raspberry, un server o WSL.",
+      "disponibile": false,
+      "moduli": [],
+      "prossimi": [
+        "Filesystem e navigazione",
+        "File e directory",
+        "Pipe e redirezione",
+        "Ricerca: find, grep, glob",
+        "Permessi e sudo",
+        "Processi",
+        "Bash scripting",
+        "WSL"
+      ]
+    }
+  ],
   "moduli": [
     {
       "id": "m01",
