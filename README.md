@@ -44,6 +44,19 @@ Poi, a ogni modifica dei contenuti:
 Lo script si rifiuta di girare se la versione non corrisponde, e dice come
 allinearla. Su Linux e macOS il percorso è `.venv/bin/python`.
 
+Controlla che nessun esercizio chieda comandi che il suo modulo non ha ancora
+insegnato:
+
+```bash
+.venv/Scripts/python tools/check_vocabolario.py
+```
+
+Analizza l'albero sintattico di `setup`, `starter` e `soluzione` di ogni
+esercizio e li confronta con il vocabolario cumulativo dei moduli. Distingue
+ciò che lo studente deve **scrivere** da ciò che gli viene solo **fornito**: il
+campo `test` è nascosto e non viene controllato. Il vocabolario per modulo sta
+in cima allo script — se aggiungi una funzione a una lezione, aggiungila lì.
+
 ## Struttura
 
 | Percorso | Cosa fa |

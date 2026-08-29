@@ -302,7 +302,7 @@
         {
           "id": "m01-ones-3",
           "tipo": "write",
-          "testo": "Ti serve la colonna di uni della matrice di progetto per un fit lineare: un array lungo quanto `x`, tutto a 1.\n\nCostruiscilo in `col` **senza scrivere a mano la lunghezza**.",
+          "testo": "Ti serve un array di uni **lungo esattamente quanto `x`**, da usare come riferimento nei conti successivi.\n\nCostruiscilo in `col` **senza scrivere a mano la lunghezza**: deve restare corretto anche se domani `x` cambia.",
           "setup": "x = np.array([-4., -2., 0., 2., 4., 6., 8.])\n",
           "starter": "col = \n",
           "test": "assert col.shape == x.shape, f'deve avere la lunghezza di x, hai {col.shape}'\nassert np.all(col == 1.0)",
@@ -311,7 +311,7 @@
             "np.ones_like(x) crea uni con la stessa shape e dtype di x."
           ],
           "soluzione": "col = np.ones_like(x)",
-          "spiegazione": "`np.ones_like(x)` copia shape e dtype da `x`: resta corretto anche se domani `x` cambia lunghezza. Il suffisso `_like` esiste anche per `zeros` e `full`."
+          "spiegazione": "`np.ones_like(x)` copia shape e dtype da `x`: resta corretto anche se domani `x` cambia lunghezza, mentre `np.ones(7)` va aggiornato a mano. Il suffisso `_like` esiste anche per `zeros` e `full`."
         },
         {
           "id": "m01-ones-4",
@@ -821,15 +821,15 @@
         {
           "id": "m01-shape-4",
           "tipo": "predict",
-          "testo": "Data `A` di shape `(5, 3)`, che shape ha `A[:, 1]` ?",
+          "testo": "Un array ha shape `(4, 6)`. Quanti elementi contiene in tutto?",
           "opzioni": [
-            "(5,)",
-            "(5, 1)",
-            "(3,)",
-            "(1, 5)"
+            "24",
+            "10",
+            "46",
+            "4"
           ],
-          "risposta": "(5,)",
-          "spiegazione": "Un indice singolo **rimuove** quell'asse: resta un array 1D di 5 elementi. Per conservare la dimensione servirebbe uno slice, `A[:, 1:2]`, che dà `(5, 1)`."
+          "risposta": "24",
+          "spiegazione": "Il numero di elementi e' sempre il prodotto delle dimensioni: 4 x 6 = 24. E' esattamente quello che restituisce `.size`, mentre `.shape` dice come sono disposti e `.ndim` su quanti assi."
         },
         {
           "id": "m01-shape-5",
@@ -847,7 +847,7 @@
         {
           "id": "m01-shape-6",
           "tipo": "write",
-          "testo": "Prima di moltiplicare due array bisogna sapere se le forme sono compatibili. Calcola `stessa_forma`, `n_elementi_a` e `dimensioni_a`.",
+          "testo": "Prima di combinare due array conviene verificare che abbiano la stessa forma. Calcola `stessa_forma`, `n_elementi_a` e `dimensioni_a`.",
           "setup": "a = np.zeros((4, 6))\nb = np.zeros((4, 6))\n",
           "starter": "stessa_forma = \nn_elementi_a = \ndimensioni_a = \n",
           "test": "assert bool(stessa_forma) is True\nassert int(n_elementi_a) == 24, f'attesi 24 elementi, hai {n_elementi_a}'\nassert int(dimensioni_a) == 2, f'attese 2 dimensioni, hai {dimensioni_a}'",

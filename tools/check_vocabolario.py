@@ -12,6 +12,7 @@ modulo 1 che usa np.allclose chiede di conoscere il modulo 11.
 import ast
 import json
 import os
+import re
 import sys
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
@@ -34,6 +35,7 @@ VOCABOLARIO = {
     "m02": {
         "where", "any", "all", "copy", "shares_memory", "argsort", "nonzero",
         "sum",  # contare una maschera e' insegnato qui
+        "nan",  # la lezione 5 lo introduce per le letture mancanti
     },
     "m03": {
         "newaxis", "meshgrid", "broadcast_shapes", "ravel", "column_stack",
@@ -66,7 +68,8 @@ VOCABOLARIO = {
             "time", "atol", "rtol"},
     "m12": {"dir", "help", "info", "searchsorted", "unique", "clip", "isin",
             "apply_along_axis", "sort", "lexsort", "return_counts", "return_index",
-            "return_inverse", "block"},
+            "return_inverse", "block",
+            "lookfor"}  # la lezione insegna che e' stata rimossa in 2.0,
 }
 
 ORDINE = [f"m{i:02d}" for i in range(1, 13)]
@@ -141,6 +144,18 @@ def main():
                     except SyntaxError:
                         pass
                 fuori = [n for n in fuori if n not in definiti]
+                # Il codice citato nella prosa conta quanto quello scritto: un
+                # predict che chiede la shape di A[:, 1] presuppone il modulo 2
+                # anche se non c'e' nessuna soluzione da analizzare.
+                prosa = " ".join(
+                    [e.get("testo", "")] + list(e.get("hint", []))
+                )
+                citati = set(re.findall(r"np\.(\w+)", prosa))
+                fuori_prosa = sorted(n for n in citati if n not in ok)
+                if fuori_prosa:
+                    print(f"  {e['id']:<18} nel testo    {', '.join(fuori_prosa)}")
+                    problemi += 1
+
                 if fuori:
                     gravi = [n for n in fuori if n in da_scrivere]
                     lievi = [n for n in fuori if n not in da_scrivere]

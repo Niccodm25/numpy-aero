@@ -231,7 +231,7 @@
           "id": "m05-ax-6",
           "tipo": "write",
           "testo": "Calcola `per_riga` e `per_colonna`, le somme lungo i due assi di `A`, e verifica in `stesso_totale` che sommate diano lo stesso risultato.",
-          "setup": "A = np.arange(12.).reshape(3, 4)\n",
+          "setup": "A = np.array([[0., 1., 2., 3.],\n               [4., 5., 6., 7.],\n               [8., 9., 10., 11.]])\n",
           "starter": "per_riga = \nper_colonna = \nstesso_totale = \n",
           "test": "assert per_riga.shape == (3,) and per_colonna.shape == (4,)\nassert np.allclose(per_riga, [6., 22., 38.])\nassert np.allclose(per_colonna, [12., 15., 18., 21.])\nassert bool(stesso_totale) is True",
           "hint": [
@@ -298,7 +298,7 @@
           "id": "m05-ax-11",
           "tipo": "write",
           "testo": "Calcola `somma_ultimo`, la somma lungo l'**ultimo** asse, in modo che funzioni sia sulla matrice 2D sia sull'array 3D.",
-          "setup": "A2 = np.arange(12.).reshape(3, 4)\nA3 = np.arange(24.).reshape(2, 3, 4)\n",
+          "setup": "A2 = np.array([[0., 1., 2., 3.],\n               [4., 5., 6., 7.],\n               [8., 9., 10., 11.]])\nA3 = np.array([[[0., 1., 2., 3.],\n                 [4., 5., 6., 7.],\n                 [8., 9., 10., 11.]],\n                [[12., 13., 14., 15.],\n                 [16., 17., 18., 19.],\n                 [20., 21., 22., 23.]]])\n",
           "starter": "somma_2d = \nsomma_3d = \n",
           "test": "assert somma_2d.shape == (3,), f'atteso (3,), hai {somma_2d.shape}'\nassert somma_3d.shape == (2, 3), f'atteso (2, 3), hai {somma_3d.shape}'\nassert np.allclose(somma_2d, A2.sum(axis=-1))\nassert np.allclose(somma_3d, A3.sum(axis=-1))",
           "hint": [
@@ -687,7 +687,7 @@
           "id": "m05-kd-2",
           "tipo": "write",
           "testo": "Calcola `somme`, le somme per riga di `A`, conservando la seconda dimensione.",
-          "setup": "A = np.arange(12.).reshape(3, 4)\n",
+          "setup": "A = np.array([[0., 1., 2., 3.],\n               [4., 5., 6., 7.],\n               [8., 9., 10., 11.]])\n",
           "starter": "somme = \n",
           "test": "assert somme.shape == (3, 1), f'attesa (3, 1), hai {somme.shape}'\nassert np.allclose(somme[:, 0], [6., 22., 38.])",
           "hint": [

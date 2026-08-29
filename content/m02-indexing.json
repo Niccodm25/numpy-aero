@@ -388,7 +388,7 @@
           "id": "m02-2d-6",
           "tipo": "write",
           "testo": "Estrai in `blocco` la sottomatrice formata dalle prime due righe e dalle ultime due colonne di `A`.",
-          "setup": "A = np.arange(20).reshape(4, 5)\n",
+          "setup": "A = np.array([[ 0,  1,  2,  3,  4],\n              [ 5,  6,  7,  8,  9],\n              [10, 11, 12, 13, 14],\n              [15, 16, 17, 18, 19]])\n",
           "starter": "blocco = \n",
           "test": "assert blocco.shape == (2, 2), f'shape sbagliata: {blocco.shape}'\nassert np.array_equal(blocco, [[3, 4], [8, 9]])",
           "hint": [
@@ -567,29 +567,29 @@
         {
           "id": "m02-mask-11",
           "tipo": "write",
-          "testo": "Estrai in `estremi` i valori che si discostano dalla media di più di una deviazione standard, in valore assoluto.",
+          "testo": "Le misure dovrebbero stare attorno a 10. Estrai in `estremi` i valori **fuori dalla banda accettabile**, cioè quelli sotto 8.0 **oppure** sopra 13.0.",
           "setup": "x = np.array([10.0, 10.5, 9.8, 15.2, 10.1, 4.9, 10.3])\n",
           "starter": "estremi = \n",
           "test": "assert estremi.shape == (2,), f'attesi 2 valori estremi, hai {estremi.shape[0]}'\nassert np.allclose(np.sort(estremi), [4.9, 15.2])",
           "hint": [
-            "Ti servono x.mean() e x.std(), poi lo scarto in valore assoluto.",
-            "estremi = x[np.abs(x - x.mean()) > x.std()]"
+            "Due condizioni unite da |, ognuna fra parentesi: (x < 8.0) | (x > 13.0)",
+            "estremi = x[(x < 8.0) | (x > 13.0)]"
           ],
-          "soluzione": "estremi = x[np.abs(x - x.mean()) > x.std()]",
-          "spiegazione": "La condizione può essere un'espressione complessa quanto serve: NumPy la valuta elemento per elemento e ne ricava la maschera. È il modo standard di individuare gli outlier in una serie di misure."
+          "soluzione": "estremi = x[(x < 8.0) | (x > 13.0)]",
+          "spiegazione": "Un OR di due condizioni isola gli estremi: una maschera per la coda bassa, una per la coda alta, e `|` le unisce. È il modo diretto di tirare fuori gli outlier quando la banda accettabile è nota in anticipo, per esempio dal fondo scala di uno strumento."
         },
         {
           "id": "m02-mask-12",
           "tipo": "apply",
-          "testo": "**Individuare la fase di crociera.**\n\nDal log, costruisci la maschera `in_quota` (quota sopra 9000 m) e ricava:\n\n- `n_crociera`: quanti campioni\n- `mach_crociera`: i valori di Mach in quei punti\n- `mach_medio`: il loro valore medio\n- `frazione`: la frazione del volo passata in crociera",
+          "testo": "**Individuare la fase di crociera.**\n\nDal log, costruisci la maschera `in_quota` (quota sopra 9000 m) e ricava:\n\n- `n_crociera`: quanti campioni\n- `mach_crociera`: i valori di Mach in quei punti\n- `frazione`: la frazione del volo passata in crociera",
           "setup": "h    = np.array([0., 3000., 9500., 10500., 11000., 10800., 4000., 0.])\nmach = np.array([0.2, 0.45, 0.78, 0.82, 0.84, 0.81, 0.5, 0.15])\n",
-          "starter": "in_quota = \nn_crociera = \nmach_crociera = \nmach_medio = \nfrazione = \n",
-          "test": "assert in_quota.dtype == bool\nassert int(n_crociera) == 4, f'attesi 4 campioni sopra 9000 m, hai {n_crociera}'\nassert mach_crociera.shape == (4,)\nassert np.isclose(mach_medio, np.mean([0.78, 0.82, 0.84, 0.81])), f'atteso 0.8125, hai {mach_medio}'\nassert np.isclose(frazione, 0.5), f'attesa 0.5, hai {frazione}'",
+          "starter": "in_quota = \nn_crociera = \nmach_crociera = \nfrazione = \n",
+          "test": "assert in_quota.dtype == bool\nassert int(n_crociera) == 4, f'attesi 4 campioni sopra 9000 m, hai {n_crociera}'\nassert mach_crociera.shape == (4,)\nassert np.allclose(np.sort(mach_crociera), [0.78, 0.81, 0.82, 0.84])\nassert np.isclose(frazione, 0.5), f'attesa 0.5, hai {frazione}'",
           "hint": [
             "in_quota = h > 9000, poi n_crociera = in_quota.sum()",
             "mach_crociera = mach[in_quota]; frazione = n_crociera / len(h)"
           ],
-          "soluzione": "in_quota = h > 9000\nn_crociera = in_quota.sum()\nmach_crociera = mach[in_quota]\nmach_medio = mach_crociera.mean()\nfrazione = n_crociera / len(h)",
+          "soluzione": "in_quota = h > 9000\nn_crociera = in_quota.sum()\nmach_crociera = mach[in_quota]\nfrazione = n_crociera / len(h)",
           "spiegazione": "Una sola maschera usata tre volte: per contare, per filtrare un altro array, e per calcolare una frazione. Definirla una volta con un nome parlante rende il codice leggibile e garantisce che le tre risposte si riferiscano davvero agli stessi punti."
         }
       ]
@@ -812,10 +812,10 @@
           "test": "assert int(np.isnan(q).sum()) == 2\nassert np.isclose(q[3], 10500.)\nassert np.array_equal(regime, [0, 0, 0, 1, 1, 1])\nassert int(primo_veloce) == 3, f'atteso indice 3, hai {primo_veloce}'\nassert int(n_persi) == 2, f'attese 2 letture perse, hai {n_persi}'",
           "hint": [
             "q con np.where e np.nan; regime con np.where(mach > 0.8, 1, 0).",
-            "primo_veloce = np.where(mach > 0.8)[0][0]; n_persi = np.isnan(q).sum()"
+            "primo_veloce = np.where(mach > 0.8)[0][0]; n_persi = (quota == -999.).sum(), contando le sentinelle sull'array originale."
           ],
-          "soluzione": "q = np.where(quota == -999., np.nan, quota)\nregime = np.where(mach > 0.8, 1, 0)\nprimo_veloce = np.where(mach > 0.8)[0][0]\nn_persi = np.isnan(q).sum()",
-          "spiegazione": "Le due facce di `where` nello stesso esercizio: a tre argomenti per **costruire**, a uno per **localizzare**. Il doppio `[0][0]` di `primo_veloce` si legge così: il primo `[0]` estrae l'array degli indici dalla tupla, il secondo prende il primo indice."
+          "soluzione": "q = np.where(quota == -999., np.nan, quota)\nregime = np.where(mach > 0.8, 1, 0)\nprimo_veloce = np.where(mach > 0.8)[0][0]\nn_persi = (quota == -999.).sum()",
+          "spiegazione": "Le due facce di `where` nello stesso esercizio: a tre argomenti per **costruire**, a uno per **localizzare**. Il doppio `[0][0]` di `primo_veloce` si legge così: il primo `[0]` estrae l'array degli indici dalla tupla, il secondo prende il primo indice.\n\nNota che le sentinelle si contano su `quota`, cioè **prima** della conversione: una volta diventate `nan` non le ritrovi più con `==`, perché `nan == nan` è `False`. Se ti serve sapere quante letture hai perso, contale finché sono ancora numeri."
         }
       ]
     },
@@ -879,16 +879,16 @@
         {
           "id": "m02-any-5",
           "tipo": "write",
-          "testo": "Su una matrice di prove con una riga per configurazione, calcola `riga_ok`: per **ogni riga**, `True` se tutti i suoi valori superano 0.02.",
-          "setup": "CD = np.array([[0.031, 0.029, 0.028],\n               [0.026, 0.019, 0.023],\n               [0.035, 0.033, 0.032]])\n",
-          "starter": "riga_ok = \n",
-          "test": "assert riga_ok.shape == (3,), f'attesi 3 valori, uno per riga, hai {riga_ok.shape}'\nassert np.array_equal(riga_ok, [True, False, True])",
+          "testo": "`CD` contiene sei coefficienti di resistenza misurati su una configurazione. Ricava due verdetti:\n\n- `tutti_sopra`: `True` se **tutti** i valori superano 0.02\n- `almeno_uno_sotto`: `True` se **almeno uno** sta sotto 0.02",
+          "setup": "CD = np.array([0.031, 0.029, 0.028, 0.019, 0.035, 0.033])\n",
+          "starter": "tutti_sopra = \nalmeno_uno_sotto = \n",
+          "test": "assert bool(tutti_sopra) is False, f'atteso False, hai {tutti_sopra}'\nassert bool(almeno_uno_sotto) is True, f'atteso True, hai {almeno_uno_sotto}'",
           "hint": [
-            "all accetta axis, con la stessa semantica delle altre riduzioni.",
-            "np.all(CD > 0.02, axis=1)"
+            "np.all(CD > 0.02) per il primo verdetto.",
+            "np.any(CD < 0.02) per il secondo."
           ],
-          "soluzione": "riga_ok = np.all(CD > 0.02, axis=1)",
-          "spiegazione": "`axis=1` collassa le colonne e lascia un verdetto per riga. Vale la stessa regola di tutte le riduzioni: l'asse che passi è quello che sparisce."
+          "soluzione": "tutti_sopra = np.all(CD > 0.02)\nalmeno_uno_sotto = np.any(CD < 0.02)",
+          "spiegazione": "Le due riduzioni sono l'una la negazione dell'altra: se non è vero che tutti superano la soglia, allora almeno uno sta sotto. Qui il valore 0.019 fa cadere `all` e fa scattare `any`. Scegli la forma che si legge come la domanda che ti stai facendo: «va tutto bene?» chiede `all`, «c'è un problema?» chiede `any`."
         },
         {
           "id": "m02-any-6",
