@@ -1,0 +1,842 @@
+{
+ "id": "p03",
+ "titolo": "Liste, tuple e dizionari",
+ "perche": "Le tre strutture su cui gira ogni programma Python, e il motivo per cui NumPy non usa nessuna delle tre. Il filo conduttore e' che i metodi che modificano restituiscono None: a.sort() ordina la lista e ti lascia None in mano, e l'errore esplode righe dopo, dove non c'e' niente di sbagliato.",
+ "funzioni": [
+  "list",
+  "tuple",
+  "dict",
+  "set",
+  "sorted",
+  "append",
+  "extend",
+  "pop",
+  "remove",
+  "get",
+  "items",
+  "zip",
+  "enumerate",
+  "comprehension"
+ ],
+ "lezioni": [
+  {
+   "id": "p03-l1",
+   "titolo": "list: ordinata, modificabile, di qualunque cosa",
+   "md": "```\nquote = [0, 1000, 2000, 4000]\nquote[0]      # 0      il primo\nquote[-1]     # 4000   l'ultimo\nquote[1:3]    # [1000, 2000]   dal 1 incluso al 3 escluso\nlen(quote)    # 4\n```\n\nIndici e fette funzionano come sulle stringhe e come sugli array NumPy: estremo destro escluso, indici negativi da destra.\n\n### Una differenza importante da NumPy\n\n```\nl = [1, 2, 3, 4, 5]\ns = l[1:3]\ns[0] = 99\nprint(l)      # [1, 2, 3, 4, 5]  <- intatta\n```\n\nAffettare una **lista** produce una copia. Affettare un **array NumPy** produce una vista, e modificarla cambia l'originale. È la stessa sintassi con due comportamenti opposti, ed è una delle ragioni per cui NumPy non riusa le liste.\n\n### Una lista può contenere di tutto\n\n```\nmisto = [1, \"due\", 3.0, [4, 5]]\n```\n\nÈ comodo e costoso: ogni elemento è un oggetto Python separato, con il suo tipo da controllare a ogni operazione. Un array NumPy tiene invece numeri nudi, tutti dello stesso tipo, in memoria contigua — ed è da lì che vengono i suoi 50-200× di velocità.\n\n### + concatena, * ripete\n\n```\n[1] + [2, 3]     # [1, 2, 3]\n[0] * 3          # [0, 0, 0]\n```\n\nNon sono operazioni elemento per elemento: su una lista `[1, 2] + [3]` non somma niente, attacca. Su un array NumPy la stessa riga somma. Stessa sintassi, di nuovo, significato diverso.",
+   "demo": "quote = [0, 1000, 2000, 4000]\nprint(quote[0], quote[-1], quote[1:3], len(quote))\n\nl = [1, 2, 3, 4, 5]\ns = l[1:3]\ns[0] = 99\nprint(\"\\nla fetta e' una copia:\", l, s)\n\nprint(\"\\n[1] + [2, 3] =\", [1] + [2, 3])\nprint(\"[0] * 3     =\", [0] * 3)"
+  },
+  {
+   "id": "p03-l2",
+   "titolo": "I metodi che modificano restituiscono None",
+   "md": "```\na = [3, 1, 2]\nb = a.sort()      # b vale None!\nprint(a)          # [1, 2, 3]  <- a e' stata modificata\n```\n\nÈ la trappola più costosa del modulo. `sort`, `append`, `reverse`, `extend` modificano la lista **sul posto** e restituiscono `None`. Scrivere `a = a.sort()` non solleva niente e ti lascia `a` uguale a `None`: l'errore esplode tre righe dopo, dove sembra non esserci niente di sbagliato.\n\n### La coppia da tenere a mente\n\n```\na.sort()          # modifica a, restituisce None\nsorted(a)         # NON tocca a, restituisce una lista nuova\n\na.reverse()       # idem\nlist(reversed(a)) # idem\n```\n\nLa regola generale di Python: se il nome è un **verbo all'imperativo** (`sort`, `append`) modifica; se è un **participio o una funzione** (`sorted`) restituisce.\n\n### Aggiungere\n\n```\na.append(4)       # aggiunge UN elemento\na.extend([4, 5])  # aggiunge gli elementi di un'altra sequenza\na.insert(0, 9)    # inserisce in posizione\n```\n\n`append([4, 5])` mette **la lista** come singolo elemento: ottieni `[1, [4, 5]]`, non `[1, 4, 5]`. È l'altra confusione classica.\n\n### Togliere\n\n```\na.pop()           # toglie e RESTITUISCE l'ultimo\na.pop(0)          # toglie e restituisce quello in posizione 0\na.remove(2)       # toglie la prima occorrenza del VALORE 2\n```\n\n`pop` lavora per posizione, `remove` per valore. `pop` è l'unica di questa famiglia che restituisce qualcosa di utile.",
+   "demo": "a = [3, 1, 2]\nb = a.sort()\nprint(\"a.sort() restituisce:\", b, \" e a diventa:\", a)\n\nc = [3, 1, 2]\nprint(\"sorted(c) =\", sorted(c), \" c resta:\", c)\n\nx = [1]\nx.append([2, 3])\nprint(\"\\nappend di una lista:\", x)\ny = [1]\ny.extend([2, 3])\nprint(\"extend:            \", y)"
+  },
+  {
+   "id": "p03-l3",
+   "titolo": "tuple: come una lista, ma bloccata",
+   "md": "```\nt = (1, 2, 3)\nt[0]        # 1     si legge come una lista\nt[0] = 9    # TypeError: non si modifica\n```\n\nUna tupla è una sequenza **immutabile**. Serve quando i valori vanno insieme e non devono cambiare: una coordinata, una shape, una riga letta da un file.\n\n### La virgola, non le parentesi\n\n```\ntype((1))     # int    <- le parentesi qui raggruppano e basta\ntype((1,))    # tuple  <- la virgola fa la tupla\n```\n\nUna tupla di un elemento vuole la virgola finale. È la causa del bug in cui `shape=(3)` non fa quello che credi.\n\n### Immutabile non vuol dire congelato in profondità\n\n```\nt = (1, [2, 3])\nt[1].append(4)\nprint(t)      # (1, [2, 3, 4])\n```\n\nLa tupla garantisce che i suoi elementi restino **quegli oggetti**, non che quegli oggetti non cambino. Se dentro c'è una lista, la lista resta modificabile.\n\n### Spacchettamento\n\n```\nx, y = (1.0, 2.0)\nfor i, v in enumerate([\"a\", \"b\"]):\n    ...\n```\n\nÈ lo stesso meccanismo dell'assegnazione multipla: `enumerate` e `zip` restituiscono tuple, e il `for` le spacchetta al volo.",
+   "demo": "t = (1, 2, 3)\nprint(t[0], t[-1], len(t))\ntry:\n    t[0] = 9\nexcept TypeError as e:\n    print(\"modificarla:\", e)\n\nprint(\"\\n(1) e' un\", type((1)).__name__, \" ma (1,) e' una\", type((1,)).__name__)\n\nt2 = (1, [2, 3])\nt2[1].append(4)\nprint(\"\\nla lista dentro resta modificabile:\", t2)"
+  },
+  {
+   "id": "p03-l4",
+   "titolo": "dict: cercare per chiave, non per posizione",
+   "md": "```\nd = {\"quota\": 9000, \"mach\": 0.82}\nd[\"quota\"]        # 9000\nd[\"cl\"] = 0.45    # aggiunge\n\"mach\" in d       # True\n```\n\nUn dizionario associa **chiavi** a valori. La ricerca costa tempo costante: cercare in un dizionario da un milione di voci costa quanto cercarne in uno da dieci, mentre su una lista bisogna scorrerla tutta.\n\n### La chiave che non c'è\n\n```\nd[\"z\"]            # KeyError\nd.get(\"z\")        # None      <- nessun errore\nd.get(\"z\", 0)     # 0         <- valore di riserva\n```\n\nLe parentesi quadre esplodono, `get` no. Quale sia meglio dipende: se la chiave **deve** esserci, l'errore è un'informazione e va lasciato esplodere; se può mancare, `get` con un valore di riserva evita un `if`.\n\nIl rischio di `get` è il silenzio: `d.get(\"quotaa\")` restituisce `None` per un nome scritto male, e il `None` prosegue nel calcolo.\n\n### Scorrerlo\n\n```\nd.keys()      # le chiavi\nd.values()    # i valori\nd.items()     # le coppie (chiave, valore)\n\nfor k, v in d.items():\n    ...\n```\n\n`for k in d` scorre le **chiavi**, non i valori: è la stessa cosa di `for k in d.keys()`. E `\"a\" in d` cerca fra le chiavi, mai fra i valori.\n\n### L'ordine\n\nDa Python 3.7 un dizionario conserva l'**ordine di inserimento**. Prima non era garantito, ed è il motivo per cui trovi ancora codice vecchio che usa strutture apposta per mantenerlo.",
+   "demo": "d = {\"quota\": 9000, \"mach\": 0.82}\nprint(d[\"quota\"], \"mach\" in d, 0.82 in d)\n\ntry:\n    d[\"z\"]\nexcept KeyError as e:\n    print(\"\\nchiave assente:\", type(e).__name__, e)\nprint(\"con get:\", d.get(\"z\"), \" con riserva:\", d.get(\"z\", 0))\n\nd[\"cl\"] = 0.45\nprint(\"\\nordine di inserimento:\", list(d))\nfor k, v in d.items():\n    print(\" \", k, \"->\", v)"
+  },
+  {
+   "id": "p03-l5",
+   "titolo": "set e comprehension",
+   "md": "### set: nessun duplicato, nessun ordine\n\n```\ns = {1, 2, 2, 3}    # {1, 2, 3}\nlen(s)              # 3\n```\n\nUn insieme elimina i duplicati da solo e risponde a `in` in tempo costante, come un dizionario. Le operazioni sono quelle degli insiemi:\n\n```\n{1, 2, 3} & {2, 3, 4}    # {2, 3}   intersezione\n{1, 2, 3} | {4}          # {1, 2, 3, 4}   unione\n{1, 2, 3} - {2}          # {1, 3}   differenza\n```\n\nUsalo per **togliere i duplicati** e per **controllare l'appartenenza** su collezioni grandi. Non usarlo se l'ordine conta: non ce l'ha.\n\n### Comprehension: il ciclo che costruisce una lista\n\n```\n[x**2 for x in range(5)]              # [0, 1, 4, 9, 16]\n[x for x in range(10) if x % 3 == 0]  # [0, 3, 6, 9]\n```\n\nSi legge da sinistra: *cosa metto dentro*, *da dove lo prendo*, *quale tengo*. Sostituisce le tre righe di lista vuota, ciclo e `append`, ed è la forma che leggerai ovunque.\n\nEsiste anche per i dizionari:\n\n```\n{k: len(k) for k in [\"ala\", \"fusoliera\"]}   # {'ala': 3, 'fusoliera': 9}\n```\n\n### La riga che salva da un bug\n\n```\ngriglia = [[0] * 3] * 3\ngriglia[0][0] = 9\nprint(griglia)   # [[9,0,0], [9,0,0], [9,0,0]]  <- tutte e tre!\n```\n\n`* 3` ripete il **riferimento** alla stessa lista, tre volte. Con una comprehension ogni riga è un oggetto nuovo:\n\n```\ngriglia = [[0] * 3 for _ in range(3)]\n```\n\nÈ l'errore che in NumPy non puoi fare, perché lì una matrice si crea con `np.zeros((3, 3))`.",
+   "demo": "print({1, 2, 2, 3}, len({1, 2, 2, 3}))\nprint({1, 2, 3} & {2, 3, 4}, {1, 2, 3} | {4}, {1, 2, 3} - {2})\n\nprint(\"\\n\", [x**2 for x in range(5)])\nprint(\"\", [x for x in range(10) if x % 3 == 0])\n\ng = [[0] * 3] * 3\ng[0][0] = 9\nprint(\"\\nripetendo il riferimento:\", g)\nh = [[0] * 3 for _ in range(3)]\nh[0][0] = 9\nprint(\"con la comprehension:    \", h)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p03-list",
+   "comando": "list",
+   "titolo": "list — indici, fette e copie",
+   "esercizi": [
+    {
+     "id": "p03-li-1",
+     "tipo": "write",
+     "testo": "Crea `quote`, la lista delle quattro quote 0, 1000, 2000 e 4000, e mettine la lunghezza in `n`.",
+     "setup": "",
+     "starter": "quote = \nn = \n",
+     "test": "assert quote == [0, 1000, 2000, 4000], f'attesa [0, 1000, 2000, 4000], hai {quote}'\nassert n == 4, f'attesi 4 elementi, hai {n}'",
+     "hint": [
+      "Le liste si scrivono fra parentesi quadre.",
+      "quote = [0, 1000, 2000, 4000]; n = len(quote)"
+     ],
+     "soluzione": "quote = [0, 1000, 2000, 4000]\nn = len(quote)",
+     "spiegazione": "Le parentesi quadre creano la lista, `len` la misura. Una lista è ordinata: gli elementi restano nell'ordine in cui li hai scritti, al contrario di quello che vedrai con gli insiemi."
+    },
+    {
+     "id": "p03-li-2",
+     "tipo": "write",
+     "testo": "Estrai da `quote` il primo elemento in `primo`, l'ultimo in `ultimo`, e la fetta dall'indice 1 al 3 escluso in `mezzo`.",
+     "setup": "quote = [0, 1000, 2000, 4000]\n",
+     "starter": "primo = \nultimo = \nmezzo = \n",
+     "test": "assert primo == 0, f'atteso 0, hai {primo}'\nassert ultimo == 4000, f'atteso 4000, hai {ultimo}'\nassert mezzo == [1000, 2000], f'attesa [1000, 2000], hai {mezzo}'",
+     "hint": [
+      "quote[0], quote[-1], quote[1:3]",
+      "L'estremo destro della fetta e' escluso."
+     ],
+     "soluzione": "primo = quote[0]\nultimo = quote[-1]\nmezzo = quote[1:3]",
+     "spiegazione": "Stesse regole delle stringhe e degli array NumPy: estremo destro escluso, indici negativi da destra. `quote[-1]` prende l'ultimo senza dover calcolare la lunghezza, e continua a funzionare se la lista cambia."
+    },
+    {
+     "id": "p03-li-3",
+     "tipo": "predict",
+     "testo": "Affetti una lista, modifichi la fetta. Cosa succede alla lista di partenza?",
+     "opzioni": [
+      "resta intatta: la fetta di una lista e' una copia",
+      "cambia anche lei: la fetta e' una vista",
+      "solleva un errore",
+      "dipende se la lista contiene numeri o stringhe"
+     ],
+     "risposta": "resta intatta: la fetta di una lista e' una copia",
+     "spiegazione": "Resta intatta: affettare una **lista** produce una copia. Su un array NumPy la stessa sintassi produce una **vista**, e modificarla cambia l'originale. Stessa scrittura, comportamento opposto — ed è una delle ragioni per cui NumPy non riusa le liste."
+    },
+    {
+     "id": "p03-li-4",
+     "tipo": "write",
+     "testo": "Dimostralo: prendi la fetta `s` dagli indici 1 a 3, cambiane il primo elemento a 99, e metti in `originale` la lista di partenza dopo l'operazione.",
+     "setup": "l = [1, 2, 3, 4, 5]\n",
+     "starter": "s = \ns[0] = 99\noriginale = \n",
+     "test": "assert s == [99, 3], f'la fetta modificata attesa [99, 3], hai {s}'\nassert originale == [1, 2, 3, 4, 5], f'l non deve cambiare, hai {originale}'",
+     "hint": [
+      "s = l[1:3]",
+      "originale = l"
+     ],
+     "soluzione": "s = l[1:3]\ns[0] = 99\noriginale = l",
+     "spiegazione": "`l` non è cambiata. Ricordarlo evita due errori opposti: aspettarsi che una fetta di lista si comporti come una vista NumPy, e passare l'intera lista a una funzione credendo di passarne una copia — perché quello sì che condivide l'oggetto."
+    },
+    {
+     "id": "p03-li-5",
+     "tipo": "predict",
+     "testo": "Quanto vale `[1, 2] + [3]` ?",
+     "opzioni": [
+      "[1, 2, 3]",
+      "[4, 2]",
+      "errore: lunghezze diverse",
+      "[1, 2, [3]]"
+     ],
+     "risposta": "[1, 2, 3]",
+     "spiegazione": "`[1, 2, 3]`: su una lista `+` **concatena**, non somma elemento per elemento. La stessa riga su due array NumPy sommerebbe i valori. È la differenza che rende `[1, 2] + [3]` legale e `np.array([1, 2]) + np.array([3])` un broadcast."
+    },
+    {
+     "id": "p03-li-6",
+     "tipo": "write",
+     "testo": "Costruisci `riga`, una lista di tre zeri, usando la ripetizione.",
+     "setup": "",
+     "starter": "riga = \n",
+     "test": "assert riga == [0, 0, 0], f'attesa [0, 0, 0], hai {riga}'\nassert len(riga) == 3, 'servono tre elementi'",
+     "hint": [
+      "L'operatore e' *",
+      "riga = [0] * 3"
+     ],
+     "soluzione": "riga = [0] * 3",
+     "spiegazione": "`[0] * 3` ripete l'elemento. Funziona bene con gli immutabili come i numeri; con una lista dentro ripete il **riferimento**, ed è la trappola che vedrai fra poco costruendo una griglia."
+    },
+    {
+     "id": "p03-li-7",
+     "tipo": "predict",
+     "testo": "`griglia = [[0] * 3] * 3`, poi `griglia[0][0] = 9`. Cosa contiene `griglia` ?",
+     "opzioni": [
+      "[[9, 0, 0], [9, 0, 0], [9, 0, 0]]",
+      "[[9, 0, 0], [0, 0, 0], [0, 0, 0]]",
+      "[[9, 9, 9], [0, 0, 0], [0, 0, 0]]",
+      "errore: griglia non e' bidimensionale"
+     ],
+     "risposta": "[[9, 0, 0], [9, 0, 0], [9, 0, 0]]",
+     "spiegazione": "Tutte e tre le righe diventano `[9, 0, 0]`: `* 3` ha ripetuto il **riferimento** alla stessa lista, non ne ha create tre. È il bug che non solleva niente e si scopre stampando. La forma corretta è `[[0] * 3 for _ in range(3)]`."
+    },
+    {
+     "id": "p03-li-8",
+     "tipo": "debug",
+     "testo": "Questa griglia condivide le righe: modificandone una cambiano tutte. Correggila mantenendo la forma 3×3 di zeri.",
+     "setup": "",
+     "starter": "griglia = [[0] * 3] * 3\ngriglia[0][0] = 9\n",
+     "test": "assert griglia == [[9, 0, 0], [0, 0, 0], [0, 0, 0]], f'attesa solo la prima riga modificata, hai {griglia}'",
+     "hint": [
+      "Serve creare tre liste distinte, non ripetere la stessa.",
+      "griglia = [[0] * 3 for _ in range(3)]"
+     ],
+     "soluzione": "griglia = [[0] * 3 for _ in range(3)]\ngriglia[0][0] = 9",
+     "spiegazione": "Con la comprehension ogni riga è una lista nuova, quindi modificarne una non tocca le altre. È un errore che in NumPy non puoi commettere, perché lì una matrice si crea con `np.zeros((3, 3))` e la questione non si pone."
+    },
+    {
+     "id": "p03-li-9",
+     "tipo": "write",
+     "testo": "Trova dove sta un valore: metti in `posizione` l'indice di 2000 dentro `quote`, e in `quanti` quante volte compare 1000.",
+     "setup": "quote = [0, 1000, 2000, 1000, 4000]\n",
+     "starter": "posizione = \nquanti = \n",
+     "test": "assert posizione == 2, f'attesa 2, hai {posizione}'\nassert quanti == 2, f'attesi 2, hai {quanti}'",
+     "hint": [
+      "I metodi sono index e count.",
+      "quote.index(2000); quote.count(1000)"
+     ],
+     "soluzione": "posizione = quote.index(2000)\nquanti = quote.count(1000)",
+     "spiegazione": "`index` dà la posizione della **prima** occorrenza e solleva `ValueError` se il valore non c'è; `count` le conta. Entrambi scorrono la lista da capo: su collezioni grandi in cui devi solo sapere se un valore c'è, un `set` risponde in tempo costante."
+    },
+    {
+     "id": "p03-li-10",
+     "tipo": "write",
+     "testo": "Una lista può contenere tipi diversi. Costruisci `misto` con l'intero 1, la stringa `\"due\"` e il float 3.0, e metti in `tipi` la lista dei nomi dei loro tipi.",
+     "setup": "",
+     "starter": "misto = \ntipi = \n",
+     "test": "assert misto == [1, \"due\", 3.0], f'attesa [1, \\'due\\', 3.0], hai {misto}'\nassert tipi == ['int', 'str', 'float'], f'attesi [int, str, float], hai {tipi}'",
+     "hint": [
+      "type(x).__name__ da' il nome del tipo.",
+      "tipi = [type(x).__name__ for x in misto]"
+     ],
+     "soluzione": "misto = [1, \"due\", 3.0]\ntipi = [type(x).__name__ for x in misto]",
+     "spiegazione": "`['int', 'str', 'float']`. È comodo e costoso: ogni elemento è un oggetto Python separato, col suo tipo da controllare a ogni operazione. Un array NumPy tiene numeri nudi tutti dello stesso tipo in memoria contigua, ed è da lì che arriva la sua velocità."
+    }
+   ]
+  },
+  {
+   "id": "p03-metodi",
+   "comando": "append, sort, pop",
+   "titolo": "i metodi che modificano e restituiscono None",
+   "esercizi": [
+    {
+     "id": "p03-me-1",
+     "tipo": "predict",
+     "testo": "Cosa restituisce `a.sort()` su una lista?",
+     "opzioni": [
+      "None: ordina sul posto e non restituisce niente",
+      "la lista ordinata",
+      "una copia ordinata, lasciando a intatta",
+      "il numero di scambi effettuati"
+     ],
+     "risposta": "None: ordina sul posto e non restituisce niente",
+     "spiegazione": "`None`. `sort` ordina la lista **sul posto** e non restituisce niente. Scrivere `a = a.sort()` non solleva nulla e ti lascia `a` uguale a `None`: l'errore esplode righe dopo, dove sembra non esserci niente di sbagliato. È la trappola più costosa del modulo."
+    },
+    {
+     "id": "p03-me-2",
+     "tipo": "write",
+     "testo": "Ordina `a` sul posto e metti in `ritorno` quello che il metodo restituisce.",
+     "setup": "a = [3, 1, 2]\n",
+     "starter": "ritorno = \nordinata = \n",
+     "test": "assert ritorno is None, f'sort restituisce None, hai {ritorno!r}'\nassert ordinata == [1, 2, 3], f'a doveva diventare [1, 2, 3], hai {ordinata}'",
+     "hint": [
+      "ritorno = a.sort()",
+      "ordinata = a"
+     ],
+     "soluzione": "ritorno = a.sort()\nordinata = a",
+     "spiegazione": "`a` diventa `[1, 2, 3]` e `ritorno` vale `None`. La regola generale di Python: un nome all'imperativo (`sort`, `append`, `reverse`) modifica e restituisce `None`; una funzione o un participio (`sorted`) restituisce un oggetto nuovo."
+    },
+    {
+     "id": "p03-me-3",
+     "tipo": "debug",
+     "testo": "Questo codice vuole la lista ordinata in `b`, ma `b` finisce a `None`. Correggi lasciando `a` intatta.",
+     "setup": "a = [3, 1, 2]\n",
+     "starter": "b = a.sort()\n",
+     "test": "assert b == [1, 2, 3], f'b attesa [1, 2, 3], hai {b!r}'\nassert a == [3, 1, 2], f'a doveva restare intatta, hai {a}'",
+     "hint": [
+      "Esiste una funzione che restituisce una lista nuova.",
+      "b = sorted(a)"
+     ],
+     "soluzione": "b = sorted(a)",
+     "spiegazione": "`sorted(a)` restituisce una lista nuova senza toccare `a`. Quando ti serve il risultato in una variabile è sempre `sorted`; `a.sort()` va usato solo quando vuoi davvero modificare `a` e non ti serve il valore."
+    },
+    {
+     "id": "p03-me-4",
+     "tipo": "write",
+     "testo": "Aggiungi un elemento in fondo a `a`, poi aggiungici gli elementi di `altri`. Metti il risultato finale in `finale`.",
+     "setup": "a = [1]\naltri = [2, 3]\n",
+     "starter": "finale = \n",
+     "test": "assert finale == [1, 4, 2, 3], f'attesa [1, 4, 2, 3], hai {finale}'",
+     "hint": [
+      "a.append(4) e poi a.extend(altri)",
+      "finale = a"
+     ],
+     "soluzione": "a.append(4)\na.extend(altri)\nfinale = a",
+     "spiegazione": "`append` aggiunge **un** elemento, `extend` aggiunge gli elementi di una sequenza. Sono la stessa distinzione fra mettere una scatola nel bagagliaio e svuotarci dentro il contenuto."
+    },
+    {
+     "id": "p03-me-5",
+     "tipo": "predict",
+     "testo": "`x = [1]` seguito da `x.append([2, 3])`. Cosa contiene `x` ?",
+     "opzioni": [
+      "[1, [2, 3]]",
+      "[1, 2, 3]",
+      "[[1], [2, 3]]",
+      "errore: append accetta un solo valore"
+     ],
+     "risposta": "[1, [2, 3]]",
+     "spiegazione": "`[1, [2, 3]]`: `append` ha messo **la lista** come singolo elemento. Per ottenere `[1, 2, 3]` serve `extend`. Nessun errore viene sollevato, e la lista annidata prosegue nel programma finché qualcosa non prova a sommarla."
+    },
+    {
+     "id": "p03-me-6",
+     "tipo": "write",
+     "testo": "Inserisci il valore 9 all'**inizio** di `a` e metti il risultato in `finale`.",
+     "setup": "a = [1, 2, 3]\n",
+     "starter": "finale = \n",
+     "test": "assert finale == [9, 1, 2, 3], f'attesa [9, 1, 2, 3], hai {finale}'",
+     "hint": [
+      "insert(posizione, valore)",
+      "a.insert(0, 9); finale = a"
+     ],
+     "soluzione": "a.insert(0, 9)\nfinale = a",
+     "spiegazione": "`insert` vuole prima la posizione e poi il valore — l'ordine opposto a quello che verrebbe da scrivere. Inserire in testa costa: tutti gli elementi vanno spostati di uno, quindi su liste grandi si evita."
+    },
+    {
+     "id": "p03-me-7",
+     "tipo": "write",
+     "testo": "Togli l'ultimo elemento di `a` mettendolo in `tolto`, poi togli quello in posizione 0 mettendolo in `primo`. Metti in `resto` la lista rimasta.",
+     "setup": "a = [1, 2, 3, 4, 5]\n",
+     "starter": "tolto = \nprimo = \nresto = \n",
+     "test": "assert tolto == 5, f'atteso 5, hai {tolto}'\nassert primo == 1, f'atteso 1, hai {primo}'\nassert resto == [2, 3, 4], f'attesa [2, 3, 4], hai {resto}'",
+     "hint": [
+      "a.pop() e a.pop(0)",
+      "resto = a"
+     ],
+     "soluzione": "tolto = a.pop()\nprimo = a.pop(0)\nresto = a",
+     "spiegazione": "`pop` toglie **e restituisce**: è l'unica di questa famiglia il cui valore di ritorno serve. Senza argomenti prende l'ultimo, con un indice prende quella posizione."
+    },
+    {
+     "id": "p03-me-8",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `a.pop(2)` e `a.remove(2)` ?",
+     "opzioni": [
+      "pop lavora per posizione, remove per valore",
+      "sono equivalenti",
+      "pop lavora per valore, remove per posizione",
+      "remove toglie tutte le occorrenze, pop una sola"
+     ],
+     "risposta": "pop lavora per posizione, remove per valore",
+     "spiegazione": "`pop(2)` toglie l'elemento in **posizione** 2, `remove(2)` toglie la prima occorrenza del **valore** 2. Su una lista di numeri i due si confondono facilmente, e producono risultati diversi senza nessun errore."
+    },
+    {
+     "id": "p03-me-9",
+     "tipo": "write",
+     "testo": "Togli da `a` la prima occorrenza del valore 2 e metti il risultato in `finale`.",
+     "setup": "a = [1, 2, 3, 2]\n",
+     "starter": "finale = \n",
+     "test": "assert finale == [1, 3, 2], f'attesa [1, 3, 2], hai {finale}'",
+     "hint": [
+      "Il metodo e' remove e prende il valore.",
+      "a.remove(2); finale = a"
+     ],
+     "soluzione": "a.remove(2)\nfinale = a",
+     "spiegazione": "`remove` toglie solo la **prima** occorrenza, non tutte, e solleva `ValueError` se il valore non c'è. Per toglierle tutte serve una comprehension con la condizione negata."
+    },
+    {
+     "id": "p03-me-10",
+     "tipo": "write",
+     "testo": "Ordina `parole` per **lunghezza** invece che in ordine alfabetico, in `per_lunghezza`.",
+     "setup": "parole = [\"bbb\", \"a\", \"cc\"]\n",
+     "starter": "per_lunghezza = \n",
+     "test": "assert per_lunghezza == ['a', 'cc', 'bbb'], f'attesa [a, cc, bbb], hai {per_lunghezza}'\nassert parole == ['bbb', 'a', 'cc'], 'parole deve restare intatta'",
+     "hint": [
+      "sorted accetta il parametro key.",
+      "sorted(parole, key=len)"
+     ],
+     "soluzione": "per_lunghezza = sorted(parole, key=len)",
+     "spiegazione": "`sorted` accetta `key`: una funzione applicata a ogni elemento, il cui risultato decide l'ordine. Passare `len` — la funzione, non `len()` chiamata — è la forma idiomatica, e la stessa idea regge l'ordinamento per qualunque criterio."
+    },
+    {
+     "id": "p03-me-11",
+     "tipo": "write",
+     "testo": "Ordina `quote` dal più grande al più piccolo in `decrescente`, lasciando `quote` intatta.",
+     "setup": "quote = [1000, 4000, 0, 2000]\n",
+     "starter": "decrescente = \n",
+     "test": "assert decrescente == [4000, 2000, 1000, 0], f'attesa [4000, 2000, 1000, 0], hai {decrescente}'\nassert quote == [1000, 4000, 0, 2000], 'quote deve restare intatta'",
+     "hint": [
+      "sorted accetta reverse=True.",
+      "sorted(quote, reverse=True)"
+     ],
+     "soluzione": "decrescente = sorted(quote, reverse=True)",
+     "spiegazione": "`reverse=True` inverte il criterio. Non va confuso con il metodo `reverse()`, che ribalta la lista sul posto e restituisce `None`: stessa parola, due cose diverse, e una delle due ti lascia `None` in mano."
+    },
+    {
+     "id": "p03-me-12",
+     "tipo": "write",
+     "testo": "Copia una lista prima di modificarla: crea `copia` di `a`, aggiungici 99, e metti in `intatta` la lista di partenza.",
+     "setup": "a = [1, 2, 3]\n",
+     "starter": "copia = \ncopia.append(99)\nintatta = \n",
+     "test": "assert copia == [1, 2, 3, 99], f'copia attesa [1, 2, 3, 99], hai {copia}'\nassert intatta == [1, 2, 3], f'a doveva restare intatta, hai {intatta}'",
+     "hint": [
+      "Il metodo e' copy().",
+      "copia = a.copy(); intatta = a"
+     ],
+     "soluzione": "copia = a.copy()\ncopia.append(99)\nintatta = a",
+     "spiegazione": "`a.copy()` crea un oggetto nuovo; `copia = a` avrebbe legato un secondo nome allo stesso oggetto, e `a` sarebbe cambiata insieme a `copia`. È la stessa distinzione fra vista e copia degli array NumPy, e qui la scelta è tua a ogni riga."
+    }
+   ]
+  },
+  {
+   "id": "p03-tuple",
+   "comando": "tuple",
+   "titolo": "tuple — la virgola, non le parentesi",
+   "esercizi": [
+    {
+     "id": "p03-tu-1",
+     "tipo": "write",
+     "testo": "Crea `t`, la tupla dei tre valori 1, 2 e 3, e leggine il primo in `primo`.",
+     "setup": "",
+     "starter": "t = \nprimo = \n",
+     "test": "assert t == (1, 2, 3), f'attesa (1, 2, 3), hai {t}'\nassert isinstance(t, tuple), f'atteso un tuple, hai {type(t).__name__}'\nassert primo == 1, f'atteso 1, hai {primo}'",
+     "hint": [
+      "Le tuple si scrivono fra parentesi tonde.",
+      "t = (1, 2, 3); primo = t[0]"
+     ],
+     "soluzione": "t = (1, 2, 3)\nprimo = t[0]",
+     "spiegazione": "Una tupla si legge esattamente come una lista: indici, fette, `len`. La differenza sta solo nella modifica, che non è permessa."
+    },
+    {
+     "id": "p03-tu-2",
+     "tipo": "predict",
+     "testo": "Cosa succede scrivendo `t[0] = 9` su una tupla?",
+     "opzioni": [
+      "TypeError: la tupla non supporta l'assegnazione",
+      "funziona: la tupla diventa (9, ...)",
+      "crea silenziosamente una nuova tupla",
+      "ValueError"
+     ],
+     "risposta": "TypeError: la tupla non supporta l'assegnazione",
+     "spiegazione": "`TypeError: 'tuple' object does not support item assignment`. Una tupla è immutabile: serve quando i valori vanno insieme e non devono cambiare — una coordinata, una shape, una riga letta da un file. Qui l'errore è esplicito, il che è una fortuna."
+    },
+    {
+     "id": "p03-tu-3",
+     "tipo": "predict",
+     "testo": "Che tipo ha `(1)` ?",
+     "opzioni": [
+      "int",
+      "tuple",
+      "list",
+      "errore di sintassi"
+     ],
+     "risposta": "int",
+     "spiegazione": "`int`. Le parentesi qui raggruppano e basta: è la **virgola** a fare la tupla, non le parentesi. Una tupla di un elemento si scrive `(1,)`, ed è la causa del bug in cui `shape=(3)` non fa quello che credi."
+    },
+    {
+     "id": "p03-tu-4",
+     "tipo": "write",
+     "testo": "Costruisci una tupla di **un solo** elemento contenente 5, e metti in `tipo` il nome del suo tipo.",
+     "setup": "",
+     "starter": "uno = \ntipo = \n",
+     "test": "assert uno == (5,), f'attesa (5,), hai {uno!r}'\nassert tipo == 'tuple', f'atteso tuple, hai {tipo!r}'",
+     "hint": [
+      "Serve la virgola finale.",
+      "uno = (5,); tipo = type(uno).__name__"
+     ],
+     "soluzione": "uno = (5,)\ntipo = type(uno).__name__",
+     "spiegazione": "La virgola finale è obbligatoria. È l'unica sintassi di Python in cui un carattere invisibile a fine riga cambia il tipo del risultato, e non solleva niente perché anche `(5)` è codice valido."
+    },
+    {
+     "id": "p03-tu-5",
+     "tipo": "predict",
+     "testo": "`t = (1, [2, 3])`, poi `t[1].append(4)`. Cosa succede?",
+     "opzioni": [
+      "funziona: la tupla diventa (1, [2, 3, 4])",
+      "TypeError: la tupla e' immutabile",
+      "la lista viene copiata e la tupla resta (1, [2, 3])",
+      "AttributeError"
+     ],
+     "risposta": "funziona: la tupla diventa (1, [2, 3, 4])",
+     "spiegazione": "Diventa `(1, [2, 3, 4])`: la tupla garantisce che i suoi elementi restino **quegli oggetti**, non che quegli oggetti non cambino. Se dentro c'è una lista, la lista resta modificabile. L'immutabilità è superficiale."
+    },
+    {
+     "id": "p03-tu-6",
+     "tipo": "write",
+     "testo": "Spacchetta la tupla `coord` in `x`, `y` e `z`, e mettine la somma in `somma`.",
+     "setup": "coord = (10.0, 20.0, 30.0)\n",
+     "starter": "x, y, z = \nsomma = \n",
+     "test": "assert (x, y, z) == (10.0, 20.0, 30.0), f'attesi 10, 20, 30, hai {(x, y, z)}'\nassert somma == 60.0, f'attesa 60.0, hai {somma}'",
+     "hint": [
+      "x, y, z = coord",
+      "somma = x + y + z"
+     ],
+     "soluzione": "x, y, z = coord\nsomma = x + y + z",
+     "spiegazione": "È lo stesso spacchettamento dell'assegnazione multipla. Il numero dei nomi deve corrispondere: uno in più o in meno solleva `ValueError`, che qui è una protezione utile — ti accorgi subito se il dato ha la forma sbagliata."
+    },
+    {
+     "id": "p03-tu-7",
+     "tipo": "write",
+     "testo": "`enumerate` produce tuple `(indice, valore)`. Costruisci `coppie`, la lista delle coppie di `nomi`.",
+     "setup": "nomi = [\"ala\", \"coda\"]\n",
+     "starter": "coppie = \n",
+     "test": "assert coppie == [(0, 'ala'), (1, 'coda')], f'attesa [(0, ala), (1, coda)], hai {coppie}'",
+     "hint": [
+      "list() consuma enumerate.",
+      "coppie = list(enumerate(nomi))"
+     ],
+     "soluzione": "coppie = list(enumerate(nomi))",
+     "spiegazione": "`[(0, 'ala'), (1, 'coda')]`. `enumerate` e `zip` restituiscono tuple, ed è il motivo per cui `for i, v in enumerate(x)` funziona: il `for` spacchetta ogni tupla al volo."
+    },
+    {
+     "id": "p03-tu-8",
+     "tipo": "write",
+     "testo": "`zip` accoppia due sequenze. Costruisci `abbinate`, la lista delle coppie fra `codici` e `pesi`.",
+     "setup": "codici = [101, 102, 103]\npesi = [12.5, 8.0]\n",
+     "starter": "abbinate = \n",
+     "test": "assert abbinate == [(101, 12.5), (102, 8.0)], f'attesa [(101, 12.5), (102, 8.0)], hai {abbinate}'\nassert len(abbinate) == 2, 'zip si ferma alla sequenza piu corta'",
+     "hint": [
+      "abbinate = list(zip(codici, pesi))",
+      "zip si ferma alla piu corta."
+     ],
+     "soluzione": "abbinate = list(zip(codici, pesi))",
+     "spiegazione": "`zip` si ferma alla **più corta** delle due sequenze, senza avvisare: se una lista ha un elemento in più, quello sparisce dal risultato. È il modo silenzioso in cui si perde una riga leggendo due colonne da file diversi."
+    }
+   ]
+  },
+  {
+   "id": "p03-dict",
+   "comando": "dict",
+   "titolo": "dict — cercare per chiave",
+   "esercizi": [
+    {
+     "id": "p03-di-1",
+     "tipo": "write",
+     "testo": "Crea `d`, il dizionario con chiave `\"quota\"` che vale 9000 e chiave `\"mach\"` che vale 0.82. Leggi la quota in `q`.",
+     "setup": "",
+     "starter": "d = \nq = \n",
+     "test": "assert d == {'quota': 9000, 'mach': 0.82}, f'atteso il dizionario con quota e mach, hai {d}'\nassert q == 9000, f'attesa 9000, hai {q}'",
+     "hint": [
+      "{\"chiave\": valore, ...}",
+      "d = {\"quota\": 9000, \"mach\": 0.82}; q = d[\"quota\"]"
+     ],
+     "soluzione": "d = {\"quota\": 9000, \"mach\": 0.82}\nq = d[\"quota\"]",
+     "spiegazione": "Le graffe creano il dizionario, i due punti separano chiave e valore. La ricerca per chiave costa tempo costante: cercare in un dizionario da un milione di voci costa quanto cercarne in uno da dieci."
+    },
+    {
+     "id": "p03-di-2",
+     "tipo": "write",
+     "testo": "Aggiungi a `d` la chiave `\"cl\"` con valore 0.45 e metti in `chiavi` la lista delle chiavi nell'ordine in cui stanno.",
+     "setup": "d = {\"quota\": 9000, \"mach\": 0.82}\n",
+     "starter": "chiavi = \n",
+     "test": "assert chiavi == ['quota', 'mach', 'cl'], f'attesa [quota, mach, cl], hai {chiavi}'\nassert d['cl'] == 0.45, 'cl deve valere 0.45'",
+     "hint": [
+      "Assegnare a una chiave nuova la aggiunge: d[\"cl\"] = 0.45",
+      "chiavi = list(d.keys())"
+     ],
+     "soluzione": "d[\"cl\"] = 0.45\nchiavi = list(d.keys())",
+     "spiegazione": "`['quota', 'mach', 'cl']`: da Python 3.7 un dizionario conserva l'**ordine di inserimento**. Prima non era garantito, ed è il motivo per cui trovi ancora codice vecchio che usa strutture apposta per mantenerlo."
+    },
+    {
+     "id": "p03-di-3",
+     "tipo": "predict",
+     "testo": "Cosa succede leggendo `d[\"z\"]` con `\"z\"` che non è fra le chiavi?",
+     "opzioni": [
+      "KeyError",
+      "restituisce None",
+      "restituisce 0",
+      "crea la chiave con valore None"
+     ],
+     "risposta": "KeyError",
+     "spiegazione": "Solleva `KeyError`. Le parentesi quadre pretendono che la chiave ci sia: se **deve** esserci, quell'errore è un'informazione e va lasciato esplodere. Solo quando la chiave può legittimamente mancare si usa `get`."
+    },
+    {
+     "id": "p03-di-4",
+     "tipo": "write",
+     "testo": "Leggi una chiave che potrebbe mancare: metti in `senza` il risultato di `get` sulla chiave `\"z\"`, e in `con_riserva` lo stesso con valore di riserva 0.",
+     "setup": "d = {\"quota\": 9000}\n",
+     "starter": "senza = \ncon_riserva = \n",
+     "test": "assert senza is None, f'atteso None, hai {senza!r}'\nassert con_riserva == 0, f'atteso 0, hai {con_riserva}'",
+     "hint": [
+      "d.get(\"z\") e d.get(\"z\", 0)",
+      "Il secondo argomento e' il valore di riserva."
+     ],
+     "soluzione": "senza = d.get(\"z\")\ncon_riserva = d.get(\"z\", 0)",
+     "spiegazione": "`None` e `0`. `get` non esplode, e questo è insieme il suo pregio e il suo rischio: `d.get(\"quotaa\")` restituisce `None` per un nome scritto male, e quel `None` prosegue tranquillo dentro il calcolo."
+    },
+    {
+     "id": "p03-di-5",
+     "tipo": "predict",
+     "testo": "`\"a\" in d` su un dizionario: cosa cerca?",
+     "opzioni": [
+      "cerca fra le chiavi",
+      "cerca fra i valori",
+      "cerca fra le coppie chiave-valore",
+      "cerca prima fra le chiavi, poi fra i valori"
+     ],
+     "risposta": "cerca fra le chiavi",
+     "spiegazione": "Le **chiavi**, mai i valori. Anche `for k in d` scorre le chiavi. Per cercare fra i valori serve `in d.values()`, che però scorre tutto e perde il vantaggio del dizionario."
+    },
+    {
+     "id": "p03-di-6",
+     "tipo": "write",
+     "testo": "Verifica la presenza: metti in `c_e_chiave` il controllo che `\"quota\"` sia una chiave, e in `c_e_valore` che 9000 sia fra i valori.",
+     "setup": "d = {\"quota\": 9000, \"mach\": 0.82}\n",
+     "starter": "c_e_chiave = \nc_e_valore = \n",
+     "test": "assert c_e_chiave is True, 'quota e una chiave'\nassert c_e_valore is True, '9000 e fra i valori'\nassert (9000 in d) is False, 'in d guarda le chiavi, non i valori'",
+     "hint": [
+      "\"quota\" in d",
+      "9000 in d.values()"
+     ],
+     "soluzione": "c_e_chiave = \"quota\" in d\nc_e_valore = 9000 in d.values()",
+     "spiegazione": "`in d` guarda le chiavi, `in d.values()` i valori. La seconda scorre l'intero dizionario, quindi costa come una lista: se devi cercare spesso per valore, la struttura è girata dalla parte sbagliata."
+    },
+    {
+     "id": "p03-di-7",
+     "tipo": "write",
+     "testo": "Metti in `valori` la lista dei valori di `d`, e in `coppie` la lista delle coppie chiave-valore.",
+     "setup": "d = {\"a\": 1, \"b\": 2}\n",
+     "starter": "valori = \ncoppie = \n",
+     "test": "assert valori == [1, 2], f'attesa [1, 2], hai {valori}'\nassert coppie == [('a', 1), ('b', 2)], f'attesa [(a, 1), (b, 2)], hai {coppie}'",
+     "hint": [
+      "list(d.values())",
+      "list(d.items())"
+     ],
+     "soluzione": "valori = list(d.values())\ncoppie = list(d.items())",
+     "spiegazione": "`values()` e `items()` non restituiscono liste ma viste, che riflettono il dizionario se cambia: per averne una lista vera serve `list()` attorno. Le coppie di `items()` sono tuple, ed è quello che rende scrivibile `for k, v in d.items()`."
+    },
+    {
+     "id": "p03-di-8",
+     "tipo": "write",
+     "testo": "Somma tutti i valori di `d` in `totale`.",
+     "setup": "d = {\"a\": 10, \"b\": 20, \"c\": 5}\n",
+     "starter": "totale = \n",
+     "test": "assert totale == 35, f'atteso 35, hai {totale}'",
+     "hint": [
+      "sum() accetta qualunque sequenza di numeri.",
+      "totale = sum(d.values())"
+     ],
+     "soluzione": "totale = sum(d.values())",
+     "spiegazione": "`sum(d.values())` — non `sum(d)`, che sommerebbe le chiavi e su chiavi di testo solleva `TypeError`. È il caso in cui l'errore ti salva; con chiavi numeriche non ti salverebbe."
+    },
+    {
+     "id": "p03-di-9",
+     "tipo": "write",
+     "testo": "Trova la chiave col valore più alto: mettila in `massima`.",
+     "setup": "d = {\"a\": 10, \"b\": 20, \"c\": 5}\n",
+     "starter": "massima = \n",
+     "test": "assert massima == 'b', f'attesa b, hai {massima!r}'",
+     "hint": [
+      "max(d, key=...) confronta le chiavi secondo una funzione.",
+      "massima = max(d, key=d.get)"
+     ],
+     "soluzione": "massima = max(d, key=d.get)",
+     "spiegazione": "`max` accetta `key`, come `sorted`: qui la funzione è \"il valore associato alla chiave\", quindi il confronto avviene sui valori ma il risultato restituito è la chiave. È il pattern che sostituisce un ciclo con una variabile di massimo."
+    },
+    {
+     "id": "p03-di-10",
+     "tipo": "debug",
+     "testo": "Questo codice vuole contare le occorrenze, ma esplode sulla prima chiave nuova. Correggilo usando la lettura che non solleva errori.",
+     "setup": "codici = [\"a\", \"b\", \"a\"]\nconteggi = {}\n",
+     "starter": "for c in codici:\n    conteggi[c] = conteggi[c] + 1\n",
+     "test": "assert conteggi == {'a': 2, 'b': 1}, f'attesi a:2 e b:1, hai {conteggi}'",
+     "hint": [
+      "Serve un valore di riserva quando la chiave non c'e' ancora.",
+      "conteggi[c] = conteggi.get(c, 0) + 1"
+     ],
+     "soluzione": "for c in codici:\n    conteggi[c] = conteggi.get(c, 0) + 1",
+     "spiegazione": "`conteggi[c]` su una chiave mai vista solleva `KeyError`; `conteggi.get(c, 0)` restituisce 0 e il conteggio parte. È il caso in cui `get` con valore di riserva sostituisce un `if` di due righe."
+    },
+    {
+     "id": "p03-di-11",
+     "tipo": "write",
+     "testo": "Scorri `d` e costruisci `righe`, la lista delle stringhe `\"chiave=valore\"`.",
+     "setup": "d = {\"a\": 1, \"b\": 2}\n",
+     "starter": "righe = \n",
+     "test": "assert righe == ['a=1', 'b=2'], f'attesa [a=1, b=2], hai {righe}'",
+     "hint": [
+      "Serve una comprehension su d.items().",
+      "righe = [f\"{k}={v}\" for k, v in d.items()]"
+     ],
+     "soluzione": "righe = [f\"{k}={v}\" for k, v in d.items()]",
+     "spiegazione": "`for k, v in d.items()` spacchetta ogni coppia, e la f-string compone. È il modo standard di serializzare un dizionario a mano, e la forma da riconoscere quando la leggi."
+    },
+    {
+     "id": "p03-di-12",
+     "tipo": "apply",
+     "testo": "**Da due liste a un dizionario, e ritorno.**\n\nHai i nomi delle colonne e i valori di una riga letta da file. Costruisci:\n\n- `record`: il dizionario che associa ogni nome al suo valore\n- `q`: la quota letta dal dizionario\n- `riassunto`: la stringa `\"quota=9000, mach=0.82, cl=0.45\"`",
+     "difficolta": 2,
+     "setup": "colonne = [\"quota\", \"mach\", \"cl\"]\nvalori = [9000, 0.82, 0.45]\n",
+     "starter": "record = \nq = \nriassunto = \n",
+     "test": "assert record == {'quota': 9000, 'mach': 0.82, 'cl': 0.45}, f'record atteso diverso, hai {record}'\nassert q == 9000, f'attesa 9000, hai {q}'\nassert riassunto == 'quota=9000, mach=0.82, cl=0.45', f'riassunto atteso diverso, hai {riassunto!r}'",
+     "hint": [
+      "dict(zip(colonne, valori)) costruisce il dizionario.",
+      "Per il riassunto: \", \".join di una comprehension su record.items()"
+     ],
+     "soluzione": "record = dict(zip(colonne, valori))\nq = record[\"quota\"]\nriassunto = \", \".join([f\"{k}={v}\" for k, v in record.items()])",
+     "spiegazione": "`zip` accoppia e `dict` costruisce: è la riga che trasforma una tabella in record leggibili per nome invece che per posizione. Il vantaggio pratico è che il codice smette di dipendere dall'ordine delle colonne — se domani il file ne aggiunge una in mezzo, `record[\"mach\"]` continua a funzionare mentre `riga[1]` no."
+    }
+   ]
+  },
+  {
+   "id": "p03-set",
+   "comando": "set",
+   "titolo": "set — niente duplicati, niente ordine",
+   "esercizi": [
+    {
+     "id": "p03-se-1",
+     "tipo": "write",
+     "testo": "Crea `s`, l'insieme dai valori 1, 2, 2, 3, e mettine la dimensione in `n`.",
+     "setup": "",
+     "starter": "s = \nn = \n",
+     "test": "assert s == {1, 2, 3}, f'atteso {{1, 2, 3}}, hai {s}'\nassert n == 3, f'attesi 3, hai {n}'",
+     "hint": [
+      "Gli insiemi si scrivono fra graffe, senza due punti.",
+      "s = {1, 2, 2, 3}; n = len(s)"
+     ],
+     "soluzione": "s = {1, 2, 2, 3}\nn = len(s)",
+     "spiegazione": "`{1, 2, 3}` e `n` vale 3: l'insieme scarta i duplicati da solo, senza che tu chieda niente. È il modo più corto di rispondere a \"quanti valori distinti ci sono\"."
+    },
+    {
+     "id": "p03-se-2",
+     "tipo": "write",
+     "testo": "Togli i duplicati da una lista mantenendone il conteggio: metti i valori distinti in `distinti` (come lista ordinata) e il loro numero in `quanti`.",
+     "setup": "codici = [3, 1, 2, 3, 1]\n",
+     "starter": "distinti = \nquanti = \n",
+     "test": "assert distinti == [1, 2, 3], f'attesa [1, 2, 3], hai {distinti}'\nassert quanti == 3, f'attesi 3, hai {quanti}'",
+     "hint": [
+      "set(codici) toglie i duplicati.",
+      "distinti = sorted(set(codici))"
+     ],
+     "soluzione": "distinti = sorted(set(codici))\nquanti = len(distinti)",
+     "spiegazione": "`set` toglie i duplicati ma **non ha ordine**: per una lista prevedibile serve `sorted` attorno. È la ragione per cui `list(set(x))` non va mai usato quando l'ordine conta — funziona nei test e sorprende in produzione."
+    },
+    {
+     "id": "p03-se-3",
+     "tipo": "predict",
+     "testo": "Perché cercare con `in` è molto più veloce su un `set` che su una `list` ?",
+     "opzioni": [
+      "il set usa una tabella hash: il tempo non dipende da quanti elementi ci sono",
+      "il set e' ordinato, quindi si puo' fare una ricerca binaria",
+      "il set e' scritto in C e la lista no",
+      "non e' vero: sono equivalenti"
+     ],
+     "risposta": "il set usa una tabella hash: il tempo non dipende da quanti elementi ci sono",
+     "spiegazione": "Perché l'insieme usa una tabella hash e risponde in tempo **costante**, mentre la lista va scorsa elemento per elemento. Su liste di poche decine non si nota; su centomila elementi cercati centomila volte, la differenza è fra un istante e minuti."
+    },
+    {
+     "id": "p03-se-4",
+     "tipo": "write",
+     "testo": "Confronta due campagne di prove: metti in `comuni` i codici presenti in entrambe, e in `solo_a` quelli presenti solo nella prima. Entrambi come liste ordinate.",
+     "setup": "a = {101, 102, 103}\nb = {102, 103, 104}\n",
+     "starter": "comuni = \nsolo_a = \n",
+     "test": "assert comuni == [102, 103], f'attesa [102, 103], hai {comuni}'\nassert solo_a == [101], f'attesa [101], hai {solo_a}'",
+     "hint": [
+      "Gli operatori sono & e -",
+      "comuni = sorted(a & b); solo_a = sorted(a - b)"
+     ],
+     "soluzione": "comuni = sorted(a & b)\nsolo_a = sorted(a - b)",
+     "spiegazione": "`&` è l'intersezione e `-` la differenza. Sostituiscono un doppio ciclo con un `if` dentro, e lo fanno in tempo lineare invece che quadratico — la stessa struttura del confronto fra due elenchi di provini."
+    },
+    {
+     "id": "p03-se-5",
+     "tipo": "write",
+     "testo": "Unisci i due insiemi in `tutti`, come lista ordinata.",
+     "setup": "a = {101, 102}\nb = {102, 104}\n",
+     "starter": "tutti = \n",
+     "test": "assert tutti == [101, 102, 104], f'attesa [101, 102, 104], hai {tutti}'",
+     "hint": [
+      "L'operatore e' |",
+      "tutti = sorted(a | b)"
+     ],
+     "soluzione": "tutti = sorted(a | b)",
+     "spiegazione": "`|` è l'unione, e i duplicati spariscono da soli. Fare la stessa cosa concatenando due liste lascerebbe i doppioni: `a + b` non sa niente di insiemi."
+    },
+    {
+     "id": "p03-se-6",
+     "tipo": "predict",
+     "testo": "Un `set` può contenere una lista come elemento?",
+     "opzioni": [
+      "no: gli elementi devono essere immutabili, e la lista non lo e'",
+      "si', come qualunque altro oggetto",
+      "si', ma la lista viene convertita in tupla",
+      "solo se la lista contiene numeri"
+     ],
+     "risposta": "no: gli elementi devono essere immutabili, e la lista non lo e'",
+     "spiegazione": "No: solleva `TypeError`, perché gli elementi di un insieme devono essere immutabili — è la condizione per poterli usare in una tabella hash. Le tuple invece vanno bene, ed è uno dei motivi pratici per cui esistono."
+    }
+   ]
+  },
+  {
+   "id": "p03-comprehension",
+   "comando": "comprehension",
+   "titolo": "comprehension — il ciclo che costruisce",
+   "esercizi": [
+    {
+     "id": "p03-co-1",
+     "tipo": "write",
+     "testo": "Costruisci `quadrati`, la lista dei quadrati dei numeri da 0 a 4, con una comprehension.",
+     "setup": "",
+     "starter": "quadrati = \n",
+     "test": "assert quadrati == [0, 1, 4, 9, 16], f'attesa [0, 1, 4, 9, 16], hai {quadrati}'",
+     "hint": [
+      "[espressione for nome in sequenza]",
+      "quadrati = [x**2 for x in range(5)]"
+     ],
+     "soluzione": "quadrati = [x**2 for x in range(5)]",
+     "spiegazione": "`[0, 1, 4, 9, 16]`. Si legge da sinistra: *cosa metto dentro*, *da dove lo prendo*. Sostituisce le tre righe di lista vuota, ciclo e `append`, ed è la forma che leggerai ovunque."
+    },
+    {
+     "id": "p03-co-2",
+     "tipo": "write",
+     "testo": "Filtra: costruisci `multipli`, i numeri da 0 a 9 divisibili per 3.",
+     "setup": "",
+     "starter": "multipli = \n",
+     "test": "assert multipli == [0, 3, 6, 9], f'attesa [0, 3, 6, 9], hai {multipli}'",
+     "hint": [
+      "La condizione va alla fine: [x for x in ... if ...]",
+      "multipli = [x for x in range(10) if x % 3 == 0]"
+     ],
+     "soluzione": "multipli = [x for x in range(10) if x % 3 == 0]",
+     "spiegazione": "`[0, 3, 6, 9]`. La condizione va **in fondo**: prima cosa tieni, poi da dove, poi quale. Filtrare e trasformare si combinano nella stessa riga, ed è il punto in cui una comprehension inizia a diventare illeggibile — oltre due operazioni, conviene tornare al ciclo."
+    },
+    {
+     "id": "p03-co-3",
+     "tipo": "debug",
+     "testo": "Questo ciclo costruisce una lista in tre righe. Riscrivilo come comprehension, lasciando `celsius` intatta.",
+     "setup": "celsius = [0.0, 15.0, 100.0]\n",
+     "starter": "kelvin = []\nfor c in celsius:\n    kelvin.append(c + 273.15)\n",
+     "test": "assert kelvin == [273.15, 288.15, 373.15], f'attesa [273.15, 288.15, 373.15], hai {kelvin}'\nassert celsius == [0.0, 15.0, 100.0], 'celsius deve restare intatta'",
+     "hint": [
+      "[espressione for c in celsius]",
+      "kelvin = [c + 273.15 for c in celsius]"
+     ],
+     "soluzione": "kelvin = [c + 273.15 for c in celsius]",
+     "spiegazione": "Una riga al posto di tre, e nessuna lista vuota da inizializzare. È lo stesso passaggio che in NumPy porta da un ciclo a un'operazione vettorizzata — con la differenza che lì si guadagna anche in velocità, mentre una comprehension resta un ciclo Python."
+    },
+    {
+     "id": "p03-co-4",
+     "tipo": "write",
+     "testo": "Costruisci un dizionario con una comprehension: `lunghezze` associa ogni parola alla sua lunghezza.",
+     "setup": "parti = [\"ala\", \"fusoliera\"]\n",
+     "starter": "lunghezze = \n",
+     "test": "assert lunghezze == {'ala': 3, 'fusoliera': 9}, f'atteso ala:3 e fusoliera:9, hai {lunghezze}'",
+     "hint": [
+      "{chiave: valore for nome in sequenza}",
+      "lunghezze = {p: len(p) for p in parti}"
+     ],
+     "soluzione": "lunghezze = {p: len(p) for p in parti}",
+     "spiegazione": "`{'ala': 3, 'fusoliera': 9}`. Stessa sintassi della comprehension di lista, con `chiave: valore` al posto della sola espressione — ed è il modo più corto di costruire un indice da una lista."
+    },
+    {
+     "id": "p03-co-5",
+     "tipo": "write",
+     "testo": "Costruisci `griglia`, una matrice 3×3 di zeri in cui ogni riga sia una lista **distinta**, e modifica solo l'elemento in alto a sinistra a 9.",
+     "setup": "",
+     "starter": "griglia = \ngriglia[0][0] = 9\n",
+     "test": "assert griglia == [[9, 0, 0], [0, 0, 0], [0, 0, 0]], f'attesa solo la prima riga modificata, hai {griglia}'",
+     "hint": [
+      "Serve una comprehension che crei una riga nuova ogni volta.",
+      "griglia = [[0] * 3 for _ in range(3)]"
+     ],
+     "soluzione": "griglia = [[0] * 3 for _ in range(3)]\ngriglia[0][0] = 9",
+     "spiegazione": "La comprehension esegue `[0] * 3` tre volte, creando tre liste diverse; `[[0] * 3] * 3` avrebbe ripetuto lo stesso riferimento. È l'uso più importante della comprehension in Python base, e l'unico modo corretto di costruire una matrice annidata a mano."
+    },
+    {
+     "id": "p03-co-6",
+     "tipo": "apply",
+     "testo": "**Filtrare un registro di volo.**\n\nDa due liste parallele — quote e numeri di Mach dello stesso punto di volo — ricava:\n\n- `punti`: la lista delle coppie `(quota, mach)`\n- `crociera`: le sole coppie con quota sopra 8000 **e** Mach sopra 0.8\n- `quote_crociera`: le sole quote di quei punti",
+     "difficolta": 2,
+     "setup": "quote = [3000, 9000, 11000, 9500]\nmach = [0.4, 0.82, 0.78, 0.85]\n",
+     "starter": "punti = \ncrociera = \nquote_crociera = \n",
+     "test": "assert punti == [(3000, 0.4), (9000, 0.82), (11000, 0.78), (9500, 0.85)], f'punti attesi diversi, hai {punti}'\nassert crociera == [(9000, 0.82), (9500, 0.85)], f'crociera attesa [(9000, 0.82), (9500, 0.85)], hai {crociera}'\nassert quote_crociera == [9000, 9500], f'attesa [9000, 9500], hai {quote_crociera}'",
+     "hint": [
+      "punti = list(zip(quote, mach))",
+      "crociera = [(q, m) for q, m in punti if q > 8000 and m > 0.8]"
+     ],
+     "soluzione": "punti = list(zip(quote, mach))\ncrociera = [(q, m) for q, m in punti if q > 8000 and m > 0.8]\nquote_crociera = [q for q, m in crociera]",
+     "spiegazione": "`zip` accoppia, la comprehension filtra, una seconda comprehension estrae. Sono tre righe che in NumPy diventerebbero una maschera booleana — e il confronto vale la pena: qui il ciclo lo scrivi tu ed è visibile, là scompare dentro l'operazione.\n\nNota che la condizione lavora sulla tupla spacchettata `for q, m in punti`: è lo stesso spacchettamento del `for` su `enumerate`, e rende la condizione leggibile invece di riempirla di indici."
+    }
+   ]
+  }
+ ]
+}

@@ -8,11 +8,11 @@
       "perche": "Quello che NumPy da' per scontato: tipi, controllo di flusso, funzioni, e come si legge un errore. Gira sullo stesso motore dei moduli NumPy, senza niente da installare.",
       "disponibile": true,
       "moduli": [
-        "p01"
+        "p01",
+        "p02",
+        "p03"
       ],
       "prossimi": [
-        "Numeri e stringhe — operatori, formattazione con f-string, divisione intera",
-        "Liste, tuple, dizionari — quando serve quale, e perche' NumPy non usa le liste",
         "Controllo di flusso — if, for, while, range, enumerate, zip",
         "Funzioni — argomenti, default, valori di ritorno, scope",
         "Leggere un errore — traceback, TypeError, NameError, IndexError, KeyError",
@@ -118,6 +118,18 @@
       "id": "p01",
       "file": "p01-basi.json",
       "titolo": "print, variabili e tipi",
+      "disponibile": true
+    },
+    {
+      "id": "p02",
+      "file": "p02-operatori.json",
+      "titolo": "Operatori e formattazione",
+      "disponibile": true
+    },
+    {
+      "id": "p03",
+      "file": "p03-collezioni.json",
+      "titolo": "Liste, tuple e dizionari",
       "disponibile": true
     },
     {

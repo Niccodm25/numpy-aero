@@ -85,6 +85,17 @@ VOCAB_PY = {
         # per dimostrarlo serve un tipo mutabile
         "append", "copy",
     },
+    "p02": {
+        # divmod chiude la coppia // e %; il resto della lezione e' sintassi
+        # (operatori, f-string) e non passa dal vocabolario dei nomi
+        "divmod", "isinstance", "chr",
+    },
+    "p03": {
+        "list", "tuple", "dict", "set", "range", "zip", "enumerate",
+        "sorted", "sum", "max", "min", "key", "reverse",
+        "extend", "insert", "pop", "remove", "sort", "index", "count",
+        "keys", "values", "items", "get", "add",
+    },
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]

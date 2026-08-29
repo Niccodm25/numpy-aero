@@ -1,0 +1,768 @@
+{
+ "id": "p02",
+ "titolo": "Operatori e formattazione",
+ "perche": "Due cose che sembrano banali e non lo sono: l'ordine in cui Python valuta un'espressione, e come si trasforma un numero in testo leggibile. La prima produce risultati sbagliati senza errori, la seconda e' meta' del lavoro quando devi presentare un risultato a qualcuno che non e' te.",
+ "lezioni": [
+  {
+   "id": "p02-l1",
+   "titolo": "Gli operatori e l'ordine in cui vengono valutati",
+   "md": "Python valuta un'espressione seguendo una precedenza fissa, non da sinistra a destra.\n\n```\n2 + 3 * 4      # 14, non 20\n(2 + 3) * 4    # 20\n```\n\n### L'ordine, dal piu forte al piu debole\n\n1. `**` — la potenza\n2. `-x` — il meno unario\n3. `*` `/` `//` `%` — moltiplicazioni e divisioni\n4. `+` `-` — somme e sottrazioni\n5. `<` `>` `==` `!=` — i confronti\n6. `not`, poi `and`, poi `or`\n\nA parita' di livello si va da sinistra a destra, **tranne la potenza**, che si associa a destra:\n\n```\n2 ** 3 ** 2    # 512, cioe' 2**(3**2), non (2**3)**2 = 64\n```\n\n### Il caso che sorprende sempre\n\n```\n-2 ** 2        # -4\n(-2) ** 2      # 4\n```\n\nLa potenza lega piu' forte del meno unario, quindi `-2 ** 2` si legge `-(2**2)`. Su una formula fisica scritta di getto — un'energia, una varianza — questo cambia il segno del risultato senza sollevare niente.\n\n### La regola pratica\n\n**Nel dubbio, metti le parentesi.** Non costano nulla in esecuzione e rendono l'intenzione esplicita a chi legge, te compreso fra sei mesi."
+  },
+  {
+   "id": "p02-l2",
+   "titolo": "Il resto: piu' utile di quanto sembri",
+   "md": "L'operatore `%` da' il **resto** della divisione intera.\n\n```\n17 % 5     # 2\n10 % 2     # 0\n```\n\n### A cosa serve davvero\n\n**Parita' e periodicita'.** `n % 2 == 0` dice se un numero e' pari. Piu' in generale, `n % k` dice a che punto sei dentro un ciclo di lunghezza `k`.\n\n**Riportare un angolo nell'intervallo giusto.**\n\n```\n-90 % 360      # 270\n450 % 360      # 90\n```\n\nUna rotta calcolata con `arctan2` esce fra -180 e +180; sugli strumenti si legge fra 0 e 360, e il modulo fa la conversione.\n\n### Il segno segue il divisore\n\n```\n-7 % 3     # 2  in Python\n```\n\nIn C o in Java lo stesso calcolo darebbe -1. Python garantisce che il risultato abbia il **segno del divisore**, ed e' la ragione per cui `-90 % 360` da' 270 invece di -90. E' una differenza che sorprende chi arriva da quei linguaggi, ed e' quasi sempre il comportamento che vuoi.\n\n### divmod: quoziente e resto insieme\n\n```\ndivmod(17, 5)     # (3, 2)\n```\n\nRestituisce una tupla. Utile quando ti servono entrambi — convertire secondi in minuti e secondi, per esempio — ed evita di scrivere due volte la stessa divisione."
+  },
+  {
+   "id": "p02-l3",
+   "titolo": "Assegnazione composta",
+   "md": "```\ntotale = totale + 10\ntotale += 10          # la stessa cosa, piu' corta\n```\n\nEsistono per tutti gli operatori: `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `**=`.\n\n### Perche' esistono\n\nNon e' solo brevita'. Su un tipo **mutabile** la forma composta modifica l'oggetto **sul posto**, mentre quella estesa ne crea uno nuovo:\n\n```\na = [1, 2]\nb = a\na += [3]        # modifica la lista: anche b vede [1, 2, 3]\n\na = [1, 2]\nb = a\na = a + [3]     # crea una lista nuova: b resta [1, 2]\n```\n\nSui numeri la differenza non si vede, perche' i numeri sono immutabili e in entrambi i casi si crea un valore nuovo. Sulle liste — e sugli array NumPy — si vede eccome.\n\n### Dove conta in NumPy\n\n`a /= 2` modifica l'array esistente; `a = a / 2` ne alloca uno nuovo. Se `a` era una view su un altro array, la prima forma scrive nell'originale e la seconda no. E' la stessa distinzione fra view e copia, vista da un'altra angolazione."
+  },
+  {
+   "id": "p02-l4",
+   "titolo": "f-string: mettere valori dentro il testo",
+   "md": "Una stringa preceduta da `f` valuta quello che sta fra graffe:\n\n```\nquota = 10500.0\nprint(f\"quota: {quota} m\")      # quota: 10500.0 m\n```\n\nDentro le graffe puo' starci **qualsiasi espressione**, non solo un nome:\n\n```\nprint(f\"in km: {quota / 1000}\")\nprint(f\"il doppio: {quota * 2}\")\n```\n\n### Il segno uguale che stampa anche il nome\n\n```\nprint(f\"{quota = }\")     # quota = 10500.0\n```\n\nStampa sia l'espressione sia il suo valore. E' pensato apposta per il debug, e risparmia di scrivere due volte il nome della variabile.\n\n### Le alternative, e perche' non usarle\n\n```\nprint(\"quota: \" + str(quota) + \" m\")     # concatenazione: verbosa e fragile\nprint(\"quota: %f m\" % quota)             # stile C: ereditato, evitalo\nprint(\"quota: {} m\".format(quota))       # .format: precede le f-string\n```\n\nLa concatenazione fallisce appena dimentichi un `str()`, perche' non puoi sommare testo e numeri. Le f-string non hanno quel problema e si leggono meglio: **nel codice nuovo usa quelle.**"
+  },
+  {
+   "id": "p02-l5",
+   "titolo": "Formattare un numero per farlo leggere",
+   "md": "Dopo i due punti, dentro le graffe, si specifica **come** mostrare il valore.\n\n```\nx = 1234.5678\nf\"{x:.2f}\"      # '1234.57'    due decimali\nf\"{x:10.2f}\"    # '   1234.57' larghezza 10, allineato a destra\nf\"{x:<10.2f}\"   # '1234.57   ' allineato a sinistra\nf\"{x:,.1f}\"     # '1,234.6'    separatore delle migliaia\nf\"{x:.3e}\"      # '1.235e+03'  notazione scientifica\nf\"{x:.0f}\"      # '1235'       nessun decimale\n```\n\n### Il pezzo che serve davvero\n\n- **`.2f`** — fissa i decimali. E' quello che userai nel 90% dei casi.\n- **`e`** — notazione scientifica, per grandezze che spaziano su molti ordini.\n- **`>` `<` `^`** con una larghezza — allinea, e serve per incolonnare una tabella.\n- **`%`** — moltiplica per 100 e aggiunge il segno: `f\"{0.856:.1%}\"` da' `85.6%`.\n\n### Formattare non e' arrotondare\n\n```\nx = 2.675\nf\"{x:.2f}\"      # '2.67' — il testo\nround(x, 2)     # 2.67 — un numero nuovo\n```\n\nLa f-string produce **testo per la stampa** e non tocca il valore; `round` restituisce un numero diverso che poi entra nei conti.\n\n**Non arrotondare mai i valori intermedi di un calcolo per farli sembrare piu' puliti.** Arrotonda solo alla fine, quando stampi. Ogni arrotondamento intermedio e' errore che si accumula.\n\n(Sul perche' `2.675` diventi `2.67` e non `2.68`: il valore rappresentabile piu' vicino a 2.675 e' leggermente sotto. E' lo stesso motivo per cui `0.1 + 0.2` non fa `0.3`.)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p02-operatori",
+   "comando": "+ - * / **",
+   "titolo": "Operatori e precedenza",
+   "esercizi": [
+    {
+     "id": "p02-op-1",
+     "tipo": "predict",
+     "testo": "Quanto vale `2 + 3 * 4` ?",
+     "opzioni": [
+      "14",
+      "20",
+      "24",
+      "9"
+     ],
+     "risposta": "14",
+     "spiegazione": "La moltiplicazione lega piu' forte della somma: prima `3 * 4`, poi `+ 2`. Per ottenere 20 servono le parentesi."
+    },
+    {
+     "id": "p02-op-2",
+     "tipo": "predict",
+     "testo": "Quanto vale `-2 ** 2` ?",
+     "opzioni": [
+      "-4",
+      "4",
+      "-2",
+      "solleva un errore"
+     ],
+     "risposta": "-4",
+     "spiegazione": "La potenza lega **piu' forte del meno unario**, quindi si legge `-(2**2)`. Su una formula scritta di getto questo cambia il segno del risultato senza sollevare niente: `(-2) ** 2` da' 4."
+    },
+    {
+     "id": "p02-op-3",
+     "tipo": "predict",
+     "testo": "Quanto vale `2 ** 3 ** 2` ?",
+     "opzioni": [
+      "512",
+      "64",
+      "36",
+      "solleva un errore"
+     ],
+     "risposta": "512",
+     "spiegazione": "La potenza si associa a **destra**: `2 ** (3 ** 2)` = `2 ** 9`. E' l'unico operatore aritmetico che si comporta cosi'; tutti gli altri vanno da sinistra a destra."
+    },
+    {
+     "id": "p02-op-4",
+     "tipo": "write",
+     "testo": "Calcola `energia`, l'energia cinetica `½ m v²`.",
+     "setup": "m = 1200.0\nv = 25.0\n",
+     "starter": "energia = \n",
+     "test": "assert abs(energia - 375000.0) < 1e-9, f'attesa 375000.0, hai {energia}'",
+     "hint": [
+      "0.5 * m * v ** 2"
+     ],
+     "soluzione": "energia = 0.5 * m * v ** 2",
+     "spiegazione": "La potenza viene prima delle moltiplicazioni, quindi `v ** 2` si calcola per primo senza bisogno di parentesi."
+    },
+    {
+     "id": "p02-op-5",
+     "tipo": "write",
+     "testo": "Calcola `media`, la media aritmetica dei tre valori. Attenzione alle parentesi.",
+     "setup": "a = 10.0\nb = 14.0\nc = 21.0\n",
+     "starter": "media = \n",
+     "test": "assert abs(media - 15.0) < 1e-9, f'attesa 15.0, hai {media}'",
+     "hint": [
+      "Senza parentesi verrebbe diviso solo c.",
+      "media = (a + b + c) / 3"
+     ],
+     "soluzione": "media = (a + b + c) / 3",
+     "spiegazione": "Senza parentesi, `a + b + c / 3` divide solo `c`: darebbe 31, un numero plausibile e sbagliato."
+    },
+    {
+     "id": "p02-op-6",
+     "tipo": "debug",
+     "testo": "Questa formula deve dare la pressione dinamica `½ ρ V²`. Da' un risultato sbagliato. Correggila.",
+     "setup": "rho = 1.225\nV = 80.0\n",
+     "starter": "q = 1 / 2 * rho * V ** 2\n",
+     "test": "assert abs(q - 3920.0) < 1e-9, f'attesa 3920.0, hai {q}'",
+     "hint": [
+      "1 / 2 vale 0.5 e questa parte e' giusta: guarda il resto.",
+      "In realta' la formula e' corretta cosi': verifica l'ordine con cui hai scritto V ** 2."
+     ],
+     "soluzione": "q = 0.5 * rho * V ** 2",
+     "spiegazione": "Qui `1 / 2 * rho * V ** 2` e' in realta' corretto — vale 3920 — ma `0.5` diretto e' piu' leggibile e non fa dubitare nessuno. Se avessi scritto `1 / (2 * rho * V ** 2)` avresti ottenuto un numero completamente diverso, ed e' l'errore che le parentesi mal messe producono."
+    },
+    {
+     "id": "p02-op-7",
+     "tipo": "write",
+     "testo": "Calcola `radice`, la radice quadrata di `x`, usando solo l'operatore di potenza.",
+     "setup": "x = 144.0\n",
+     "starter": "radice = \n",
+     "test": "assert abs(radice - 12.0) < 1e-9, f'attesa 12.0, hai {radice}'",
+     "hint": [
+      "La radice quadrata e' l'elevamento a 0.5.",
+      "x ** 0.5"
+     ],
+     "soluzione": "radice = x ** 0.5",
+     "spiegazione": "`x ** 0.5` non richiede nessun import. Con NumPy userai `np.sqrt`, che lavora su interi array e gestisce meglio i casi limite — ma su un singolo numero questa forma basta."
+    },
+    {
+     "id": "p02-op-8",
+     "tipo": "predict",
+     "testo": "Quanto vale `10 - 3 - 2` ?",
+     "opzioni": [
+      "5",
+      "9",
+      "-5",
+      "11"
+     ],
+     "risposta": "5",
+     "spiegazione": "La sottrazione si associa a **sinistra**: `(10 - 3) - 2`. Se si associasse a destra come la potenza darebbe `10 - (3 - 2)` = 9."
+    },
+    {
+     "id": "p02-op-9",
+     "tipo": "write",
+     "testo": "Calcola `ipotenusa` con il teorema di Pitagora, usando solo gli operatori.",
+     "setup": "a = 3.0\nb = 4.0\n",
+     "starter": "ipotenusa = \n",
+     "test": "assert abs(ipotenusa - 5.0) < 1e-9, f'attesa 5.0, hai {ipotenusa}'",
+     "hint": [
+      "Serve una parentesi attorno alla somma dei quadrati.",
+      "(a ** 2 + b ** 2) ** 0.5"
+     ],
+     "soluzione": "ipotenusa = (a ** 2 + b ** 2) ** 0.5",
+     "spiegazione": "Senza parentesi, `a ** 2 + b ** 2 ** 0.5` eleverebbe solo `b` a 0.5: la potenza lega piu' forte della somma."
+    },
+    {
+     "id": "p02-op-10",
+     "tipo": "apply",
+     "testo": "**Quota di equilibrio.**\n\nCalcola la temperatura ISA e la densita' a una quota data:\n\n- `T = 288.15 - 0.0065 * h`\n- `rho = 1.225 * (T / 288.15) ** 4.256`\n\nPoi `q`, la pressione dinamica `½ ρ V²`.",
+     "setup": "h = 5000.0\nV = 180.0\n",
+     "starter": "T = \nrho = \nq = \n",
+     "test": "assert abs(T - 255.65) < 1e-9, f'temperatura attesa 255.65 K, hai {T}'\nassert 0.73 < rho < 0.74, f'densita attesa circa 0.736, hai {rho}'\nassert abs(q - 0.5 * rho * V ** 2) < 1e-9",
+     "hint": [
+      "T = 288.15 - 0.0065 * h",
+      "rho = 1.225 * (T / 288.15) ** 4.256 — la parentesi attorno al rapporto e' obbligatoria"
+     ],
+     "soluzione": "T = 288.15 - 0.0065 * h\nrho = 1.225 * (T / 288.15) ** 4.256\nq = 0.5 * rho * V ** 2",
+     "spiegazione": "La parentesi attorno a `T / 288.15` non e' facoltativa: senza, la potenza si applicherebbe solo a `288.15` e il risultato sarebbe astronomicamente sbagliato.\n\nE' il caso tipico in cui una formula copiata da un libro va tradotta con attenzione: sulla carta la frazione sotto l'esponente e' visivamente raggruppata, nel codice devi raggrupparla tu."
+    }
+   ]
+  },
+  {
+   "id": "p02-modulo",
+   "comando": "// e %",
+   "titolo": "Divisione intera e resto",
+   "esercizi": [
+    {
+     "id": "p02-md-1",
+     "tipo": "predict",
+     "testo": "Quanto vale `17 % 5` ?",
+     "opzioni": [
+      "2",
+      "3",
+      "3.4",
+      "0"
+     ],
+     "risposta": "2",
+     "spiegazione": "Il resto della divisione: 17 = 5·3 + 2. Il quoziente intero, 3, lo da' `17 // 5`."
+    },
+    {
+     "id": "p02-md-2",
+     "tipo": "write",
+     "testo": "Calcola `quoziente` e `resto` della divisione di 17 per 5, con due operatori distinti.",
+     "setup": "a = 17\nb = 5\n",
+     "starter": "quoziente = \nresto = \n",
+     "test": "assert quoziente == 3, f'atteso 3, hai {quoziente}'\nassert resto == 2, f'atteso 2, hai {resto}'",
+     "hint": [
+      "// per il quoziente intero, % per il resto."
+     ],
+     "soluzione": "quoziente = a // b\nresto = a % b",
+     "spiegazione": "Vale sempre `a == b * (a // b) + (a % b)`, ed e' la definizione stessa delle due operazioni."
+    },
+    {
+     "id": "p02-md-3",
+     "tipo": "write",
+     "testo": "Ottieni entrambi in una sola chiamata, usando la funzione dedicata.",
+     "setup": "a = 17\nb = 5\n",
+     "starter": "quoziente, resto = \n",
+     "test": "assert quoziente == 3 and resto == 2",
+     "hint": [
+      "divmod(a, b) restituisce una tupla con quoziente e resto."
+     ],
+     "soluzione": "quoziente, resto = divmod(a, b)",
+     "spiegazione": "Evita di scrivere due volte la stessa divisione, e su numeri grandi la calcola una volta sola."
+    },
+    {
+     "id": "p02-md-4",
+     "tipo": "predict",
+     "testo": "Quanto vale `-7 % 3` in Python?",
+     "opzioni": [
+      "2",
+      "-1",
+      "1",
+      "-2"
+     ],
+     "risposta": "2",
+     "spiegazione": "Python garantisce che il resto abbia il **segno del divisore**. In C o Java lo stesso calcolo darebbe -1. E' la ragione per cui `-90 % 360` da' 270 invece di -90, ed e' quasi sempre il comportamento che vuoi."
+    },
+    {
+     "id": "p02-md-5",
+     "tipo": "write",
+     "testo": "Riporta la rotta nell'intervallo `[0, 360)`, come si legge sugli strumenti.",
+     "setup": "rotta = -90.0\n",
+     "starter": "rotta_360 = \n",
+     "test": "assert abs(rotta_360 - 270.0) < 1e-9, f'attesa 270.0, hai {rotta_360}'\nassert 0 <= rotta_360 < 360",
+     "hint": [
+      "rotta % 360"
+     ],
+     "soluzione": "rotta_360 = rotta % 360",
+     "spiegazione": "Un angolo calcolato con l'arcotangente esce fra -180 e +180; il modulo lo riporta nella convenzione degli strumenti in un colpo solo, proprio perche' il segno segue il divisore."
+    },
+    {
+     "id": "p02-md-6",
+     "tipo": "write",
+     "testo": "Converti `secondi` in minuti e secondi.",
+     "setup": "secondi = 3725\n",
+     "starter": "minuti = \nsec_rimasti = \n",
+     "test": "assert minuti == 62, f'attesi 62 minuti, hai {minuti}'\nassert sec_rimasti == 5, f'attesi 5 secondi, hai {sec_rimasti}'",
+     "hint": [
+      "minuti = secondi // 60, sec_rimasti = secondi % 60",
+      "oppure minuti, sec_rimasti = divmod(secondi, 60)"
+     ],
+     "soluzione": "minuti, sec_rimasti = divmod(secondi, 60)",
+     "spiegazione": "E' l'uso piu' naturale di `divmod`: le conversioni fra unita' a base non decimale — ore e minuti, gradi e primi — sono sempre un quoziente piu' un resto."
+    },
+    {
+     "id": "p02-md-7",
+     "tipo": "write",
+     "testo": "Verifica in `e_pari` se il numero di campioni e' pari.",
+     "setup": "n = 4096\n",
+     "starter": "e_pari = \n",
+     "test": "assert e_pari is True\nassert isinstance(e_pari, bool), 'deve essere un booleano, non 0 o 1'",
+     "hint": [
+      "n % 2 == 0"
+     ],
+     "soluzione": "e_pari = n % 2 == 0",
+     "spiegazione": "Il confronto `== 0` e' quello che produce il booleano: `n % 2` da' 0 o 1, che non e' la stessa cosa di `False` e `True` anche se in pratica si comporta uguale."
+    },
+    {
+     "id": "p02-md-8",
+     "tipo": "apply",
+     "testo": "**Ripartire un'acquisizione in blocchi.**\n\nUn file contiene `n` campioni da suddividere in blocchi da `k`. Calcola:\n\n- `blocchi_pieni`: quanti blocchi completi\n- `avanzo`: quanti campioni restano fuori\n- `blocchi_totali`: quanti blocchi servono per contenerli tutti, contando anche quello parziale\n- `esatto`: `True` se la divisione e' esatta",
+     "setup": "n = 4097\nk = 512\n",
+     "starter": "blocchi_pieni = \navanzo = \nblocchi_totali = \nesatto = \n",
+     "test": "assert blocchi_pieni == 8, f'attesi 8 blocchi pieni, hai {blocchi_pieni}'\nassert avanzo == 1, f'atteso 1 campione di avanzo, hai {avanzo}'\nassert blocchi_totali == 9, f'attesi 9 blocchi in tutto, hai {blocchi_totali}'\nassert esatto is False",
+     "hint": [
+      "blocchi_pieni, avanzo = divmod(n, k); esatto = avanzo == 0",
+      "Per i blocchi totali serve arrotondare per eccesso: -(-n // k), oppure blocchi_pieni piu' uno se c'e' avanzo."
+     ],
+     "soluzione": "blocchi_pieni, avanzo = divmod(n, k)\nblocchi_totali = -(-n // k)\nesatto = avanzo == 0",
+     "spiegazione": "`-(-n // k)` e' l'arrotondamento per eccesso con soli interi: la divisione intera tronca sempre verso il basso, quindi negando prima e dopo si ottiene il troncamento verso l'alto.\n\nSembra un trucco, ed e' un idioma noto — ma se preferisci la chiarezza, `blocchi_pieni + (1 if avanzo else 0)` dice la stessa cosa in modo esplicito."
+    }
+   ]
+  },
+  {
+   "id": "p02-composta",
+   "comando": "+= -= *=",
+   "titolo": "Assegnazione composta",
+   "esercizi": [
+    {
+     "id": "p02-cp-1",
+     "tipo": "write",
+     "testo": "Aggiungi 250 al totale usando la forma composta.",
+     "setup": "totale = 1000.0\n",
+     "starter": "\n",
+     "test": "assert abs(totale - 1250.0) < 1e-9, f'atteso 1250.0, hai {totale}'",
+     "hint": [
+      "totale += 250"
+     ],
+     "soluzione": "totale += 250",
+     "spiegazione": "Equivale a `totale = totale + 250`, e si legge meglio quando il nome e' lungo."
+    },
+    {
+     "id": "p02-cp-2",
+     "tipo": "write",
+     "testo": "Riduci il carburante del consumo, e dimezza la velocita', usando le forme composte.",
+     "setup": "fuel = 2000.0\nconsumo = 340.0\nV = 240.0\n",
+     "starter": "\n",
+     "test": "assert abs(fuel - 1660.0) < 1e-9, f'carburante atteso 1660.0, hai {fuel}'\nassert abs(V - 120.0) < 1e-9, f'velocita attesa 120.0, hai {V}'",
+     "hint": [
+      "fuel -= consumo",
+      "V /= 2"
+     ],
+     "soluzione": "fuel -= consumo\nV /= 2",
+     "spiegazione": "Esistono per tutti gli operatori: `+=`, `-=`, `*=`, `/=`, `//=`, `%=`, `**=`."
+    },
+    {
+     "id": "p02-cp-3",
+     "tipo": "predict",
+     "testo": "Che cosa stampa?\n\n```\na = [1, 2]\nb = a\na += [3]\nprint(b)\n```",
+     "opzioni": [
+      "[1, 2, 3]",
+      "[1, 2]",
+      "[3]",
+      "solleva un errore"
+     ],
+     "risposta": "[1, 2, 3]",
+     "spiegazione": "Su una lista, `+=` modifica l'oggetto **sul posto**: `b` punta allo stesso oggetto e vede la modifica. Con `a = a + [3]` verrebbe creata una lista nuova e `b` resterebbe `[1, 2]`."
+    },
+    {
+     "id": "p02-cp-4",
+     "tipo": "write",
+     "testo": "Dimostra la differenza: parti da due liste identiche, modifica la prima con `+=` e la seconda con `= ... +`, e osserva cosa vedono i nomi legati.",
+     "setup": "a = [1, 2]\nb = a\nc = [1, 2]\nd = c\n",
+     "starter": "\n",
+     "test": "assert a == [1, 2, 3] and b == [1, 2, 3], 'con += la modifica e sul posto: b la vede'\nassert c == [1, 2, 3], 'c deve valere [1, 2, 3]'\nassert d == [1, 2], 'con = c + [3] si crea un oggetto nuovo: d resta indietro'",
+     "hint": [
+      "a += [3]",
+      "c = c + [3]"
+     ],
+     "soluzione": "a += [3]\nc = c + [3]",
+     "spiegazione": "Le due forme sembrano sinonimi e non lo sono. Su un tipo **immutabile** — un numero, una stringa — la differenza non si vede, perche' in entrambi i casi si crea un valore nuovo. Su liste e array NumPy si vede eccome.\n\nIn NumPy questo diventa: `a /= 2` scrive dentro l'array esistente, `a = a / 2` ne alloca uno nuovo. Se `a` era una view, la prima forma modifica anche l'originale."
+    },
+    {
+     "id": "p02-cp-5",
+     "tipo": "predict",
+     "testo": "Perche' su un numero `a += 1` e `a = a + 1` sono indistinguibili?",
+     "opzioni": [
+      "i numeri sono immutabili: entrambe le forme creano un valore nuovo",
+      "Python ottimizza le due forme allo stesso codice",
+      "sono indistinguibili anche sulle liste",
+      "perche' i numeri sono piccoli"
+     ],
+     "risposta": "i numeri sono immutabili: entrambe le forme creano un valore nuovo",
+     "spiegazione": "Non esiste un modo di modificare `5` sul posto per farlo diventare `6`. La forma composta puo' fare la differenza **solo** sui tipi mutabili, dove esiste un oggetto da modificare."
+    },
+    {
+     "id": "p02-cp-6",
+     "tipo": "apply",
+     "testo": "**Bilancio progressivo di una missione.**\n\nParti dal carburante iniziale e sottrai le tre tratte una alla volta con la forma composta. Poi calcola `frazione_usata`.",
+     "setup": "fuel = 2000.0\nt1, t2, t3 = 340.0, 480.0, 210.0\niniziale = 2000.0\n",
+     "starter": "\nfrazione_usata = \n",
+     "test": "assert abs(fuel - 970.0) < 1e-9, f'carburante finale atteso 970.0, hai {fuel}'\nassert abs(frazione_usata - 0.515) < 1e-9, f'frazione attesa 0.515, hai {frazione_usata}'",
+     "hint": [
+      "fuel -= t1, poi -= t2, poi -= t3",
+      "frazione_usata = (iniziale - fuel) / iniziale"
+     ],
+     "soluzione": "fuel -= t1\nfuel -= t2\nfuel -= t3\nfrazione_usata = (iniziale - fuel) / iniziale",
+     "spiegazione": "Nota `iniziale` tenuta a parte: serve perche' `fuel` viene modificato a ogni passo e il valore di partenza andrebbe perso.\n\nE' lo stesso motivo per cui, quando lavori su dati grezzi, ne conservi una copia: appena cominci a modificare sul posto, l'originale non c'e' piu'."
+    }
+   ]
+  },
+  {
+   "id": "p02-fstring",
+   "comando": "f\"...\"",
+   "titolo": "f-string: interpolazione",
+   "esercizi": [
+    {
+     "id": "p02-fs-1",
+     "tipo": "write",
+     "testo": "Componi `riga` in modo che valga esattamente `quota: 10500.0 m`.",
+     "setup": "quota = 10500.0\n",
+     "starter": "riga = \n",
+     "test": "assert riga == 'quota: 10500.0 m', f'ottenuto {riga!r}'",
+     "hint": [
+      "riga = f\"quota: {quota} m\""
+     ],
+     "soluzione": "riga = f\"quota: {quota} m\"",
+     "spiegazione": "La `f` davanti agli apici e' quello che attiva la sostituzione. Senza, le graffe restano graffe: la stringa varrebbe letteralmente `quota: {quota} m`."
+    },
+    {
+     "id": "p02-fs-2",
+     "tipo": "predict",
+     "testo": "Che cosa vale `\"quota: {quota}\"` — senza la `f` davanti — se `quota = 10500.0` ?",
+     "opzioni": [
+      "la stringa letterale 'quota: {quota}'",
+      "'quota: 10500.0'",
+      "solleva un NameError",
+      "solleva un SyntaxError"
+     ],
+     "risposta": "la stringa letterale 'quota: {quota}'",
+     "spiegazione": "Senza `f` non c'e' nessuna interpolazione e nessun errore: le graffe sono caratteri come gli altri. E' un bug silenzioso, perche' il codice gira e produce testo sbagliato."
+    },
+    {
+     "id": "p02-fs-3",
+     "tipo": "write",
+     "testo": "Dentro le graffe puo' starci un'espressione. Componi `riga` che valga `quota: 10.5 km`, calcolando la conversione dentro la f-string.",
+     "setup": "quota = 10500.0\n",
+     "starter": "riga = \n",
+     "test": "assert riga == 'quota: 10.5 km', f'ottenuto {riga!r}'",
+     "hint": [
+      "riga = f\"quota: {quota / 1000} km\""
+     ],
+     "soluzione": "riga = f\"quota: {quota / 1000} km\"",
+     "spiegazione": "Le graffe accettano qualsiasi espressione, non solo un nome. Tienile pero' corte: una formula lunga dentro una stringa e' difficile da leggere e impossibile da riusare — meglio calcolarla prima e interpolare il risultato."
+    },
+    {
+     "id": "p02-fs-4",
+     "tipo": "write",
+     "testo": "Componi `etichetta` che valga `AZ203 -> LIRF` usando entrambe le variabili.",
+     "setup": "volo = \"AZ203\"\ndestinazione = \"LIRF\"\n",
+     "starter": "etichetta = \n",
+     "test": "assert etichetta == 'AZ203 -> LIRF', f'ottenuto {etichetta!r}'",
+     "hint": [
+      "etichetta = f\"{volo} -> {destinazione}\""
+     ],
+     "soluzione": "etichetta = f\"{volo} -> {destinazione}\"",
+     "spiegazione": "Piu' graffe nella stessa stringa, nessun limite. E' il caso in cui la concatenazione con `+` diventa subito illeggibile."
+    },
+    {
+     "id": "p02-fs-5",
+     "tipo": "debug",
+     "testo": "Questa riga deve valere `carico: 1200 kg` ma solleva un errore. Correggila.",
+     "setup": "carico = 1200\n",
+     "starter": "riga = \"carico: \" + carico + \" kg\"\n",
+     "test": "assert riga == 'carico: 1200 kg', f'ottenuto {riga!r}'",
+     "hint": [
+      "Non si somma testo e numero.",
+      "Usa una f-string."
+     ],
+     "soluzione": "riga = f\"carico: {carico} kg\"",
+     "spiegazione": "`+` fra `str` e `int` da' `TypeError: can only concatenate str (not \"int\") to str`.\n\nSi puo' correggere con `str(carico)`, ma la f-string converte da sola e non ti fa dimenticare la conversione la prossima volta."
+    },
+    {
+     "id": "p02-fs-6",
+     "tipo": "write",
+     "testo": "Il segno `=` dentro le graffe stampa nome e valore insieme. Componi `dbg` in modo che valga esattamente `quota=10500.0`.",
+     "setup": "quota = 10500.0\n",
+     "starter": "dbg = \n",
+     "test": "assert dbg == 'quota=10500.0', f'ottenuto {dbg!r}'",
+     "hint": [
+      "f\"{quota=}\" — senza spazi attorno all'uguale."
+     ],
+     "soluzione": "dbg = f\"{quota=}\"",
+     "spiegazione": "Gli spazi contano: `f\"{quota = }\"` produce `quota = 10500.0` con gli spazi, `f\"{quota=}\"` senza. E' pensato per il debug, e ti risparmia di scrivere due volte il nome della variabile — errore classico quando copi una riga di stampa e cambi solo la variabile."
+    },
+    {
+     "id": "p02-fs-7",
+     "tipo": "predict",
+     "testo": "Come si stampa una graffa letterale dentro una f-string?",
+     "opzioni": [
+      "raddoppiandola: {{",
+      "con la barra rovesciata: \\{",
+      "non si puo'",
+      "con gli apici: '{'"
+     ],
+     "risposta": "raddoppiandola: {{",
+     "spiegazione": "`f\"{{{x}}}\"` con `x = 3` da' `{3}`: la coppia esterna e' la graffa letterale, quella interna l'interpolazione. Serve raramente, ma quando generi JSON o LaTeX serve subito."
+    },
+    {
+     "id": "p02-fs-8",
+     "tipo": "write",
+     "testo": "Componi `riga` che valga `AZ203: 10500.0 m, 240.0 m/s`, mettendo insieme le tre variabili.",
+     "setup": "volo = \"AZ203\"\nquota = 10500.0\nV = 240.0\n",
+     "starter": "riga = \n",
+     "test": "assert riga == 'AZ203: 10500.0 m, 240.0 m/s', f'ottenuto {riga!r}'",
+     "hint": [
+      "f\"{volo}: {quota} m, {V} m/s\""
+     ],
+     "soluzione": "riga = f\"{volo}: {quota} m, {V} m/s\"",
+     "spiegazione": "Il testo fisso e le graffe si alternano liberamente. Quello che scrivi fuori dalle graffe finisce nell'output esattamente com'e', spazi e virgole compresi."
+    },
+    {
+     "id": "p02-fs-9",
+     "tipo": "write",
+     "testo": "Le f-string funzionano con qualsiasi espressione. Componi `riga` che valga `il doppio e 21000.0`.",
+     "setup": "quota = 10500.0\n",
+     "starter": "riga = \n",
+     "test": "assert riga == 'il doppio e 21000.0', f'ottenuto {riga!r}'",
+     "hint": [
+      "f\"il doppio e {quota * 2}\""
+     ],
+     "soluzione": "riga = f\"il doppio e {quota * 2}\"",
+     "spiegazione": "L'espressione viene valutata al momento in cui la f-string viene costruita, non quando la stringa viene stampata. Se `quota` cambia dopo, `riga` non cambia: contiene gia' il testo finale."
+    },
+    {
+     "id": "p02-fs-10",
+     "tipo": "apply",
+     "testo": "**Una riga di log.**\n\nComponi `log` nella forma `[AZ203] FL105 M0.81`, dove:\n\n- il livello di volo e' la quota in piedi divisa per 100, come intero\n- il numero di Mach e' `V / a`\n\nI valori vanno interpolati, non scritti a mano.",
+     "setup": "volo = \"AZ203\"\nquota_ft = 10500.0\nV = 240.0\na = 296.5\n",
+     "starter": "fl = \nmach = \nlog = \n",
+     "test": "assert fl == 105, f'livello atteso 105, hai {fl}'\nassert abs(mach - 0.8094435075885329) < 1e-9\nassert log == '[AZ203] FL105 M0.81', f'ottenuto {log!r}'",
+     "hint": [
+      "fl = int(quota_ft // 100)",
+      "Per il Mach servono due decimali: {mach:.2f} — lo vedrai nella prossima raccolta."
+     ],
+     "soluzione": "fl = int(quota_ft // 100)\nmach = V / a\nlog = f\"[{volo}] FL{fl} M{mach:.2f}\"",
+     "spiegazione": "Due cose insieme: il livello di volo va troncato, non arrotondato — `//` fa esattamente questo — e il Mach va mostrato a due decimali senza toccare il valore di `mach`, che resta pieno per eventuali calcoli successivi.\n\nSe avessi scritto `mach = round(V / a, 2)` avresti buttato via la precisione dentro la variabile, non solo nella stampa."
+    }
+   ]
+  },
+  {
+   "id": "p02-formato",
+   "comando": "{x:.2f}",
+   "titolo": "f-string: formattazione",
+   "esercizi": [
+    {
+     "id": "p02-fm-1",
+     "tipo": "write",
+     "testo": "Mostra `x` con due decimali. `riga` deve valere `1234.57`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '1234.57', f'ottenuto {riga!r}'",
+     "hint": [
+      "f\"{x:.2f}\""
+     ],
+     "soluzione": "riga = f\"{x:.2f}\"",
+     "spiegazione": "Dopo i due punti si specifica il formato. `.2f` significa: notazione fissa, due cifre dopo il punto. E' la forma che userai piu' spesso di tutte."
+    },
+    {
+     "id": "p02-fm-2",
+     "tipo": "predict",
+     "testo": "Dopo `riga = f\"{x:.2f}\"` con `x = 1234.5678`, quanto vale `x` ?",
+     "opzioni": [
+      "1234.5678",
+      "1234.57",
+      "'1234.57'",
+      "1234.0"
+     ],
+     "risposta": "1234.5678",
+     "spiegazione": "La f-string **produce testo** e non tocca la variabile. Solo `round` restituisce un numero diverso — e va usato quando il valore arrotondato entra nei conti, non per fare sembrare pulito un output."
+    },
+    {
+     "id": "p02-fm-3",
+     "tipo": "write",
+     "testo": "Mostra `x` senza decimali. `riga` deve valere `1235`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '1235', f'ottenuto {riga!r}'",
+     "hint": [
+      "f\"{x:.0f}\""
+     ],
+     "soluzione": "riga = f\"{x:.0f}\"",
+     "spiegazione": "`.0f` arrotonda alla cifra intera e non lascia nemmeno il punto. Diverso da `int(x)`, che tronca: su 1234.5678 il primo da' 1235, il secondo 1234."
+    },
+    {
+     "id": "p02-fm-4",
+     "tipo": "write",
+     "testo": "Mostra `x` in notazione scientifica con tre decimali. `riga` deve valere `1.235e+03`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '1.235e+03', f'ottenuto {riga!r}'",
+     "hint": [
+      "f\"{x:.3e}\""
+     ],
+     "soluzione": "riga = f\"{x:.3e}\"",
+     "spiegazione": "L'esponente ha sempre almeno due cifre e il segno, quindi `e+03` e non `e+3`. E' il formato giusto quando i valori spaziano su molti ordini di grandezza e `.2f` produrrebbe una colonna di zeri."
+    },
+    {
+     "id": "p02-fm-5",
+     "tipo": "write",
+     "testo": "Aggiungi il separatore delle migliaia e un decimale. `riga` deve valere `1,234.6`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '1,234.6', f'ottenuto {riga!r}'",
+     "hint": [
+      "La virgola va prima del punto: f\"{x:,.1f}\""
+     ],
+     "soluzione": "riga = f\"{x:,.1f}\"",
+     "spiegazione": "L'ordine dentro la specifica e' fisso: prima il separatore, poi la precisione. `f\"{x:.1f,}\"` solleva un errore.\n\nAttenzione che il separatore e' quello anglosassone: su un numero da mostrare a un lettore italiano non e' la convenzione giusta."
+    },
+    {
+     "id": "p02-fm-6",
+     "tipo": "write",
+     "testo": "Mostra il rendimento in percentuale con un decimale. `riga` deve valere `85.6%`.",
+     "setup": "eta = 0.856\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '85.6%', f'ottenuto {riga!r}'",
+     "hint": [
+      "Il tipo % moltiplica per 100 e aggiunge il segno: f\"{eta:.1%}\""
+     ],
+     "soluzione": "riga = f\"{eta:.1%}\"",
+     "spiegazione": "Nota che la moltiplicazione per 100 la fa il formato: se scrivi `f\"{eta * 100:.1%}\"` ottieni `8560.0%`. E' un errore che si fa una volta sola."
+    },
+    {
+     "id": "p02-fm-7",
+     "tipo": "write",
+     "testo": "Incolonna il valore in un campo largo 10, allineato a destra, con due decimali. `riga` deve valere `'   1234.57'` — tre spazi davanti.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '   1234.57', f'ottenuto {riga!r}'\nassert len(riga) == 10",
+     "hint": [
+      "La larghezza va prima del punto: f\"{x:10.2f}\""
+     ],
+     "soluzione": "riga = f\"{x:10.2f}\"",
+     "spiegazione": "I numeri sono allineati a destra per difetto, quindi il `>` e' facoltativo qui. Se il valore e' piu' largo del campo, il campo si allarga: la larghezza e' un minimo, non un taglio."
+    },
+    {
+     "id": "p02-fm-8",
+     "tipo": "write",
+     "testo": "Stesso valore, stessa larghezza, ma allineato a sinistra. `riga` deve valere `'1234.57   '`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '1234.57   ', f'ottenuto {riga!r}'\nassert len(riga) == 10",
+     "hint": [
+      "f\"{x:<10.2f}\""
+     ],
+     "soluzione": "riga = f\"{x:<10.2f}\"",
+     "spiegazione": "`<` a sinistra, `>` a destra, `^` centrato. Sulle stringhe il difetto e' `<`, sui numeri `>`: e' il motivo per cui una tabella con etichette e valori si incolonna bene senza specificare niente."
+    },
+    {
+     "id": "p02-fm-9",
+     "tipo": "write",
+     "testo": "Riempi con zeri invece che con spazi: `riga` deve valere `0000001235`.",
+     "setup": "x = 1234.5678\n",
+     "starter": "riga = \n",
+     "test": "assert riga == '0000001235', f'ottenuto {riga!r}'",
+     "hint": [
+      "Uno zero prima della larghezza: f\"{x:010.0f}\""
+     ],
+     "soluzione": "riga = f\"{x:010.0f}\"",
+     "spiegazione": "Lo zero prima della larghezza e' l'abbreviazione di `0>`, con la differenza che tiene il segno meno davanti agli zeri invece che dopo. Serve per numeri d'ordine, identificativi, nomi di file che devono ordinarsi alfabeticamente."
+    },
+    {
+     "id": "p02-fm-10",
+     "tipo": "debug",
+     "testo": "Questa riga deve valere `Mach 0.81` ma il formato e' nel posto sbagliato. Correggila.",
+     "setup": "mach = 0.8094435075885329\n",
+     "starter": "riga = f\"Mach {mach}:.2f\"\n",
+     "test": "assert riga == 'Mach 0.81', f'ottenuto {riga!r}'",
+     "hint": [
+      "La specifica di formato va **dentro** le graffe."
+     ],
+     "soluzione": "riga = f\"Mach {mach:.2f}\"",
+     "spiegazione": "Cosi' com'era, `:.2f` finiva nel testo letterale e la stringa valeva `Mach 0.8094435075885329:.2f`. Nessun errore, output sbagliato: la categoria di bug piu' fastidiosa."
+    },
+    {
+     "id": "p02-fm-11",
+     "tipo": "predict",
+     "testo": "Perche' `f\"{2.675:.2f}\"` da' `2.67` e non `2.68` ?",
+     "opzioni": [
+      "il valore binario piu' vicino a 2.675 e' leggermente sotto",
+      "Python arrotonda sempre verso il basso",
+      "e' un bug delle f-string",
+      "perche' 7 e' dispari"
+     ],
+     "risposta": "il valore binario piu' vicino a 2.675 e' leggermente sotto",
+     "spiegazione": "In virgola mobile binaria 2.675 non e' rappresentabile esattamente: il valore memorizzato e' circa 2.67499999999999982. La formattazione arrotonda quel valore, non quello che hai scritto.\n\nE' lo stesso motivo per cui `0.1 + 0.2` non da' `0.3`. Non e' un difetto di Python: e' lo standard IEEE 754, uguale in ogni linguaggio."
+    },
+    {
+     "id": "p02-fm-12",
+     "tipo": "apply",
+     "testo": "**Una tabella incolonnata.**\n\nComponi tre righe con il nome largo 12 a sinistra e il valore largo 10 a destra con due decimali, poi uniscile in `tabella` separate da un a capo.\n\nCosi':\n```\nquota         10500.00\nvelocita        240.00\nmach              0.81\n```",
+     "setup": "dati = [(\"quota\", 10500.0), (\"velocita\", 240.0), (\"mach\", 0.8094435075885329)]\nr1 = dati[0]\nr2 = dati[1]\nr3 = dati[2]\n",
+     "starter": "riga1 = \nriga2 = \nriga3 = \ntabella = \n",
+     "test": "assert riga1 == 'quota         10500.00', f'ottenuto {riga1!r}'\nassert riga2 == 'velocita        240.00', f'ottenuto {riga2!r}'\nassert riga3 == 'mach              0.81', f'ottenuto {riga3!r}'\nassert len(riga1) == len(riga2) == len(riga3) == 22\nassert tabella.count(\"\\n\") == 2, 'le righe vanno separate da un a capo'\nassert tabella.splitlines() == [riga1, riga2, riga3]",
+     "hint": [
+      "Una riga: f\"{r1[0]:<12}{r1[1]:10.2f}\"",
+      "Per unirle: \"\\n\".join([riga1, riga2, riga3])"
+     ],
+     "soluzione": "riga1 = f\"{r1[0]:<12}{r1[1]:10.2f}\"\nriga2 = f\"{r2[0]:<12}{r2[1]:10.2f}\"\nriga3 = f\"{r3[0]:<12}{r3[1]:10.2f}\"\ntabella = \"\\n\".join([riga1, riga2, riga3])",
+     "spiegazione": "Le due larghezze fisse — 12 e 10 — sono quello che allinea la colonna dei numeri: ogni riga e' lunga esattamente 22 caratteri qualunque sia il nome.\n\nSul valore piu' corto, `mach`, i due decimali producono `0.81` che il campo largo 10 spinge a destra sotto gli altri. Se avessi lasciato il valore senza formato, `0.8094435075885329` avrebbe sfondato la colonna e l'allineamento sarebbe saltato solo su quella riga — che e' esattamente come si scopre di aver dimenticato un `.2f`.\n\nLa sequenza `\\n` dentro una stringa non e' due caratteri: e' il carattere di a capo, scritto cosi' perche' non si puo' battere direttamente. `join` lo mette fra un elemento e il successivo, mai in fondo."
+    }
+   ]
+  },
+  {
+   "id": "p02-numeri-testo",
+   "comando": "round e conversioni",
+   "titolo": "Numeri e testo insieme",
+   "esercizi": [
+    {
+     "id": "p02-nt-1",
+     "tipo": "predict",
+     "testo": "Qual e' la differenza fra `f\"{x:.2f}\"` e `round(x, 2)` ?",
+     "opzioni": [
+      "il primo produce testo, il secondo un numero",
+      "nessuna, sono sinonimi",
+      "il primo arrotonda, il secondo tronca",
+      "il secondo non funziona sui float"
+     ],
+     "risposta": "il primo produce testo, il secondo un numero",
+     "spiegazione": "E' la distinzione che decide dove usarli: la f-string per l'output, `round` quando il valore arrotondato deve entrare in un calcolo successivo — cosa che di solito **non** vuoi, perche' ogni arrotondamento intermedio e' errore che si accumula."
+    },
+    {
+     "id": "p02-nt-2",
+     "tipo": "write",
+     "testo": "Il valore arriva da un file di testo. Convertilo in numero e calcola `doppio`.",
+     "setup": "campo = \"10500.0\"\n",
+     "starter": "quota = \ndoppio = \n",
+     "test": "assert quota == 10500.0 and isinstance(quota, float), 'quota deve essere un float'\nassert doppio == 21000.0",
+     "hint": [
+      "quota = float(campo)"
+     ],
+     "soluzione": "quota = float(campo)\ndoppio = quota * 2",
+     "spiegazione": "Tutto quello che leggi da un file o da un input e' testo, sempre. `\"10500.0\" * 2` non solleva errori: ripete la stringa e da' `\"10500.010500.0\"`, che e' molto peggio di un errore."
+    },
+    {
+     "id": "p02-nt-3",
+     "tipo": "predict",
+     "testo": "Cosa fa `int(\"10500.0\")` ?",
+     "opzioni": [
+      "solleva ValueError",
+      "restituisce 10500",
+      "restituisce 10500.0",
+      "restituisce 0"
+     ],
+     "risposta": "solleva ValueError",
+     "spiegazione": "`int` accetta solo testo che rappresenti un intero: il punto decimale lo fa fallire con `invalid literal for int() with base 10`.\n\nPer convertire un decimale scritto come testo servono due passaggi: `int(float(\"10500.0\"))`."
+    },
+    {
+     "id": "p02-nt-4",
+     "tipo": "write",
+     "testo": "Converti in intero un valore decimale scritto come testo.",
+     "setup": "campo = \"10500.7\"\n",
+     "starter": "quota = \n",
+     "test": "assert quota == 10500 and isinstance(quota, int), f'atteso 10500 intero, hai {quota!r}'",
+     "hint": [
+      "Due passaggi: prima float, poi int."
+     ],
+     "soluzione": "quota = int(float(campo))",
+     "spiegazione": "`int` su un float **tronca** verso lo zero, non arrotonda: 10500.7 diventa 10500. Se vuoi l'arrotondamento serve `round(float(campo))`, che darebbe 10501."
+    },
+    {
+     "id": "p02-nt-5",
+     "tipo": "write",
+     "testo": "Ricomponi il numero da parte intera e decimali, poi rimettilo in testo con un decimale.",
+     "setup": "intera = \"240\"\ndecimali = \"75\"\n",
+     "starter": "valore = \nriga = \n",
+     "test": "assert abs(valore - 240.75) < 1e-9, f'atteso 240.75, hai {valore}'\nassert riga == '240.8', f'ottenuto {riga!r}'",
+     "hint": [
+      "valore = float(intera + '.' + decimali)",
+      "riga = f\"{valore:.1f}\""
+     ],
+     "soluzione": "valore = float(intera + \".\" + decimali)\nriga = f\"{valore:.1f}\"",
+     "spiegazione": "Il ciclo completo: testo, numero, testo di nuovo. In mezzo c'e' il calcolo, e solo li' il valore e' un numero.\n\nRegola generale: converti in numero **appena** leggi, riconverti in testo **solo** quando stampi. Tutto quello che sta in mezzo lavora con numeri."
+    },
+    {
+     "id": "p02-nt-6",
+     "tipo": "apply",
+     "testo": "**Da una riga di telemetria a un rapporto.**\n\nLa riga contiene tre campi separati da punto e virgola: quota in metri, velocita' in m/s, carburante in kg.\n\nEstraili, convertili, e componi `rapporto` cosi':\n\n```\nquota 10500 m | V 240.0 m/s | fuel 1,850 kg\n```\n\nLa quota e' un intero, la velocita' ha un decimale, il carburante ha il separatore delle migliaia e nessun decimale.",
+     "setup": "riga = \"10500.0;240.0;1850.0\"\n",
+     "starter": "campi = \nquota = \nV = \nfuel = \nrapporto = \n",
+     "test": "assert campi == ['10500.0', '240.0', '1850.0'], f'ottenuto {campi!r}'\nassert quota == 10500 and isinstance(quota, int)\nassert abs(V - 240.0) < 1e-9\nassert abs(fuel - 1850.0) < 1e-9\nassert rapporto == 'quota 10500 m | V 240.0 m/s | fuel 1,850 kg', f'ottenuto {rapporto!r}'",
+     "hint": [
+      "campi = riga.split(';')",
+      "quota = int(float(campi[0])) — il punto decimale impedisce int diretto",
+      "Nel formato: {fuel:,.0f} per il separatore senza decimali"
+     ],
+     "soluzione": "campi = riga.split(\";\")\nquota = int(float(campi[0]))\nV = float(campi[1])\nfuel = float(campi[2])\nrapporto = f\"quota {quota} m | V {V:.1f} m/s | fuel {fuel:,.0f} kg\"",
+     "spiegazione": "E' la forma minima di quello che farai ogni volta che apri un file di dati: dividere, convertire, calcolare, formattare.\n\nDue punti che si ripresentano sempre. Primo, `int(campi[0])` fallirebbe perche' il campo contiene `10500.0` — il doppio passaggio `int(float(...))` non e' pedanteria. Secondo, i valori restano numeri pieni fino all'ultima riga: la formattazione tocca solo la stampa, e se domani ti serve calcolare il consumo specifico i dati sono ancora precisi.\n\nCon un file vero userai `np.loadtxt` o `pandas.read_csv`, che fanno tutto questo per te — ma sapere cosa fanno sotto e' quello che ti permette di capire perche' una colonna arriva come testo quando ti aspettavi numeri."
+    }
+   ]
+  }
+ ]
+}
