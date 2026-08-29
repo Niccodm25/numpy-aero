@@ -99,6 +99,14 @@ VOCAB_PY = {
     # Il controllo di flusso non porta nomi nuovi: if, for, while, break e continue
     # sono parole chiave, non funzioni. Resta start, il parametro di enumerate.
     "p04": {"start"},
+    "p05": {
+        # def, return, lambda e gli asterischi sono sintassi; questi sono i nomi
+        "isinstance", "default", "__name__", "__doc__", "acc", "scala",
+        "map", "filter", "sum", "dir",
+        # nomi liberi passati a **kwargs: non sono vocabolario, ma l'analisi
+        # dell'albero non distingue un argomento per nome da una funzione
+        "griglia", "log",
+    },
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]

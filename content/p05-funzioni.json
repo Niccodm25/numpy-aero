@@ -1,0 +1,840 @@
+{
+ "id": "p05",
+ "titolo": "Funzioni",
+ "perche": "Definire, chiamare, restituire — e le tre cose che non sollevano niente: una funzione senza return consegna None, un argomento con default mutabile e' lo stesso oggetto a ogni chiamata e si riempie, e assegnare un nome dentro una funzione lo rende locale per tutta la funzione.",
+ "funzioni": [
+  "def",
+  "return",
+  "argomenti",
+  "default",
+  "scope",
+  "*args",
+  "**kwargs",
+  "lambda",
+  "docstring"
+ ],
+ "lezioni": [
+  {
+   "id": "p05-l1",
+   "titolo": "def e return: la funzione che dimentica di restituire",
+   "md": "```\ndef pressione_dinamica(rho, v):\n    return 0.5 * rho * v**2\n\nq = pressione_dinamica(1.225, 250.0)\n```\n\n`def` definisce, la chiamata esegue. Il corpo è indentato, come ogni blocco.\n\n### Senza return, restituisce None\n\n```\ndef somma(a, b):\n    a + b        # calcola e butta via\n\nx = somma(2, 3)  # x vale None\n```\n\nNessun errore: la funzione fa il conto e non lo consegna. È lo stesso `None` silenzioso di `a.sort()`, e si manifesta più avanti, dove `x` viene usato e il messaggio parla di `NoneType`.\n\n**Se la funzione calcola qualcosa, deve avere un `return`.** Se invece modifica qualcosa — una lista, un file — il `return` non serve, e in quel caso restituire `None` è corretto.\n\n### return esce subito\n\n```\ndef classifica(q):\n    if q > 8000:\n        return \"alta\"\n    return \"bassa\"\n```\n\nAppena `return` viene eseguito la funzione finisce: il resto del corpo non viene toccato. È il modo di evitare `else` annidati, e l'unico modo pulito di uscire da due cicli annidati.\n\n### Restituire più valori\n\n```\ndef estremi(v):\n    return min(v), max(v)\n\nlo, hi = estremi([3, 1, 4])\n```\n\nNon sono davvero \"più valori\": è **una tupla**, spacchettata dal chiamante. Per questo `lo, hi = ...` funziona senza sintassi speciale.",
+   "demo": "def pressione_dinamica(rho, v):\n    return 0.5 * rho * v**2\n\nprint(\"q =\", pressione_dinamica(1.225, 250.0))\n\ndef senza_return(a, b):\n    a + b\n\nprint(\"\\nsenza return:\", senza_return(2, 3))\n\ndef estremi(v):\n    return min(v), max(v)\n\nlo, hi = estremi([3, 1, 4, 1, 5])\nprint(\"\\nestremi:\", lo, hi, \" e' una\", type(estremi([1, 2])).__name__)"
+  },
+  {
+   "id": "p05-l2",
+   "titolo": "Argomenti: posizione, nome, default",
+   "md": "```\ndef quota(h0, salita, t):\n    return h0 + salita * t\n\nquota(1000, 5.0, 60)              # per posizione\nquota(h0=1000, salita=5.0, t=60)  # per nome\nquota(1000, t=60, salita=5.0)     # misti: prima le posizioni\n```\n\nPassare per nome costa qualche carattere e rende la chiamata leggibile: `traccia(dati, True, False, True)` non si capisce, `traccia(dati, griglia=True, legenda=False, log=True)` sì.\n\n### Default\n\n```\ndef atmosfera(h, T0=288.15):\n    return T0 - 0.0065 * h\n\natmosfera(1000)          # usa 288.15\natmosfera(1000, 300.0)   # sovrascrive\n```\n\nGli argomenti con default vanno **dopo** quelli senza: altrimenti è un errore di sintassi. È l'unico controllo che Python fa qui.\n\n### Il default mutabile: il bug classico\n\n```\ndef aggiungi(x, acc=[]):\n    acc.append(x)\n    return acc\n\naggiungi(1)   # [1]\naggiungi(2)   # [1, 2]   <- non [2]\naggiungi(3)   # [1, 2, 3]\n```\n\nIl valore di default viene valutato **una volta sola**, quando la funzione è definita, non a ogni chiamata. Quella lista è **la stessa** per tutte le chiamate, e si riempie.\n\nLa forma corretta:\n\n```\ndef aggiungi(x, acc=None):\n    if acc is None:\n        acc = []\n    acc.append(x)\n    return acc\n```\n\nVale per qualunque default modificabile: liste, dizionari, insiemi. Con numeri e stringhe il problema non si pone, perché sono immutabili.\n\n### Argomenti solo per nome\n\n```\ndef area(b, h=1.0, *, scala=1.0):\n    ...\n```\n\nTutto quello che sta dopo `*` si può passare **solo** per nome. Serve a impedire chiamate come `area(2, 3, 2)`, dove il terzo numero non si capisce cosa sia.",
+   "demo": "def atmosfera(h, T0=288.15):\n    return T0 - 0.0065 * h\n\nprint(atmosfera(1000), atmosfera(1000, 300.0))\n\ndef aggiungi(x, acc=[]):\n    acc.append(x)\n    return acc\n\nprint(\"\\ndefault mutabile:\", aggiungi(1), aggiungi(2), aggiungi(3))\n\ndef aggiungi_bene(x, acc=None):\n    if acc is None:\n        acc = []\n    acc.append(x)\n    return acc\n\nprint(\"corretto:        \", aggiungi_bene(1), aggiungi_bene(2), aggiungi_bene(3))"
+  },
+  {
+   "id": "p05-l3",
+   "titolo": "Scope: cosa vede una funzione, e cosa può cambiare",
+   "md": "Una funzione **legge** i nomi di fuori:\n\n```\nG = 9.81\ndef peso(m):\n    return m * G      # legge G senza problemi\n```\n\nMa **assegnare** un nome lo rende locale, per tutta la funzione:\n\n```\nn = 0\ndef conta():\n    n = n + 1         # UnboundLocalError\n```\n\nPython vede l'assegnazione e decide che `n` è una variabile locale della funzione; poi trova che la si legge prima di averle dato un valore. Il messaggio è `cannot access local variable 'n' where it is not associated with a value`, e disorienta perché `n` esiste eccome — solo, non quella.\n\nLa soluzione non è `global`: è **restituire** il nuovo valore e riassegnarlo fuori. Una funzione che modifica variabili globali è una funzione di cui non puoi prevedere l'effetto leggendo la chiamata.\n\n### Gli argomenti: cosa cambia e cosa no\n\n```\ndef f(x):\n    x = x + 1\n\na = 5\nf(a)\nprint(a)      # 5     <- invariato\n\ndef g(l):\n    l.append(9)\n\nb = [1]\ng(b)\nprint(b)      # [1, 9]  <- cambiato!\n```\n\nNon sono due regole diverse. In entrambi i casi la funzione riceve **il riferimento all'oggetto**. Con un intero non puoi modificare l'oggetto — i numeri sono immutabili — quindi `x = x + 1` ne lega uno nuovo al nome locale. Con una lista `append` modifica l'oggetto stesso, e chi lo guarda da fuori vede il cambiamento.\n\nLa regola pratica: **una funzione che modifica un argomento va detto nel nome**, e conviene comunque preferire una che restituisce un oggetto nuovo.",
+   "demo": "G = 9.81\ndef peso(m):\n    return m * G\nprint(peso(100))\n\ndef f(x):\n    x = x + 1\na = 5\nf(a)\nprint(\"\\nintero dopo la chiamata:\", a)\n\ndef g(l):\n    l.append(9)\nb = [1]\ng(b)\nprint(\"lista dopo la chiamata: \", b)\n\nn = 0\ndef conta():\n    try:\n        n = n + 1\n    except UnboundLocalError as e:\n        print(\"\\nassegnare rende locale:\", e)\nconta()"
+  },
+  {
+   "id": "p05-l4",
+   "titolo": "*args e **kwargs",
+   "md": "```\ndef somma(*valori):\n    return sum(valori)\n\nsomma(1, 2, 3)      # valori e' la tupla (1, 2, 3)\n```\n\n`*nome` raccoglie tutti gli argomenti posizionali in più dentro una **tupla**.\n\n```\ndef configura(**opzioni):\n    ...\n\nconfigura(griglia=True, log=False)   # opzioni e' {'griglia': True, 'log': False}\n```\n\n`**nome` raccoglie quelli passati per nome dentro un **dizionario**.\n\nI nomi `args` e `kwargs` sono solo una convenzione: contano l'asterisco e i due asterischi.\n\n### Nell'altro verso: spacchettare\n\n```\nv = [1, 2, 3]\nsomma(*v)              # equivale a somma(1, 2, 3)\n\no = {\"h\": 2.0}\narea(3.0, **o)         # equivale a area(3.0, h=2.0)\n```\n\nLo stesso simbolo, dalla parte della chiamata, fa l'operazione inversa: prende una sequenza e la distribuisce sugli argomenti.\n\n### Quando servono\n\nRaramente nel tuo codice, spesso in quello che leggi: sono il modo in cui una funzione passa argomenti a un'altra senza doverli elencare. Riconoscerli in una firma vale più che usarli.",
+   "demo": "def somma(*valori):\n    return sum(valori)\nprint(somma(1, 2, 3), somma())\n\ndef configura(**opzioni):\n    return sorted(opzioni.items())\nprint(configura(griglia=True, log=False))\n\nv = [1, 2, 3]\nprint(\"\\nspacchettando una lista:\", somma(*v))\n\ndef area(b, h=1.0):\n    return b * h\no = {\"h\": 2.0}\nprint(\"spacchettando un dizionario:\", area(3.0, **o))"
+  },
+  {
+   "id": "p05-l5",
+   "titolo": "Le funzioni sono valori",
+   "md": "Una funzione si può assegnare, passare, mettere in una lista:\n\n```\nf = len          # senza parentesi: il nome, non la chiamata\nf(\"volo\")        # 4\n```\n\nLe parentesi **chiamano**. Senza, hai l'oggetto funzione. È la distinzione che rende possibile `sorted(x, key=len)`: si passa la funzione, e `sorted` la chiamerà lei.\n\n### lambda: una funzione senza nome\n\n```\nsorted(coppie, key=lambda t: t[1])\n```\n\n`lambda argomenti: espressione` è una funzione di una riga. Non può contenere istruzioni, solo un'espressione il cui valore viene restituito.\n\nSi usa **solo** dove serve una funzione al volo da passare a qualcun altro. Assegnare una lambda a un nome — `f = lambda x: x + 1` — è sempre peggio di scrivere `def`, che dà anche un nome vero nei messaggi d'errore.\n\n### map e filter\n\n```\nlist(map(str, [1, 2]))          # ['1', '2']\nlist(filter(None, [0, 1, 2]))   # [1, 2]\n```\n\nApplicano una funzione a ogni elemento e filtrano. In Python moderno una comprehension fa lo stesso in modo più leggibile:\n\n```\n[str(x) for x in [1, 2]]\n[x for x in [0, 1, 2] if x]\n```\n\nVanno riconosciute nel codice altrui più che scritte.\n\n### La docstring\n\n```\ndef peso(m):\n    \"\"\"Peso in newton di una massa in kg.\"\"\"\n    return m * 9.81\n```\n\nLa stringa subito sotto il `def` è quello che `help(peso)` mostra. È il posto in cui scrivere cosa entra e cosa esce — la stessa cosa che nel modulo 12 di NumPy imparerai a leggere nelle funzioni altrui.",
+   "demo": "f = len\nprint(\"f e':\", f, \" f('volo') =\", f(\"volo\"))\n\ncoppie = [(1, \"b\"), (2, \"a\")]\nprint(\"\\nordinate per secondo elemento:\", sorted(coppie, key=lambda t: t[1]))\n\nprint(\"\\nmap:\", list(map(str, [1, 2])), \" comprehension:\", [str(x) for x in [1, 2]])\n\ndef peso(m):\n    \"\"\"Peso in newton di una massa in kg.\"\"\"\n    return m * 9.81\nprint(\"\\ndocstring:\", peso.__doc__)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p05-def",
+   "comando": "def e return",
+   "titolo": "def — e la funzione che restituisce None",
+   "esercizi": [
+    {
+     "id": "p05-de-1",
+     "tipo": "write",
+     "testo": "Definisci `pressione_dinamica(rho, v)` che restituisce `0.5 * rho * v**2`, e chiamala con 1.225 e 250.0 mettendo il risultato in `q`.",
+     "setup": "",
+     "starter": "def pressione_dinamica(rho, v):\n    \nq = \n",
+     "test": "assert abs(q - 38281.25) < 1e-9, f'attesa 38281.25, hai {q}'\nassert abs(pressione_dinamica(1.0, 2.0) - 2.0) < 1e-12, 'la funzione deve valere 0.5*rho*v**2'",
+     "hint": [
+      "return 0.5 * rho * v**2",
+      "q = pressione_dinamica(1.225, 250.0)"
+     ],
+     "soluzione": "def pressione_dinamica(rho, v):\n    return 0.5 * rho * v**2\nq = pressione_dinamica(1.225, 250.0)",
+     "spiegazione": "38281.25 Pa. Il corpo è indentato come ogni blocco, e `return` consegna il valore al chiamante. Senza `return` la funzione calcolerebbe e butterebbe via."
+    },
+    {
+     "id": "p05-de-2",
+     "tipo": "predict",
+     "testo": "```\ndef somma(a, b):\n    a + b\n\nx = somma(2, 3)\n```\n\nQuanto vale `x` ?",
+     "opzioni": [
+      "None",
+      "5",
+      "0",
+      "TypeError"
+     ],
+     "risposta": "None",
+     "spiegazione": "`None`. La funzione fa il conto e non lo consegna: manca `return`. Nessun errore viene sollevato — è lo stesso `None` silenzioso di `a.sort()`, e si manifesta più avanti dove `x` viene usato, con un messaggio che parla di `NoneType` e non della riga vera."
+    },
+    {
+     "id": "p05-de-3",
+     "tipo": "debug",
+     "testo": "Questa funzione calcola il perimetro ma chi la chiama riceve `None`. Correggi.",
+     "setup": "",
+     "starter": "def perimetro(l):\n    4 * l\np = perimetro(3.0)\n",
+     "test": "assert p == 12.0, f'atteso 12.0, hai {p!r}'",
+     "hint": [
+      "Manca la parola return.",
+      "return 4 * l"
+     ],
+     "soluzione": "def perimetro(l):\n    return 4 * l\np = perimetro(3.0)",
+     "spiegazione": "Bastava `return`. La regola: se la funzione **calcola** qualcosa deve restituirlo; se **modifica** qualcosa — una lista, un file — il `return` non serve e restituire `None` è corretto."
+    },
+    {
+     "id": "p05-de-4",
+     "tipo": "write",
+     "testo": "Definisci `classifica(q)` che restituisce `\"alta\"` sopra 8000 e `\"bassa\"` altrimenti, usando due `return` senza `else`.",
+     "setup": "",
+     "starter": "def classifica(q):\n    \nalta = classifica(12000)\nbassa = classifica(500)\n",
+     "test": "assert alta == 'alta', f'attesa alta, hai {alta!r}'\nassert bassa == 'bassa', f'attesa bassa, hai {bassa!r}'",
+     "hint": [
+      "if q > 8000: return \"alta\"",
+      "Poi, senza else: return \"bassa\""
+     ],
+     "soluzione": "def classifica(q):\n    if q > 8000:\n        return \"alta\"\n    return \"bassa\"\nalta = classifica(12000)\nbassa = classifica(500)",
+     "spiegazione": "Appena `return` viene eseguito la funzione finisce: il resto del corpo non viene toccato, quindi l'`else` è superfluo. È il modo di evitare blocchi annidati, e l'unico modo pulito di uscire da due cicli annidati."
+    },
+    {
+     "id": "p05-de-5",
+     "tipo": "write",
+     "testo": "Definisci `estremi(v)` che restituisce minimo e massimo, e spacchetta il risultato in `lo` e `hi`.",
+     "setup": "dati = [3, 1, 4, 1, 5]\n",
+     "starter": "def estremi(v):\n    \nlo, hi = \n",
+     "test": "assert lo == 1 and hi == 5, f'attesi 1 e 5, hai {lo} e {hi}'\nassert isinstance(estremi([2, 9]), tuple), 'deve restituire una tupla'",
+     "hint": [
+      "return min(v), max(v)",
+      "lo, hi = estremi(dati)"
+     ],
+     "soluzione": "def estremi(v):\n    return min(v), max(v)\nlo, hi = estremi(dati)",
+     "spiegazione": "Non sono davvero \"due valori\": è **una tupla**, che il chiamante spacchetta. Per questo `lo, hi = estremi(...)` funziona senza sintassi speciale — è lo stesso spacchettamento dell'assegnazione multipla."
+    },
+    {
+     "id": "p05-de-6",
+     "tipo": "write",
+     "testo": "Definisci `primo_negativo(dati)` che restituisce il primo valore negativo, o `None` se non ce n'è. Provala su due liste.",
+     "setup": "a = [3, -7, 2]\nb = [1, 2, 3]\n",
+     "starter": "def primo_negativo(dati):\n    \ntrovato = \nniente = \n",
+     "test": "assert trovato == -7, f'atteso -7, hai {trovato}'\nassert niente is None, f'atteso None, hai {niente!r}'",
+     "hint": [
+      "for v in dati: if v < 0: return v",
+      "trovato = primo_negativo(a); niente = primo_negativo(b)"
+     ],
+     "soluzione": "def primo_negativo(dati):\n    for v in dati:\n        if v < 0:\n            return v\ntrovato = primo_negativo(a)\nniente = primo_negativo(b)",
+     "spiegazione": "`return` dentro il ciclo esce **subito**, senza `break` e senza variabile di appoggio: è la forma più pulita della ricerca. Se il ciclo finisce senza trovare niente, l'esecuzione arriva in fondo alla funzione, che restituisce `None` da sola."
+    },
+    {
+     "id": "p05-de-7",
+     "tipo": "predict",
+     "testo": "Una funzione che arriva in fondo senza incontrare `return`: cosa restituisce?",
+     "opzioni": [
+      "None",
+      "0",
+      "l'ultimo valore calcolato",
+      "solleva un errore"
+     ],
+     "risposta": "None",
+     "spiegazione": "`None`, sempre. Non è un errore: è il valore di default. Diventa un problema solo quando il chiamante si aspettava un numero — e allora l'errore arriva altrove, con un messaggio che non nomina la funzione colpevole."
+    },
+    {
+     "id": "p05-de-8",
+     "tipo": "write",
+     "testo": "Riscrivi come funzione il ciclo che cerca in una griglia: `cerca_negativo(g)` restituisce le coordinate del primo valore negativo, o `None`.",
+     "difficolta": 2,
+     "setup": "g = [[1, 2], [3, -4], [5, 6]]\n",
+     "starter": "def cerca_negativo(g):\n    \ndove = \n",
+     "test": "assert dove == (1, 1), f'attesa (1, 1), hai {dove}'\nassert cerca_negativo([[1, 2]]) is None, 'senza negativi deve restituire None'",
+     "hint": [
+      "Due for annidati con enumerate.",
+      "return (i, j) esce da entrambi i cicli."
+     ],
+     "soluzione": "def cerca_negativo(g):\n    for i, riga in enumerate(g):\n        for j, v in enumerate(riga):\n            if v < 0:\n                return (i, j)\ndove = cerca_negativo(g)",
+     "spiegazione": "Con `return` i due cicli annidati si abbandonano insieme, senza la variabile di stato che serviva col `break`. È il motivo per cui \"metti i due cicli in una funzione\" è la risposta standard al problema di uscire da entrambi."
+    },
+    {
+     "id": "p05-de-9",
+     "tipo": "write",
+     "testo": "Aggiungi una docstring a `peso` e mettila in `doc`.",
+     "setup": "",
+     "starter": "def peso(m):\n    \n    return m * 9.81\ndoc = \n",
+     "test": "assert doc == 'Peso in newton di una massa in kg.', f'docstring attesa diversa, hai {doc!r}'\nassert abs(peso(100) - 981.0) < 1e-9, 'la funzione deve ancora funzionare'",
+     "hint": [
+      "La docstring va subito sotto il def, fra tripli apici.",
+      "doc = peso.__doc__"
+     ],
+     "soluzione": "def peso(m):\n    \"\"\"Peso in newton di una massa in kg.\"\"\"\n    return m * 9.81\ndoc = peso.__doc__",
+     "spiegazione": "La stringa subito sotto il `def` è quello che `help(peso)` mostra, ed è raggiungibile come `peso.__doc__`. È il posto in cui scrivere cosa entra e cosa esce — la stessa cosa che nel modulo 12 di NumPy imparerai a leggere nelle funzioni altrui."
+    },
+    {
+     "id": "p05-de-10",
+     "tipo": "write",
+     "testo": "Definisci `fattoriale(n)` in modo ricorsivo e calcola quello di 5 in `f5`.",
+     "setup": "",
+     "starter": "def fattoriale(n):\n    \nf5 = \n",
+     "test": "assert f5 == 120, f'atteso 120, hai {f5}'\nassert fattoriale(1) == 1 and fattoriale(0) == 1, 'il caso base deve valere 1'",
+     "hint": [
+      "if n <= 1: return 1",
+      "return n * fattoriale(n - 1)"
+     ],
+     "soluzione": "def fattoriale(n):\n    if n <= 1:\n        return 1\n    return n * fattoriale(n - 1)\nf5 = fattoriale(5)",
+     "spiegazione": "120. La ricorsione ha bisogno di un **caso base** che non richiama la funzione: senza, scende all'infinito e Python si ferma con `RecursionError` dopo circa mille livelli. Qui il caso base è `n <= 1`."
+    }
+   ]
+  },
+  {
+   "id": "p05-argomenti",
+   "comando": "argomenti e default",
+   "titolo": "argomenti — e il default mutabile",
+   "esercizi": [
+    {
+     "id": "p05-ar-1",
+     "tipo": "write",
+     "testo": "Chiama `quota` nei due modi: `per_posizione` passando 1000, 5.0 e 60 in ordine, e `per_nome` passandoli per nome.",
+     "setup": "def quota(h0, salita, t):\n    return h0 + salita * t\n",
+     "starter": "per_posizione = \nper_nome = \n",
+     "test": "assert per_posizione == 1300.0, f'attesa 1300.0, hai {per_posizione}'\nassert per_nome == 1300.0, f'attesa 1300.0, hai {per_nome}'",
+     "hint": [
+      "quota(1000, 5.0, 60)",
+      "quota(h0=1000, salita=5.0, t=60)"
+     ],
+     "soluzione": "per_posizione = quota(1000, 5.0, 60)\nper_nome = quota(h0=1000, salita=5.0, t=60)",
+     "spiegazione": "Stesso risultato, leggibilità diversa. `traccia(dati, True, False, True)` non si capisce; `traccia(dati, griglia=True, legenda=False, log=True)` sì. Su una funzione con più di due argomenti, i nomi valgono i caratteri che costano."
+    },
+    {
+     "id": "p05-ar-2",
+     "tipo": "predict",
+     "testo": "`quota(1000, t=60, salita=5.0)`: è una chiamata valida?",
+     "opzioni": [
+      "si': i posizionali vanno prima, poi i nominati in ordine libero",
+      "no: non si possono mescolare i due modi",
+      "no: t e salita sono nell'ordine sbagliato",
+      "si', ma salita riceve 60"
+     ],
+     "risposta": "si': i posizionali vanno prima, poi i nominati in ordine libero",
+     "spiegazione": "Sì: gli argomenti per posizione devono venire **prima** di quelli per nome, ma fra quelli per nome l'ordine è libero. Invertire i due gruppi — un posizionale dopo un nominato — è un errore di sintassi."
+    },
+    {
+     "id": "p05-ar-3",
+     "tipo": "write",
+     "testo": "Definisci `atmosfera(h, T0=288.15)` che restituisce `T0 - 0.0065 * h`, e chiamala una volta col default e una sovrascrivendolo con 300.0.",
+     "setup": "",
+     "starter": "def atmosfera(h, T0=288.15):\n    \ncon_default = \nsovrascritto = \n",
+     "test": "assert abs(con_default - 281.65) < 1e-9, f'attesa 281.65, hai {con_default}'\nassert abs(sovrascritto - 293.5) < 1e-9, f'attesa 293.5, hai {sovrascritto}'",
+     "hint": [
+      "return T0 - 0.0065 * h",
+      "atmosfera(1000) e atmosfera(1000, 300.0)"
+     ],
+     "soluzione": "def atmosfera(h, T0=288.15):\n    return T0 - 0.0065 * h\ncon_default = atmosfera(1000)\nsovrascritto = atmosfera(1000, 300.0)",
+     "spiegazione": "281.65 e 293.5. Gli argomenti con default vanno **dopo** quelli senza, altrimenti è un errore di sintassi: è l'unico controllo che Python fa su di loro."
+    },
+    {
+     "id": "p05-ar-4",
+     "tipo": "predict",
+     "testo": "```\ndef aggiungi(x, acc=[]):\n    acc.append(x)\n    return acc\n```\n\nCosa restituiscono tre chiamate consecutive `aggiungi(1)`, `aggiungi(2)`, `aggiungi(3)` ?",
+     "opzioni": [
+      "[1], poi [1, 2], poi [1, 2, 3]",
+      "[1], poi [2], poi [3]",
+      "[1, 2, 3] tutte e tre le volte",
+      "solleva TypeError alla seconda chiamata"
+     ],
+     "risposta": "[1], poi [1, 2], poi [1, 2, 3]",
+     "spiegazione": "`[1]`, `[1, 2]`, `[1, 2, 3]`. Il valore di default viene valutato **una volta sola**, alla definizione: quella lista è la stessa per tutte le chiamate e si riempie. È il bug classico di Python, e non solleva mai niente."
+    },
+    {
+     "id": "p05-ar-5",
+     "tipo": "debug",
+     "testo": "Questa funzione accumula fra chiamate diverse invece di ripartire da capo. Correggila.",
+     "setup": "",
+     "starter": "def aggiungi(x, acc=[]):\n    acc.append(x)\n    return acc\nprimo = aggiungi(1)\nsecondo = aggiungi(2)\n",
+     "test": "assert primo == [1], f'la prima chiamata attesa [1], hai {primo}'\nassert secondo == [2], f'la seconda attesa [2], hai {secondo}'",
+     "hint": [
+      "Il default deve essere None.",
+      "if acc is None: acc = []"
+     ],
+     "soluzione": "def aggiungi(x, acc=None):\n    if acc is None:\n        acc = []\n    acc.append(x)\n    return acc\nprimo = aggiungi(1)\nsecondo = aggiungi(2)",
+     "spiegazione": "`None` come default e la lista creata **dentro** la funzione: così ogni chiamata ne ha una nuova. Vale per qualunque default modificabile — liste, dizionari, insiemi. Con numeri e stringhe il problema non si pone, perché sono immutabili."
+    },
+    {
+     "id": "p05-ar-6",
+     "tipo": "predict",
+     "testo": "Perché il default mutabile si comporta così?",
+     "opzioni": [
+      "il default e' valutato una volta sola, alla definizione della funzione",
+      "Python riusa la memoria per efficienza",
+      "append modifica il default per progetto",
+      "e' un bug di Python 3, corretto nelle versioni recenti"
+     ],
+     "risposta": "il default e' valutato una volta sola, alla definizione della funzione",
+     "spiegazione": "Perché l'espressione del default viene valutata **quando la funzione viene definita**, non a ogni chiamata: esiste un solo oggetto lista, legato alla funzione, e ogni chiamata lo modifica. Con `None` come default l'oggetto si crea dentro il corpo, quindi a ogni chiamata."
+    },
+    {
+     "id": "p05-ar-7",
+     "tipo": "write",
+     "testo": "Definisci `area(b, h=1.0, *, scala=1.0)` con `scala` passabile **solo per nome**, e chiamala con base 2, altezza 3 e scala 2.",
+     "setup": "",
+     "starter": "def area(b, h=1.0, *, scala=1.0):\n    \nvalore = \n",
+     "test": "assert abs(valore - 12.0) < 1e-9, f'atteso 12.0, hai {valore}'\ntry:\n    area(2, 3, 2)\n    assert False, 'il terzo argomento non deve essere passabile per posizione'\nexcept TypeError:\n    pass",
+     "hint": [
+      "return b * h * scala",
+      "valore = area(2, 3, scala=2)"
+     ],
+     "soluzione": "def area(b, h=1.0, *, scala=1.0):\n    return b * h * scala\nvalore = area(2, 3, scala=2)",
+     "spiegazione": "12.0. Tutto quello che sta dopo `*` si può passare solo per nome: `area(2, 3, 2)` solleva `TypeError` invece di assegnare in silenzio il 2 a `scala`. È il modo di impedire chiamate in cui il terzo numero non si capisce cosa sia."
+    },
+    {
+     "id": "p05-ar-8",
+     "tipo": "write",
+     "testo": "Definisci `riassunto(nome, valore, unita=\"m\")` che restituisce `\"quota: 9000 m\"`, e chiamala una volta col default e una con `unita=\"ft\"`.",
+     "setup": "",
+     "starter": "def riassunto(nome, valore, unita=\"m\"):\n    \nmetri = \npiedi = \n",
+     "test": "assert metri == 'quota: 9000 m', f'atteso \\'quota: 9000 m\\', hai {metri!r}'\nassert piedi == 'quota: 29500 ft', f'atteso \\'quota: 29500 ft\\', hai {piedi!r}'",
+     "hint": [
+      "return f\"{nome}: {valore} {unita}\"",
+      "riassunto(\"quota\", 9000) e riassunto(\"quota\", 29500, unita=\"ft\")"
+     ],
+     "soluzione": "def riassunto(nome, valore, unita=\"m\"):\n    return f\"{nome}: {valore} {unita}\"\nmetri = riassunto(\"quota\", 9000)\npiedi = riassunto(\"quota\", 29500, unita=\"ft\")",
+     "spiegazione": "Il default copre il caso normale e la chiamata resta corta; il caso raro si esplicita. È il criterio per decidere cosa mettere a default: il valore che userai il 90% delle volte, non quello \"neutro\"."
+    },
+    {
+     "id": "p05-ar-9",
+     "tipo": "write",
+     "testo": "Definisci `normalizza(v, minimo=None, massimo=None)` che porta i valori fra 0 e 1; se gli estremi non sono dati, li ricava dai dati stessi.",
+     "difficolta": 2,
+     "setup": "dati = [10.0, 20.0, 30.0]\n",
+     "starter": "def normalizza(v, minimo=None, massimo=None):\n    \nauto = \nesplicito = \n",
+     "test": "assert auto == [0.0, 0.5, 1.0], f'attesa [0.0, 0.5, 1.0], hai {auto}'\nassert esplicito == [0.0, 0.25, 0.5], f'attesa [0.0, 0.25, 0.5], hai {esplicito}'",
+     "hint": [
+      "if minimo is None: minimo = min(v) — idem per massimo.",
+      "return [(x - minimo) / (massimo - minimo) for x in v]; poi normalizza(dati) e normalizza(dati, 10.0, 50.0)"
+     ],
+     "soluzione": "def normalizza(v, minimo=None, massimo=None):\n    if minimo is None:\n        minimo = min(v)\n    if massimo is None:\n        massimo = max(v)\n    return [(x - minimo) / (massimo - minimo) for x in v]\nauto = normalizza(dati)\nesplicito = normalizza(dati, 10.0, 50.0)",
+     "spiegazione": "`None` come default significa \"deciderò dentro\": è il modo corretto di dare un default calcolato dagli argomenti, che nella firma non si può scrivere perché lì `v` non esiste ancora."
+    },
+    {
+     "id": "p05-ar-10",
+     "tipo": "predict",
+     "testo": "Un default va bene mutabile se la funzione **non** lo modifica mai?",
+     "opzioni": [
+      "tecnicamente si', ma resta una cattiva idea: basta una modifica futura",
+      "si', senza nessuna riserva",
+      "no: Python solleva un errore alla definizione",
+      "no: i default mutabili sono vietati dalla sintassi"
+     ],
+     "risposta": "tecnicamente si', ma resta una cattiva idea: basta una modifica futura",
+     "spiegazione": "Tecnicamente sì, e continua a essere una cattiva idea: nessuno garantisce che la funzione resti così dopo la prossima modifica, e il bug che ne nasce non solleva niente. `None` come default costa due righe e toglie la questione di mezzo per sempre."
+    }
+   ]
+  },
+  {
+   "id": "p05-scope",
+   "comando": "scope",
+   "titolo": "scope — cosa vede e cosa cambia",
+   "esercizi": [
+    {
+     "id": "p05-sc-1",
+     "tipo": "write",
+     "testo": "Una funzione legge i nomi definiti fuori. Definisci `peso(m)` che usa la costante `G` e calcola il peso di 100 kg.",
+     "setup": "G = 9.81\n",
+     "starter": "def peso(m):\n    \np = \n",
+     "test": "assert abs(p - 981.0) < 1e-9, f'atteso 981.0, hai {p}'",
+     "hint": [
+      "return m * G",
+      "p = peso(100)"
+     ],
+     "soluzione": "def peso(m):\n    return m * G\np = peso(100)",
+     "spiegazione": "981.0. Leggere una variabile esterna funziona senza dichiarare niente. È il modo normale di usare le costanti; scrivere quelle stesse variabili è tutta un'altra storia."
+    },
+    {
+     "id": "p05-sc-2",
+     "tipo": "predict",
+     "testo": "```\nn = 0\ndef conta():\n    n = n + 1\nconta()\n```\n\nCosa succede?",
+     "opzioni": [
+      "UnboundLocalError: assegnare rende il nome locale a tutta la funzione",
+      "n globale diventa 1",
+      "n resta 0 e nessun errore",
+      "NameError: n non e' definita"
+     ],
+     "risposta": "UnboundLocalError: assegnare rende il nome locale a tutta la funzione",
+     "spiegazione": "`UnboundLocalError`. Python vede l'assegnazione e decide che `n` è **locale** per tutta la funzione; poi trova che la si legge prima di averle dato un valore. Disorienta perché `n` esiste eccome — solo, non quella."
+    },
+    {
+     "id": "p05-sc-3",
+     "tipo": "write",
+     "testo": "Correggi lo schema del contatore senza usare `global`: `incrementa(n)` restituisce il valore aumentato, e il chiamante riassegna.",
+     "setup": "n = 0\n",
+     "starter": "def incrementa(n):\n    \nn = \n",
+     "test": "assert n == 1, f'atteso 1, hai {n}'\nassert incrementa(41) == 42, 'la funzione deve restituire n + 1'",
+     "hint": [
+      "return n + 1",
+      "n = incrementa(n)"
+     ],
+     "soluzione": "def incrementa(n):\n    return n + 1\nn = incrementa(n)",
+     "spiegazione": "Restituire e riassegnare è la soluzione, non `global`. Una funzione che modifica variabili globali è una funzione di cui non puoi prevedere l'effetto leggendo la chiamata — e che non puoi riusare in un altro contesto senza portarti dietro quella variabile."
+    },
+    {
+     "id": "p05-sc-4",
+     "tipo": "predict",
+     "testo": "```\ndef f(x):\n    x = x + 1\na = 5\nf(a)\n```\n\nQuanto vale `a` dopo la chiamata?",
+     "opzioni": [
+      "5",
+      "6",
+      "None",
+      "dipende: a e x sono lo stesso oggetto"
+     ],
+     "risposta": "5",
+     "spiegazione": "`5`. `x = x + 1` lega un oggetto **nuovo** al nome locale `x`: l'intero originale non è stato toccato, perché i numeri sono immutabili. Il nome `a` fuori continua a puntare al 5 di prima."
+    },
+    {
+     "id": "p05-sc-5",
+     "tipo": "predict",
+     "testo": "```\ndef g(l):\n    l.append(9)\nb = [1]\ng(b)\n```\n\nQuanto vale `b` dopo la chiamata?",
+     "opzioni": [
+      "[1, 9]",
+      "[1]",
+      "[9]",
+      "TypeError"
+     ],
+     "risposta": "[1, 9]",
+     "spiegazione": "`[1, 9]`: qui la lista **è** cambiata. Non è una regola diversa dal caso dell'intero — in entrambi la funzione riceve il riferimento all'oggetto. La differenza è che `append` modifica l'oggetto, mentre `x = x + 1` ne lega uno nuovo al nome locale."
+    },
+    {
+     "id": "p05-sc-6",
+     "tipo": "write",
+     "testo": "Scrivi `senza_negativi(dati)` che restituisce una lista nuova senza i negativi, **senza** modificare quella ricevuta. Verifica che l'originale resti intatta.",
+     "setup": "dati = [3, -1, 4, -5]\n",
+     "starter": "def senza_negativi(dati):\n    \npuliti = \noriginale = \n",
+     "test": "assert puliti == [3, 4], f'attesa [3, 4], hai {puliti}'\nassert originale == [3, -1, 4, -5], f'l originale deve restare intatta, hai {originale}'",
+     "hint": [
+      "return [v for v in dati if v >= 0]",
+      "originale = dati"
+     ],
+     "soluzione": "def senza_negativi(dati):\n    return [v for v in dati if v >= 0]\npuliti = senza_negativi(dati)\noriginale = dati",
+     "spiegazione": "Restituire un oggetto nuovo invece di modificare quello ricevuto è la scelta di default: chi legge la chiamata vede subito che l'originale sopravvive. Una funzione che modifica un argomento va detto nel nome, e va comunque evitata quando la copia costa poco."
+    },
+    {
+     "id": "p05-sc-7",
+     "tipo": "debug",
+     "testo": "Questa funzione doveva lasciare intatta la lista ricevuta, e invece la svuota. Correggila lavorando su una copia.",
+     "setup": "dati = [3, -1, 4, -5]\n",
+     "starter": "def senza_negativi(dati):\n    for v in list(dati):\n        if v < 0:\n            dati.remove(v)\n    return dati\npuliti = senza_negativi(dati)\noriginale = dati\n",
+     "test": "assert puliti == [3, 4], f'attesa [3, 4], hai {puliti}'\nassert originale == [3, -1, 4, -5], f'l originale deve restare intatta, hai {originale}'",
+     "hint": [
+      "Non modificare la lista ricevuta.",
+      "return [v for v in dati if v >= 0]"
+     ],
+     "soluzione": "def senza_negativi(dati):\n    return [v for v in dati if v >= 0]\npuliti = senza_negativi(dati)\noriginale = dati",
+     "spiegazione": "`dati.remove(...)` agisce sull'oggetto del chiamante, perché è lo stesso oggetto. Lavorare su `dati.copy()` — o meglio, costruire una lista nuova con una comprehension — chiude la questione."
+    },
+    {
+     "id": "p05-sc-8",
+     "tipo": "write",
+     "testo": "Una variabile locale non esiste fuori. Definisci `calcola()` che usa una variabile interna `temporanea` e restituisce il risultato; poi metti in `esiste_fuori` il controllo che quel nome **non** sia visibile.",
+     "setup": "",
+     "starter": "def calcola():\n    temporanea = 42\n    return temporanea * 2\nrisultato = \nesiste_fuori = \n",
+     "test": "assert risultato == 84, f'atteso 84, hai {risultato}'\nassert esiste_fuori is False, 'temporanea non deve esistere fuori dalla funzione'",
+     "hint": [
+      "risultato = calcola()",
+      "Serve un modo di controllare l'esistenza di un nome: 'temporanea' in dir()"
+     ],
+     "soluzione": "def calcola():\n    temporanea = 42\n    return temporanea * 2\nrisultato = calcola()\nesiste_fuori = \"temporanea\" in dir()",
+     "spiegazione": "Le variabili di una funzione nascono e muoiono con la chiamata. È quello che rende una funzione riusabile: quello che succede dentro non lascia tracce fuori, quindi due chiamate non possono interferire fra loro."
+    }
+   ]
+  },
+  {
+   "id": "p05-varargs",
+   "comando": "*args e **kwargs",
+   "titolo": "*args e **kwargs — e lo spacchettamento",
+   "esercizi": [
+    {
+     "id": "p05-va-1",
+     "tipo": "write",
+     "testo": "Definisci `somma(*valori)` che somma un numero qualsiasi di argomenti, e chiamala con tre numeri e con nessuno.",
+     "setup": "",
+     "starter": "def somma(*valori):\n    \ntre = \nzero = \n",
+     "test": "assert tre == 6, f'atteso 6, hai {tre}'\nassert zero == 0, f'atteso 0, hai {zero}'",
+     "hint": [
+      "return sum(valori)",
+      "somma(1, 2, 3) e somma()"
+     ],
+     "soluzione": "def somma(*valori):\n    return sum(valori)\ntre = somma(1, 2, 3)\nzero = somma()",
+     "spiegazione": "`*nome` raccoglie gli argomenti posizionali in più dentro una **tupla**, che può anche essere vuota: `somma()` restituisce 0, perché `sum(())` vale 0."
+    },
+    {
+     "id": "p05-va-2",
+     "tipo": "predict",
+     "testo": "Dentro `def f(*args)`, di che tipo è `args` ?",
+     "opzioni": [
+      "una tupla",
+      "una lista",
+      "un dizionario",
+      "un insieme"
+     ],
+     "risposta": "una tupla",
+     "spiegazione": "Una **tupla**, anche con un solo argomento e anche con nessuno. Il nome `args` è pura convenzione: conta l'asterisco. Con `**kwargs` invece si ottiene un dizionario."
+    },
+    {
+     "id": "p05-va-3",
+     "tipo": "write",
+     "testo": "Definisci `configura(**opzioni)` che restituisce le coppie ordinate, e chiamala con due opzioni per nome.",
+     "setup": "",
+     "starter": "def configura(**opzioni):\n    \nrisultato = \n",
+     "test": "assert risultato == [('griglia', True), ('log', False)], f'attesa [(griglia, True), (log, False)], hai {risultato}'",
+     "hint": [
+      "return sorted(opzioni.items())",
+      "configura(griglia=True, log=False)"
+     ],
+     "soluzione": "def configura(**opzioni):\n    return sorted(opzioni.items())\nrisultato = configura(griglia=True, log=False)",
+     "spiegazione": "`**nome` raccoglie gli argomenti passati per nome in un **dizionario**. È il meccanismo con cui una funzione inoltra opzioni a un'altra senza doverle elencare: lo vedrai spesso nelle librerie, raramente nel tuo codice."
+    },
+    {
+     "id": "p05-va-4",
+     "tipo": "write",
+     "testo": "Nell'altro verso: spacchetta la lista `v` sugli argomenti di `tre_numeri`.",
+     "setup": "def tre_numeri(a, b, c):\n    return a + b + c\nv = [1, 2, 3]\n",
+     "starter": "totale = \n",
+     "test": "assert totale == 6, f'atteso 6, hai {totale}'",
+     "hint": [
+      "L'asterisco va davanti alla lista nella chiamata.",
+      "totale = tre_numeri(*v)"
+     ],
+     "soluzione": "totale = tre_numeri(*v)",
+     "spiegazione": "Lo stesso asterisco, dalla parte della **chiamata**, fa l'operazione inversa: prende una sequenza e la distribuisce sugli argomenti. `tre_numeri(v)` passerebbe la lista intera come primo argomento e solleverebbe `TypeError`."
+    },
+    {
+     "id": "p05-va-5",
+     "tipo": "write",
+     "testo": "Spacchetta un dizionario sugli argomenti per nome di `area`.",
+     "setup": "def area(b, h=1.0):\n    return b * h\nopzioni = {\"h\": 2.0}\n",
+     "starter": "valore = \n",
+     "test": "assert abs(valore - 6.0) < 1e-9, f'atteso 6.0, hai {valore}'",
+     "hint": [
+      "Due asterischi davanti al dizionario.",
+      "valore = area(3.0, **opzioni)"
+     ],
+     "soluzione": "valore = area(3.0, **opzioni)",
+     "spiegazione": "`**` distribuisce le coppie del dizionario sugli argomenti per nome. È il modo in cui si passa una configurazione letta da file a una funzione, senza elencarne le chiavi a mano."
+    },
+    {
+     "id": "p05-va-6",
+     "tipo": "write",
+     "testo": "Definisci `media(*valori)` che restituisce la media, e `0.0` se non riceve niente.",
+     "setup": "",
+     "starter": "def media(*valori):\n    \ntre = \nniente = \n",
+     "test": "assert abs(tre - 2.0) < 1e-9, f'attesa 2.0, hai {tre}'\nassert niente == 0.0, f'attesa 0.0, hai {niente}'",
+     "hint": [
+      "if not valori: return 0.0",
+      "return sum(valori) / len(valori)"
+     ],
+     "soluzione": "def media(*valori):\n    if not valori:\n        return 0.0\n    return sum(valori) / len(valori)\ntre = media(1, 2, 3)\nniente = media()",
+     "spiegazione": "Il caso della tupla vuota va gestito **prima** della divisione: `sum(()) / len(())` è una divisione per zero. È il controllo che ogni funzione di aggregazione deve avere, e che si dimentica finché non arriva la lista vuota."
+    }
+   ]
+  },
+  {
+   "id": "p05-lambda",
+   "comando": "lambda",
+   "titolo": "le funzioni sono valori",
+   "esercizi": [
+    {
+     "id": "p05-la-1",
+     "tipo": "write",
+     "testo": "Una funzione è un valore: assegna `len` al nome `f` e usala.",
+     "setup": "",
+     "starter": "f = \nn = \n",
+     "test": "assert n == 4, f'atteso 4, hai {n}'\nassert f is len, 'f deve essere la funzione len, non il risultato di una chiamata'",
+     "hint": [
+      "Senza parentesi: f = len",
+      "n = f(\"volo\")"
+     ],
+     "soluzione": "f = len\nn = f(\"volo\")",
+     "spiegazione": "Le parentesi **chiamano**; senza, hai l'oggetto funzione. È la distinzione che rende possibile `sorted(x, key=len)`: si passa la funzione, e `sorted` la chiamerà lei."
+    },
+    {
+     "id": "p05-la-2",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `f = len` e `f = len(\"volo\")` ?",
+     "opzioni": [
+      "il primo lega la funzione, il secondo il risultato della chiamata",
+      "sono equivalenti",
+      "il primo e' un errore di sintassi",
+      "il secondo lega la funzione, il primo il risultato"
+     ],
+     "risposta": "il primo lega la funzione, il secondo il risultato della chiamata",
+     "spiegazione": "Il primo lega la **funzione** al nome, il secondo il **risultato** di una chiamata, cioè 4. È la distinzione che si sbaglia passando `key=len()` invece di `key=len`, e lì l'errore arriva subito perché `len()` senza argomenti solleva `TypeError`."
+    },
+    {
+     "id": "p05-la-3",
+     "tipo": "write",
+     "testo": "Ordina le coppie per il **secondo** elemento usando una lambda.",
+     "setup": "coppie = [(1, \"b\"), (2, \"a\")]\n",
+     "starter": "ordinate = \n",
+     "test": "assert ordinate == [(2, 'a'), (1, 'b')], f'attesa [(2, a), (1, b)], hai {ordinate}'",
+     "hint": [
+      "sorted(coppie, key=...)",
+      "key=lambda t: t[1]"
+     ],
+     "soluzione": "ordinate = sorted(coppie, key=lambda t: t[1])",
+     "spiegazione": "`lambda argomenti: espressione` è una funzione di una riga, e serve esattamente qui: una funzione al volo da passare a qualcun altro. Non può contenere istruzioni, solo un'espressione, il cui valore viene restituito."
+    },
+    {
+     "id": "p05-la-4",
+     "tipo": "predict",
+     "testo": "Perché `f = lambda x: x + 1` è peggio di `def f(x): return x + 1` ?",
+     "opzioni": [
+      "la lambda e' anonima: nei traceback e nei messaggi compare come <lambda>",
+      "la lambda e' molto piu' lenta",
+      "la lambda non puo' avere argomenti con default",
+      "non c'e' differenza"
+     ],
+     "risposta": "la lambda e' anonima: nei traceback e nei messaggi compare come <lambda>",
+     "spiegazione": "Perché la lambda è anonima: nei messaggi d'errore compare come `<lambda>` invece che col nome, e non può avere una docstring. Assegnare una lambda a un nome dà tutti gli svantaggi di entrambe le forme. La lambda serve **solo** dove non le dai un nome."
+    },
+    {
+     "id": "p05-la-5",
+     "tipo": "write",
+     "testo": "Ordina i codici in base al peso associato, usando il dizionario come chiave di ordinamento.",
+     "setup": "codici = [\"a\", \"b\", \"c\"]\npesi = {\"a\": 30, \"b\": 10, \"c\": 20}\n",
+     "starter": "ordinati = \n",
+     "test": "assert ordinati == ['b', 'c', 'a'], f'attesa [b, c, a], hai {ordinati}'",
+     "hint": [
+      "sorted accetta key.",
+      "ordinati = sorted(codici, key=pesi.get)"
+     ],
+     "soluzione": "ordinati = sorted(codici, key=pesi.get)",
+     "spiegazione": "`key=pesi.get` passa il **metodo** `get` come funzione: per ogni codice restituisce il peso, e l'ordinamento avviene su quello. È la stessa forma di `max(d, key=d.get)`, e mostra che anche i metodi sono valori."
+    },
+    {
+     "id": "p05-la-6",
+     "tipo": "write",
+     "testo": "Passa una funzione a un'altra funzione: definisci `applica(f, valori)` che restituisce la lista dei risultati, e usala con `abs`.",
+     "setup": "dati = [-3, 1, -4]\n",
+     "starter": "def applica(f, valori):\n    \nassoluti = \n",
+     "test": "assert assoluti == [3, 1, 4], f'attesa [3, 1, 4], hai {assoluti}'\nassert applica(str, [1]) == ['1'], 'applica deve funzionare con qualunque funzione'",
+     "hint": [
+      "return [f(v) for v in valori]",
+      "assoluti = applica(abs, dati)"
+     ],
+     "soluzione": "def applica(f, valori):\n    return [f(v) for v in valori]\nassoluti = applica(abs, dati)",
+     "spiegazione": "Una funzione che riceve una funzione. È il meccanismo di `sorted(key=...)`, di `map`, e di tutte le librerie che ti chiedono una \"callback\": non c'è niente di speciale, le funzioni sono valori come gli altri."
+    },
+    {
+     "id": "p05-la-7",
+     "tipo": "write",
+     "testo": "Riscrivi con una comprehension quello che fa `map`: costruisci `testi`, la lista dei numeri convertiti in stringa.",
+     "setup": "dati = [1, 2, 3]\n",
+     "starter": "testi = \n",
+     "test": "assert testi == ['1', '2', '3'], f'attesa [1, 2, 3] come stringhe, hai {testi}'",
+     "hint": [
+      "Una comprehension con str().",
+      "testi = [str(x) for x in dati]"
+     ],
+     "soluzione": "testi = [str(x) for x in dati]",
+     "spiegazione": "`[str(x) for x in dati]` dice la stessa cosa di `list(map(str, dati))` e si legge senza sapere cosa fa `map`. `map` e `filter` vanno riconosciuti nel codice altrui più che scritti nel proprio."
+    },
+    {
+     "id": "p05-la-8",
+     "tipo": "write",
+     "testo": "Costruisci `selettore`, una funzione che restituisce `True` per i valori sopra una soglia, e usala per filtrare.",
+     "setup": "dati = [3, 12, 7, 20]\nsoglia = 10\n",
+     "starter": "def selettore(v):\n    \nfiltrati = \n",
+     "test": "assert filtrati == [12, 20], f'attesa [12, 20], hai {filtrati}'\nassert selettore(11) is True and selettore(9) is False, 'il selettore deve confrontare con la soglia'",
+     "hint": [
+      "return v > soglia",
+      "filtrati = [v for v in dati if selettore(v)]"
+     ],
+     "soluzione": "def selettore(v):\n    return v > soglia\nfiltrati = [v for v in dati if selettore(v)]",
+     "spiegazione": "Una funzione definita per essere passata altrove. La forma con `def` è preferibile alla lambda appena la condizione ha un nome sensato: `sopra_soglia` in un messaggio d'errore dice qualcosa, `<lambda>` no."
+    },
+    {
+     "id": "p05-la-9",
+     "tipo": "write",
+     "testo": "Metti in `nomi` la lista dei nomi delle funzioni contenute in `strumenti`.",
+     "setup": "def somma(a, b):\n    return a + b\ndef prodotto(a, b):\n    return a * b\nstrumenti = [somma, prodotto]\n",
+     "starter": "nomi = \n",
+     "test": "assert nomi == ['somma', 'prodotto'], f'attesa [somma, prodotto], hai {nomi}'",
+     "hint": [
+      "L'attributo e' __name__.",
+      "nomi = [f.__name__ for f in strumenti]"
+     ],
+     "soluzione": "nomi = [f.__name__ for f in strumenti]",
+     "spiegazione": "Una funzione ha un attributo `__name__` con il proprio nome. Serve per messaggi e diagnostica, ed è il motivo pratico per cui una lambda assegnata a un nome resta comunque `<lambda>`: l'attributo viene fissato alla definizione, non all'assegnazione."
+    },
+    {
+     "id": "p05-la-10",
+     "tipo": "apply",
+     "testo": "**Un piccolo motore di riduzione dati.**\n\nScrivi `riduci(dati, filtro, trasforma)` che tiene solo i valori accettati da `filtro`, applica `trasforma` a ciascuno e restituisce la lista.\n\nUsala per: tenere le quote sopra 8000 e convertirle in piedi, moltiplicando per 3.28084 e arrotondando a un intero.",
+     "difficolta": 3,
+     "setup": "quote = [3000, 9000, 11000, 500]\n",
+     "starter": "def riduci(dati, filtro, trasforma):\n    \npiedi = \n",
+     "test": "assert piedi == [29528, 36089], f'attesa [29528, 36089], hai {piedi}'\nassert riduci([1, 2, 3], lambda v: v > 1, lambda v: v * 10) == [20, 30], 'riduci deve funzionare con qualunque coppia di funzioni'",
+     "hint": [
+      "return [trasforma(v) for v in dati if filtro(v)]",
+      "piedi = riduci(quote, lambda q: q > 8000, lambda q: round(q * 3.28084))"
+     ],
+     "soluzione": "def riduci(dati, filtro, trasforma):\n    return [trasforma(v) for v in dati if filtro(v)]\npiedi = riduci(quote, lambda q: q > 8000, lambda q: round(q * 3.28084))",
+     "spiegazione": "Due funzioni passate come argomenti, e il corpo di `riduci` non sa niente di quote né di piedi. È la stessa struttura di `sorted(key=...)` e di `filter`, ed è la ragione per cui le funzioni sono valori: il *cosa* si separa dal *come si scorre*.\n\nIn NumPy lo stesso conto è `np.round(quote[quote > 8000] * 3.28084)`, dove filtro e trasformazione diventano una maschera e un'operazione vettorizzata — la stessa separazione, ottenuta senza passare funzioni."
+    }
+   ]
+  },
+  {
+   "id": "p05-ricorsione",
+   "comando": "ricorsione",
+   "titolo": "ricorsione — e il caso base che manca",
+   "esercizi": [
+    {
+     "id": "p05-ri-1",
+     "tipo": "write",
+     "testo": "Definisci `potenza(b, e)` in modo ricorsivo: `b` elevato a `e`, con `e` intero non negativo. Calcola 2 alla decima.",
+     "setup": "",
+     "starter": "def potenza(b, e):\n    \np = \n",
+     "test": "assert p == 1024, f'atteso 1024, hai {p}'\nassert potenza(5, 0) == 1, 'il caso base deve valere 1'\nassert potenza(3, 3) == 27, 'potenza(3, 3) deve valere 27'",
+     "hint": [
+      "if e == 0: return 1",
+      "return b * potenza(b, e - 1)"
+     ],
+     "soluzione": "def potenza(b, e):\n    if e == 0:\n        return 1\n    return b * potenza(b, e - 1)\np = potenza(2, 10)",
+     "spiegazione": "1024. Ogni chiamata riduce l'esponente di uno e si ferma al **caso base** `e == 0`, che vale 1 e non richiama la funzione. Senza caso base la discesa non finisce."
+    },
+    {
+     "id": "p05-ri-2",
+     "tipo": "predict",
+     "testo": "Cosa succede a una funzione ricorsiva senza caso base?",
+     "opzioni": [
+      "RecursionError dopo circa mille livelli",
+      "il programma si blocca per sempre",
+      "restituisce None",
+      "Python converte automaticamente la ricorsione in un ciclo"
+     ],
+     "risposta": "RecursionError dopo circa mille livelli",
+     "spiegazione": "Scende all'infinito finché Python non si ferma con `RecursionError`, intorno ai mille livelli. Il limite esiste apposta: senza, il programma esaurirebbe la memoria dello stack e a fermarlo sarebbe il sistema operativo, con un messaggio molto meno utile."
+    },
+    {
+     "id": "p05-ri-3",
+     "tipo": "debug",
+     "testo": "Questa funzione ricorsiva non ha caso base e non termina. Aggiungilo.",
+     "setup": "",
+     "starter": "def conta_giu(n):\n    return n + conta_giu(n - 1)\nrisultato = conta_giu(4)\n",
+     "test": "assert risultato == 10, f'atteso 10, hai {risultato}'\nassert conta_giu(0) == 0, 'il caso base deve valere 0'",
+     "hint": [
+      "Serve fermarsi quando n arriva a 0.",
+      "if n <= 0: return 0"
+     ],
+     "soluzione": "def conta_giu(n):\n    if n <= 0:\n        return 0\n    return n + conta_giu(n - 1)\nrisultato = conta_giu(4)",
+     "spiegazione": "Il caso base va scritto **per primo**, prima della chiamata ricorsiva: è la stessa disciplina della riga che aggiorna la condizione in un `while`. In entrambi i casi è la parte che fa terminare, e in entrambi è quella che si dimentica."
+    },
+    {
+     "id": "p05-ri-4",
+     "tipo": "write",
+     "testo": "Definisci `fib(n)` ricorsiva — 0, 1, 1, 2, 3, 5 — e calcola il decimo termine.",
+     "setup": "",
+     "starter": "def fib(n):\n    \nf10 = \n",
+     "test": "assert f10 == 55, f'atteso 55, hai {f10}'\nassert fib(0) == 0 and fib(1) == 1, 'i casi base sono 0 e 1'\nassert fib(7) == 13, 'fib(7) deve valere 13'",
+     "hint": [
+      "I casi base sono due: n == 0 e n == 1.",
+      "return fib(n - 1) + fib(n - 2)"
+     ],
+     "soluzione": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\nf10 = fib(10)",
+     "spiegazione": "55. Questa versione è elegante e **pessima**: `fib(10)` richiama sé stessa 177 volte perché ricalcola gli stessi termini da capo, e il costo raddoppia a ogni `n` in più. La versione con un ciclo e due variabili costa `n` passi.\n\nÈ il caso didattico che va conosciuto proprio per sapere quando la ricorsione non è la risposta."
+    },
+    {
+     "id": "p05-ri-5",
+     "tipo": "write",
+     "testo": "Scrivi la stessa successione con un ciclo: `fib_ciclo(n)`, e verifica che dia lo stesso risultato.",
+     "setup": "",
+     "starter": "def fib_ciclo(n):\n    \nf10 = \n",
+     "test": "assert f10 == 55, f'atteso 55, hai {f10}'\nassert fib_ciclo(0) == 0 and fib_ciclo(1) == 1, 'i casi base sono 0 e 1'\nassert fib_ciclo(20) == 6765, 'fib_ciclo(20) deve valere 6765'",
+     "hint": [
+      "a, b = 0, 1 e poi un ciclo su range(n).",
+      "Dentro: a, b = b, a + b; alla fine return a"
+     ],
+     "soluzione": "def fib_ciclo(n):\n    a, b = 0, 1\n    for i in range(n):\n        a, b = b, a + b\n    return a\nf10 = fib_ciclo(10)",
+     "spiegazione": "Stesso risultato, costo lineare invece che esponenziale: due variabili che si rincorrono. Lo scambio simultaneo `a, b = b, a + b` funziona perché il lato destro viene valutato tutto prima di riassegnare — la stessa proprietà dello scambio del modulo 1."
+    },
+    {
+     "id": "p05-ri-6",
+     "tipo": "predict",
+     "testo": "Perché `fib` ricorsiva è molto più lenta della versione con il ciclo?",
+     "opzioni": [
+      "ricalcola gli stessi termini innumerevoli volte",
+      "ogni chiamata di funzione in Python e' lentissima",
+      "la ricorsione usa float invece di int",
+      "la versione ricorsiva alloca una lista a ogni passo"
+     ],
+     "risposta": "ricalcola gli stessi termini innumerevoli volte",
+     "spiegazione": "Perché ricalcola gli stessi termini innumerevoli volte: `fib(10)` richiede `fib(8)` due volte, `fib(7)` tre, e il numero di chiamate raddoppia a ogni `n` in più. Il ciclo ne fa `n`. Non è la ricorsione a essere lenta in sé — è questa ricorsione, che non ricorda niente."
+    },
+    {
+     "id": "p05-ri-7",
+     "tipo": "write",
+     "testo": "Somma tutti i numeri di una lista che contiene altre liste annidate, a profondità qualsiasi.",
+     "setup": "dati = [1, [2, [3, 4]], 5]\n",
+     "starter": "def somma_annidata(x):\n    \ntotale = \n",
+     "test": "assert totale == 15, f'atteso 15, hai {totale}'\nassert somma_annidata([1, 2]) == 3, 'deve funzionare anche senza annidamento'\nassert somma_annidata([]) == 0, 'una lista vuota somma a 0'",
+     "hint": [
+      "isinstance(v, list) dice se un elemento e' a sua volta una lista.",
+      "Scorri x: se l'elemento e' una lista, sommaci somma_annidata(v); altrimenti sommaci v."
+     ],
+     "soluzione": "def somma_annidata(x):\n    totale = 0\n    for v in x:\n        if isinstance(v, list):\n            totale = totale + somma_annidata(v)\n        else:\n            totale = totale + v\n    return totale\ntotale = somma_annidata(dati)",
+     "spiegazione": "15. È il caso in cui la ricorsione è la risposta giusta: la struttura dei dati è essa stessa ricorsiva — una lista può contenere liste — e un ciclo dovrebbe gestire a mano una pila di posizioni. Quando la forma del problema si richiama, la funzione può richiamarsi."
+    },
+    {
+     "id": "p05-ri-8",
+     "tipo": "write",
+     "testo": "Appiattisci una lista annidata in una lista piatta, a profondità qualsiasi.",
+     "difficolta": 2,
+     "setup": "dati = [1, [2, [3, 4]], 5]\n",
+     "starter": "def appiattisci(x):\n    \npiatta = \n",
+     "test": "assert piatta == [1, 2, 3, 4, 5], f'attesa [1, 2, 3, 4, 5], hai {piatta}'\nassert appiattisci([[[1]]]) == [1], 'deve scendere a qualsiasi profondita'\nassert appiattisci([]) == [], 'una lista vuota resta vuota'",
+     "hint": [
+      "Costruisci una lista out e scorri x.",
+      "Se v e' una lista: out.extend(appiattisci(v)); altrimenti out.append(v)"
+     ],
+     "soluzione": "def appiattisci(x):\n    out = []\n    for v in x:\n        if isinstance(v, list):\n            out.extend(appiattisci(v))\n        else:\n            out.append(v)\n    return out\npiatta = appiattisci(dati)",
+     "spiegazione": "`[1, 2, 3, 4, 5]`. `extend` e non `append`: il risultato della chiamata ricorsiva è già una lista, e va **svuotata dentro** invece che messa come singolo elemento. Sbagliare qui riproduce l'annidamento che stavi togliendo."
+    },
+    {
+     "id": "p05-ri-9",
+     "tipo": "write",
+     "testo": "Calcola la profondità di annidamento di una lista: 0 per un numero, 1 per una lista piatta.",
+     "difficolta": 2,
+     "setup": "dati = [1, [2, [3, [4]]]]\n",
+     "starter": "def profondita(x):\n    \nliv = \n",
+     "test": "assert liv == 4, f'attesa 4, hai {liv}'\nassert profondita(5) == 0, 'un numero ha profondita 0'\nassert profondita([]) == 1, 'una lista vuota ha profondita 1'\nassert profondita([1, 2]) == 1, 'una lista piatta ha profondita 1'",
+     "hint": [
+      "if not isinstance(x, list): return 0",
+      "return 1 + max([profondita(v) for v in x], default=0)"
+     ],
+     "soluzione": "def profondita(x):\n    if not isinstance(x, list):\n        return 0\n    return 1 + max([profondita(v) for v in x], default=0)\nliv = profondita(dati)",
+     "spiegazione": "4. `max(..., default=0)` copre la lista vuota, che altrimenti farebbe sollevare `ValueError` a `max` — il caso limite che si scopre solo quando arriva. È lo stesso `default` che eviterebbe la divisione per zero in una media."
+    },
+    {
+     "id": "p05-ri-10",
+     "tipo": "write",
+     "testo": "**Massimo comun divisore.** Scrivi `mcd(a, b)` con l'algoritmo di Euclide: se `b` è zero il risultato è `a`, altrimenti `mcd(b, a % b)`.",
+     "difficolta": 2,
+     "setup": "",
+     "starter": "def mcd(a, b):\n    \nrisultato = \n",
+     "test": "assert risultato == 6, f'atteso 6, hai {risultato}'\nassert mcd(17, 5) == 1, 'due numeri primi fra loro danno 1'\nassert mcd(100, 0) == 100, 'il caso base restituisce a'",
+     "hint": [
+      "if b == 0: return a",
+      "return mcd(b, a % b); poi risultato = mcd(48, 18)"
+     ],
+     "soluzione": "def mcd(a, b):\n    if b == 0:\n        return a\n    return mcd(b, a % b)\nrisultato = mcd(48, 18)",
+     "spiegazione": "6. È la ricorsione nella sua forma migliore: ogni chiamata riduce il problema e il caso base arriva in fretta — su numeri di sei cifre bastano una decina di passi.\n\nLa chiamata ricorsiva è anche l'**ultima** operazione della funzione, quello che si chiama ricorsione di coda: in alcuni linguaggi il compilatore la trasforma in un ciclo senza consumare stack. Python no, per scelta esplicita — ed è il motivo per cui qui il limite dei mille livelli vale sempre."
+    }
+   ]
+  }
+ ]
+}

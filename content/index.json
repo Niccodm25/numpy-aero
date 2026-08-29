@@ -11,10 +11,10 @@
         "p01",
         "p02",
         "p03",
-        "p04"
+        "p04",
+        "p05"
       ],
       "prossimi": [
-        "Funzioni — argomenti, default, valori di ritorno, scope",
         "Leggere un errore — traceback, TypeError, NameError, IndexError, KeyError",
         "import — moduli, from ... import, e cosa succede davvero quando importi",
         "File e contesti — open, with, leggere e scrivere testo"
@@ -136,6 +136,12 @@
       "id": "p04",
       "file": "p04-flusso.json",
       "titolo": "Controllo di flusso",
+      "disponibile": true
+    },
+    {
+      "id": "p05",
+      "file": "p05-funzioni.json",
+      "titolo": "Funzioni",
       "disponibile": true
     },
     {
