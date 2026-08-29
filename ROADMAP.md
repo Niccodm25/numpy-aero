@@ -163,24 +163,32 @@ struttura parallela è deliberata: fatto uno, l'altro diventa una tabella di tra
 Vale la pena avere un modulo esplicito di **corrispondenze** fra le due shell.
 
 
-### Ramo E — Python, il linguaggio  ← **primo nell'ordine di studio**
+### Ramo E — Python, il linguaggio  ← **fatto**
 
 Gira sul motore che c'e' gia': Pyodide esegue Python vero, senza bisogno del
 terminale simulato. E' il ramo piu' economico da costruire di tutti, ed e' quello
 che il corso NumPy presupponeva senza dirlo.
 
+Otto moduli, 430 esercizi, tutti verificati da `check_content.py`.
+
 1. **print, variabili e tipi** — print mostra ma non restituisce, un numero letto
-   da file e' testo, un metodo di stringa non modifica la stringa. **fatto**
-2. **Numeri e stringhe** — operatori, f-string, divisione intera
-3. **Liste, tuple, dizionari** — quando serve quale, e perche' NumPy non usa le liste
-4. **Controllo di flusso** — if, for, while, range, enumerate, zip
-5. **Funzioni** — argomenti, default, valori di ritorno, scope
-6. **Leggere un errore** — traceback, TypeError, NameError, IndexError, KeyError
-7. **import** — moduli, from ... import, cosa succede davvero quando importi
-8. **File e contesti** — open, with, leggere e scrivere testo
+   da file e' testo, un metodo di stringa non modifica la stringa
+2. **Operatori e formattazione** — le due divisioni, f-string, arrotondamenti
+3. **Liste, tuple, dizionari** — i metodi che modificano restituiscono `None`
+4. **Controllo di flusso** — l'indentazione e' la sintassi, `range` esclude a destra
+5. **Funzioni** — il default mutabile, e assegnare un nome lo rende locale
+6. **Leggere un errore** — il traceback si legge dal basso
+7. **import** — le tre forme, e meta' di quello che hai scritto a mano esiste gia'
+8. **File e contesti** — `with`, il modo `"w"` che svuota, il lettore a mano
 
 Il modulo 6 e' il piu' prezioso: un traceback e' la sola diagnostica che avrai,
 e va letto dal basso.
+
+**Nota tecnica.** Gli esercizi sui file usano `io.StringIO` al posto di `open`:
+il codice scritto e' lo stesso, ma nessuno tocca il disco — ne' quello del
+browser ne' la cartella del progetto quando gira il controllo dei contenuti.
+Le asserzioni sugli errori controllano il **tipo** dell'eccezione e mai il testo
+del messaggio, che cambia fra la versione di Python del venv e quella di Pyodide.
 
 ### Ramo F — HTML, come e' fatta una pagina
 
@@ -210,7 +218,7 @@ poi come farlo girare, poi gli strumenti di calcolo, poi il sistema sotto.
 | # | Cosa | Perché in questa posizione |
 |---|---|---|
 | 1 | **Usare NumPy per qualche settimana** | Il sistema di ripasso non è mai stato provato da uno studente vero. Tararlo prima di replicarlo su sei rami |
-| 2 | **Ramo E — Python base** | Gira sul motore che c'e' gia': nessun software nuovo, e sblocca il ramo che tutti gli altri presuppongono |
+| 2 | **Ramo E — Python base** | ~~Da fare~~ **fatto**: otto moduli sul motore che c'era gia', nessun software nuovo |
 | 3 | **Motore del terminale simulato** | Blocca tre rami su sei. Costruirlo su un ramo solo e riusarlo |
 | 4 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
 | 5 | **Ramo C — PowerShell** | La macchina che usi tutti i giorni |
