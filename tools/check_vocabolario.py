@@ -66,7 +66,7 @@ VOCABOLARIO = {
     "m10": {"random", "default_rng", "normal", "uniform", "integers", "choice",
             "quantile", "rng", "seed", "p", "endpoint", "replace"},
     "m11": {"isclose", "allclose", "finfo", "eps", "nbytes", "perf_counter",
-            "time", "atol", "rtol"},
+            "time", "atol", "rtol", "int16"},
     "m12": {"dir", "help", "info", "searchsorted", "unique", "clip", "isin",
             "apply_along_axis", "sort", "lexsort", "return_counts", "return_index",
             "return_inverse", "block",
@@ -133,9 +133,11 @@ def main():
                 fornito = nomi_usati(e.get("setup", ""))
                 usati = da_scrivere | fornito
                 fuori = sorted(n for n in usati if n not in ok and not n.startswith("_"))
-                # I nomi definiti dall'esercizio stesso non contano
+                # I nomi definiti dall'esercizio stesso non contano: il codice
+                # gia' scritto nello starter (un ciclo da eliminare, per dire)
+                # lega le sue variabili, e chiederle in vocabolario non ha senso.
                 definiti = set()
-                for testo in (e.get("setup", ""), e.get("soluzione", "")):
+                for testo in (e.get("setup", ""), e.get("soluzione", ""), e.get("starter", "")):
                     try:
                         for n in ast.walk(ast.parse(testo)):
                             if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Store):

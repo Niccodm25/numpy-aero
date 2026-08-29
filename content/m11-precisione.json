@@ -1,139 +1,823 @@
 {
-  "id": "m11",
-  "titolo": "Precisione e performance",
-  "perche": "I due modi in cui il calcolo numerico tradisce senza avvisare: confronti fra float che falliscono per un errore di 10⁻¹⁷, e interi che vanno in overflow tornando negativi. Più la ragione per cui un ciclo Python su un array è cento volte più lento della stessa riga senza ciclo.",
-  "funzioni": [
-    "np.isclose",
-    "np.allclose",
-    "np.finfo",
-    "np.iinfo",
-    "dtype",
-    "astype",
-    "float32 vs float64",
-    "vettorizzazione"
-  ],
-  "lezioni": [
+ "id": "m11",
+ "titolo": "Precisione e performance",
+ "perche": "I due modi in cui il calcolo numerico tradisce senza avvisare: confronti fra float che falliscono per un errore di 10⁻¹⁷, e interi che vanno in overflow tornando negativi. Più la ragione per cui un ciclo Python su un array è cento volte più lento della stessa riga senza ciclo.",
+ "funzioni": [
+  "np.isclose",
+  "np.allclose",
+  "np.finfo",
+  "np.iinfo",
+  "dtype",
+  "astype",
+  "float32 vs float64",
+  "vettorizzazione"
+ ],
+ "lezioni": [
+  {
+   "id": "m11-l1",
+   "titolo": "Perché 0.1 + 0.2 non fa 0.3",
+   "md": "```\n0.1 + 0.2 == 0.3     # False\n0.1 + 0.2            # 0.30000000000000004\n```\n\nNon è un difetto di NumPy né di Python: è il sistema binario. `0.1` in base 2 è periodico, esattamente come `1/3` in base 10, e in 64 bit se ne conserva un'approssimazione. La somma di due approssimazioni non è l'approssimazione della somma.\n\n### La conseguenza\n\n**Non confrontare mai due float con `==`.** Il confronto è vero solo se i bit coincidono esattamente, cosa che dopo qualsiasi catena di operazioni non è garantita.\n\n```\nnp.isclose(a, b)      # confronto elemento per elemento, con tolleranza\nnp.allclose(a, b)     # True se TUTTI gli elementi sono vicini\n```\n\n`isclose` restituisce un array di booleani, `allclose` un solo `True`/`False`. La tolleranza di default è relativa (`rtol=1e-5`) più una assoluta (`atol=1e-8`), e si può stringere.\n\n### Attenzione al confronto con zero\n\nLa tolleranza relativa non serve a niente quando il valore atteso è zero: qualsiasi cosa è \"infinitamente lontana in percentuale\" da zero. Lì conta solo `atol`, e il default di `1e-8` potrebbe essere troppo largo o troppo stretto per la tua grandezza fisica.\n\n```\nnp.isclose(np.sin(np.pi), 0)              # True, grazie ad atol\nnp.isclose(1e-9, 0, atol=1e-12)           # False\n```\n\n**Quando confronti con zero, scegli tu `atol`**, in base a cosa è trascurabile nel tuo problema: un residuo di 10⁻⁶ N è nulla per un carico strutturale e enorme per una forza di radiazione.\n\n### La precisione disponibile\n\n```\nnp.finfo(np.float64).eps    # 2.22e-16\n```\n\n`eps` è il più piccolo numero che sommato a 1.0 dà un risultato diverso da 1.0. In float64 hai circa **16 cifre decimali significative**: più che sufficienti per qualsiasi grandezza fisica, ma si consumano in fretta se sottrai numeri quasi uguali.",
+   "demo": "print(\"0.1 + 0.2      =\", 0.1 + 0.2)\nprint(\"== 0.3         :\", 0.1 + 0.2 == 0.3)\nprint(\"isclose        :\", np.isclose(0.1 + 0.2, 0.3))\nprint(\"differenza     :\", abs(0.1 + 0.2 - 0.3))\n\nprint(\"\\neps float64:\", np.finfo(np.float64).eps)\nprint(\"eps float32:\", np.finfo(np.float32).eps)\n\nprint(\"\\nconfronto con zero:\")\nprint(\"  isclose(sin(pi), 0)          :\", np.isclose(np.sin(np.pi), 0))\nprint(\"  isclose(1e-9, 0, atol=1e-12) :\", np.isclose(1e-9, 0, atol=1e-12))"
+  },
+  {
+   "id": "m11-l2",
+   "titolo": "Interi: overflow silenzioso",
+   "md": "Un array di interi ha una dimensione fissa in bit, e superarla non solleva niente: il valore **rotola**.\n\n```\na = np.array([120], dtype=np.int8)\na + np.int8(10)     # -126\n```\n\n`int8` arriva a 127. Sommando 10 a 120 si supera il massimo e si riparte dal minimo. Il risultato è un numero valido, plausibile come tipo, e completamente sbagliato.\n\n### Gli interi di default\n\nNumPy usa `int64` di default, che arriva a circa 9·10¹⁸: difficile superarlo per sbaglio. Il rischio arriva quando **leggi dati da file** con un dtype stretto per risparmiare memoria, o quando lavori con dati di sensori a 16 bit.\n\n```\nnp.iinfo(np.int8)     # min -128, max 127\nnp.iinfo(np.int32).max\n```\n\n### La divisione fra interi\n\n```\nnp.array([7]) / np.array([2])     # 3.5, diventa float\nnp.array([7]) // np.array([2])    # 3, resta intero\n```\n\n`/` promuove sempre a float, quindi non perdi cifre. `//` tronca. La trappola vera è l'assegnazione, che invece **non** promuove:\n\n```\na = np.zeros(3, dtype=int)\na[0] = 2.7     # diventa 2, silenziosamente\n```\n\n### La regola per l'ingegneria\n\n**Le grandezze fisiche vanno in float64.** Gli interi servono per indici, conteggi e maschere. Quando leggi da file, controlla il dtype che ottieni:\n\n```\ndati.dtype\ndati = dati.astype(float)\n```",
+   "demo": "a = np.array([120], dtype=np.int8)\nprint(\"int8:  120 + 10 =\", (a + np.int8(10))[0], \" <- overflow, nessun errore\")\nprint(\"limiti int8:\", np.iinfo(np.int8).min, np.iinfo(np.int8).max)\n\nb = np.zeros(3, dtype=int)\nb[0] = 2.7\nprint(\"\\nassegnare 2.7 a un array int:\", b, \" <- troncato\")\n\nprint(\"\\ndivisione: 7/2 =\", (np.array([7]) / 2)[0], \"| 7//2 =\", (np.array([7]) // 2)[0])"
+  },
+  {
+   "id": "m11-l3",
+   "titolo": "float32 e float64: quando la metà non basta",
+   "md": "`float32` occupa metà memoria e ha circa **7 cifre significative** invece di 16.\n\n```\nnp.finfo(np.float32).eps    # 1.19e-07\n```\n\nSembrano tante, ma si esauriscono prima di quanto pensi:\n\n```\nx = np.float32(1e8)\nx + np.float32(1) == x      # True: l'1 sparisce\n```\n\nA 10⁸ il passo minimo rappresentabile in float32 è già maggiore di 1. Coordinate in metri su scala terrestre, tempi in microsecondi su una missione lunga, contatori grandi: tutti casi in cui float32 perde informazione.\n\n### Quando float32 ha senso\n\n- Dati di sensori, che hanno una risoluzione ben inferiore comunque\n- Array enormi in cui la memoria è il vincolo\n- Calcolo su GPU, dove è nettamente più veloce\n\n### Quando non usarlo\n\nQualsiasi cosa che coinvolga **differenze fra numeri grandi**, accumuli lunghi, o iterazioni: gli errori si sommano e float32 li amplifica di nove ordini di grandezza rispetto a float64.\n\n### Come si insinua senza che tu lo scelga\n\nLeggendo dati da file salvati in float32, o da librerie di acquisizione. Il tipo si propaga a tutti i calcoli a valle:\n\n```\ndati.dtype                 # float32\n(dati * 2.0).dtype         # float32, resta stretto\ndati.astype(np.float64)    # promozione esplicita\n```\n\n**Controlla il dtype appena leggi dati esterni.** È una riga e previene una classe intera di errori difficili da diagnosticare.",
+   "demo": "print(\"cifre significative: float64 ~16, float32 ~7\")\nprint(\"eps float32:\", np.finfo(np.float32).eps)\n\nx = np.float32(1e8)\nprint(\"\\nfloat32: 1e8 + 1 == 1e8 ?\", x + np.float32(1) == x)\ny = np.float64(1e8)\nprint(\"float64: 1e8 + 1 == 1e8 ?\", y + np.float64(1) == y)\n\nd32 = np.ones(5, dtype=np.float32)\nprint(\"\\nil tipo si propaga:\", (d32 * 2.0).dtype)\nprint(\"promozione esplicita:\", d32.astype(np.float64).dtype)"
+  },
+  {
+   "id": "m11-l4",
+   "titolo": "Perché il ciclo è lento",
+   "md": "```\n# lento\nout = np.zeros(n)\nfor i in range(n):\n    out[i] = a[i] * b[i]\n\n# veloce\nout = a * b\n```\n\nLa seconda forma è tipicamente **50-200 volte** più rapida. Non perché NumPy usi un algoritmo migliore — l'operazione è la stessa — ma per dove avviene il ciclo.\n\n### Cosa succede davvero\n\nNella versione con `for`, a ogni iterazione Python deve: estrarre un elemento dall'array e **incapsularlo in un oggetto Python**, fare lo stesso per l'altro, chiamare la moltiplicazione con dispatch dinamico sul tipo, creare un oggetto risultato, e riscriverlo nell'array. Cinque operazioni costose per una moltiplicazione.\n\nCon `a * b`, il ciclo avviene dentro codice C compilato, su memoria contigua, senza mai creare oggetti Python. Il processore può anche usare istruzioni vettoriali che elaborano più valori per ciclo di clock.\n\n### Il riflesso da costruire\n\n**Se scrivi un `for` che scorre indici di array per fare conti, quasi sempre esiste la versione senza.** Gli strumenti che hai visto coprono la maggior parte dei casi:\n\n- operazioni elemento per elemento → direttamente sugli array\n- condizioni → maschere booleane, `np.where`\n- combinazioni fra due array → broadcasting\n- riduzioni → `sum`, `mean`, `max` con `axis`\n- differenze e cumulate → `diff`, `gradient`, `cumsum`\n\n### Quando il ciclo resta necessario\n\nQuando ogni passo **dipende dal risultato del precedente** in modo non esprimibile come cumulata: un'integrazione a passo adattivo, un solutore iterativo, una simulazione con logica di stato. Lì il ciclo è la struttura giusta, e si accetta il costo — o si passa a SciPy, che quei cicli li ha già scritti in C.\n\n### Misurare invece di indovinare\n\n```\nimport time\nt0 = time.perf_counter()\n...\nprint(time.perf_counter() - t0)\n```\n\nL'intuizione su cosa sia lento sbaglia spesso. Prima di ottimizzare, misura.",
+   "demo": "import time\nn = 200000\na = np.random.default_rng(0).normal(size=n)\nb = np.random.default_rng(1).normal(size=n)\n\nt0 = time.perf_counter()\nout = np.zeros(n)\nfor i in range(n):\n    out[i] = a[i] * b[i]\nt_ciclo = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nout2 = a * b\nt_vett = time.perf_counter() - t0\n\nprint(f\"ciclo:        {t_ciclo*1000:.1f} ms\")\nprint(f\"vettorizzato: {t_vett*1000:.3f} ms\")\nprint(f\"rapporto:     {t_ciclo/t_vett:.0f}x\")\nprint(\"stesso risultato?\", np.allclose(out, out2))"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "m11-isclose",
+   "comando": "np.isclose",
+   "titolo": "isclose — il confronto che regge",
+   "esercizi": [
     {
-      "id": "m11-l1",
-      "titolo": "Perché 0.1 + 0.2 non fa 0.3",
-      "md": "```\n0.1 + 0.2 == 0.3     # False\n0.1 + 0.2            # 0.30000000000000004\n```\n\nNon è un difetto di NumPy né di Python: è il sistema binario. `0.1` in base 2 è periodico, esattamente come `1/3` in base 10, e in 64 bit se ne conserva un'approssimazione. La somma di due approssimazioni non è l'approssimazione della somma.\n\n### La conseguenza\n\n**Non confrontare mai due float con `==`.** Il confronto è vero solo se i bit coincidono esattamente, cosa che dopo qualsiasi catena di operazioni non è garantita.\n\n```\nnp.isclose(a, b)      # confronto elemento per elemento, con tolleranza\nnp.allclose(a, b)     # True se TUTTI gli elementi sono vicini\n```\n\n`isclose` restituisce un array di booleani, `allclose` un solo `True`/`False`. La tolleranza di default è relativa (`rtol=1e-5`) più una assoluta (`atol=1e-8`), e si può stringere.\n\n### Attenzione al confronto con zero\n\nLa tolleranza relativa non serve a niente quando il valore atteso è zero: qualsiasi cosa è \"infinitamente lontana in percentuale\" da zero. Lì conta solo `atol`, e il default di `1e-8` potrebbe essere troppo largo o troppo stretto per la tua grandezza fisica.\n\n```\nnp.isclose(np.sin(np.pi), 0)              # True, grazie ad atol\nnp.isclose(1e-9, 0, atol=1e-12)           # False\n```\n\n**Quando confronti con zero, scegli tu `atol`**, in base a cosa è trascurabile nel tuo problema: un residuo di 10⁻⁶ N è nulla per un carico strutturale e enorme per una forza di radiazione.\n\n### La precisione disponibile\n\n```\nnp.finfo(np.float64).eps    # 2.22e-16\n```\n\n`eps` è il più piccolo numero che sommato a 1.0 dà un risultato diverso da 1.0. In float64 hai circa **16 cifre decimali significative**: più che sufficienti per qualsiasi grandezza fisica, ma si consumano in fretta se sottrai numeri quasi uguali.",
-      "demo": "print(\"0.1 + 0.2      =\", 0.1 + 0.2)\nprint(\"== 0.3         :\", 0.1 + 0.2 == 0.3)\nprint(\"isclose        :\", np.isclose(0.1 + 0.2, 0.3))\nprint(\"differenza     :\", abs(0.1 + 0.2 - 0.3))\n\nprint(\"\\neps float64:\", np.finfo(np.float64).eps)\nprint(\"eps float32:\", np.finfo(np.float32).eps)\n\nprint(\"\\nconfronto con zero:\")\nprint(\"  isclose(sin(pi), 0)          :\", np.isclose(np.sin(np.pi), 0))\nprint(\"  isclose(1e-9, 0, atol=1e-12) :\", np.isclose(1e-9, 0, atol=1e-12))"
+     "id": "m11-ic-1",
+     "tipo": "predict",
+     "testo": "Quanto vale `0.1 + 0.2 == 0.3` in Python?",
+     "opzioni": [
+      "False",
+      "True",
+      "True solo in NumPy",
+      "dipende dal dtype"
+     ],
+     "risposta": "False",
+     "spiegazione": "`False`. La somma dà 0.30000000000000004: `0.1` e `0.2` in base 2 sono periodici e in 64 bit se ne conserva un'approssimazione, e la somma di due approssimazioni non è l'approssimazione della somma. Non è un difetto di NumPy né di Python, è il sistema binario."
     },
     {
-      "id": "m11-l2",
-      "titolo": "Interi: overflow silenzioso",
-      "md": "Un array di interi ha una dimensione fissa in bit, e superarla non solleva niente: il valore **rotola**.\n\n```\na = np.array([120], dtype=np.int8)\na + np.int8(10)     # -126\n```\n\n`int8` arriva a 127. Sommando 10 a 120 si supera il massimo e si riparte dal minimo. Il risultato è un numero valido, plausibile come tipo, e completamente sbagliato.\n\n### Gli interi di default\n\nNumPy usa `int64` di default, che arriva a circa 9·10¹⁸: difficile superarlo per sbaglio. Il rischio arriva quando **leggi dati da file** con un dtype stretto per risparmiare memoria, o quando lavori con dati di sensori a 16 bit.\n\n```\nnp.iinfo(np.int8)     # min -128, max 127\nnp.iinfo(np.int32).max\n```\n\n### La divisione fra interi\n\n```\nnp.array([7]) / np.array([2])     # 3.5, diventa float\nnp.array([7]) // np.array([2])    # 3, resta intero\n```\n\n`/` promuove sempre a float, quindi non perdi cifre. `//` tronca. La trappola vera è l'assegnazione, che invece **non** promuove:\n\n```\na = np.zeros(3, dtype=int)\na[0] = 2.7     # diventa 2, silenziosamente\n```\n\n### La regola per l'ingegneria\n\n**Le grandezze fisiche vanno in float64.** Gli interi servono per indici, conteggi e maschere. Quando leggi da file, controlla il dtype che ottieni:\n\n```\ndati.dtype\ndati = dati.astype(float)\n```",
-      "demo": "a = np.array([120], dtype=np.int8)\nprint(\"int8:  120 + 10 =\", (a + np.int8(10))[0], \" <- overflow, nessun errore\")\nprint(\"limiti int8:\", np.iinfo(np.int8).min, np.iinfo(np.int8).max)\n\nb = np.zeros(3, dtype=int)\nb[0] = 2.7\nprint(\"\\nassegnare 2.7 a un array int:\", b, \" <- troncato\")\n\nprint(\"\\ndivisione: 7/2 =\", (np.array([7]) / 2)[0], \"| 7//2 =\", (np.array([7]) // 2)[0])"
+     "id": "m11-ic-2",
+     "tipo": "write",
+     "testo": "Confronta `a` e `b` con la tolleranza invece che con `==`: metti in `stretto` il risultato di `==` e in `giusto` quello del confronto per vicinanza.",
+     "setup": "a = 0.1 + 0.2\nb = 0.3\n",
+     "starter": "stretto = \ngiusto = \n",
+     "test": "assert stretto is False or stretto == False, 'il confronto esatto deve dare False'\nassert bool(giusto) is True, 'il confronto per vicinanza deve dare True'\nassert np.isclose(a, b), 'usa np.isclose'",
+     "hint": [
+      "stretto = a == b",
+      "giusto = np.isclose(a, b)"
+     ],
+     "soluzione": "stretto = a == b\ngiusto = np.isclose(a, b)",
+     "spiegazione": "`0.1 + 0.2` vale 0.30000000000000004: `==` è False, `isclose` è True. La differenza è 5.5e-17, cioè l'ultimo bit — nessun calcolo fisico distingue due valori a quella distanza, ma `==` sì."
     },
     {
-      "id": "m11-l3",
-      "titolo": "float32 e float64: quando la metà non basta",
-      "md": "`float32` occupa metà memoria e ha circa **7 cifre significative** invece di 16.\n\n```\nnp.finfo(np.float32).eps    # 1.19e-07\n```\n\nSembrano tante, ma si esauriscono prima di quanto pensi:\n\n```\nx = np.float32(1e8)\nx + np.float32(1) == x      # True: l'1 sparisce\n```\n\nA 10⁸ il passo minimo rappresentabile in float32 è già maggiore di 1. Coordinate in metri su scala terrestre, tempi in microsecondi su una missione lunga, contatori grandi: tutti casi in cui float32 perde informazione.\n\n### Quando float32 ha senso\n\n- Dati di sensori, che hanno una risoluzione ben inferiore comunque\n- Array enormi in cui la memoria è il vincolo\n- Calcolo su GPU, dove è nettamente più veloce\n\n### Quando non usarlo\n\nQualsiasi cosa che coinvolga **differenze fra numeri grandi**, accumuli lunghi, o iterazioni: gli errori si sommano e float32 li amplifica di nove ordini di grandezza rispetto a float64.\n\n### Come si insinua senza che tu lo scelga\n\nLeggendo dati da file salvati in float32, o da librerie di acquisizione. Il tipo si propaga a tutti i calcoli a valle:\n\n```\ndati.dtype                 # float32\n(dati * 2.0).dtype         # float32, resta stretto\ndati.astype(np.float64)    # promozione esplicita\n```\n\n**Controlla il dtype appena leggi dati esterni.** È una riga e previene una classe intera di errori difficili da diagnosticare.",
-      "demo": "print(\"cifre significative: float64 ~16, float32 ~7\")\nprint(\"eps float32:\", np.finfo(np.float32).eps)\n\nx = np.float32(1e8)\nprint(\"\\nfloat32: 1e8 + 1 == 1e8 ?\", x + np.float32(1) == x)\ny = np.float64(1e8)\nprint(\"float64: 1e8 + 1 == 1e8 ?\", y + np.float64(1) == y)\n\nd32 = np.ones(5, dtype=np.float32)\nprint(\"\\nil tipo si propaga:\", (d32 * 2.0).dtype)\nprint(\"promozione esplicita:\", d32.astype(np.float64).dtype)"
+     "id": "m11-ic-3",
+     "tipo": "predict",
+     "testo": "Cosa restituisce `np.isclose(np.array([1.0, 2.0, 3.0]), np.array([1.0, 2.5, 3.0]))` ?",
+     "opzioni": [
+      "array([True, False, True])",
+      "False",
+      "True",
+      "array([1., 0., 1.])"
+     ],
+     "risposta": "array([True, False, True])",
+     "spiegazione": "Un array di booleani, uno per elemento: `[True, False, True]`. `isclose` confronta elemento per elemento e conserva la forma; è `allclose` che collassa tutto in un unico `True`/`False`."
     },
     {
-      "id": "m11-l4",
-      "titolo": "Perché il ciclo è lento",
-      "md": "```\n# lento\nout = np.zeros(n)\nfor i in range(n):\n    out[i] = a[i] * b[i]\n\n# veloce\nout = a * b\n```\n\nLa seconda forma è tipicamente **50-200 volte** più rapida. Non perché NumPy usi un algoritmo migliore — l'operazione è la stessa — ma per dove avviene il ciclo.\n\n### Cosa succede davvero\n\nNella versione con `for`, a ogni iterazione Python deve: estrarre un elemento dall'array e **incapsularlo in un oggetto Python**, fare lo stesso per l'altro, chiamare la moltiplicazione con dispatch dinamico sul tipo, creare un oggetto risultato, e riscriverlo nell'array. Cinque operazioni costose per una moltiplicazione.\n\nCon `a * b`, il ciclo avviene dentro codice C compilato, su memoria contigua, senza mai creare oggetti Python. Il processore può anche usare istruzioni vettoriali che elaborano più valori per ciclo di clock.\n\n### Il riflesso da costruire\n\n**Se scrivi un `for` che scorre indici di array per fare conti, quasi sempre esiste la versione senza.** Gli strumenti che hai visto coprono la maggior parte dei casi:\n\n- operazioni elemento per elemento → direttamente sugli array\n- condizioni → maschere booleane, `np.where`\n- combinazioni fra due array → broadcasting\n- riduzioni → `sum`, `mean`, `max` con `axis`\n- differenze e cumulate → `diff`, `gradient`, `cumsum`\n\n### Quando il ciclo resta necessario\n\nQuando ogni passo **dipende dal risultato del precedente** in modo non esprimibile come cumulata: un'integrazione a passo adattivo, un solutore iterativo, una simulazione con logica di stato. Lì il ciclo è la struttura giusta, e si accetta il costo — o si passa a SciPy, che quei cicli li ha già scritti in C.\n\n### Misurare invece di indovinare\n\n```\nimport time\nt0 = time.perf_counter()\n...\nprint(time.perf_counter() - t0)\n```\n\nL'intuizione su cosa sia lento sbaglia spesso. Prima di ottimizzare, misura.",
-      "demo": "import time\nn = 200000\na = np.random.default_rng(0).normal(size=n)\nb = np.random.default_rng(1).normal(size=n)\n\nt0 = time.perf_counter()\nout = np.zeros(n)\nfor i in range(n):\n    out[i] = a[i] * b[i]\nt_ciclo = time.perf_counter() - t0\n\nt0 = time.perf_counter()\nout2 = a * b\nt_vett = time.perf_counter() - t0\n\nprint(f\"ciclo:        {t_ciclo*1000:.1f} ms\")\nprint(f\"vettorizzato: {t_vett*1000:.3f} ms\")\nprint(f\"rapporto:     {t_ciclo/t_vett:.0f}x\")\nprint(\"stesso risultato?\", np.allclose(out, out2))"
+     "id": "m11-ic-4",
+     "tipo": "write",
+     "testo": "Su un array di misure, trova **quali** elementi coincidono col valore atteso entro tolleranza. Metti la maschera in `ok` e il numero di coincidenze in `quanti`.",
+     "setup": "misure = np.array([10.0, 10.0000001, 12.0, 9.9999999])\natteso = 10.0\n",
+     "starter": "ok = \nquanti = \n",
+     "test": "assert ok.shape == (4,), 'la maschera deve avere un elemento per misura'\nassert ok.tolist() == [True, True, False, True], f'maschera attesa [True, True, False, True], hai {ok.tolist()}'\nassert int(quanti) == 3, f'attese 3 coincidenze, hai {quanti}'",
+     "hint": [
+      "np.isclose(misure, atteso)",
+      "quanti = ok.sum()"
+     ],
+     "soluzione": "ok = np.isclose(misure, atteso)\nquanti = ok.sum()",
+     "spiegazione": "`isclose` restituisce una maschera, quindi si compone con tutto quello che hai imparato sulle maschere nel modulo 2: contarla, usarla per indicizzare, negarla per isolare gli scarti."
+    },
+    {
+     "id": "m11-ic-5",
+     "tipo": "predict",
+     "testo": "La tolleranza di default di `isclose` è `rtol=1e-5` **più** `atol=1e-8`. Quanto vale `np.isclose(1e-9, 0.0)` ?",
+     "opzioni": [
+      "True: sotto atol=1e-8 tutto risulta uguale a zero",
+      "False: 1e-9 e' diverso da 0",
+      "True solo passando atol esplicitamente",
+      "errore: isclose non accetta scalari"
+     ],
+     "risposta": "True: sotto atol=1e-8 tutto risulta uguale a zero",
+     "spiegazione": "`True`. Vicino a zero la tolleranza relativa non serve a niente — il 10⁻⁵ di zero è zero — e resta solo `atol`, che vale 1e-8. Quindi qualunque valore sotto 1e-8 risulta uguale a zero, anche se rispetto alla grandezza che rappresenta è enorme."
+    },
+    {
+     "id": "m11-ic-6",
+     "tipo": "write",
+     "testo": "Verifica che un valore piccolo sia **davvero** distinguibile da zero: confronta `x` con 0 prima con la tolleranza di default (`molle`) e poi stringendo `atol` a 1e-12 (`severo`).",
+     "setup": "x = 1e-9\n",
+     "starter": "molle = \nsevero = \n",
+     "test": "assert bool(molle) is True, 'con la tolleranza di default 1e-9 risulta nullo'\nassert bool(severo) is False, 'con atol=1e-12 non lo e piu'\nassert np.isclose(x, 0.0, atol=1e-12) == severo, 'usa atol=1e-12'",
+     "hint": [
+      "molle = np.isclose(x, 0.0)",
+      "severo = np.isclose(x, 0.0, atol=1e-12)"
+     ],
+     "soluzione": "molle = np.isclose(x, 0.0)\nsevero = np.isclose(x, 0.0, atol=1e-12)",
+     "spiegazione": "Con `atol` di default 1e-8 un residuo di 1e-9 risulta nullo; stringendola a 1e-12 non lo è più. Quando confronti con zero **devi** scegliere `atol` in base alla grandezza fisica: il default è tarato su numeri di ordine 1, non sul tuo problema."
+    },
+    {
+     "id": "m11-ic-7",
+     "tipo": "write",
+     "testo": "`np.sin(np.pi)` non vale zero esatto. Metti in `valore` il risultato, in `esatto` il confronto `== 0.0`, e in `vicino` il confronto per vicinanza.",
+     "setup": "",
+     "starter": "valore = \nesatto = \nvicino = \n",
+     "test": "assert np.isclose(valore, 1.2246467991473532e-16, rtol=1e-12), f'valore atteso 1.22e-16, hai {valore}'\nassert bool(esatto) is False, 'il confronto esatto fallisce'\nassert bool(vicino) is True, 'il confronto per vicinanza riesce'",
+     "hint": [
+      "valore = np.sin(np.pi)",
+      "vicino = np.isclose(valore, 0.0)"
+     ],
+     "soluzione": "valore = np.sin(np.pi)\nesatto = valore == 0.0\nvicino = np.isclose(valore, 0.0)",
+     "spiegazione": "`np.sin(np.pi)` vale 1.22e-16: π stesso è approssimato, quindi il seno non è di π ma di un numero vicinissimo. Il risultato è corretto quanto può esserlo in 64 bit, e `== 0.0` lo dichiara sbagliato."
+    },
+    {
+     "id": "m11-ic-8",
+     "tipo": "debug",
+     "testo": "Questo controllo deve accettare uno scarto relativo fino all'1%, ma usa la tolleranza di default e boccia misure buone. Correggi passando la tolleranza relativa giusta.",
+     "setup": "misurato = np.array([100.5, 99.2, 103.0])\nnominale = 100.0\n",
+     "starter": "accettate = np.isclose(misurato, nominale)\n",
+     "test": "assert accettate.tolist() == [True, True, False], f'attese [True, True, False], hai {accettate.tolist()}'\nassert np.allclose(accettate, np.isclose(misurato, nominale, rtol=0.01)), 'serve rtol=0.01'",
+     "hint": [
+      "Esiste il parametro rtol.",
+      "np.isclose(misurato, nominale, rtol=0.01)"
+     ],
+     "soluzione": "accettate = np.isclose(misurato, nominale, rtol=0.01)",
+     "spiegazione": "`rtol` è la tolleranza **relativa**: 0.01 significa l'1% del valore di riferimento. Il default 1e-5 è tarato sulla precisione numerica, non su quella di uno strumento: per confrontare misure sperimentali va quasi sempre allargato a mano."
+    },
+    {
+     "id": "m11-ic-9",
+     "tipo": "predict",
+     "testo": "`np.isclose(a, b)` con `rtol` di default: la tolleranza relativa viene calcolata rispetto ad `a` o rispetto a `b`?",
+     "opzioni": [
+      "rispetto a b, il secondo argomento: la funzione non e' simmetrica",
+      "rispetto ad a, il primo argomento",
+      "rispetto alla media dei due",
+      "rispetto al maggiore dei due in valore assoluto"
+     ],
+     "risposta": "rispetto a b, il secondo argomento: la funzione non e' simmetrica",
+     "spiegazione": "Rispetto al **secondo** argomento: la condizione è `|a - b| <= atol + rtol * |b|`. Significa che `isclose` non è simmetrica — scambiando i due argomenti il risultato può cambiare, quando i due valori sono di ordini molto diversi. Per convenzione il valore di riferimento va messo secondo."
+    },
+    {
+     "id": "m11-ic-10",
+     "tipo": "write",
+     "testo": "Un residuo di soluzione lineare non è mai zero esatto. Calcola `residuo = A @ x - b`, poi `esatto` (tutti gli elementi uguali a zero) e `accettabile` (tutti vicini a zero con `atol=1e-9`).",
+     "setup": "A = np.array([[12000., -0.05], [0.02, 950.]])\nb = np.array([12047.5, 950.])\nx = np.linalg.solve(A, b)\n",
+     "starter": "residuo = \nesatto = \naccettabile = \n",
+     "test": "assert residuo.shape == (2,), 'un residuo per equazione'\nassert np.allclose(residuo, A @ x - b), 'residuo = A @ x - b'\nassert bool(esatto) is False, 'il residuo non e zero esatto'\nassert bool(accettabile) is True, 'con atol=1e-9 il residuo e accettabile'",
+     "hint": [
+      "esatto = (residuo == 0.0).all()",
+      "accettabile = np.isclose(residuo, 0.0, atol=1e-9).all()"
+     ],
+     "soluzione": "residuo = A @ x - b\nesatto = (residuo == 0.0).all()\naccettabile = np.isclose(residuo, 0.0, atol=1e-9).all()",
+     "spiegazione": "Il residuo più grande vale 1.8e-12: `solve` ha fatto il suo lavoro, e su numeri dell'ordine di 12000 quel resto è l'ultimo bit disponibile. Chiedere `== 0` a un risolutore lineare è chiedergli l'impossibile; chiedergli un residuo sotto una soglia scelta da te è il controllo giusto."
     }
-  ],
-  "esercizi": [
+   ]
+  },
+  {
+   "id": "m11-allclose",
+   "comando": "np.allclose",
+   "titolo": "allclose — verificare un risultato intero",
+   "esercizi": [
     {
-      "id": "m11-e1",
-      "tipo": "predict",
-      "testo": "Quanto vale `0.1 + 0.2 == 0.3` in Python?",
-      "opzioni": [
-        "False",
-        "True",
-        "solleva un errore",
-        "dipende dalla versione di NumPy"
-      ],
-      "risposta": "False",
-      "spiegazione": "0.1 e 0.2 sono periodici in base 2, come 1/3 in base 10: in 64 bit se ne conserva un'approssimazione, e la somma di due approssimazioni non è l'approssimazione della somma. La differenza è circa 5.5·10⁻¹⁷. È il motivo per cui i float non si confrontano mai con ==."
+     "id": "m11-ac-1",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `np.isclose(a, b)` e `np.allclose(a, b)` ?",
+     "opzioni": [
+      "isclose restituisce un booleano per elemento, allclose un solo booleano su tutto l'array",
+      "allclose e' piu tollerante di isclose",
+      "isclose funziona solo su scalari",
+      "allclose confronta anche i dtype"
+     ],
+     "risposta": "isclose restituisce un booleano per elemento, allclose un solo booleano su tutto l'array",
+     "spiegazione": "`isclose` restituisce un array di booleani, uno per elemento; `allclose` restituisce un unico `True` se **tutti** gli elementi sono vicini. `allclose(a, b)` è esattamente `isclose(a, b).all()`."
     },
     {
-      "id": "m11-e2",
-      "tipo": "predict",
-      "testo": "Con `a = np.array([120], dtype=np.int8)`, quanto vale `a + np.int8(10)` ?",
-      "opzioni": [
-        "-126",
-        "130",
-        "127",
-        "solleva un OverflowError"
-      ],
-      "risposta": "-126",
-      "spiegazione": "int8 arriva a 127: superandolo il valore rotola al minimo. Nessun errore, nessun avviso, solo un numero sbagliato che sembra valido. Il rischio è concreto quando leggi dati con dtype stretti per risparmiare memoria."
+     "id": "m11-ac-2",
+     "tipo": "write",
+     "testo": "Verifica che la soluzione del sistema sia corretta: metti in `ok` il controllo che `A @ x` coincida con `b`.",
+     "setup": "A = np.array([[12000., -0.05], [0.02, 950.]])\nb = np.array([12047.5, 950.])\nx = np.linalg.solve(A, b)\n",
+     "starter": "ok = \n",
+     "test": "assert bool(ok) is True, 'la soluzione e corretta entro la precisione numerica'\nassert bool(np.allclose(A @ x, b)) == bool(ok), 'usa np.allclose(A @ x, b)'",
+     "hint": [
+      "np.allclose confronta due array interi.",
+      "ok = np.allclose(A @ x, b)"
+     ],
+     "soluzione": "ok = np.allclose(A @ x, b)",
+     "spiegazione": "È il controllo standard dopo un `solve`: si verifica la soluzione rimettendola nel sistema, e si accetta la vicinanza perché il resto è l'ultimo bit. Con `==` questo controllo boccerebbe una soluzione perfetta."
     },
     {
-      "id": "m11-e3",
-      "tipo": "predict",
-      "testo": "In `float32`, quanto vale `np.float32(1e8) + np.float32(1) == np.float32(1e8)` ?",
-      "opzioni": [
-        "True: l'1 viene perso",
-        "False",
-        "nan",
-        "solleva un errore"
-      ],
-      "risposta": "True: l'1 viene perso",
-      "spiegazione": "float32 ha circa 7 cifre significative: a 10⁸ il passo minimo rappresentabile è già maggiore di 1, quindi sommare 1 non cambia niente. Coordinate in metri su scala terrestre o accumuli lunghi in float32 perdono informazione in questo modo."
+     "id": "m11-ac-3",
+     "tipo": "write",
+     "testo": "Verifica che una rotazione conservi il modulo del vettore. Calcola `m0` e `m1`, i moduli prima e dopo, e metti in `conservato` il confronto per vicinanza.",
+     "setup": "th = np.deg2rad(37.0)\nR = np.array([[np.cos(th), -np.sin(th)], [np.sin(th), np.cos(th)]])\nv = np.array([120., -45.])\nw = R @ v\n",
+     "starter": "m0 = \nm1 = \nconservato = \n",
+     "test": "assert np.isclose(m0, 128.16005617976296), f'modulo iniziale atteso 128.16, hai {m0}'\nassert np.isclose(m1, m0), 'i due moduli devono coincidere entro tolleranza'\nassert bool(conservato) is True, 'conservato deve essere True'",
+     "hint": [
+      "Il modulo si ottiene con np.linalg.norm, oppure con la radice della somma dei quadrati.",
+      "conservato = np.isclose(m0, m1)"
+     ],
+     "soluzione": "m0 = np.linalg.norm(v)\nm1 = np.linalg.norm(w)\nconservato = np.isclose(m0, m1)",
+     "spiegazione": "Una matrice di rotazione è ortogonale, quindi il modulo si conserva **in matematica**. In aritmetica a 64 bit si conserva entro qualche unità nell'ultimo bit, e la verifica va scritta con `allclose` o `isclose`, mai con `==`."
     },
     {
-      "id": "m11-e4",
-      "tipo": "debug",
-      "testo": "Questo controllo dovrebbe confermare che la soluzione del sistema è corretta, ma restituisce `False` anche quando lo è. Correggilo.",
-      "setup": "A = np.array([[3.366, 1.714, 0.684],\n              [0.574, 4.160, 4.607],\n              [3.230, 3.783, 2.946]])\nb = np.array([46.819, 40.977, 1.134])\nx = np.linalg.solve(A, b)\n",
-      "starter": "ok = np.all(A @ x == b)\n",
-      "test": "assert not np.all(A @ x == b), 'questi dati devono esibire il residuo di arrotondamento'\nassert bool(ok) is True, 'il controllo deve confermare che la soluzione e corretta'\nassert np.allclose(A @ x, b), 'la soluzione e effettivamente corretta: il problema e il confronto'",
-      "hint": [
-        "Il risultato di solve differisce da b per errori di arrotondamento dell'ordine di 1e-16.",
-        "np.allclose(A @ x, b)"
-      ],
-      "soluzione": "ok = np.allclose(A @ x, b)",
-      "spiegazione": "La fattorizzazione LU introduce errori dell'ordine di eps, quindi A @ x non riproduce b bit per bit: qui il residuo massimo vale circa 9e-14. Con == il controllo fallisce sempre e sembra che il solutore sia rotto. allclose e il modo corretto di verificare una soluzione numerica, e verificarla e un'abitudine che vale la pena avere.\n\nIl primo assert del test e una rete di sicurezza sui dati stessi: su un sistema a coefficienti interi piccoli il residuo puo essere esattamente zero, e l'esercizio non insegnerebbe niente."
+     "id": "m11-ac-4",
+     "tipo": "debug",
+     "testo": "Questo controllo dovrebbe confermare che i dati elaborati coincidono con quelli attesi, ma usa `==` su float e fallisce anche quando i dati sono giusti. Correggi.",
+     "setup": "calcolato = np.cumsum(np.full(1000, 0.001))\natteso = np.arange(1, 1001) * 0.001\n",
+     "starter": "ok = (calcolato == atteso).all()\n",
+     "test": "assert bool(ok) is True, 'i due array coincidono entro la precisione numerica'\nassert bool(np.allclose(calcolato, atteso)) == bool(ok), 'usa np.allclose'",
+     "hint": [
+      "Su float il confronto giusto e' per tolleranza.",
+      "ok = np.allclose(calcolato, atteso)"
+     ],
+     "soluzione": "ok = np.allclose(calcolato, atteso)",
+     "spiegazione": "`(a == b).all()` è il modo più diffuso di scrivere un controllo che fallirà. Su float la forma corretta è `np.allclose`, che è la stessa cosa con una tolleranza attorno."
     },
     {
-      "id": "m11-e5",
-      "tipo": "write",
-      "testo": "Verifica che il modulo del vettore ruotato sia conservato, entro la precisione numerica.\n\nCalcola `modulo` e `conservato` (booleano).",
-      "setup": "th = np.deg2rad(29.0)\nR = np.array([[np.cos(th), -np.sin(th)],\n              [np.sin(th),  np.cos(th)]])\nv = np.array([3.0, 4.0])\nvr = R @ v\n",
-      "starter": "modulo = \nconservato = \n",
-      "test": "assert np.isclose(modulo, 5.0), f'modulo atteso 5.0, hai {modulo}'\nassert bool(conservato) is True, 'il modulo e conservato: usa isclose, non =='",
-      "hint": [
-        "np.linalg.norm(vr) da il modulo.",
-        "Confronta con np.isclose, non con ==."
-      ],
-      "soluzione": "modulo = np.linalg.norm(vr)\nconservato = np.isclose(modulo, 5.0)",
-      "spiegazione": "Il modulo esce 5.0 oppure 4.999999999999999 a seconda dell'angolo e della piattaforma: le funzioni trigonometriche danno gli ultimi bit diversi fra una libreria matematica e un'altra. Proprio perche' non puoi prevedere quale dei due otterrai, il confronto con == e' inaffidabile per costruzione — passerebbe sulla tua macchina e fallirebbe su quella del collega. isclose non ha questo problema.\n\nIl controllo fisico (una rotazione conserva il modulo) e' giusto; e' il modo di scriverlo che deve tollerare l'aritmetica in virgola mobile."
+     "id": "m11-ac-5",
+     "tipo": "predict",
+     "testo": "Sommando mille volte 0.001 con `cumsum`, l'ultimo valore vale 1.0000000000000007. Perché non 1.0?",
+     "opzioni": [
+      "gli errori di arrotondamento delle singole somme si accumulano",
+      "cumsum usa float32 internamente",
+      "0.001 non e' rappresentabile e viene troncato a zero",
+      "e' un bug di NumPy 2.x"
+     ],
+     "risposta": "gli errori di arrotondamento delle singole somme si accumulano",
+     "spiegazione": "Ogni somma introduce un errore di arrotondamento nell'ultimo bit, e mille somme li accumulano. È il motivo per cui gli accumuli lunghi sono il caso peggiore per la precisione, e per cui `float32` — che ha nove ordini di grandezza in meno di margine — non va usato dove si accumula."
     },
     {
-      "id": "m11-e6",
-      "tipo": "write",
-      "testo": "I dati arrivano da un file in `float32`. Promuovili a `float64` in `d64` prima di usarli nei calcoli, e verifica che il tipo sia cambiato in `tipo_ok`.",
-      "setup": "d32 = np.array([1e8, 2e8, 3e8], dtype=np.float32)\n",
-      "starter": "d64 = \ntipo_ok = \n",
-      "test": "assert d64.dtype == np.float64, f'dtype atteso float64, hai {d64.dtype}'\nassert bool(tipo_ok) is True\nassert np.allclose(d64, [1e8, 2e8, 3e8])\nassert d32.dtype == np.float32, 'd32 non doveva essere modificato'\nassert (d64[0] + 1.0) != d64[0], 'in float64 sommare 1 a 1e8 deve fare differenza'",
-      "hint": [
-        "astype crea un array nuovo con il tipo richiesto.",
-        "d64 = d32.astype(np.float64), e tipo_ok = d64.dtype == np.float64"
-      ],
-      "soluzione": "d64 = d32.astype(np.float64)\ntipo_ok = d64.dtype == np.float64",
-      "spiegazione": "L'ultimo controllo mostra cosa hai guadagnato: in float64 sommare 1 a 10⁸ cambia il valore, in float32 no. Il dtype dei dati esterni si propaga a tutti i calcoli a valle, quindi controllarlo appena li leggi è una riga che previene una classe intera di errori."
+     "id": "m11-ac-6",
+     "tipo": "write",
+     "testo": "Due array possono essere vicini nel complesso ma differire in un punto solo. Metti in `tutti` il verdetto complessivo e in `dove` gli indici degli elementi che **non** coincidono.",
+     "setup": "a = np.array([1.0, 2.0, 3.0, 4.0])\nb = np.array([1.0, 2.0, 3.5, 4.0])\n",
+     "starter": "tutti = \ndove = \n",
+     "test": "assert bool(tutti) is False, 'gli array non coincidono'\nassert dove.tolist() == [2], f'atteso indice [2], hai {dove.tolist()}'",
+     "hint": [
+      "tutti = np.allclose(a, b)",
+      "La negazione della maschera si passa a np.nonzero, oppure usa np.where."
+     ],
+     "soluzione": "tutti = np.allclose(a, b)\ndove = np.nonzero(~np.isclose(a, b))[0]",
+     "spiegazione": "`allclose` dice solo sì o no: quando dice no, la domanda successiva è sempre dove. La combinazione è `allclose` per il verdetto e `isclose` negata per la diagnosi — la stessa coppia che userai ogni volta che un test numerico fallisce."
     },
     {
-      "id": "m11-e7",
-      "tipo": "apply",
-      "difficolta": 2,
-      "testo": "**Eliminare il ciclo.**\n\nQuesto codice calcola la pressione dinamica punto per punto con un ciclo Python. Riscrivilo senza cicli in `q`, e verifica in `uguali` che il risultato coincida con quello del ciclo.\n\nIl risultato del ciclo è già disponibile come `q_ciclo`.",
-      "setup": "rng = np.random.default_rng(3)\nrho = rng.uniform(0.4, 1.2, 5000)\nV = rng.uniform(80.0, 320.0, 5000)\n\nq_ciclo = np.zeros(5000)\nfor i in range(5000):\n    q_ciclo[i] = 0.5 * rho[i] * V[i]**2\n",
-      "starter": "q = \nuguali = \n",
-      "test": "assert q.shape == (5000,), f'shape sbagliata: {q.shape}'\nassert np.allclose(q, q_ciclo), 'il risultato deve coincidere con quello del ciclo'\nassert bool(uguali) is True, 'usa allclose per il confronto, non =='\nassert np.isclose(q[0], 0.5 * rho[0] * V[0]**2)",
-      "hint": [
-        "La formula si scrive tale e quale sugli array interi.",
-        "q = 0.5 * rho * V**2, e uguali = np.allclose(q, q_ciclo)"
-      ],
-      "soluzione": "q = 0.5 * rho * V**2\nuguali = np.allclose(q, q_ciclo)",
-      "spiegazione": "Una riga al posto di tre, e circa cento volte più veloce. La differenza non è nell'algoritmo — è identico — ma in dove avviene il ciclo: in C su memoria contigua invece che nell'interprete Python, dove ogni elemento va incapsulato in un oggetto e ogni operazione passa da un dispatch dinamico.\n\nNota che il confronto va fatto con allclose: le due strade fanno le stesse operazioni ma non necessariamente nello stesso ordine, e in virgola mobile l'ordine conta."
+     "id": "m11-ac-7",
+     "tipo": "predict",
+     "testo": "`np.allclose(np.array([1e-9, 2e-9]), 0.0)` restituisce `True`. È un problema?",
+     "opzioni": [
+      "dipende: atol=1e-8 e' un pavimento assoluto, va scelto in base alla grandezza in gioco",
+      "no: allclose e' sempre affidabile contro zero",
+      "si': allclose non andrebbe mai usata con uno scalare",
+      "si': e' un bug, andrebbe usata isclose"
+     ],
+     "risposta": "dipende: atol=1e-8 e' un pavimento assoluto, va scelto in base alla grandezza in gioco",
+     "spiegazione": "Dipende dalla grandezza fisica. Il default `atol=1e-8` è un pavimento assoluto: qualunque cosa più piccola risulta nulla. Se stai lavorando in metri va benissimo; se i tuoi valori sono coefficienti dell'ordine di 1e-9, `allclose` contro zero dice sempre `True` e il tuo controllo non controlla niente."
+    },
+    {
+     "id": "m11-ac-8",
+     "tipo": "write",
+     "testo": "Confronta due coefficienti dell'ordine di 1e-9 con zero: prima con il default (`ingannevole`) e poi con `atol=1e-15` (`onesto`).",
+     "setup": "coeff = np.array([1e-9, 2e-9])\n",
+     "starter": "ingannevole = \nonesto = \n",
+     "test": "assert bool(ingannevole) is True, 'con il default i coefficienti risultano nulli'\nassert bool(onesto) is False, 'con atol=1e-15 non lo sono'\nassert bool(np.allclose(coeff, 0.0, atol=1e-15)) == bool(onesto), 'usa atol=1e-15'",
+     "hint": [
+      "ingannevole = np.allclose(coeff, 0.0)",
+      "onesto = np.allclose(coeff, 0.0, atol=1e-15)"
+     ],
+     "soluzione": "ingannevole = np.allclose(coeff, 0.0)\nonesto = np.allclose(coeff, 0.0, atol=1e-15)",
+     "spiegazione": "Con il default entrambi i coefficienti risultano nulli e il controllo non distingue niente; con `atol` scelta sulla scala del problema il verdetto cambia. È l'unico parametro di `allclose` che devi decidere tu: `rtol` ha un default ragionevole, `atol` no, perché dipende dalle unità."
     }
-  ]
+   ]
+  },
+  {
+   "id": "m11-finfo",
+   "comando": "np.finfo e np.iinfo",
+   "titolo": "finfo e iinfo — dove il tipo finisce",
+   "esercizi": [
+    {
+     "id": "m11-fi-1",
+     "tipo": "write",
+     "testo": "Metti in `e64` e `e32` il passo minimo relativo dei due tipi float, con `np.finfo`.",
+     "setup": "",
+     "starter": "e64 = \ne32 = \n",
+     "test": "assert np.isclose(e64, 2.220446049250313e-16, rtol=1e-12), f'eps float64 atteso 2.22e-16, hai {e64}'\nassert np.isclose(e32, 1.1920928955078125e-07, rtol=1e-12), f'eps float32 atteso 1.19e-07, hai {e32}'",
+     "hint": [
+      "np.finfo(np.float64).eps",
+      "np.finfo(np.float32).eps"
+     ],
+     "soluzione": "e64 = np.finfo(np.float64).eps\ne32 = np.finfo(np.float32).eps",
+     "spiegazione": "2.2e-16 contro 1.19e-07: nove ordini di grandezza. `eps` è il più piccolo numero che sommato a 1.0 dà un risultato diverso da 1.0, ed è la misura di quante cifre significative hai — circa 16 in float64, circa 7 in float32."
+    },
+    {
+     "id": "m11-fi-2",
+     "tipo": "predict",
+     "testo": "Cosa rappresenta `np.finfo(np.float64).eps` ?",
+     "opzioni": [
+      "il piu piccolo valore che sommato a 1.0 cambia il risultato",
+      "il numero positivo piu piccolo rappresentabile",
+      "l'errore massimo di una somma",
+      "il numero di cifre decimali esatte"
+     ],
+     "risposta": "il piu piccolo valore che sommato a 1.0 cambia il risultato",
+     "spiegazione": "Il più piccolo incremento che, sommato a 1.0, dà un risultato diverso da 1.0. Non è il numero più piccolo rappresentabile — quello è molto più vicino a zero — ma la **risoluzione relativa**, e resta la stessa in proporzione a qualunque scala tu lavori."
+    },
+    {
+     "id": "m11-fi-3",
+     "tipo": "write",
+     "testo": "Verifica `eps` sperimentalmente: calcola `cambia`, il confronto `1.0 + eps != 1.0`, e `sparisce`, il confronto `1.0 + eps/2 == 1.0`.",
+     "setup": "eps = np.finfo(np.float64).eps\n",
+     "starter": "cambia = \nsparisce = \n",
+     "test": "assert bool(cambia) is True, '1.0 + eps deve essere diverso da 1.0'\nassert bool(sparisce) is True, '1.0 + eps/2 deve tornare 1.0'",
+     "hint": [
+      "cambia = (1.0 + eps) != 1.0",
+      "sparisce = (1.0 + eps/2) == 1.0"
+     ],
+     "soluzione": "cambia = (1.0 + eps) != 1.0\nsparisce = (1.0 + eps/2) == 1.0",
+     "spiegazione": "Sommare metà di `eps` non cambia niente: il risultato si arrotonda di nuovo a 1.0. È il meccanismo esatto per cui, in `float32`, sommare 1 a 10⁸ non fa nulla — l'incremento è più piccolo della risoluzione a quella scala."
+    },
+    {
+     "id": "m11-fi-4",
+     "tipo": "write",
+     "testo": "Con `np.iinfo`, metti in `lim8` e `lim32` i valori massimi rappresentabili da `int8` e `int32`.",
+     "setup": "",
+     "starter": "lim8 = \nlim32 = \n",
+     "test": "assert int(lim8) == 127, f'massimo int8 atteso 127, hai {lim8}'\nassert int(lim32) == 2147483647, f'massimo int32 atteso 2147483647, hai {lim32}'",
+     "hint": [
+      "np.iinfo(np.int8).max",
+      "np.iinfo(np.int32).max"
+     ],
+     "soluzione": "lim8 = np.iinfo(np.int8).max\nlim32 = np.iinfo(np.int32).max",
+     "spiegazione": "127 e 2147483647. `iinfo` sta agli interi come `finfo` sta ai float, e serve ogni volta che leggi dati con un dtype stretto: è il modo di sapere in anticipo dove il valore inizierà a rotolare."
+    },
+    {
+     "id": "m11-fi-5",
+     "tipo": "predict",
+     "testo": "`np.iinfo(np.int8)` riporta min -128 e max 127. Perché il minimo ha un valore in più del massimo?",
+     "opzioni": [
+      "perche' lo zero occupa un posto fra i non negativi",
+      "e' una scelta arbitraria di NumPy",
+      "perche' il bit di segno vale doppio",
+      "e' un errore di iinfo, i limiti sono simmetrici"
+     ],
+     "risposta": "perche' lo zero occupa un posto fra i non negativi",
+     "spiegazione": "Perché lo zero occupa un posto nella metà positiva: con 8 bit ci sono 256 valori, 128 negativi da -128 a -1 e 128 non negativi da 0 a 127. È anche il motivo per cui `-np.int8(-128)` resta -128, l'unico intero che non ha opposto rappresentabile."
+    },
+    {
+     "id": "m11-fi-6",
+     "tipo": "write",
+     "testo": "Prima di leggere dati con dtype stretto, controlla se ci stanno. Metti in `sta` il confronto fra il massimo dei dati e il limite di `int16`.",
+     "setup": "dati = np.array([12000, 30000, -4000])\n",
+     "starter": "sta = \n",
+     "test": "assert bool(sta) is True, 'i dati stanno in int16'\nassert int(np.iinfo(np.int16).max) == 32767, 'usa np.iinfo(np.int16).max'",
+     "hint": [
+      "np.abs(dati).max() confrontato con np.iinfo(np.int16).max",
+      "sta = np.abs(dati).max() <= np.iinfo(np.int16).max"
+     ],
+     "soluzione": "sta = np.abs(dati).max() <= np.iinfo(np.int16).max",
+     "spiegazione": "Il valore massimo è 30000 e `int16` arriva a 32767: ci sta, ma di poco. È il controllo che va fatto **prima** di convertire, perché dopo non c'è nessun segnale: il valore rotola e diventa negativo senza avvisare."
+    },
+    {
+     "id": "m11-fi-7",
+     "tipo": "write",
+     "testo": "Confronta l'occupazione in memoria: metti in `b32` e `b64` i byte occupati da mille elementi nei due tipi float.",
+     "setup": "",
+     "starter": "b32 = \nb64 = \n",
+     "test": "assert int(b32) == 4000, f'attesi 4000 byte per float32, hai {b32}'\nassert int(b64) == 8000, f'attesi 8000 byte per float64, hai {b64}'",
+     "hint": [
+      "Un array ha l'attributo nbytes.",
+      "np.zeros(1000, dtype=np.float32).nbytes"
+     ],
+     "soluzione": "b32 = np.zeros(1000, dtype=np.float32).nbytes\nb64 = np.zeros(1000, dtype=np.float64).nbytes",
+     "spiegazione": "4000 byte contro 8000: `float32` occupa esattamente metà. Su un array da un milione di elementi sono 4 MB risparmiati, che è la sola ragione seria per usarlo — pagata con nove ordini di grandezza di precisione in meno."
+    },
+    {
+     "id": "m11-fi-8",
+     "tipo": "predict",
+     "testo": "Un array `float64` di 5 milioni di elementi: quanta memoria occupa circa?",
+     "opzioni": [
+      "circa 40 MB",
+      "circa 5 MB",
+      "circa 20 MB",
+      "circa 80 MB"
+     ],
+     "risposta": "circa 40 MB",
+     "spiegazione": "40 MB: 8 byte per elemento. È il conto da saper fare a mente quando decidi se un dataset ci sta in RAM, e l'unico argomento reale a favore di `float32` — che lo dimezza a 20 MB."
+    }
+   ]
+  },
+  {
+   "id": "m11-astype",
+   "comando": "astype",
+   "titolo": "astype — convertire senza accorgersi di perdere",
+   "esercizi": [
+    {
+     "id": "m11-at-1",
+     "tipo": "predict",
+     "testo": "Cosa contiene `np.array([1.7, -1.7, 2.99]).astype(np.int32)` ?",
+     "opzioni": [
+      "[1, -1, 2]",
+      "[2, -2, 3]",
+      "[2, -1, 3]",
+      "errore: astype non converte float in int"
+     ],
+     "risposta": "[1, -1, 2]",
+     "spiegazione": "`[1, -1, 2]`: `astype` verso un intero **tronca verso zero**, non arrotonda. 1.7 diventa 1 e -1.7 diventa -1. Chi si aspetta l'arrotondamento perde fino a un'unità intera su ogni elemento, senza nessun avviso."
+    },
+    {
+     "id": "m11-at-2",
+     "tipo": "write",
+     "testo": "Converti `q` in interi in due modi: `troncato` con `astype` diretto e `arrotondato` arrotondando prima.",
+     "setup": "q = np.array([1.7, 2.3, -1.7, 9.99])\n",
+     "starter": "troncato = \narrotondato = \n",
+     "test": "assert troncato.tolist() == [1, 2, -1, 9], f'troncato atteso [1, 2, -1, 9], hai {troncato.tolist()}'\nassert arrotondato.tolist() == [2, 2, -2, 10], f'arrotondato atteso [2, 2, -2, 10], hai {arrotondato.tolist()}'",
+     "hint": [
+      "troncato = q.astype(np.int32)",
+      "arrotondato = np.round(q).astype(np.int32)"
+     ],
+     "soluzione": "troncato = q.astype(np.int32)\narrotondato = np.round(q).astype(np.int32)",
+     "spiegazione": "`astype` tronca, `np.round` poi `astype` arrotonda. Su quote, conteggi e indici la differenza è di un'unità per elemento, sempre nello stesso verso: un errore sistematico, non rumore."
+    },
+    {
+     "id": "m11-at-3",
+     "tipo": "write",
+     "testo": "I dati arrivano da file in `float32`. Promuovili a `float64` in `d64` prima dei calcoli, e metti in `stesso_tipo` il confronto fra il dtype ottenuto e `np.float64`.",
+     "setup": "d32 = np.array([1.5, 2.25, 3.125], dtype=np.float32)\n",
+     "starter": "d64 = \nstesso_tipo = \n",
+     "test": "assert d64.dtype == np.float64, f'dtype atteso float64, hai {d64.dtype}'\nassert bool(stesso_tipo) is True, 'stesso_tipo deve confermare float64'\nassert np.allclose(d64, [1.5, 2.25, 3.125]), 'i valori non devono cambiare'",
+     "hint": [
+      "d64 = d32.astype(np.float64)",
+      "stesso_tipo = d64.dtype == np.float64"
+     ],
+     "soluzione": "d64 = d32.astype(np.float64)\nstesso_tipo = d64.dtype == np.float64",
+     "spiegazione": "La promozione a `float64` non recupera le cifre già perse — quelle non tornano — ma impedisce che il calcolo ne perda altre. Si fa all'ingresso, una volta, non alla fine."
+    },
+    {
+     "id": "m11-at-4",
+     "tipo": "predict",
+     "testo": "`b = a.astype(np.float64)`: `b` è una vista su `a` o una copia?",
+     "opzioni": [
+      "una copia, sempre",
+      "una vista, se il dtype coincide",
+      "una vista, sempre",
+      "dipende dall'ordine in memoria"
+     ],
+     "risposta": "una copia, sempre",
+     "spiegazione": "Sempre una **copia**, anche quando il dtype richiesto è già quello di partenza. Cambiare `b` non tocca `a`, e su array grandi `astype` raddoppia l'occupazione di memoria per un istante — cosa da ricordare quando l'array è già al limite della RAM."
+    },
+    {
+     "id": "m11-at-5",
+     "tipo": "write",
+     "testo": "Dimostra che `astype` copia: converti `a` in `b`, modifica il primo elemento di `b` e metti in `intatto` il valore rimasto in `a[0]`.",
+     "setup": "a = np.array([1.0, 2.0, 3.0])\n",
+     "starter": "b = \nb[0] = 99.0\nintatto = \n",
+     "test": "assert b.dtype == np.float32, f'dtype atteso float32, hai {b.dtype}'\nassert np.isclose(intatto, 1.0), f'a[0] deve essere rimasto 1.0, hai {intatto}'\nassert np.isclose(b[0], 99.0), 'b[0] deve valere 99'",
+     "hint": [
+      "b = a.astype(np.float32)",
+      "intatto = a[0]"
+     ],
+     "soluzione": "b = a.astype(np.float32)\nb[0] = 99.0\nintatto = a[0]",
+     "spiegazione": "`a` non cambia. È la differenza dal `reshape` e dallo slicing del modulo 2, che restituiscono viste: `astype` alloca sempre memoria nuova, quindi è sicuro ma costoso."
+    },
+    {
+     "id": "m11-at-6",
+     "tipo": "debug",
+     "testo": "Questa conversione a `int8` fa rotolare i valori senza segnalare niente. Correggi scegliendo il tipo intero più stretto che li contiene davvero.",
+     "setup": "dati = np.array([12000, 30000, -4000])\n",
+     "starter": "stretti = dati.astype(np.int8)\n",
+     "test": "assert stretti.tolist() == [12000, 30000, -4000], f'i valori devono restare intatti, hai {stretti.tolist()}'\nassert stretti.dtype == np.int16, f'dtype atteso int16, hai {stretti.dtype}'",
+     "hint": [
+      "np.iinfo(np.int8).max vale 127.",
+      "dati.astype(np.int16)"
+     ],
+     "soluzione": "stretti = dati.astype(np.int16)",
+     "spiegazione": "30000 non ci sta in `int8`, che arriva a 127: il valore rotola e diventa un numero valido e sbagliato. `int16` arriva a 32767 e li contiene. La regola è controllare con `iinfo` **prima** di convertire, perché dopo non c'è più traccia."
+    },
+    {
+     "id": "m11-at-7",
+     "tipo": "write",
+     "testo": "Un sensore restituisce conteggi interi che devono essere divisi per una calibrazione. Converti prima a float in `cal`, poi dividi: metti il risultato in `valori`.",
+     "setup": "conteggi = np.array([1023, 512, 77])\nk = 4.0\n",
+     "starter": "cal = \nvalori = \n",
+     "test": "assert cal.dtype == np.float64, f'cal deve essere float64, hai {cal.dtype}'\nassert np.allclose(valori, [255.75, 128.0, 19.25]), f'valori attesi [255.75, 128.0, 19.25], hai {valori}'",
+     "hint": [
+      "cal = conteggi.astype(np.float64)",
+      "valori = cal / k"
+     ],
+     "soluzione": "cal = conteggi.astype(np.float64)\nvalori = cal / k",
+     "spiegazione": "In NumPy `/` promuove già a float, quindi qui la conversione esplicita non cambia il risultato — ma `//` no, e chi scrive `//` per abitudine tronca. Convertire all'ingresso rende la scelta esplicita invece che dipendente dall'operatore."
+    },
+    {
+     "id": "m11-at-8",
+     "tipo": "predict",
+     "testo": "`np.array([7]) // np.array([2])` e `np.array([7]) / np.array([2])`: cosa restituiscono?",
+     "opzioni": [
+      "3 (intero) e 3.5 (float)",
+      "3.5 entrambi",
+      "3 entrambi",
+      "3 (intero) e 4.0 (float)"
+     ],
+     "risposta": "3 (intero) e 3.5 (float)",
+     "spiegazione": "`//` dà 3 e resta intero, `/` dà 3.5 e promuove a float. Su conteggi grandi la differenza è invisibile in percentuale ma sistematica: `//` tronca sempre verso il basso, quindi accumula un errore che non si compensa."
+    },
+    {
+     "id": "m11-at-9",
+     "tipo": "write",
+     "testo": "Il file va scritto in `float32` per dimezzare lo spazio. Converti `grandi` e metti in `perdita` lo scarto massimo in valore assoluto introdotto dalla conversione.",
+     "setup": "grandi = np.array([1.2345678901234, 987.654321098765, 0.000123456789012])\n",
+     "starter": "ridotti = \nperdita = \n",
+     "test": "assert ridotti.dtype == np.float32, f'dtype atteso float32, hai {ridotti.dtype}'\nassert np.allclose(perdita, np.abs(ridotti.astype(np.float64) - grandi).max()), 'perdita = scarto massimo in valore assoluto'\nassert perdita > 0, 'la conversione perde qualcosa'\nassert perdita < 1e-4, f'perdita attesa piccolissima, hai {perdita}'",
+     "hint": [
+      "ridotti = grandi.astype(np.float32)",
+      "Il confronto va fatto riportando ridotti a float64."
+     ],
+     "soluzione": "ridotti = grandi.astype(np.float32)\nperdita = np.abs(ridotti.astype(np.float64) - grandi).max()",
+     "spiegazione": "La perdita è dell'ordine di 10⁻⁸ in relativo su questi valori: irrilevante per un dato di sensore, letale se quei numeri poi vanno sottratti fra loro. La conversione a `float32` si fa in uscita, sui dati da salvare, non in ingresso sui dati da elaborare."
+    },
+    {
+     "id": "m11-at-10",
+     "tipo": "predict",
+     "testo": "In `float32`, `np.float32(1e8) + np.float32(1) == np.float32(1e8)` vale `True`. Perché?",
+     "opzioni": [
+      "a 1e8 il passo minimo di float32 supera 1: l'incremento sparisce",
+      "float32 arrotonda sempre ai multipli di 10",
+      "1e8 supera il massimo di float32",
+      "e' un bug del confronto ==, il valore e' cambiato"
+     ],
+     "risposta": "a 1e8 il passo minimo di float32 supera 1: l'incremento sparisce",
+     "spiegazione": "A 10⁸ il passo minimo rappresentabile in `float32` è già maggiore di 1: l'incremento sparisce nell'arrotondamento. `float32` ha circa 7 cifre significative, e 10⁸ ne ha 9. Coordinate in metri su scala terrestre, tempi in microsecondi su una missione lunga, contatori grandi: tutti casi in cui `float32` perde informazione."
+    },
+    {
+     "id": "m11-at-11",
+     "tipo": "write",
+     "testo": "Mostra il limite di `float32` sui numeri grandi: metti in `sommato` il risultato di `np.float32(1e8) + np.float32(1)` e in `sparito` il confronto con il valore di partenza.",
+     "setup": "",
+     "starter": "sommato = \nsparito = \n",
+     "test": "assert np.isclose(float(sommato), 100000000.0), f'atteso 1e8, hai {sommato}'\nassert bool(sparito) is True, 'l incremento deve essere sparito'",
+     "hint": [
+      "sommato = np.float32(1e8) + np.float32(1)",
+      "sparito = sommato == np.float32(1e8)"
+     ],
+     "soluzione": "sommato = np.float32(1e8) + np.float32(1)\nsparito = sommato == np.float32(1e8)",
+     "spiegazione": "Il risultato è esattamente 1e8: l'unità è sparita. Lo stesso conto in `float64` funziona, perché lì il passo a 10⁸ è ancora dell'ordine di 10⁻⁸. È la ragione per cui gli accumuli non si fanno in `float32`."
+    },
+    {
+     "id": "m11-at-12",
+     "tipo": "write",
+     "testo": "Somma un milione di volte 0.1 in `float32` e poi in `float64` — stessa identica sequenza di valori — e metti i due totali in `s32` e `s64`.",
+     "setup": "x32 = np.full(1000000, np.float32(0.1), dtype=np.float32)\n",
+     "starter": "s32 = \ns64 = \n",
+     "test": "assert np.isclose(float(s32), 100000.0859375, rtol=1e-9), f'somma float32 attesa 100000.086, hai {s32}'\nassert np.isclose(float(s64), 100000.00149011612, rtol=1e-12), f'somma float64 attesa 100000.0015, hai {s64}'\nassert abs(float(s32) - 100000.0) > abs(float(s64) - 100000.0), 'la somma in float32 deve sbagliare di piu'",
+     "hint": [
+      "s32 = x32.sum()",
+      "Per la seconda, converti prima a float64: x32.astype(np.float64).sum()"
+     ],
+     "soluzione": "s32 = x32.sum()\ns64 = x32.astype(np.float64).sum()",
+     "spiegazione": "100000.086 contro 100000.001: la versione `float32` sbaglia di 0.086 sul totale, cioè quasi mille volte l'errore della `float64`. Un milione di somme accumula un milione di arrotondamenti, e `float32` li fa nove ordini di grandezza più grossi.\n\nÈ il caso da ricordare: `float32` non è \"metà precisione\", è metà memoria e un errore che cresce con la lunghezza del calcolo."
+    }
+   ]
+  },
+  {
+   "id": "m11-dtype",
+   "comando": "dtype",
+   "titolo": "dtype — overflow interi e promozioni",
+   "esercizi": [
+    {
+     "id": "m11-dt-1",
+     "tipo": "predict",
+     "testo": "Con `a = np.array([120], dtype=np.int8)`, quanto vale `a + np.int8(10)` ?",
+     "opzioni": [
+      "-126",
+      "130",
+      "127",
+      "errore di overflow"
+     ],
+     "risposta": "-126",
+     "spiegazione": "-126. `int8` arriva a 127: sommando 10 a 120 si supera il massimo e si riparte dal minimo. Il risultato è un numero valido, plausibile come tipo, e completamente sbagliato — e nessuna eccezione viene sollevata."
+    },
+    {
+     "id": "m11-dt-2",
+     "tipo": "write",
+     "testo": "Metti in `dtipo` il dtype di `dati` e in `stretto` il confronto con `np.int8`.",
+     "setup": "dati = np.array([1, 2, 3], dtype=np.int8)\n",
+     "starter": "dtipo = \nstretto = \n",
+     "test": "assert dtipo == np.int8, f'dtype atteso int8, hai {dtipo}'\nassert bool(stretto) is True, 'stretto deve confermare int8'",
+     "hint": [
+      "dtipo = dati.dtype",
+      "stretto = dtipo == np.int8"
+     ],
+     "soluzione": "dtipo = dati.dtype\nstretto = dtipo == np.int8",
+     "spiegazione": "Il dtype è la prima cosa da guardare quando un risultato numerico è strano: non compare stampando l'array, ma decide overflow, precisione e occupazione di memoria."
+    },
+    {
+     "id": "m11-dt-3",
+     "tipo": "write",
+     "testo": "Un array `int8` moltiplicato per 30 rotola. Calcola `rotolato` e metti in `negativi` quanti elementi sono diventati negativi pur partendo da valori non negativi.",
+     "setup": "base = np.arange(10, dtype=np.int8)\n",
+     "starter": "rotolato = \nnegativi = \n",
+     "test": "assert rotolato.dtype == np.int8, f'il dtype deve restare int8, hai {rotolato.dtype}'\nassert rotolato.tolist() == [0, 30, 60, 90, 120, -106, -76, -46, -16, 14], f'valori attesi diversi, hai {rotolato.tolist()}'\nassert int(negativi) == 4, f'attesi 4 elementi negativi, hai {negativi}'",
+     "hint": [
+      "rotolato = base * np.int8(30)",
+      "negativi = (rotolato < 0).sum()"
+     ],
+     "soluzione": "rotolato = base * np.int8(30)\nnegativi = (rotolato < 0).sum()",
+     "spiegazione": "Quattro valori su dieci diventano negativi: da 150 in su il prodotto supera 127 e riparte da -128. Contare i negativi dove non dovrebbero essercene è il modo pratico di accorgersi di un overflow, perché NumPy non lo segnala."
+    },
+    {
+     "id": "m11-dt-4",
+     "tipo": "predict",
+     "testo": "Qual è il dtype intero di default quando scrivi `np.array([1, 2, 3])` su Linux e macOS?",
+     "opzioni": [
+      "int64",
+      "int32",
+      "int8",
+      "dipende dai valori dell'array"
+     ],
+     "risposta": "int64",
+     "spiegazione": "`int64`, che arriva a circa 9·10¹⁸: difficile superarlo per sbaglio. Il rischio di overflow arriva quando scegli tu un dtype stretto per risparmiare memoria, o quando leggi dati grezzi da sensori a 16 bit."
+    },
+    {
+     "id": "m11-dt-5",
+     "tipo": "debug",
+     "testo": "Questo conteggio va in overflow perché il dtype è troppo stretto per il prodotto. Correggi promuovendo prima della moltiplicazione.",
+     "setup": "campioni = np.array([300, 400, 500], dtype=np.int16)\n",
+     "starter": "prodotto = campioni * campioni\n",
+     "test": "assert prodotto.tolist() == [90000, 160000, 250000], f'attesi [90000, 160000, 250000], hai {prodotto.tolist()}'",
+     "hint": [
+      "int16 arriva a 32767: 300*300 non ci sta.",
+      "campioni.astype(np.int32) * campioni.astype(np.int32)"
+     ],
+     "soluzione": "grandi = campioni.astype(np.int32)\nprodotto = grandi * grandi",
+     "spiegazione": "Promuovere **prima** dell'operazione è la correzione giusta: dopo, il valore è già rotolato e non c'è più niente da recuperare. È lo stesso principio della conversione dei dati in ingresso — si allarga il tipo mentre l'informazione c'è ancora."
+    },
+    {
+     "id": "m11-dt-6",
+     "tipo": "write",
+     "testo": "Verifica prima di operare: metti in `massimo_prodotto` il quadrato del valore assoluto massimo di `campioni`, e in `sicuro` il confronto con il limite di `int16`.",
+     "setup": "campioni = np.array([300, -400, 200], dtype=np.int16)\n",
+     "starter": "massimo_prodotto = \nsicuro = \n",
+     "test": "assert int(massimo_prodotto) == 160000, f'atteso 160000, hai {massimo_prodotto}'\nassert bool(sicuro) is False, 'il prodotto non sta in int16'",
+     "hint": [
+      "Il massimo in valore assoluto e np.abs(campioni).max().",
+      "sicuro = massimo_prodotto <= np.iinfo(np.int16).max"
+     ],
+     "soluzione": "massimo_prodotto = int(np.abs(campioni).max()) ** 2\nsicuro = massimo_prodotto <= np.iinfo(np.int16).max",
+     "spiegazione": "90000 contro 32767: il controllo dice no, e lo dice **prima** che l'overflow sia avvenuto. È il controllo da mettere ogni volta che si opera su dtype stretti, perché è l'unico segnale che avrai."
+    },
+    {
+     "id": "m11-dt-7",
+     "tipo": "predict",
+     "testo": "Sommando un array `int32` e uno `float32`, che dtype ha il risultato?",
+     "opzioni": [
+      "float64",
+      "float32",
+      "int32",
+      "errore: tipi incompatibili"
+     ],
+     "risposta": "float64",
+     "spiegazione": "`float64`. NumPy promuove al tipo che può rappresentare entrambi, e per int32 (fino a 2·10⁹) e float32 (7 cifre) nessuno dei due basta: serve float64. Le regole di promozione sono cambiate in NumPy 2.0, ed è uno dei punti da verificare invece che ricordare."
+    },
+    {
+     "id": "m11-dt-8",
+     "tipo": "write",
+     "testo": "Controlla la promozione: somma `i32` e `f32` e metti il dtype del risultato in `tipo_somma`, e in `promosso` il confronto con `np.float64`.",
+     "setup": "i32 = np.array([1, 2, 3], dtype=np.int32)\nf32 = np.array([0.5, 0.5, 0.5], dtype=np.float32)\n",
+     "starter": "somma = \ntipo_somma = \npromosso = \n",
+     "test": "assert np.allclose(somma, [1.5, 2.5, 3.5]), f'somma attesa [1.5, 2.5, 3.5], hai {somma}'\nassert tipo_somma == np.float64, f'dtype atteso float64, hai {tipo_somma}'\nassert bool(promosso) is True, 'promosso deve confermare float64'",
+     "hint": [
+      "somma = i32 + f32",
+      "tipo_somma = somma.dtype"
+     ],
+     "soluzione": "somma = i32 + f32\ntipo_somma = somma.dtype\npromosso = tipo_somma == np.float64",
+     "spiegazione": "Il risultato è `float64`, non `float32`: NumPy sceglie il tipo che regge entrambi gli operandi. Sapere quale sarà evita la sorpresa opposta — un array che doveva restare compatto e raddoppia di dimensione a metà pipeline."
+    }
+   ]
+  },
+  {
+   "id": "m11-vettorizzazione",
+   "comando": "vettorizzazione",
+   "titolo": "vettorizzazione — togliere il ciclo",
+   "esercizi": [
+    {
+     "id": "m11-ve-1",
+     "tipo": "predict",
+     "testo": "Perché `a * b` su due array è tipicamente 50-200 volte più rapido dello stesso prodotto fatto con un ciclo `for` sugli indici?",
+     "opzioni": [
+      "il ciclo avviene in codice C compilato, senza creare oggetti Python a ogni elemento",
+      "NumPy usa un algoritmo di moltiplicazione piu efficiente",
+      "NumPy distribuisce il calcolo su piu processori",
+      "il ciclo Python ricalcola la lunghezza dell'array a ogni giro"
+     ],
+     "risposta": "il ciclo avviene in codice C compilato, senza creare oggetti Python a ogni elemento",
+     "spiegazione": "Non per un algoritmo migliore — l'operazione è identica — ma per **dove** avviene il ciclo. Nella versione Python ogni iterazione incapsula gli elementi in oggetti Python, fa dispatch dinamico sul tipo e crea un oggetto risultato. In `a * b` il ciclo sta dentro codice C compilato, su memoria contigua, senza creare oggetti."
+    },
+    {
+     "id": "m11-ve-2",
+     "tipo": "write",
+     "testo": "Riscrivi senza ciclo. Il codice calcola la pressione dinamica `q = 0.5 * rho * v²` punto per punto: ottieni lo stesso `q` in una riga.",
+     "setup": "rho = 1.225\nv = np.linspace(50., 300., 7)\n",
+     "starter": "q = np.zeros(len(v))\nfor i in range(len(v)):\n    q[i] = 0.5 * rho * v[i]**2\n",
+     "test": "assert q.shape == (7,), 'un valore per velocita'\nassert np.allclose(q, 0.5 * rho * v**2), 'q deve valere 0.5 * rho * v**2'\nassert np.isclose(q[0], 1531.25), f'q[0] atteso 1531.25, hai {q[0]}'",
+     "hint": [
+      "L'operazione si applica all'intero array in una volta.",
+      "q = 0.5 * rho * v**2"
+     ],
+     "soluzione": "q = 0.5 * rho * v**2",
+     "spiegazione": "Una riga, e nessun indice da sbagliare. La versione vettorizzata è anche più corta da leggere: la formula si riconosce a colpo d'occhio, mentre nel ciclo va ricostruita mentalmente."
+    },
+    {
+     "id": "m11-ve-3",
+     "tipo": "write",
+     "testo": "Elimina il ciclo che somma gli elementi positivi di `x` in `totale`.",
+     "setup": "x = np.array([3., -1., 4., -1., 5., -9., 2.])\n",
+     "starter": "totale = 0.0\nfor i in range(len(x)):\n    if x[i] > 0:\n        totale = totale + x[i]\n",
+     "test": "assert np.isclose(totale, 14.0), f'totale atteso 14.0, hai {totale}'",
+     "hint": [
+      "Serve una maschera booleana, poi una somma.",
+      "totale = x[x > 0].sum()"
+     ],
+     "soluzione": "totale = x[x > 0].sum()",
+     "spiegazione": "Maschera booleana e somma: è il modulo 2 più il modulo 5, e sostituisce il ciclo con condizione dentro. La forma `x[x > 0].sum()` funziona ugualmente; `(x * (x > 0)).sum()` no in generale, perché moltiplicare per un booleano è un'altra cosa dal filtrare."
+    },
+    {
+     "id": "m11-ve-4",
+     "tipo": "write",
+     "testo": "Elimina il ciclo che costruisce le differenze consecutive di `h` in `salti`.",
+     "setup": "h = np.array([0., 500., 1200., 1800., 3000.])\n",
+     "starter": "salti = np.zeros(len(h) - 1)\nfor i in range(len(h) - 1):\n    salti[i] = h[i+1] - h[i]\n",
+     "test": "assert salti.shape == (4,), 'attesi 4 salti da 5 quote'\nassert np.allclose(salti, [500., 700., 600., 1200.]), f'salti attesi [500, 700, 600, 1200], hai {salti}'",
+     "hint": [
+      "Esiste una funzione dedicata alle differenze consecutive.",
+      "salti = np.diff(h)"
+     ],
+     "soluzione": "salti = np.diff(h)",
+     "spiegazione": "`np.diff` è la forma canonica, ma anche `h[1:] - h[:-1]` va bene: entrambe fanno il ciclo in C. Il punto non è quale funzione usi, è che l'indice `i` sparisca."
+    },
+    {
+     "id": "m11-ve-5",
+     "tipo": "predict",
+     "testo": "Quando **non** conviene vettorizzare?",
+     "opzioni": [
+      "quando ogni passo dipende dal risultato del passo precedente",
+      "quando l'array ha meno di mille elementi",
+      "quando i dati sono float32",
+      "mai: la forma vettorizzata e' sempre preferibile"
+     ],
+     "risposta": "quando ogni passo dipende dal risultato del passo precedente",
+     "spiegazione": "Quando ogni passo dipende dal risultato del precedente — un'integrazione passo-passo, un controllo in retroazione — perché il ciclo è nella natura del problema. Anche allora esistono funzioni cumulative (`cumsum`, `cumprod`) che coprono i casi lineari; il ciclo Python resta solo per le vere ricorsioni non lineari."
+    },
+    {
+     "id": "m11-ve-6",
+     "tipo": "write",
+     "testo": "Elimina il ciclo che applica una soglia: ogni valore sopra `lim` va portato a `lim`, gli altri restano.",
+     "setup": "carico = np.array([100., 340., 205., 480., 90.])\nlim = 300.\n",
+     "starter": "saturato = np.zeros(len(carico))\nfor i in range(len(carico)):\n    if carico[i] > lim:\n        saturato[i] = lim\n    else:\n        saturato[i] = carico[i]\n",
+     "test": "assert np.allclose(saturato, [100., 300., 205., 300., 90.]), f'atteso [100, 300, 205, 300, 90], hai {saturato}'",
+     "hint": [
+      "np.where(condizione, valore_se_vero, valore_se_falso)",
+      "saturato = np.where(carico > lim, lim, carico)"
+     ],
+     "soluzione": "saturato = np.where(carico > lim, lim, carico)",
+     "spiegazione": "`np.where(condizione, se_vero, se_falso)` è la forma vettorizzata dell'`if` elemento per elemento: la stessa del modulo 2. Il ciclo con `if` dentro è il caso in cui più spesso si rinuncia a vettorizzare, e quasi sempre a torto."
+    },
+    {
+     "id": "m11-ve-7",
+     "tipo": "write",
+     "testo": "Elimina il doppio ciclo che costruisce la matrice dei prodotti `a[i] * b[j]`.",
+     "setup": "a = np.array([1., 2., 3.])\nb = np.array([10., 20., 30., 40.])\n",
+     "starter": "M = np.zeros((len(a), len(b)))\nfor i in range(len(a)):\n    for j in range(len(b)):\n        M[i, j] = a[i] * b[j]\n",
+     "test": "assert M.shape == (3, 4), f'forma attesa (3, 4), hai {M.shape}'\nassert np.allclose(M, a[:, None] * b), 'M deve essere il prodotto esterno di a e b'\nassert np.isclose(M[2, 3], 120.), f'M[2, 3] atteso 120, hai {M[2, 3]}'",
+     "hint": [
+      "a[:, None] trasforma a in colonna.",
+      "M = a[:, None] * b"
+     ],
+     "soluzione": "M = a[:, None] * b",
+     "spiegazione": "È il broadcasting del modulo 3: `a[:, None]` rende `a` una colonna, `b` resta una riga, e il prodotto si espande in matrice. Due cicli annidati diventano una riga, e il guadagno cresce col prodotto delle due lunghezze."
+    },
+    {
+     "id": "m11-ve-8",
+     "tipo": "apply",
+     "testo": "**Riduzione di una campagna, senza cicli.**\n\n`prove` ha 200 righe (i tiri) e 6 colonne (le condizioni). Ricava, tutto senza `for`:\n\n- `medie`: la media di ogni condizione\n- `scarti`: la matrice degli scarti di ogni valore dalla media della **sua** condizione\n- `peggiore`: l'indice della condizione con lo scarto quadratico medio più alto",
+     "difficolta": 3,
+     "setup": "prove = np.random.default_rng(3).normal(1.0, 0.05, (200, 6)) * np.array([1., 2., 3., 4., 5., 6.])\n",
+     "starter": "medie = \nscarti = \npeggiore = \n",
+     "test": "assert medie.shape == (6,), f'attese 6 medie, hai {medie.shape}'\nassert np.allclose(medie, prove.mean(axis=0)), 'la media va per condizione, cioe lungo le righe'\nassert scarti.shape == (200, 6), f'forma attesa (200, 6), hai {scarti.shape}'\nassert np.allclose(scarti, prove - medie), 'ogni valore meno la media della sua condizione'\nassert np.allclose(scarti.mean(axis=0), 0.0, atol=1e-12), 'gli scarti di ogni condizione devono avere media nulla'\nassert int(peggiore) == 5, f'attesa la condizione 5, hai {peggiore}'",
+     "hint": [
+      "medie = prove.mean(axis=0). Poi scarti = prove - medie funziona per broadcasting.",
+      "Lo scarto quadratico medio per condizione e prove.std(axis=0); l'indice del massimo si trova con argmax."
+     ],
+     "soluzione": "medie = prove.mean(axis=0)\nscarti = prove - medie\npeggiore = prove.std(axis=0).argmax()",
+     "spiegazione": "Tre righe al posto di tre cicli annidati. `scarti` funziona per broadcasting — `medie` ha forma (6,) e si allinea alle colonne di una matrice (200, 6) senza che tu debba dire niente — ed è il caso in cui la forma vettorizzata è anche l'unica che si legge.\n\nSe le medie fossero servite per riga invece che per colonna, `medie` avrebbe forma (200,) e il broadcasting fallirebbe: lì servirebbe `keepdims=True`. È la trappola del modulo 5 che ritorna."
+    }
+   ]
+  }
+ ]
 }
