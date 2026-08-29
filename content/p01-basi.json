@@ -1,0 +1,828 @@
+{
+ "id": "p01",
+ "titolo": "print, variabili e tipi",
+ "perche": "Quello che il corso NumPy da' per scontato dalla prima riga. Un numero letto da un file e' testo finche' non lo converti, un metodo di stringa non modifica la stringa, e print mostra un valore senza restituirlo: tre cose che non sollevano nessun errore e cambiano il risultato.",
+ "funzioni": [
+  "print",
+  "f-string",
+  "=",
+  "int",
+  "float",
+  "str",
+  "bool",
+  "type",
+  "round",
+  "len"
+ ],
+ "lezioni": [
+  {
+   "id": "p01-l1",
+   "titolo": "print: cosa fa davvero",
+   "md": "`print` **mostra** un valore, non lo restituisce. È la differenza che confonde all'inizio:\n\n```\nx = print(\"ciao\")   # stampa ciao, ma x vale None\n```\n\n`print` scrive sullo schermo e finisce lì. Se ti serve il valore per un calcolo, quel valore deve stare in una variabile.\n\n### Più argomenti, separati da uno spazio\n\n```\nprint(\"quota\", 1000, \"m\")     # quota 1000 m\n```\n\nLe virgole inseriscono uno spazio fra un argomento e l'altro. Non è concatenazione: `print(\"a\", \"b\")` e `print(\"a\" + \"b\")` danno risultati diversi, `a b` contro `ab`.\n\n### sep e end\n\n```\nprint(\"a\", \"b\", sep=\"\")       # ab\nprint(\"a\", \"b\", sep=\" | \")    # a | b\nprint(\"senza a capo\", end=\"\") # non va a capo alla fine\n```\n\n`sep` è cosa mettere **fra** gli argomenti, `end` cosa mettere **dopo** l'ultimo. Il default di `end` è `\\n`, che è il motivo per cui ogni print va a capo.\n\n### f-string: il modo di comporre testo\n\n```\nq = 1000\nprint(f\"quota: {q} m\")        # quota: 1000 m\nprint(f\"il doppio: {q * 2}\")  # dentro le graffe ci sta un'espressione\n```\n\nLa `f` prima delle virgolette attiva la sostituzione. Dentro le graffe ci va qualsiasi espressione Python, non solo un nome.\n\n### Formattare i numeri\n\n```\nf\"{3.14159:.2f}\"    # '3.14'   due decimali\nf\"{1000:,}\"         # '1,000'  separatore delle migliaia\nf\"{0.25:.1%}\"       # '25.0%'  come percentuale\nf\"{294.3:8.1f}\"     # '   294.3'  larghezza 8, allineato a destra\n```\n\nDopo i due punti c'è il formato. È quello che userai per incolonnare una tabella di risultati senza contare gli spazi a mano.",
+   "demo": "print(\"a\", \"b\")\nprint(\"a\" + \"b\")\nprint(\"a\", \"b\", sep=\"\")\n\nq = 1000\nprint(f\"quota: {q} m, in km: {q / 1000}\")\nprint(f\"pi greco: {3.14159:.2f}\")\n\nx = print(\"questo print restituisce\")\nprint(\"il valore restituito e':\", x)"
+  },
+  {
+   "id": "p01-l2",
+   "titolo": "Variabili: etichette, non scatole",
+   "md": "```\nq = 1000\nq = 2000\n```\n\nLa seconda riga non modifica niente: **stacca l'etichetta** `q` dal 1000 e la attacca al 2000. In Python una variabile è un nome legato a un valore, non un contenitore in cui il valore viene messo.\n\nSembra una distinzione da manuale, e diventa concreta con le liste:\n\n```\na = [1, 2, 3]\nb = a          # b e a sono due etichette sullo STESSO oggetto\nb.append(4)\nprint(a)       # [1, 2, 3, 4]  <- cambiato anche a\n```\n\nÈ la stessa cosa che in NumPy si chiama vista contro copia.\n\n### L'assegnazione va letta da destra a sinistra\n\n```\nn = n + 1\n```\n\nPrima si calcola `n + 1` con il valore attuale, poi il risultato viene rilegato a `n`. Non è un'equazione: come equazione non avrebbe soluzione.\n\n### I nomi\n\n- Lettere, cifre e `_`, mai una cifra come primo carattere.\n- Distinguono maiuscole e minuscole: `Quota` e `quota` sono due nomi diversi.\n- Convenzione: `minuscole_con_underscore` per le variabili.\n- Alcuni nomi sono riservati: `if`, `for`, `class`, `in`, `is`, `lambda`, `None`.\n\n### Assegnazione multipla\n\n```\nx, y = 1.0, 2.0\nx, y = y, x        # scambio, senza variabile d'appoggio\n```\n\nLa seconda riga funziona perché il lato destro viene valutato **prima** che qualcosa venga riassegnato.",
+   "demo": "q = 1000\nq = 2000\nprint(\"q vale\", q)\n\na = [1, 2, 3]\nb = a\nb.append(4)\nprint(\"a e' cambiato anche lui:\", a)\n\nc = a.copy()\nc.append(99)\nprint(\"con copy invece a resta:\", a)\n\nx, y = 1.0, 2.0\nx, y = y, x\nprint(\"scambiati:\", x, y)"
+  },
+  {
+   "id": "p01-l3",
+   "titolo": "int e float: due divisioni, non una",
+   "md": "```\n7 / 2      # 3.5   divisione vera, il risultato e' SEMPRE float\n7 // 2     # 3     divisione intera, tronca verso il basso\n7 % 2      # 1     il resto\n2 ** 10    # 1024  elevamento a potenza\n```\n\n`/` restituisce un float anche quando la divisione è esatta: `4 / 2` vale `2.0`, non `2`.\n\n### // arrotonda verso il basso, non verso lo zero\n\n```\n7 // 2     # 3\n-7 // 2    # -4      <- non -3\n```\n\nCon i negativi `//` va verso meno infinito. È la sorpresa che fa sbagliare gli indici quando si lavora con coordinate che possono essere negative.\n\n### I float sono approssimati\n\n```\n0.1 + 0.2 == 0.3     # False\n0.1 + 0.2            # 0.30000000000000004\n```\n\nNon è un difetto di Python: `0.1` in base 2 è periodico, e in 64 bit se ne conserva un'approssimazione. Il modulo *Precisione e performance* del corso NumPy lo tratta per esteso; per ora la regola pratica è: **mai `==` fra due float**.\n\n### round non fa quello che credi\n\n```\nround(2.5)      # 2   <- non 3\nround(3.5)      # 4\nround(2.675, 2) # 2.67\n```\n\nA metà strada Python arrotonda al pari più vicino, non sempre per eccesso: è la regola bancaria, e serve a non introdurre un errore sistematico su tanti arrotondamenti. Il terzo caso è invece la solita approssimazione binaria: 2.675 in memoria è poco meno di 2.675.",
+   "demo": "print(7 / 2, 7 // 2, 7 % 2, 2 ** 10)\nprint(\"con i negativi:\", -7 // 2, -7 % 2)\nprint(\"4 / 2 e' un float:\", 4 / 2)\n\nprint(\"\\n0.1 + 0.2 =\", 0.1 + 0.2)\nprint(\"uguale a 0.3?\", 0.1 + 0.2 == 0.3)\n\nprint(\"\\nround(2.5) =\", round(2.5), \" round(3.5) =\", round(3.5))"
+  },
+  {
+   "id": "p01-l4",
+   "titolo": "Stringhe: i metodi non modificano niente",
+   "md": "Una stringa in Python è **immutabile**: nessun metodo la cambia, tutti ne restituiscono una nuova.\n\n```\ns = \"  Alfa Romeo  \"\ns.strip()      # '  Alfa Romeo  ' -> 'Alfa Romeo'  ma s NON e' cambiata\nprint(s)       # '  Alfa Romeo  '\ns = s.strip()  # cosi' si': il risultato va riassegnato\n```\n\nChiamare `s.upper()` e non fare niente del risultato è l'errore più comune del primo mese, e non solleva niente: il codice gira e la stringa resta com'era.\n\n### I metodi che userai\n\n```\ns.strip()              # toglie spazi in testa e in coda\ns.upper()  s.lower()   # maiuscole, minuscole\ns.replace(\"a\", \"X\")    # sostituisce TUTTE le occorrenze\ns.split(\",\")           # dalla stringa alla lista\n\"-\".join([\"a\", \"b\"])   # dalla lista alla stringa: 'a-b'\ns.startswith(\"Alfa\")   # True/False\n```\n\n`split` e `join` sono l'una l'inversa dell'altra, e insieme coprono quasi tutta la lettura di file di testo.\n\n### Indici e fette, come in NumPy\n\n```\n\"volo\"[0]     # 'v'    il primo\n\"volo\"[-1]    # 'o'    l'ultimo\n\"volo\"[1:3]   # 'ol'   dal 1 incluso al 3 escluso\nlen(\"volo\")   # 4\n```\n\nSono le stesse regole dello slicing degli array: estremo destro escluso, indici negativi da destra.\n\n### + concatena, * ripete\n\n```\n\"a\" + \"b\"     # 'ab'\n\"5\" * 3       # '555'   <- non 15\n\"5\" + 5       # TypeError\n```\n\nUn numero letto da un file è una **stringa**: `\"5\" * 3` non è un errore, è una ripetizione, e il risultato sbagliato prosegue senza avvisare. Prima si converte con `int()` o `float()`, poi si calcola.",
+   "demo": "s = \"  Alfa Romeo  \"\ns.strip()\nprint(\"dopo strip senza riassegnare:\", repr(s))\nprint(\"riassegnando:              \", repr(s.strip()))\n\nprint(\"\\nsplit:\", \"quota,mach,cl\".split(\",\"))\nprint(\"join: \", \"-\".join([\"a\", \"b\", \"c\"]))\n\nprint(\"\\n'5' * 3 =\", repr(\"5\" * 3))\nprint(\"int('5') * 3 =\", int(\"5\") * 3)"
+  },
+  {
+   "id": "p01-l5",
+   "titolo": "bool: cosa è vero e cosa no",
+   "md": "```\n3 > 2        # True\n3 == 3.0     # True   int e float si confrontano per valore\n\"a\" != \"b\"   # True\n```\n\n`=` assegna, `==` confronta. Scriverne uno per l'altro è l'errore più frequente in assoluto, e in Python dà un errore di sintassi invece che un bug silenzioso — una delle poche volte in cui il linguaggio ti aiuta.\n\n### and, or, not\n\n```\nq > 8000 and mach > 0.8\nnot valido\n```\n\nSi scrivono a parole, non con `&&` e `||`. Valgono in **corto circuito**: in `a and b`, se `a` è falso `b` non viene nemmeno valutato. È il modo di scrivere `x != 0 and 1/x > 2` senza dividere per zero.\n\n### Verità implicita\n\nOgni valore ha un verdetto di verità:\n\n```\nbool(\"\")     # False   stringa vuota\nbool(\"0\")    # True    <- una stringa non vuota e' vera, anche se contiene '0'\nbool([])     # False   lista vuota\nbool(0)      # False\nbool(0.0)    # False\nbool(None)   # False\n```\n\nLa riga da ricordare è la seconda: `\"0\"` letto da un file è vero. Convertire prima, valutare poi.\n\n### == confronta i valori, is l'identità\n\n```\na = [1, 2]\nb = [1, 2]\na == b       # True   stesso contenuto\na is b       # False  due oggetti diversi\n```\n\n`is` va usato solo con `None`: `if x is None`. Con numeri e stringhe funziona a volte, per ragioni di ottimizzazione interna, e quel \"a volte\" è la definizione di bug difficile.",
+   "demo": "print(3 == 3.0, 3 > 2, \"a\" != \"b\")\nprint(\"corto circuito:\", False and print(\"questo non viene mai eseguito\"))\n\nfor v in [\"\", \"0\", [], [0], 0, 0.0, None]:\n    print(repr(v), \"->\", bool(v))\n\na = [1, 2]\nb = [1, 2]\nprint(\"\\na == b:\", a == b, \" a is b:\", a is b)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p01-print",
+   "comando": "print",
+   "titolo": "print — mostrare non e' restituire",
+   "esercizi": [
+    {
+     "id": "p01-pr-1",
+     "tipo": "predict",
+     "testo": "Cosa stampa `print(\"quota\", 1000, \"m\")` ?",
+     "opzioni": [
+      "quota 1000 m",
+      "quota1000m",
+      "quota, 1000, m",
+      "errore: print accetta un solo argomento"
+     ],
+     "risposta": "quota 1000 m",
+     "spiegazione": "`quota 1000 m`. Le virgole inseriscono uno spazio fra un argomento e l'altro. Non è concatenazione: `print(\"a\" + \"b\")` stamperebbe `ab`, senza spazio."
+    },
+    {
+     "id": "p01-pr-2",
+     "tipo": "write",
+     "testo": "Componi con una f-string la riga `riga` che dice `quota: 1000 m`, usando la variabile `q`. Poi stampala.",
+     "setup": "q = 1000\n",
+     "starter": "riga = \nprint(riga)\n",
+     "test": "assert riga == 'quota: 1000 m', f'atteso \\'quota: 1000 m\\', hai {riga!r}'",
+     "hint": [
+      "La f-string si scrive f\"...\" con le graffe attorno al nome.",
+      "riga = f\"quota: {q} m\""
+     ],
+     "soluzione": "riga = f\"quota: {q} m\"",
+     "spiegazione": "La `f` prima delle virgolette attiva la sostituzione, e dentro le graffe ci va il nome della variabile. Senza la `f`, `\"quota: {q} m\"` è una stringa che contiene le graffe alla lettera — e non dà nessun errore."
+    },
+    {
+     "id": "p01-pr-3",
+     "tipo": "predict",
+     "testo": "Cosa stampa `print(\"a\", \"b\", sep=\"\")` ?",
+     "opzioni": [
+      "ab",
+      "a b",
+      "a, b",
+      "a\\nb"
+     ],
+     "risposta": "ab",
+     "spiegazione": "`ab`. `sep` è quello che va **fra** gli argomenti, e il suo default è uno spazio. Passando la stringa vuota gli argomenti si toccano."
+    },
+    {
+     "id": "p01-pr-4",
+     "tipo": "write",
+     "testo": "`print` mostra un valore ma non lo restituisce. Assegna a `risultato` quello che `print` restituisce e mettilo alla prova.",
+     "setup": "",
+     "starter": "risultato = \nnullo = \n",
+     "test": "assert risultato is None, f'print restituisce None, hai {risultato!r}'\nassert nullo is True, 'nullo deve confermare che risultato e None'",
+     "hint": [
+      "Assegna direttamente la chiamata: risultato = print(\"ciao\")",
+      "nullo = risultato is None"
+     ],
+     "soluzione": "risultato = print(\"ciao\")\nnullo = risultato is None",
+     "spiegazione": "`print` restituisce `None`. È la distinzione che confonde all'inizio: stampare non è calcolare. Se ti serve il valore per un passo successivo, quel valore deve stare in una variabile — `print` scrive sullo schermo e finisce lì."
+    },
+    {
+     "id": "p01-pr-5",
+     "tipo": "predict",
+     "testo": "Cosa stampa `print(1, 2, sep=\"-\", end=\"!\")` ?",
+     "opzioni": [
+      "1-2! e non va a capo",
+      "1-2 e va a capo",
+      "1 2!",
+      "1-2!\\n"
+     ],
+     "risposta": "1-2! e non va a capo",
+     "spiegazione": "`1-2!` senza andare a capo. `sep` va fra gli argomenti, `end` dopo l'ultimo, e il default di `end` è `\\n` — che è il motivo per cui ogni `print` normalmente va a capo."
+    },
+    {
+     "id": "p01-pr-6",
+     "tipo": "write",
+     "testo": "Formatta un numero: metti in `testo` la stringa che mostra `x` con **due** decimali.",
+     "setup": "x = 3.14159\n",
+     "starter": "testo = \n",
+     "test": "assert testo == '3.14', f'atteso \\'3.14\\', hai {testo!r}'",
+     "hint": [
+      "Dentro le graffe, dopo il nome, va : e poi il formato.",
+      "testo = f\"{x:.2f}\""
+     ],
+     "soluzione": "testo = f\"{x:.2f}\"",
+     "spiegazione": "Dopo i due punti c'è il formato: `.2f` significa notazione fissa con due decimali. È quello che userai per incolonnare risultati senza contare gli spazi a mano."
+    },
+    {
+     "id": "p01-pr-7",
+     "tipo": "write",
+     "testo": "Dentro le graffe di una f-string ci sta un'**espressione**, non solo un nome. Metti in `testo` la riga `il doppio: 2000`.",
+     "setup": "q = 1000\n",
+     "starter": "testo = \n",
+     "test": "assert testo == 'il doppio: 2000', f'atteso \\'il doppio: 2000\\', hai {testo!r}'",
+     "hint": [
+      "Dentro le graffe puoi scrivere q * 2.",
+      "testo = f\"il doppio: {q * 2}\""
+     ],
+     "soluzione": "testo = f\"il doppio: {q * 2}\"",
+     "spiegazione": "Il calcolo può stare direttamente nella f-string. Usalo per le espressioni corte: quando diventa lungo, il conto va in una variabile con un nome, perché una f-string di tre righe non la rilegge nessuno."
+    },
+    {
+     "id": "p01-pr-8",
+     "tipo": "predict",
+     "testo": "Cosa stampa `print(0.1 + 0.2)` ?",
+     "opzioni": [
+      "0.30000000000000004",
+      "0.3",
+      "0.30",
+      "errore di precisione"
+     ],
+     "risposta": "0.30000000000000004",
+     "spiegazione": "`0.30000000000000004`. I float sono approssimati in binario, e la somma di due approssimazioni non è l'approssimazione della somma. `print` non arrotonda per te: mostra il valore com'è."
+    },
+    {
+     "id": "p01-pr-9",
+     "tipo": "write",
+     "testo": "Allinea per una tabella: metti in `cella` il valore `v` formattato su **larghezza 8**, con **un** decimale.",
+     "setup": "v = 294.3\n",
+     "starter": "cella = \n",
+     "test": "assert cella == '   294.3', f'attesa la stringa larga 8, hai {cella!r}'\nassert len(cella) == 8, f'lunghezza attesa 8, hai {len(cella)}'",
+     "hint": [
+      "Il formato e' larghezza.decimali seguito da f.",
+      "cella = f\"{v:8.1f}\""
+     ],
+     "soluzione": "cella = f\"{v:8.1f}\"",
+     "spiegazione": "`{v:8.1f}` produce `'   294.3'`: otto caratteri in tutto, allineati a destra riempiendo di spazi. È il modo di stampare una colonna di numeri che restano incolonnati anche quando cambiano di ordine di grandezza."
+    },
+    {
+     "id": "p01-pr-10",
+     "tipo": "write",
+     "testo": "Una stringa può contenere un a capo: `\\n`. Metti in `blocco` un testo di due righe, `riga 1` e `riga 2`, e in `quante` il numero di righe che produce.",
+     "setup": "",
+     "starter": "blocco = \nquante = \n",
+     "test": "assert blocco == 'riga 1\\nriga 2', f'atteso due righe separate da \\\\n, hai {blocco!r}'\nassert quante == 2, f'attese 2 righe, hai {quante}'",
+     "hint": [
+      "blocco = \"riga 1\\nriga 2\"",
+      "quante = len(blocco.splitlines())"
+     ],
+     "soluzione": "blocco = \"riga 1\\nriga 2\"\nquante = len(blocco.splitlines())",
+     "spiegazione": "`\\n` dentro la stringa vale un carattere solo, non due: è il carattere di a capo. `splitlines()` lo usa per contare le righe, ed è il motivo per cui un file letto tutto insieme si spezza con quello."
+    }
+   ]
+  },
+  {
+   "id": "p01-variabili",
+   "comando": "=",
+   "titolo": "= — nomi legati a valori",
+   "esercizi": [
+    {
+     "id": "p01-va-1",
+     "tipo": "write",
+     "testo": "Assegna a `q` il valore 1000, poi riassegnalo a 2000. Metti in `finale` il valore che `q` ha alla fine.",
+     "setup": "",
+     "starter": "q = \nq = \nfinale = \n",
+     "test": "assert finale == 2000, f'atteso 2000, hai {finale}'",
+     "hint": [
+      "Due assegnazioni in sequenza sulla stessa variabile.",
+      "q = 1000; q = 2000; finale = q"
+     ],
+     "soluzione": "q = 1000\nq = 2000\nfinale = q",
+     "spiegazione": "La seconda assegnazione non modifica il 1000: stacca l'etichetta `q` e la attacca al 2000. In Python una variabile è un nome legato a un valore, non un contenitore in cui il valore viene versato."
+    },
+    {
+     "id": "p01-va-2",
+     "tipo": "predict",
+     "testo": "`n = n + 1` con `n` che vale 5. Perché non è un'equazione impossibile?",
+     "opzioni": [
+      "prima si calcola il lato destro, poi il risultato viene rilegato al nome",
+      "Python risolve l'equazione e trova n = infinito",
+      "e' un errore, va scritto n += 1",
+      "il lato sinistro viene valutato per primo"
+     ],
+     "risposta": "prima si calcola il lato destro, poi il risultato viene rilegato al nome",
+     "spiegazione": "Perché l'assegnazione si legge **da destra a sinistra**: prima si calcola `n + 1` con il valore attuale, ottenendo 6, poi il risultato viene rilegato al nome `n`. Come equazione matematica non avrebbe soluzione; come istruzione ha un ordine."
+    },
+    {
+     "id": "p01-va-3",
+     "tipo": "write",
+     "testo": "Scambia due valori senza usare una variabile d'appoggio: dopo il tuo codice `x` deve valere 2.0 e `y` 1.0.",
+     "setup": "x, y = 1.0, 2.0\n",
+     "starter": "x, y = \n",
+     "test": "assert x == 2.0 and y == 1.0, f'atteso x=2.0 y=1.0, hai x={x} y={y}'",
+     "hint": [
+      "Si assegnano entrambi in una riga sola.",
+      "x, y = y, x"
+     ],
+     "soluzione": "x, y = y, x",
+     "spiegazione": "Il lato destro viene valutato **tutto** prima che qualunque nome venga riassegnato, quindi lo scambio funziona in una riga. Con due assegnazioni separate perderesti il primo valore alla seconda riga."
+    },
+    {
+     "id": "p01-va-4",
+     "tipo": "write",
+     "testo": "Assegna tre valori in una riga sola a `quota`, `mach` e `cl`, e mettine la somma in `totale`.",
+     "setup": "",
+     "starter": "quota, mach, cl = \ntotale = \n",
+     "test": "assert (quota, mach, cl) == (9000, 0.82, 0.45), f'attesi 9000, 0.82, 0.45, hai {(quota, mach, cl)}'\nassert abs(totale - 9001.27) < 1e-9, f'somma attesa 9001.27, hai {totale}'",
+     "hint": [
+      "quota, mach, cl = 9000, 0.82, 0.45",
+      "totale = quota + mach + cl"
+     ],
+     "soluzione": "quota, mach, cl = 9000, 0.82, 0.45\ntotale = quota + mach + cl",
+     "spiegazione": "L'assegnazione multipla spacchetta la sequenza a destra sui nomi a sinistra. Il numero dei nomi deve corrispondere: uno in più o in meno solleva `ValueError`, ed è uno dei pochi errori di questo modulo che si vede subito."
+    },
+    {
+     "id": "p01-va-5",
+     "tipo": "predict",
+     "testo": "`b = a` con `a` che è una lista. Modificando `b` cosa succede ad `a`?",
+     "opzioni": [
+      "cambia anche a: sono due nomi per lo stesso oggetto",
+      "a resta intatto: b e' una copia",
+      "errore: le liste non si assegnano",
+      "dipende se la lista contiene numeri o stringhe"
+     ],
+     "risposta": "cambia anche a: sono due nomi per lo stesso oggetto",
+     "spiegazione": "Cambia anche `a`: `b = a` non copia niente, attacca una seconda etichetta allo stesso oggetto. Per una copia vera serve `a.copy()`. È la stessa distinzione fra vista e copia che c'è negli array NumPy."
+    },
+    {
+     "id": "p01-va-6",
+     "tipo": "write",
+     "testo": "Dimostralo: lega `b` alla stessa lista di `a` e aggiungici un elemento; poi crea `c` come copia vera e aggiungi anche lì. Metti in `dopo_a` e `dopo_c` le due liste finali.",
+     "setup": "a = [1, 2, 3]\n",
+     "starter": "b = \nb.append(4)\nc = \nc.append(99)\ndopo_a = \ndopo_c = \n",
+     "test": "assert dopo_a == [1, 2, 3, 4], f'a atteso [1, 2, 3, 4], hai {dopo_a}'\nassert dopo_c == [1, 2, 3, 4, 99], f'c atteso [1, 2, 3, 4, 99], hai {dopo_c}'",
+     "hint": [
+      "b = a lega lo stesso oggetto; c = a.copy() ne fa uno nuovo.",
+      "dopo_a = a, dopo_c = c"
+     ],
+     "soluzione": "b = a\nb.append(4)\nc = a.copy()\nc.append(99)\ndopo_a = a\ndopo_c = c",
+     "spiegazione": "`a` ha quattro elementi perché `b` era lo stesso oggetto; `c` ne ha cinque ed è indipendente. Il costo di `copy()` è reale su liste grandi, e proprio per questo Python non copia mai da solo."
+    },
+    {
+     "id": "p01-va-7",
+     "tipo": "predict",
+     "testo": "Quale di questi **non** è un nome di variabile valido in Python?",
+     "opzioni": [
+      "2quota",
+      "quota_2",
+      "_x",
+      "Quota"
+     ],
+     "risposta": "2quota",
+     "spiegazione": "`2quota`: un nome non può iniziare con una cifra. Gli altri vanno tutti bene — `_x` è valido e per convenzione segnala qualcosa di interno, e `Quota` è valido ma diverso da `quota`, perché i nomi distinguono maiuscole e minuscole."
+    },
+    {
+     "id": "p01-va-8",
+     "tipo": "write",
+     "testo": "Aggiornare una variabile con sé stessa ha una forma breve. Parti da `n = 5` e portalo a 8 usando l'operatore composto.",
+     "setup": "n = 5\n",
+     "starter": "n \nfinale = \n",
+     "test": "assert finale == 8, f'atteso 8, hai {finale}'",
+     "hint": [
+      "L'operatore e' +=",
+      "n += 3"
+     ],
+     "soluzione": "n += 3\nfinale = n",
+     "spiegazione": "`n += 3` è esattamente `n = n + 3`, in meno caratteri. Esistono `-=`, `*=`, `/=` e gli altri; il vantaggio non è la lunghezza ma che il nome compare una volta sola, quindi non puoi sbagliarne uno dei due."
+    }
+   ]
+  },
+  {
+   "id": "p01-numeri",
+   "comando": "int e float",
+   "titolo": "int e float — due divisioni",
+   "esercizi": [
+    {
+     "id": "p01-nu-1",
+     "tipo": "predict",
+     "testo": "Quanto vale `7 / 2` e di che tipo è il risultato?",
+     "opzioni": [
+      "3.5, un float",
+      "3, un int",
+      "3.5, un int",
+      "4, un int"
+     ],
+     "risposta": "3.5, un float",
+     "spiegazione": "`3.5`, un float. `/` restituisce **sempre** un float, anche quando la divisione è esatta: `4 / 2` vale `2.0`, non `2`. È una differenza rispetto a molti altri linguaggi, dove `/` fra interi tronca."
+    },
+    {
+     "id": "p01-nu-2",
+     "tipo": "write",
+     "testo": "Calcola in `intera` la divisione intera di 7 per 2, e in `resto` il resto.",
+     "setup": "",
+     "starter": "intera = \nresto = \n",
+     "test": "assert intera == 3, f'attesa 3, hai {intera}'\nassert resto == 1, f'atteso 1, hai {resto}'",
+     "hint": [
+      "Gli operatori sono // e %",
+      "intera = 7 // 2; resto = 7 % 2"
+     ],
+     "soluzione": "intera = 7 // 2\nresto = 7 % 2",
+     "spiegazione": "`//` dà il quoziente e `%` il resto: 3 e 1. Servono ogni volta che devi spezzare un numero in gruppi — quante pagine da 50 righe, quanti minuti e secondi da un totale in secondi."
+    },
+    {
+     "id": "p01-nu-3",
+     "tipo": "predict",
+     "testo": "Quanto vale `-7 // 2` ?",
+     "opzioni": [
+      "-4",
+      "-3",
+      "-3.5",
+      "3"
+     ],
+     "risposta": "-4",
+     "spiegazione": "`-4`, non `-3`. La divisione intera arrotonda verso **meno infinito**, non verso lo zero. È la sorpresa che fa sbagliare gli indici appena i valori possono essere negativi, e non solleva niente."
+    },
+    {
+     "id": "p01-nu-4",
+     "tipo": "write",
+     "testo": "Converti 754 secondi in minuti e secondi: `minuti` e `secondi`.",
+     "setup": "totale = 754\n",
+     "starter": "minuti = \nsecondi = \n",
+     "test": "assert minuti == 12, f'attesi 12 minuti, hai {minuti}'\nassert secondi == 34, f'attesi 34 secondi, hai {secondi}'",
+     "hint": [
+      "minuti = totale // 60",
+      "secondi = totale % 60"
+     ],
+     "soluzione": "minuti = totale // 60\nsecondi = totale % 60",
+     "spiegazione": "12 minuti e 34 secondi. `//` e `%` insieme sono la coppia canonica per questo, e vale la pena riconoscerla: la stessa forma converte in ore, in gradi-primi-secondi, in qualunque base mista."
+    },
+    {
+     "id": "p01-nu-5",
+     "tipo": "write",
+     "testo": "Calcola `p`, due elevato alla decima.",
+     "setup": "",
+     "starter": "p = \n",
+     "test": "assert p == 1024, f'atteso 1024, hai {p}'",
+     "hint": [
+      "L'operatore e' ** e non ^",
+      "p = 2 ** 10"
+     ],
+     "soluzione": "p = 2 ** 10",
+     "spiegazione": "1024. L'elevamento a potenza è `**`, non `^` — che in Python esiste ma è un'altra operazione, lo XOR bit a bit, e su interi restituisce un risultato valido e sbagliato. `2 ^ 10` vale 8."
+    },
+    {
+     "id": "p01-nu-6",
+     "tipo": "predict",
+     "testo": "Quanto vale `0.1 + 0.2 == 0.3` ?",
+     "opzioni": [
+      "False",
+      "True",
+      "True solo in Python 3",
+      "errore di arrotondamento"
+     ],
+     "risposta": "False",
+     "spiegazione": "`False`. La somma vale 0.30000000000000004: i float sono approssimati in binario e la somma di due approssimazioni non è l'approssimazione della somma. La regola pratica è non confrontare mai due float con `==`; il modulo *Precisione e performance* del corso NumPy tratta come farlo bene."
+    },
+    {
+     "id": "p01-nu-7",
+     "tipo": "write",
+     "testo": "Confronta due float senza `==`: metti in `vicini` il controllo che la differenza in valore assoluto fra `a` e `b` sia sotto `1e-9`.",
+     "setup": "a = 0.1 + 0.2\nb = 0.3\n",
+     "starter": "vicini = \n",
+     "test": "assert vicini is True, 'i due valori sono vicini entro 1e-9'\nassert (a == b) is False, 'con == il confronto fallirebbe'",
+     "hint": [
+      "abs() restituisce il valore assoluto.",
+      "vicini = abs(a - b) < 1e-9"
+     ],
+     "soluzione": "vicini = abs(a - b) < 1e-9",
+     "spiegazione": "È il confronto che si scrive a mano finché non arriva `math.isclose` o `np.isclose`. La soglia va scelta sulla grandezza in gioco: 1e-9 va bene per numeri dell'ordine di 1, non per coordinate in metri su scala terrestre."
+    },
+    {
+     "id": "p01-nu-8",
+     "tipo": "predict",
+     "testo": "Quanto vale `round(2.5)` ?",
+     "opzioni": [
+      "2",
+      "3",
+      "2.5",
+      "dipende dalla versione di Python"
+     ],
+     "risposta": "2",
+     "spiegazione": "`2`, non 3. A metà strada Python arrotonda al **pari** più vicino: `round(3.5)` invece dà 4. È la regola bancaria, e serve a non introdurre un errore sistematico verso l'alto quando si arrotondano molti valori."
+    },
+    {
+     "id": "p01-nu-9",
+     "tipo": "write",
+     "testo": "Arrotonda `x` a due decimali in `arrotondato`, e metti in `sorpresa` il confronto con 2.68.",
+     "setup": "x = 2.675\n",
+     "starter": "arrotondato = \nsorpresa = \n",
+     "test": "assert arrotondato == 2.67, f'atteso 2.67, hai {arrotondato}'\nassert sorpresa is False, 'il risultato non e 2.68'",
+     "hint": [
+      "round(x, 2)",
+      "sorpresa = arrotondato == 2.68"
+     ],
+     "soluzione": "arrotondato = round(x, 2)\nsorpresa = arrotondato == 2.68",
+     "spiegazione": "`round(2.675, 2)` dà 2.67, non 2.68: 2.675 in memoria è appena sotto 2.675, quindi l'arrotondamento va verso il basso. Non è un difetto di `round`, è la stessa approssimazione binaria di `0.1 + 0.2`."
+    },
+    {
+     "id": "p01-nu-10",
+     "tipo": "write",
+     "testo": "Un numero letto da un file è testo. Converti `letto` in float, moltiplicalo per 3 e metti il risultato in `valore`.",
+     "setup": "letto = \"5.0\"\n",
+     "starter": "valore = \n",
+     "test": "assert valore == 15.0, f'atteso 15.0, hai {valore!r}'\nassert isinstance(valore, float), f'atteso un float, hai {type(valore).__name__}'",
+     "hint": [
+      "float() converte una stringa in numero.",
+      "valore = float(letto) * 3"
+     ],
+     "soluzione": "valore = float(letto) * 3",
+     "spiegazione": "Senza `float()` il risultato sarebbe `'5.05.05.0'`: su una stringa `*` ripete invece di moltiplicare, e nessun errore lo segnala. La conversione va fatta appena il dato entra, non appena il risultato sembra strano."
+    }
+   ]
+  },
+  {
+   "id": "p01-stringhe",
+   "comando": "str",
+   "titolo": "str — immutabile, e piu' insidiosa",
+   "esercizi": [
+    {
+     "id": "p01-st-1",
+     "tipo": "predict",
+     "testo": "Cosa vale `\"5\" * 3` ?",
+     "opzioni": [
+      "'555'",
+      "15",
+      "'5 5 5'",
+      "TypeError"
+     ],
+     "risposta": "'555'",
+     "spiegazione": "`'555'`. Su una stringa `*` **ripete**, non moltiplica. Non è un errore per Python: è un'operazione legittima che produce un risultato valido e sbagliato, e prosegue senza avvisare. È il motivo per cui un numero letto da file va convertito subito."
+    },
+    {
+     "id": "p01-st-2",
+     "tipo": "predict",
+     "testo": "Cosa succede con `\"5\" + 5` ?",
+     "opzioni": [
+      "TypeError: non si sommano stringhe e numeri",
+      "'55'",
+      "10",
+      "'5 5'"
+     ],
+     "risposta": "TypeError: non si sommano stringhe e numeri",
+     "spiegazione": "`TypeError`. Qui Python si ferma, al contrario di `\"5\" * 3` che passa liscio. La stessa distrazione dà un errore in un caso e un risultato sbagliato nell'altro, il che rende il secondo molto più pericoloso."
+    },
+    {
+     "id": "p01-st-3",
+     "tipo": "write",
+     "testo": "`s` ha spazi in testa e in coda. Toglili e metti il risultato in `pulita`, poi metti in `originale` il valore che `s` ha dopo l'operazione.",
+     "setup": "s = \"  Alfa Romeo  \"\n",
+     "starter": "pulita = \noriginale = \n",
+     "test": "assert pulita == 'Alfa Romeo', f'attesa \\'Alfa Romeo\\', hai {pulita!r}'\nassert originale == '  Alfa Romeo  ', f's non deve essere cambiata, hai {originale!r}'",
+     "hint": [
+      "Il metodo e' strip().",
+      "pulita = s.strip(); originale = s"
+     ],
+     "soluzione": "pulita = s.strip()\noriginale = s",
+     "spiegazione": "`s` è rimasta identica. Le stringhe sono **immutabili**: nessun metodo le modifica, tutti ne restituiscono una nuova. Chiamare `s.strip()` senza riassegnare è l'errore più comune del primo mese, e non solleva niente."
+    },
+    {
+     "id": "p01-st-4",
+     "tipo": "debug",
+     "testo": "Questo codice dovrebbe mettere il nome in maiuscolo, ma `nome` resta com'era. Correggi.",
+     "setup": "",
+     "starter": "nome = \"tornado\"\nnome.upper()\n",
+     "test": "assert nome == 'TORNADO', f'atteso TORNADO, hai {nome!r}'",
+     "hint": [
+      "upper() restituisce una stringa nuova, non modifica quella di partenza.",
+      "nome = nome.upper()"
+     ],
+     "soluzione": "nome = \"tornado\"\nnome = nome.upper()",
+     "spiegazione": "Il risultato di `upper()` va **riassegnato**: da solo viene calcolato e buttato via. È il caso in cui l'immutabilità delle stringhe morde, perché il codice gira e non segnala niente."
+    },
+    {
+     "id": "p01-st-5",
+     "tipo": "write",
+     "testo": "Da una riga di CSV, ricava la lista dei campi in `campi` e il loro numero in `quanti`.",
+     "setup": "riga = \"quota,mach,cl\"\n",
+     "starter": "campi = \nquanti = \n",
+     "test": "assert campi == ['quota', 'mach', 'cl'], f'attesi tre campi, hai {campi!r}'\nassert quanti == 3, f'attesi 3, hai {quanti}'",
+     "hint": [
+      "riga.split(\",\")",
+      "quanti = len(campi)"
+     ],
+     "soluzione": "campi = riga.split(\",\")\nquanti = len(campi)",
+     "spiegazione": "`split` spezza sul separatore e restituisce una lista. È il primo passo di qualunque lettura di file di testo, e il separatore va passato esplicitamente: `split()` senza argomenti spezza sugli spazi, che su un CSV non è quello che vuoi."
+    },
+    {
+     "id": "p01-st-6",
+     "tipo": "write",
+     "testo": "L'operazione inversa: unisci i pezzi in `riga`, separandoli con un trattino.",
+     "setup": "pezzi = [\"a\", \"b\", \"c\"]\n",
+     "starter": "riga = \n",
+     "test": "assert riga == 'a-b-c', f'attesa \\'a-b-c\\', hai {riga!r}'",
+     "hint": [
+      "Il metodo si chiama sul separatore.",
+      "riga = \"-\".join(pezzi)"
+     ],
+     "soluzione": "riga = \"-\".join(pezzi)",
+     "spiegazione": "`join` è un metodo **del separatore**, non della lista: si scrive `\"-\".join(pezzi)`, che alla prima lettura sembra al contrario. `split` e `join` insieme coprono quasi tutta la manipolazione di file di testo."
+    },
+    {
+     "id": "p01-st-7",
+     "tipo": "write",
+     "testo": "Sostituisci tutte le `a` con `X` in `s` e metti il risultato in `sostituita`.",
+     "setup": "s = \"Alfa Romeo\"\n",
+     "starter": "sostituita = \n",
+     "test": "assert sostituita == 'AlfX Romeo', f'attesa \\'AlfX Romeo\\', hai {sostituita!r}'",
+     "hint": [
+      "s.replace(vecchio, nuovo)",
+      "sostituita = s.replace(\"a\", \"X\")"
+     ],
+     "soluzione": "sostituita = s.replace(\"a\", \"X\")",
+     "spiegazione": "`replace` sostituisce **tutte** le occorrenze, non solo la prima, e distingue maiuscole e minuscole: la `A` di `Alfa` resta. Per sostituirne un numero limitato c'è un terzo argomento."
+    },
+    {
+     "id": "p01-st-8",
+     "tipo": "predict",
+     "testo": "Quanto vale `\"volo\"[-1]` ?",
+     "opzioni": [
+      "'o'",
+      "'v'",
+      "'l'",
+      "errore: indice negativo"
+     ],
+     "risposta": "'o'",
+     "spiegazione": "`'o'`, l'ultimo carattere. Gli indici negativi contano da destra, esattamente come negli array NumPy: `-1` è l'ultimo, `-2` il penultimo. È il modo di prendere la fine senza calcolare la lunghezza."
+    },
+    {
+     "id": "p01-st-9",
+     "tipo": "write",
+     "testo": "Estrai da `s` il primo carattere in `primo`, l'ultimo in `ultimo`, e i caratteri dall'indice 1 al 3 escluso in `mezzo`.",
+     "setup": "s = \"volo\"\n",
+     "starter": "primo = \nultimo = \nmezzo = \n",
+     "test": "assert primo == 'v', f'atteso v, hai {primo!r}'\nassert ultimo == 'o', f'atteso o, hai {ultimo!r}'\nassert mezzo == 'ol', f'atteso ol, hai {mezzo!r}'",
+     "hint": [
+      "s[0], s[-1], s[1:3]",
+      "L'estremo destro della fetta e' escluso."
+     ],
+     "soluzione": "primo = s[0]\nultimo = s[-1]\nmezzo = s[1:3]",
+     "spiegazione": "`'v'`, `'o'`, `'ol'`. Sono le stesse regole dello slicing degli array: estremo destro escluso, indici negativi da destra. Impararle qui significa averle già imparate per NumPy."
+    },
+    {
+     "id": "p01-st-10",
+     "tipo": "write",
+     "testo": "Verifica se una riga inizia con un'intestazione: metti in `intestazione` il controllo che `riga` cominci per `#`.",
+     "setup": "riga = \"# colonne: quota, mach\"\n",
+     "starter": "intestazione = \n",
+     "test": "assert intestazione is True, 'la riga inizia con #'\nassert riga.startswith('#') == intestazione, 'usa startswith'",
+     "hint": [
+      "Il metodo e' startswith.",
+      "intestazione = riga.startswith(\"#\")"
+     ],
+     "soluzione": "intestazione = riga.startswith(\"#\")",
+     "spiegazione": "`startswith` risponde con un booleano. È il controllo che serve saltando i commenti in un file di dati, e si legge molto meglio di `riga[0] == \"#\"` — che oltretutto esplode su una riga vuota."
+    },
+    {
+     "id": "p01-st-11",
+     "tipo": "predict",
+     "testo": "Cosa vale `\"Mach\" in \"numero di Mach\"` ?",
+     "opzioni": [
+      "True",
+      "False",
+      "errore: in funziona solo sulle liste",
+      "True solo se e' l'inizio della stringa"
+     ],
+     "risposta": "True",
+     "spiegazione": "`True`. Su una stringa, `in` cerca una **sottostringa**, non un carattere singolo. Distingue maiuscole e minuscole: `\"mach\"` darebbe `False`, ed è il motivo per cui i confronti su testo si fanno quasi sempre dopo un `.lower()`."
+    },
+    {
+     "id": "p01-st-12",
+     "tipo": "write",
+     "testo": "Ripulisci un campo letto da file: togli gli spazi, portalo tutto in minuscolo, e mettilo in `chiave`.",
+     "setup": "campo = \"  Mach  \"\n",
+     "starter": "chiave = \n",
+     "test": "assert chiave == 'mach', f'attesa \\'mach\\', hai {chiave!r}'",
+     "hint": [
+      "Si possono concatenare: campo.strip().lower()",
+      "chiave = campo.strip().lower()"
+     ],
+     "soluzione": "chiave = campo.strip().lower()",
+     "spiegazione": "I metodi si concatenano perché ognuno restituisce una nuova stringa. La coppia `strip().lower()` è la normalizzazione standard prima di confrontare due campi di testo, e senza di lei `\" Mach \"` e `\"mach\"` risultano diversi."
+    }
+   ]
+  },
+  {
+   "id": "p01-bool",
+   "comando": "bool",
+   "titolo": "bool — cosa e' vero",
+   "esercizi": [
+    {
+     "id": "p01-bo-1",
+     "tipo": "predict",
+     "testo": "Che differenza c'è fra `=` e `==` ?",
+     "opzioni": [
+      "= assegna un valore a un nome, == confronta due valori",
+      "sono equivalenti",
+      "= confronta, == assegna",
+      "== funziona solo sui numeri"
+     ],
+     "risposta": "= assegna un valore a un nome, == confronta due valori",
+     "spiegazione": "`=` assegna, `==` confronta. Usare `=` dentro un `if` è un errore di sintassi in Python — una delle poche volte in cui il linguaggio ti protegge da una distrazione che in altri linguaggi produce un bug silenzioso."
+    },
+    {
+     "id": "p01-bo-2",
+     "tipo": "write",
+     "testo": "Metti in `alto` il controllo che la quota superi 8000, e in `veloce` che il Mach superi 0.8.",
+     "setup": "q = 9000\nmach = 0.82\n",
+     "starter": "alto = \nveloce = \n",
+     "test": "assert alto is True and veloce is True, f'attesi entrambi True, hai {alto} e {veloce}'",
+     "hint": [
+      "alto = q > 8000",
+      "veloce = mach > 0.8"
+     ],
+     "soluzione": "alto = q > 8000\nveloce = mach > 0.8",
+     "spiegazione": "Un confronto restituisce un `bool`, che è un valore come un altro: si può assegnare, stampare, combinare. Non serve un `if` per ottenerlo."
+    },
+    {
+     "id": "p01-bo-3",
+     "tipo": "write",
+     "testo": "Combina le due condizioni: `crociera` vero solo se **entrambe** sono vere, `qualcosa` vero se **almeno una** lo è.",
+     "setup": "alto = True\nveloce = False\n",
+     "starter": "crociera = \nqualcosa = \n",
+     "test": "assert crociera is False, f'atteso False, hai {crociera}'\nassert qualcosa is True, f'atteso True, hai {qualcosa}'",
+     "hint": [
+      "Gli operatori sono and e or.",
+      "crociera = alto and veloce"
+     ],
+     "soluzione": "crociera = alto and veloce\nqualcosa = alto or veloce",
+     "spiegazione": "In Python si scrivono a parole: `and`, `or`, `not`. Non esistono `&&` e `||` — quelli sollevano un errore di sintassi, che è il modo in cui te ne accorgi arrivando da un altro linguaggio."
+    },
+    {
+     "id": "p01-bo-4",
+     "tipo": "predict",
+     "testo": "In `x != 0 and 1 / x > 2` con `x` uguale a zero: cosa succede?",
+     "opzioni": [
+      "restituisce False senza eseguire la divisione",
+      "ZeroDivisionError",
+      "restituisce True",
+      "restituisce None"
+     ],
+     "risposta": "restituisce False senza eseguire la divisione",
+     "spiegazione": "Niente di male: `and` valuta in **corto circuito**. Il primo termine è falso, quindi il secondo non viene nemmeno eseguito e la divisione per zero non avviene. È il modo idiomatico di proteggere un'operazione, e funziona solo grazie all'ordine."
+    },
+    {
+     "id": "p01-bo-5",
+     "tipo": "predict",
+     "testo": "Quanto vale `bool(\"0\")` ?",
+     "opzioni": [
+      "True: una stringa non vuota e' sempre vera",
+      "False: contiene zero",
+      "False: le stringhe non hanno valore di verita'",
+      "errore: bool non accetta stringhe"
+     ],
+     "risposta": "True: una stringa non vuota e' sempre vera",
+     "spiegazione": "`True`. Una stringa è falsa solo se **vuota**: `\"0\"` contiene un carattere, quindi è vera. È la trappola dei dati letti da file, dove uno zero arriva come testo e un controllo `if valore:` lo accetta come valido."
+    },
+    {
+     "id": "p01-bo-6",
+     "tipo": "write",
+     "testo": "Verifica quali valori sono falsi: metti in `falsi` la lista dei verdetti di verità di `campioni`, nell'ordine.",
+     "setup": "campioni = [\"\", \"0\", [], [0], 0, 0.0, None]\n",
+     "starter": "falsi = \n",
+     "test": "assert falsi == [False, True, False, True, False, False, False], f'atteso [False, True, False, True, False, False, False], hai {falsi}'",
+     "hint": [
+      "Serve bool() applicato a ogni elemento.",
+      "falsi = [bool(v) for v in campioni]"
+     ],
+     "soluzione": "falsi = [bool(v) for v in campioni]",
+     "spiegazione": "Vuoto è falso, zero è falso, `None` è falso; una stringa che contiene `'0'` e una lista che contiene uno zero sono **vere**, perché non sono vuote. Sono le due righe che fanno passare per validi dei dati che non lo sono."
+    },
+    {
+     "id": "p01-bo-7",
+     "tipo": "predict",
+     "testo": "Due liste con lo stesso contenuto: `a == b` e `a is b` cosa danno?",
+     "opzioni": [
+      "True e False",
+      "True e True",
+      "False e False",
+      "False e True"
+     ],
+     "risposta": "True e False",
+     "spiegazione": "`True` e `False`. `==` confronta il **contenuto**, `is` confronta l'**identità**: sono due oggetti distinti che si somigliano. `is` va usato solo con `None`; con numeri e stringhe funziona a volte, per ottimizzazioni interne, e quel \"a volte\" è la definizione di bug difficile."
+    },
+    {
+     "id": "p01-bo-8",
+     "tipo": "write",
+     "testo": "Scrivi il controllo giusto per il valore mancante: metti in `assente` la verifica che `v` sia `None`.",
+     "setup": "v = None\n",
+     "starter": "assente = \n",
+     "test": "assert assente is True, 'v e None'\nassert (v is None) == assente, 'usa is None'",
+     "hint": [
+      "Con None il confronto giusto e' is.",
+      "assente = v is None"
+     ],
+     "soluzione": "assente = v is None",
+     "spiegazione": "Con `None` si usa `is`, non `==`. Il motivo pratico: `None` è un oggetto unico in tutto il programma, quindi l'identità è il confronto corretto — ed è anche l'unico caso in cui `is` va usato senza pensarci due volte."
+    }
+   ]
+  },
+  {
+   "id": "p01-tipi",
+   "comando": "type e conversioni",
+   "titolo": "type — e come si converte",
+   "esercizi": [
+    {
+     "id": "p01-ty-1",
+     "tipo": "write",
+     "testo": "Metti in `t_int` e `t_float` i **nomi** dei tipi di 3 e di 3.0.",
+     "setup": "",
+     "starter": "t_int = \nt_float = \n",
+     "test": "assert t_int == 'int', f'atteso int, hai {t_int!r}'\nassert t_float == 'float', f'atteso float, hai {t_float!r}'",
+     "hint": [
+      "type(3) restituisce il tipo.",
+      "type(3).__name__"
+     ],
+     "soluzione": "t_int = type(3).__name__\nt_float = type(3.0).__name__",
+     "spiegazione": "`'int'` e `'float'`. `type()` restituisce l'oggetto tipo; `.__name__` ne dà il nome come stringa, che è quello che serve per stamparlo in un messaggio d'errore. È la prima cosa da guardare quando un'operazione dà un risultato assurdo."
+    },
+    {
+     "id": "p01-ty-2",
+     "tipo": "predict",
+     "testo": "Quanto vale `int(3.9)` ?",
+     "opzioni": [
+      "3",
+      "4",
+      "3.0",
+      "errore: serve round"
+     ],
+     "risposta": "3",
+     "spiegazione": "`3`. La conversione a intero **tronca** verso lo zero, non arrotonda: `int(-3.9)` dà `-3`. Per arrotondare serve `round`. È lo stesso comportamento di `astype` in NumPy, e la stessa fonte di errori sistematici."
+    },
+    {
+     "id": "p01-ty-3",
+     "tipo": "write",
+     "testo": "Confronta le due conversioni su un valore negativo: `troncato` con `int` e `arrotondato` con `round`.",
+     "setup": "x = -3.9\n",
+     "starter": "troncato = \narrotondato = \n",
+     "test": "assert troncato == -3, f'atteso -3, hai {troncato}'\nassert arrotondato == -4, f'atteso -4, hai {arrotondato}'",
+     "hint": [
+      "int(x) tronca, round(x) arrotonda.",
+      "troncato = int(x); arrotondato = round(x)"
+     ],
+     "soluzione": "troncato = int(x)\narrotondato = round(x)",
+     "spiegazione": "`-3` e `-4`. `int` va verso lo zero, `round` va al più vicino. Su una serie di valori la differenza non è rumore: è un errore che punta sempre nella stessa direzione."
+    },
+    {
+     "id": "p01-ty-4",
+     "tipo": "write",
+     "testo": "Converti nei due versi: `n` da stringa a intero, e `testo` da intero a stringa.",
+     "setup": "letto = \"42\"\nvalore = 42\n",
+     "starter": "n = \ntesto = \n",
+     "test": "assert n == 42 and isinstance(n, int), f'atteso l intero 42, hai {n!r}'\nassert testo == '42' and isinstance(testo, str), f'attesa la stringa 42, hai {testo!r}'",
+     "hint": [
+      "int() e str()",
+      "n = int(letto); testo = str(valore)"
+     ],
+     "soluzione": "n = int(letto)\ntesto = str(valore)",
+     "spiegazione": "`int(\"42\")` e `str(42)`. La seconda serve ogni volta che devi comporre testo senza f-string, e la prima ogni volta che leggi un numero da un file — dove tutto arriva come stringa, sempre."
+    },
+    {
+     "id": "p01-ty-5",
+     "tipo": "predict",
+     "testo": "`int(\"3.5\")` cosa fa?",
+     "opzioni": [
+      "solleva ValueError",
+      "restituisce 3",
+      "restituisce 4",
+      "restituisce 3.5"
+     ],
+     "risposta": "solleva ValueError",
+     "spiegazione": "Solleva `ValueError`. `int` accetta solo una stringa che rappresenti un intero: per un decimale serve `float(\"3.5\")`, ed eventualmente `int()` dopo. Qui l'errore è esplicito, il che è una fortuna — la conversione sbagliata che passa liscia è quella con `*` sulle stringhe."
+    },
+    {
+     "id": "p01-ty-6",
+     "tipo": "write",
+     "testo": "Una riga di dati letta da file, tutta testo. Ricavane `quota` come intero e `mach` come float, e mettine la somma in `somma`.",
+     "setup": "campi = [\"9000\", \"0.82\"]\n",
+     "starter": "quota = \nmach = \nsomma = \n",
+     "test": "assert quota == 9000 and isinstance(quota, int), f'quota attesa intera 9000, hai {quota!r}'\nassert mach == 0.82 and isinstance(mach, float), f'mach atteso float 0.82, hai {mach!r}'\nassert abs(somma - 9000.82) < 1e-9, f'somma attesa 9000.82, hai {somma!r}'",
+     "hint": [
+      "int(campi[0]) e float(campi[1])",
+      "somma = quota + mach"
+     ],
+     "soluzione": "quota = int(campi[0])\nmach = float(campi[1])\nsomma = quota + mach",
+     "spiegazione": "Fino alla conversione sono stringhe, e ogni operazione su di loro fa qualcosa di diverso da quello che credi: `\"9000\" + \"0.82\"` darebbe `'90000.82'`, che è una stringa valida e un dato senza senso. Il confine fra testo e numeri è il primo posto dove guardare quando i conti non tornano."
+    }
+   ]
+  }
+ ]
+}

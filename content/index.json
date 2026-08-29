@@ -1,7 +1,41 @@
 {
   "titolo": "Strumenti per Ingegneria Aerospaziale",
-  "sottotitolo": "Quattro rami: le librerie con cui calcoli, e il sistema su cui gira il codice.",
+  "sottotitolo": "Sei rami in ordine di studio: il linguaggio, come farlo girare, gli strumenti di calcolo, il sistema sotto.",
   "rami": [
+    {
+      "id": "python",
+      "titolo": "Python — il linguaggio",
+      "perche": "Quello che NumPy da' per scontato: tipi, controllo di flusso, funzioni, e come si legge un errore. Gira sullo stesso motore dei moduli NumPy, senza niente da installare.",
+      "disponibile": true,
+      "moduli": [
+        "p01"
+      ],
+      "prossimi": [
+        "Numeri e stringhe — operatori, formattazione con f-string, divisione intera",
+        "Liste, tuple, dizionari — quando serve quale, e perche' NumPy non usa le liste",
+        "Controllo di flusso — if, for, while, range, enumerate, zip",
+        "Funzioni — argomenti, default, valori di ritorno, scope",
+        "Leggere un errore — traceback, TypeError, NameError, IndexError, KeyError",
+        "import — moduli, from ... import, e cosa succede davvero quando importi",
+        "File e contesti — open, with, leggere e scrivere testo"
+      ]
+    },
+    {
+      "id": "ambienti",
+      "titolo": "Ambienti e pacchetti",
+      "perche": "pip, venv, PATH, conda: quello che ti blocca quando il codice e' giusto ma non parte.",
+      "disponibile": false,
+      "moduli": [],
+      "prossimi": [
+        "Dove sta Python — PATH e i tre interpreti che hai installato",
+        "pip — install, list, freeze, e in quale Python",
+        "venv — creare, attivare, e perche' l'attivazione e' solo il PATH",
+        "requirements.txt — bloccare le versioni",
+        "Conflitti — ModuleNotFoundError con il pacchetto installato",
+        "conda — cosa risolve in piu', e come non mescolarlo con pip",
+        "VS Code — selezionare l'interprete"
+      ]
+    },
     {
       "id": "libpy",
       "titolo": "Librerie Python",
@@ -27,22 +61,6 @@
       "prossimi": [
         "Matplotlib — figure, assi, contour, diagramma V-n",
         "SciPy — solve_ivp, minimize, interpolazione, signal"
-      ]
-    },
-    {
-      "id": "ambienti",
-      "titolo": "Ambienti e pacchetti",
-      "perche": "pip, venv, PATH, conda: quello che ti blocca quando il codice e' giusto ma non parte.",
-      "disponibile": false,
-      "moduli": [],
-      "prossimi": [
-        "Dove sta Python — PATH e i tre interpreti che hai installato",
-        "pip — install, list, freeze, e in quale Python",
-        "venv — creare, attivare, e perche' l'attivazione e' solo il PATH",
-        "requirements.txt — bloccare le versioni",
-        "Conflitti — ModuleNotFoundError con il pacchetto installato",
-        "conda — cosa risolve in piu', e come non mescolarlo con pip",
-        "VS Code — selezionare l'interprete"
       ]
     },
     {
@@ -76,9 +94,32 @@
         "Bash scripting",
         "WSL"
       ]
+    },
+    {
+      "id": "html",
+      "titolo": "HTML — come e' fatta una pagina",
+      "perche": "Come si struttura un file .html, cosa ci sta dentro e in che ordine il browser lo legge. Ultimo perche' non e' prerequisito di niente: e' un dominio a se'.",
+      "disponibile": false,
+      "moduli": [],
+      "prossimi": [
+        "Un file .html minimo — doctype, html, head, body, e perche' quell'ordine",
+        "Il testo — h1..h6, p, liste, link, e cosa vuol dire markup semantico",
+        "Attributi — id, class, href, src, alt, e come si citano",
+        "Tabelle e immagini — table/thead/tbody, img e il testo alternativo",
+        "Form — input, label, select, e cosa succede all'invio",
+        "CSS — selettori, il box model, flex e grid",
+        "Il browser — DevTools, ordine di caricamento, cosa blocca il rendering",
+        "Pubblicare — sito statico, GitHub Pages, il perche' di HTTPS"
+      ]
     }
   ],
   "moduli": [
+    {
+      "id": "p01",
+      "file": "p01-basi.json",
+      "titolo": "print, variabili e tipi",
+      "disponibile": true
+    },
     {
       "id": "m01",
       "file": "m01-creazione.json",

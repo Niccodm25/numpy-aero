@@ -87,7 +87,12 @@ appoggiano.
 
 ---
 
-## 4. I quattro rami
+## 4. I sei rami
+
+Due si sono aggiunti dopo la prima stesura: **Python base**, che il corso NumPy
+dava per scontato dalla prima riga, e **HTML**, che non e' prerequisito di niente
+ma e' un dominio che serve a se'.
+
 
 ### Ramo A — Librerie Python
 
@@ -103,7 +108,7 @@ Estensione diretta di quello che c'è. Motore invariato.
 Matplotlib prima di SciPy: completa NumPy invece di aprire un fronte nuovo, e senza
 grafici non vedi mai i risultati che calcoli.
 
-### Ramo B — Ambienti e pacchetti  ← **da fare per primo**
+### Ramo B — Ambienti e pacchetti  ← **il primo dei tre che servono il terminale**
 
 Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre visibile.
 
@@ -157,22 +162,64 @@ Raspberry, un server, o WSL.
 struttura parallela è deliberata: fatto uno, l'altro diventa una tabella di traduzione.
 Vale la pena avere un modulo esplicito di **corrispondenze** fra le due shell.
 
+
+### Ramo E — Python, il linguaggio  ← **primo nell'ordine di studio**
+
+Gira sul motore che c'e' gia': Pyodide esegue Python vero, senza bisogno del
+terminale simulato. E' il ramo piu' economico da costruire di tutti, ed e' quello
+che il corso NumPy presupponeva senza dirlo.
+
+1. **print, variabili e tipi** — print mostra ma non restituisce, un numero letto
+   da file e' testo, un metodo di stringa non modifica la stringa. **fatto**
+2. **Numeri e stringhe** — operatori, f-string, divisione intera
+3. **Liste, tuple, dizionari** — quando serve quale, e perche' NumPy non usa le liste
+4. **Controllo di flusso** — if, for, while, range, enumerate, zip
+5. **Funzioni** — argomenti, default, valori di ritorno, scope
+6. **Leggere un errore** — traceback, TypeError, NameError, IndexError, KeyError
+7. **import** — moduli, from ... import, cosa succede davvero quando importi
+8. **File e contesti** — open, with, leggere e scrivere testo
+
+Il modulo 6 e' il piu' prezioso: un traceback e' la sola diagnostica che avrai,
+e va letto dal basso.
+
+### Ramo F — HTML, come e' fatta una pagina
+
+Ultimo perche' non e' prerequisito di niente. Non serve il terminale simulato:
+una pagina si verifica sul DOM prodotto, che il browser gia' espone.
+
+1. **Un file .html minimo** — doctype, html, head, body, e perche' quell'ordine
+2. **Il testo** — h1..h6, p, liste, link, e cosa vuol dire markup semantico
+3. **Attributi** — id, class, href, src, alt
+4. **Tabelle e immagini** — table/thead/tbody, img e il testo alternativo
+5. **Form** — input, label, select, e cosa succede all'invio
+6. **CSS** — selettori, box model, flex e grid
+7. **Il browser** — DevTools, ordine di caricamento, cosa blocca il rendering
+8. **Pubblicare** — sito statico, GitHub Pages, il perche' di HTTPS
+
 ---
 
-## 5. Sequenza consigliata
+## 5. Due ordini diversi
+
+**Ordine di studio** — quello che vede l'utente in home, dal primo all'ultimo:
+Python, Ambienti, Librerie, PowerShell, Linux, HTML. Il linguaggio prima di tutto,
+poi come farlo girare, poi gli strumenti di calcolo, poi il sistema sotto.
+
+**Ordine di costruzione** — quello che conviene a chi scrive i contenuti:
+
 
 | # | Cosa | Perché in questa posizione |
 |---|---|---|
-| 1 | **Usare NumPy per qualche settimana** | Il sistema di ripasso non è mai stato provato da uno studente vero. Tararlo prima di replicarlo su quattro rami |
-| 2 | **Motore del terminale simulato** | Blocca tre rami su quattro. Costruirlo su un ramo solo e riusarlo |
-| 3 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
-| 4 | **Ramo C — PowerShell** | La macchina che usi tutti i giorni |
-| 5 | **Matplotlib** | Completa NumPy, motore già pronto |
-| 6 | **Ramo D — Linux** | Quando serve: cluster, WSL, server |
-| 7 | **SciPy** | Quando i problemi superano quello che NumPy risolve da solo |
+| 1 | **Usare NumPy per qualche settimana** | Il sistema di ripasso non è mai stato provato da uno studente vero. Tararlo prima di replicarlo su sei rami |
+| 2 | **Ramo E — Python base** | Gira sul motore che c'e' gia': nessun software nuovo, e sblocca il ramo che tutti gli altri presuppongono |
+| 3 | **Motore del terminale simulato** | Blocca tre rami su sei. Costruirlo su un ramo solo e riusarlo |
+| 4 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
+| 5 | **Ramo C — PowerShell** | La macchina che usi tutti i giorni |
+| 6 | **Matplotlib** | Completa NumPy, motore già pronto |
+| 7 | **Ramo D — Linux** | Quando serve: cluster, WSL, server |
+| 8 | **SciPy** | Quando i problemi superano quello che NumPy risolve da solo |
 
 Il passo 1 non è tempo perso. Se il Leitner a tre caselle è tarato male, scoprirlo su
-un corso costa una settimana; scoprirlo su cinque costa mesi di contenuti da rifare.
+un corso costa una settimana; scoprirlo su sei costa mesi di contenuti da rifare.
 
 ---
 

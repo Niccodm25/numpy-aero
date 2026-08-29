@@ -11,7 +11,7 @@ bypassa la cache HTTP dove serve (vedi sw.js).
 """
 import os
 import sys
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PORTA = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
@@ -28,4 +28,7 @@ class SenzaCache(SimpleHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"http://localhost:{PORTA}  (no-store, Ctrl+C per fermare)")
-    HTTPServer(("", PORTA), SenzaCache).serve_forever()
+    # ThreadingHTTPServer e non HTTPServer: con un server a thread singolo
+    # una connessione tenuta aperta dal browser blocca tutte le altre, e la
+    # pagina resta appesa a meta' caricamento senza nessun errore.
+    ThreadingHTTPServer(("", PORTA), SenzaCache).serve_forever()

@@ -130,17 +130,20 @@ async function home() {
 
   // In home il progresso di un ramo si somma sui suoi moduli: sono gia' in cache
   // dopo la prima visita, e al primo avvio sono quattro fetch di file locali.
-  const cartaRamo = async (r) => {
+  // I rami sono in ordine di studio, non di disponibilita': il numero lo dice,
+  // altrimenti un ramo vuoto in cima sembra un errore invece di un prerequisito.
+  const cartaRamo = async (r, i) => {
+    const n = `<span class="pill">${i + 1}</span>`;
     if (!r.disponibile)
       return `<div class="card muto">
-        <strong>${r.titolo}</strong> <span class="pill">in arrivo</span>
+        ${n} <strong>${r.titolo}</strong> <span class="pill">in arrivo</span>
         <div class="muto">${r.perche}</div>
       </div>`;
     const mods = await Promise.all(r.moduli.map(modulo));
     const ids = mods.flatMap((m) => m.esercizi.map((e) => e.id));
     const pr = L.progress(stati, ids);
     return `<a class="card" href="#/ramo/${r.id}">
-      <strong>${r.titolo}</strong>
+      ${n} <strong>${r.titolo}</strong>
       <div class="muto">${r.perche}</div>
       <div class="muto">${pr.done} / ${pr.tot} esercizi completati</div>
       <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
@@ -531,7 +534,7 @@ function montaEsercizio({
     zona.innerHTML = `
       ${es.setup ? `<p class="muto">Dati forniti, gia caricati:</p><pre><code>${escapeHtml(es.setup)}</code></pre>` : ""}
       <textarea id="ed" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off">${escapeHtml(es.starter || "")}</textarea>
-      <div class="simboli">${SIMBOLI.map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x.trim() || "tab")}</button>`).join("")}</div>`;
+      <div class="simboli">${simboliDi(mid).map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x.trim() || "tab")}</button>`).join("")}</div>`;
     const ed = zona.querySelector("#ed");
     zona.querySelectorAll(".simboli button").forEach((b) => {
       b.onclick = () => inserisci(ed, b.dataset.s);
@@ -650,7 +653,14 @@ function bottoneAvanti(m, mid, es) {
 
 // ---------- utilità ----------
 
-const SIMBOLI = ["[", "]", "(", ")", ":", ",", "=", "*", "@", "np.", ".shape", "    "];
+// Barra simboli: su iOS le parentesi quadre costano due tap, e in NumPy si usano
+// in continuazione. Gli ultimi due tasti cambiano col modulo: np. su un modulo di
+// libreria e' il piu' battuto, sul ramo Python non serve a niente.
+const SIMBOLI = ["[", "]", "(", ")", ":", ",", "=", "*"];
+const SIMBOLI_NUMPY = ["@", "np.", ".shape", "    "];
+const SIMBOLI_PYTHON = ['"', "f\"", ".", "    "];
+const simboliDi = (mid) =>
+  SIMBOLI.concat(mid.startsWith("p") ? SIMBOLI_PYTHON : SIMBOLI_NUMPY);
 
 function inserisci(ta, testo) {
   const i = ta.selectionStart, j = ta.selectionEnd;

@@ -74,11 +74,32 @@ VOCABOLARIO = {
             "lookfor"}  # la lezione insegna che e' stata rimossa in 2.0,
 }
 
+# Il ramo Python ha una scala propria: i suoi moduli non ereditano niente da
+# NumPy, mentre i moduli NumPy danno per acquisito tutto il ramo Python.
+VOCAB_PY = {
+    "p01": {
+        "print", "type", "int", "float", "str", "bool", "round", "abs", "len",
+        "upper", "lower", "strip", "split", "join", "replace", "startswith",
+        "splitlines", "__name__",
+        # servono a mostrare che = lega un nome a un oggetto e non lo copia:
+        # per dimostrarlo serve un tipo mutabile
+        "append", "copy",
+    },
+}
+
+ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]
 ORDINE = [f"m{i:02d}" for i in range(1, 13)]
 
 
 def ammessi(mid):
-    """Vocabolario del modulo piu tutti quelli precedenti."""
+    """Vocabolario del modulo piu tutti quelli precedenti dello stesso ramo."""
+    if mid.startswith("p"):
+        v = set()
+        for m in ORDINE_PY:
+            v |= VOCAB_PY.get(m, set())
+            if m == mid:
+                break
+        return v
     v = set(BASE)
     for m in ORDINE:
         v |= VOCABOLARIO.get(m, set())
@@ -107,13 +128,13 @@ def nomi_usati(codice):
 
 
 def main():
-    voluti = sys.argv[1:] or ORDINE
+    voluti = sys.argv[1:] or (ORDINE_PY + ORDINE)
     indice = json.load(open(os.path.join(ROOT, "content", "index.json"), encoding="utf-8"))
     problemi = 0
 
     for meta in indice["moduli"]:
         mid = meta["id"]
-        if mid not in voluti or mid not in VOCABOLARIO:
+        if mid not in voluti or (mid not in VOCABOLARIO and mid not in VOCAB_PY):
             continue
         f = os.path.join(ROOT, "content", meta["file"])
         if not os.path.exists(f):
