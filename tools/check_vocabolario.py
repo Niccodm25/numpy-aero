@@ -142,6 +142,8 @@ def main():
                                 definiti.add(n.id)
                             elif isinstance(n, ast.arg):
                                 definiti.add(n.arg)
+                            elif isinstance(n, ast.FunctionDef):
+                                definiti.add(n.name)  # helper definito nel setup
                     except SyntaxError:
                         pass
                 fuori = [n for n in fuori if n not in definiti]
