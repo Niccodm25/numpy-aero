@@ -1,0 +1,827 @@
+{
+ "id": "p06",
+ "titolo": "Leggere un errore",
+ "perche": "Il traceback e' la sola diagnostica che avrai, e si legge dal basso: l'ultima riga dice cosa, la coppia sopra dice dove, e la riga indicata e' dove il problema si e' manifestato — non dove e' stato causato. Poi i sei errori che vedrai davvero, come catturare solo quelli che sai gestire, e come sollevarne di tuoi con un messaggio che serva a qualcosa.",
+ "funzioni": [
+  "traceback",
+  "TypeError",
+  "ValueError",
+  "NameError",
+  "IndexError",
+  "KeyError",
+  "AttributeError",
+  "try",
+  "except",
+  "finally",
+  "raise"
+ ],
+ "lezioni": [
+  {
+   "id": "p06-l1",
+   "titolo": "Il traceback si legge dal basso",
+   "md": "```\nTraceback (most recent call last):\n  File \"volo.py\", line 42, in <module>\n    r = riduci(dati)\n  File \"volo.py\", line 20, in riduci\n    return media(valori)\n  File \"volo.py\", line 12, in media\n    return sum(v) / len(v)\nZeroDivisionError: division by zero\n```\n\nDue righe contano più di tutte le altre.\n\n**L'ultima**: il tipo dell'errore e il messaggio. `ZeroDivisionError: division by zero` dice *cosa* è successo.\n\n**La penultima coppia**: file, riga e codice dove è successo. `line 12, in media` dice *dove*.\n\nQuello che sta in mezzo è la catena delle chiamate, dal punto di partenza fino al punto di rottura — utile per capire **come** ci sei arrivato, ma solo dopo aver letto le altre due.\n\n### most recent call last\n\nÈ scritto in cima e vuol dire esattamente questo: l'ordine è cronologico, la chiamata più recente sta in fondo. Chi legge il traceback dall'alto trova per prima la riga più lontana dal problema.\n\n### L'errore non è dove sembra\n\nNel traceback qui sopra il difetto non è alla riga 12: `sum(v) / len(v)` è scritto correttamente. Il difetto è che qualcuno ha passato una lista vuota. La riga che il traceback indica è dove il problema **si è manifestato**, non dove è stato **causato** — la causa sta più in alto nella catena.\n\nÈ per questo che le righe di mezzo servono: dicono chi ha passato cosa a chi.",
+   "demo": "def media(v):\n    return sum(v) / len(v)\n\ndef riduci(dati):\n    return media([x for x in dati if x > 100])\n\ntry:\n    riduci([1, 2, 3])\nexcept ZeroDivisionError as e:\n    print(\"tipo:      \", type(e).__name__)\n    print(\"messaggio: \", e)\n    print(\"\\nil difetto non e' in media: e' il filtro che non lascia passare niente\")"
+  },
+  {
+   "id": "p06-l2",
+   "titolo": "I sei errori che vedrai davvero",
+   "md": "| Tipo | Significato | Causa tipica |\n|---|---|---|\n| `NameError` | il nome non esiste | refuso, o uso prima della definizione |\n| `TypeError` | tipo sbagliato per l'operazione | `\"5\" + 5`, `len(5)` |\n| `ValueError` | tipo giusto, valore inaccettabile | `int(\"3.5\")` |\n| `IndexError` | indice fuori dalla sequenza | ciclo che arriva a `len(x)` |\n| `KeyError` | chiave assente nel dizionario | refuso nel nome della chiave |\n| `AttributeError` | l'oggetto non ha quel metodo | metodo di lista su una stringa, o `None` |\n\n### TypeError contro ValueError\n\nÈ la distinzione che vale la pena avere chiara.\n\n```\nint(\"3.5\")     # ValueError: il tipo va bene, la stringa e' sbagliata\nint([1, 2])    # TypeError: una lista non si converte proprio\n```\n\n`TypeError` dice \"non ti seguo\", `ValueError` dice \"ti seguo ma questo valore no\". Il primo di solito è un errore di logica, il secondo un dato sporco.\n\n### AttributeError su None\n\n```\nAttributeError: 'NoneType' object has no attribute 'append'\n```\n\nQuesto messaggio ha quasi sempre la stessa causa: una funzione che restituisce `None` invece dell'oggetto atteso. `x = lista.sort()` seguito da `x.append(...)`, o una funzione senza `return`. Quando leggi `NoneType`, cerca a ritroso chi ha prodotto quel `None`.\n\n### IndexError sui cicli\n\n```\nfor i in range(len(x) + 1):     # l'ultimo giro sfonda\n    x[i]\n```\n\nQuasi sempre è un errore di uno: `range(len(x))` arriva a `len(x) - 1`, che è corretto. Scorrere direttamente gli elementi con `for v in x` toglie il problema alla radice.",
+   "demo": "prove = [\n    (\"NameError\",      lambda: nome_inesistente),\n    (\"TypeError\",      lambda: \"5\" + 5),\n    (\"ValueError\",     lambda: int(\"3.5\")),\n    (\"IndexError\",     lambda: [1, 2][5]),\n    (\"KeyError\",       lambda: {\"a\": 1}[\"z\"]),\n    (\"AttributeError\", lambda: None.append(1)),\n]\nfor atteso, f in prove:\n    try:\n        f()\n    except Exception as e:\n        print(f\"{type(e).__name__:<16} {e}\")"
+  },
+  {
+   "id": "p06-l3",
+   "titolo": "try / except: catturare solo quello che sai gestire",
+   "md": "```\ntry:\n    v = float(riga)\nexcept ValueError:\n    v = None\n```\n\nIl blocco `try` contiene il codice che può fallire, `except` dice cosa fare se fallisce.\n\n### Non catturare tutto\n\n```\ntry:\n    ...\nexcept:            # mai\n    pass\n```\n\nQuesta forma cattura **qualsiasi** cosa, compresi gli errori di programmazione — un refuso in un nome, un tipo sbagliato — e li nasconde. Il programma prosegue con dati incompleti e nessuno lo sa. È il modo più efficace di rendere un problema impossibile da trovare.\n\nSi cattura **il tipo specifico** che sai gestire, e si lascia passare il resto:\n\n```\nexcept ValueError:\n    ...\nexcept (KeyError, IndexError):    # piu' tipi insieme\n    ...\n```\n\n### L'oggetto errore\n\n```\nexcept ValueError as e:\n    print(\"riga scartata:\", e)\n```\n\n`as e` lega l'eccezione a un nome: `type(e).__name__` dà il tipo, `str(e)` il messaggio. Serve per registrare cosa è andato storto invece di ingoiarlo.\n\n### else e finally\n\n```\ntry:\n    f = apri()\nexcept OSError:\n    ...\nelse:\n    usa(f)        # solo se il try e' andato bene\nfinally:\n    chiudi()      # sempre, anche se e' esplosa un'eccezione\n```\n\n`finally` è la garanzia di pulizia. Nella pratica il costrutto `with` lo sostituisce quasi sempre, ed è quello che userai per i file.\n\n### Chiedere permesso o chiedere scusa\n\n```\nif chiave in d:            # controlla prima\n    v = d[chiave]\n\ntry:                       # prova e gestisci\n    v = d[chiave]\nexcept KeyError:\n    v = None\n```\n\nEntrambe vanno bene. In Python la seconda è idiomatica quando il caso di errore è **raro**: il `try` che non fallisce non costa quasi niente, mentre il controllo preventivo si paga a ogni giro.",
+   "demo": "righe = [\"12.5\", \"abc\", \"3.0\", \"\"]\nvalidi = []\nscartate = []\nfor r in righe:\n    try:\n        validi.append(float(r))\n    except ValueError as e:\n        scartate.append((r, str(e)))\n\nprint(\"validi:  \", validi)\nprint(\"scartate:\")\nfor r, msg in scartate:\n    print(f\"  {r!r}: {msg}\")"
+  },
+  {
+   "id": "p06-l4",
+   "titolo": "raise: fallire presto e in chiaro",
+   "md": "```\ndef radice(x):\n    if x < 0:\n        raise ValueError(f\"radice di un numero negativo: {x}\")\n    return x ** 0.5\n```\n\n`raise` solleva un'eccezione. Serve quando la tua funzione riceve qualcosa che non può trattare: meglio fermarsi subito, con un messaggio che dice il valore, che restituire un risultato senza senso.\n\n### Il messaggio deve contenere il dato\n\n```\nraise ValueError(\"valore non valido\")           # inutile\nraise ValueError(f\"quota negativa: {q} m\")      # utile\n```\n\nChi legge il messaggio non ha davanti le tue variabili. Il valore che ha causato il problema è l'unica informazione che non può ricostruire da solo.\n\n### Scegliere il tipo\n\n- `ValueError` — il valore non va bene\n- `TypeError` — il tipo non va bene\n- `KeyError`, `IndexError` — per strutture che si comportano da dizionario o da sequenza\n\nSollevare il tipo giusto permette a chi ti chiama di catturare **solo** quello.\n\n### Rilanciare\n\n```\ntry:\n    ...\nexcept ValueError:\n    registra()\n    raise          # rilancia la stessa eccezione, col traceback originale\n```\n\n`raise` da solo dentro un `except` rilancia quella corrente. Serve per registrare qualcosa e lasciare comunque fallire — che è quasi sempre la cosa giusta, perché ingoiare l'errore lo rende invisibile.\n\n### assert non è per questo\n\n```\nassert q > 0, \"quota negativa\"\n```\n\n`assert` serve per i controlli interni e per i test — è così che questa app corregge i tuoi esercizi. **Non** va usato per validare dati in ingresso: Python eseguito con `-O` toglie tutti gli `assert`, e il controllo sparisce senza preavviso.",
+   "demo": "def radice(x):\n    if x < 0:\n        raise ValueError(f\"radice di un numero negativo: {x}\")\n    return x ** 0.5\n\nprint(radice(9.0))\n\ntry:\n    radice(-1.0)\nexcept ValueError as e:\n    print(\"\\ncatturato:\", type(e).__name__, \"-\", e)\n\nprint(\"\\nil messaggio contiene il valore: e' l'unica cosa che chi legge non puo' ricostruire\")"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p06-traceback",
+   "comando": "traceback",
+   "titolo": "il traceback — si legge dal basso",
+   "esercizi": [
+    {
+     "id": "p06-tb-1",
+     "tipo": "predict",
+     "testo": "In un traceback, quale riga dice **cosa** è andato storto?",
+     "opzioni": [
+      "l'ultima: tipo dell'errore e messaggio",
+      "la prima, dopo 'Traceback'",
+      "la riga che nomina il file principale",
+      "dipende dal tipo di errore"
+     ],
+     "risposta": "l'ultima: tipo dell'errore e messaggio",
+     "spiegazione": "L'ultima: tipo dell'errore e messaggio. È scritta in fondo perché l'ordine è cronologico — `most recent call last` — e la cosa più recente è proprio il punto in cui è esploso."
+    },
+    {
+     "id": "p06-tb-2",
+     "tipo": "predict",
+     "testo": "E quale dice **dove**?",
+     "opzioni": [
+      "l'ultima coppia File/line, subito sopra il messaggio",
+      "la prima coppia File/line",
+      "sempre la riga 1 del file",
+      "il traceback non dice dove"
+     ],
+     "risposta": "l'ultima coppia File/line, subito sopra il messaggio",
+     "spiegazione": "L'ultima coppia `File ..., line N` insieme alla riga di codice sotto, subito sopra il messaggio finale. Le coppie precedenti sono la catena di chiamate che ci ha portato: dicono **come** ci sei arrivato."
+    },
+    {
+     "id": "p06-tb-3",
+     "tipo": "predict",
+     "testo": "Cosa significa `most recent call last` scritto in cima al traceback?",
+     "opzioni": [
+      "le chiamate sono in ordine cronologico: l'ultima e' quella dove e' esploso",
+      "l'ultima riga e' la chiamata piu' vecchia",
+      "il traceback e' incompleto",
+      "l'errore e' stato catturato e rilanciato"
+     ],
+     "risposta": "le chiamate sono in ordine cronologico: l'ultima e' quella dove e' esploso",
+     "spiegazione": "Che le chiamate sono in ordine cronologico, e la più recente — quella dove l'errore è esploso — sta **in fondo**. Chi legge dall'alto trova per prima la riga più lontana dal problema, ed è il motivo per cui un traceback lungo sembra illeggibile."
+    },
+    {
+     "id": "p06-tb-4",
+     "tipo": "write",
+     "testo": "Cattura l'errore e metti in `tipo` il nome del tipo e in `messaggio` il suo testo.",
+     "setup": "",
+     "starter": "try:\n    x = 1 / 0\nexcept ZeroDivisionError as e:\n    tipo = \n    messaggio = \n",
+     "test": "assert tipo == 'ZeroDivisionError', f'atteso ZeroDivisionError, hai {tipo!r}'\nassert isinstance(messaggio, str) and len(messaggio) > 0, 'il messaggio deve essere una stringa non vuota'",
+     "hint": [
+      "tipo = type(e).__name__",
+      "messaggio = str(e)"
+     ],
+     "soluzione": "try:\n    x = 1 / 0\nexcept ZeroDivisionError as e:\n    tipo = type(e).__name__\n    messaggio = str(e)",
+     "spiegazione": "`type(e).__name__` dà il nome del tipo, `str(e)` il messaggio. Sono le due informazioni della riga finale del traceback, raggiungibili dal codice — utile per registrare cosa è andato storto invece di lasciarlo solo a schermo."
+    },
+    {
+     "id": "p06-tb-5",
+     "tipo": "predict",
+     "testo": "Il traceback indica `line 12, in media`, dove c'è `return sum(v) / len(v)`. La riga è scritta correttamente. Dov'è il difetto?",
+     "opzioni": [
+      "piu' in alto nella catena: chi ha chiamato media le ha passato una lista vuota",
+      "alla riga 12: sum e len non vanno usate insieme",
+      "nel modo in cui e' definita la funzione media",
+      "il traceback e' sbagliato"
+     ],
+     "risposta": "piu' in alto nella catena: chi ha chiamato media le ha passato una lista vuota",
+     "spiegazione": "Più in alto nella catena: qualcuno ha passato una lista vuota. La riga indicata è dove il problema **si è manifestato**, non dove è stato **causato** — ed è per questo che le righe di mezzo del traceback servono, dicono chi ha passato cosa a chi."
+    },
+    {
+     "id": "p06-tb-6",
+     "tipo": "write",
+     "testo": "Ricostruisci la catena: `riduci` chiama `media`, che divide per zero se il filtro non lascia passare niente. Cattura l'errore e metti in `tipo` il nome del tipo.",
+     "setup": "def media(v):\n    return sum(v) / len(v)\n\ndef riduci(dati):\n    return media([x for x in dati if x > 100])\n",
+     "starter": "try:\n    riduci([1, 2, 3])\nexcept \n    tipo = \n",
+     "test": "assert tipo == 'ZeroDivisionError', f'atteso ZeroDivisionError, hai {tipo!r}'",
+     "hint": [
+      "except ZeroDivisionError as e:",
+      "tipo = type(e).__name__"
+     ],
+     "soluzione": "try:\n    riduci([1, 2, 3])\nexcept ZeroDivisionError as e:\n    tipo = type(e).__name__",
+     "spiegazione": "`ZeroDivisionError`, sollevato dentro `media` ma causato dal filtro dentro `riduci`. Nel traceback vedresti tre righe di catena, e solo la lettura di tutte e tre porta alla causa vera."
+    },
+    {
+     "id": "p06-tb-7",
+     "tipo": "write",
+     "testo": "Rendi l'errore impossibile invece di catturarlo: riscrivi `media` in modo che restituisca `0.0` su una lista vuota.",
+     "setup": "",
+     "starter": "def media(v):\n    \nvuota = \npiena = \n",
+     "test": "assert vuota == 0.0, f'attesa 0.0, hai {vuota}'\nassert abs(piena - 2.0) < 1e-12, f'attesa 2.0, hai {piena}'",
+     "hint": [
+      "if not v: return 0.0",
+      "media([]) e media([1, 2, 3])"
+     ],
+     "soluzione": "def media(v):\n    if not v:\n        return 0.0\n    return sum(v) / len(v)\nvuota = media([])\npiena = media([1, 2, 3])",
+     "spiegazione": "Il controllo del caso degenere in testa alla funzione: la lista vuota è un input legittimo, non un errore. Se invece **dovesse** essere un errore, la scelta corretta sarebbe sollevarlo esplicitamente con un messaggio, non lasciare che `len` produca una divisione per zero."
+    },
+    {
+     "id": "p06-tb-8",
+     "tipo": "predict",
+     "testo": "Un traceback lungo trenta righe. Da dove si comincia a leggere?",
+     "opzioni": [
+      "dal basso: prima il tipo dell'errore, poi la riga che lo ha prodotto",
+      "dall'alto, in ordine",
+      "dalla riga che nomina il file piu' grande",
+      "dal centro, dove sta la funzione principale"
+     ],
+     "risposta": "dal basso: prima il tipo dell'errore, poi la riga che lo ha prodotto",
+     "spiegazione": "Dal basso: l'ultima riga dice cosa, la coppia sopra dice dove. Solo se quelle due non bastano si risale la catena. Leggerlo dall'alto significa partire dalla riga più lontana dal problema, ed è il motivo per cui un traceback lungo spaventa."
+    }
+   ]
+  },
+  {
+   "id": "p06-tipovalore",
+   "comando": "TypeError e ValueError",
+   "titolo": "TypeError e ValueError — logica contro dati",
+   "esercizi": [
+    {
+     "id": "p06-tv-1",
+     "tipo": "predict",
+     "testo": "Che errore solleva `\"5\" + 5` ?",
+     "opzioni": [
+      "TypeError",
+      "ValueError",
+      "SyntaxError",
+      "nessuno: vale '55'"
+     ],
+     "risposta": "TypeError",
+     "spiegazione": "`TypeError`: l'operazione non ha senso fra una stringa e un intero. Nota che `\"5\" * 3` invece **funziona** e vale `'555'` — la stessa distrazione dà un errore in un caso e un risultato sbagliato nell'altro."
+    },
+    {
+     "id": "p06-tv-2",
+     "tipo": "predict",
+     "testo": "E `int(\"3.5\")` ?",
+     "opzioni": [
+      "ValueError",
+      "TypeError",
+      "restituisce 3",
+      "restituisce 4"
+     ],
+     "risposta": "ValueError",
+     "spiegazione": "`ValueError`: il tipo è quello giusto — `int` accetta stringhe — ma **quella** stringa non rappresenta un intero. `TypeError` dice \"non ti seguo\", `ValueError` dice \"ti seguo ma questo valore no\"."
+    },
+    {
+     "id": "p06-tv-3",
+     "tipo": "write",
+     "testo": "Cattura entrambi i casi e metti in `tipi` la lista dei nomi dei due tipi di errore, nell'ordine.",
+     "setup": "",
+     "starter": "tipi = []\ntry:\n    \nexcept \n    tipi.append(\ntry:\n    \nexcept \n    tipi.append(\n",
+     "test": "assert tipi == ['TypeError', 'ValueError'], f'attesa [TypeError, ValueError], hai {tipi}'",
+     "hint": [
+      "Il primo try contiene \"5\" + 5, il secondo int(\"3.5\").",
+      "except TypeError as e: tipi.append(type(e).__name__)"
+     ],
+     "soluzione": "tipi = []\ntry:\n    \"5\" + 5\nexcept TypeError as e:\n    tipi.append(type(e).__name__)\ntry:\n    int(\"3.5\")\nexcept ValueError as e:\n    tipi.append(type(e).__name__)",
+     "spiegazione": "`['TypeError', 'ValueError']`. La differenza pratica: un `TypeError` è quasi sempre un errore di **logica** nel tuo codice, un `ValueError` è quasi sempre un **dato sporco** in ingresso. Sapere quale dei due stai guardando dice dove cercare."
+    },
+    {
+     "id": "p06-tv-4",
+     "tipo": "write",
+     "testo": "Converti in modo robusto: `numero(s)` restituisce il float della stringa, o `None` se non è convertibile. Provala su un valore buono e uno sporco.",
+     "setup": "",
+     "starter": "def numero(s):\n    \nbuono = \nsporco = \n",
+     "test": "assert abs(buono - 12.5) < 1e-12, f'attesa 12.5, hai {buono}'\nassert sporco is None, f'atteso None, hai {sporco!r}'\nassert numero(\"\") is None, 'anche la stringa vuota non e convertibile'",
+     "hint": [
+      "try: return float(s) / except ValueError: return None",
+      "numero(\"12.5\") e numero(\"abc\")"
+     ],
+     "soluzione": "def numero(s):\n    try:\n        return float(s)\n    except ValueError:\n        return None\nbuono = numero(\"12.5\")\nsporco = numero(\"abc\")",
+     "spiegazione": "È la forma standard per leggere dati reali: si prova, e il caso che fallisce diventa un valore riconoscibile invece di un'eccezione che ferma tutto. `None` marca il dato mancante, ed è quello che in NumPy diventerà `nan`."
+    },
+    {
+     "id": "p06-tv-5",
+     "tipo": "write",
+     "testo": "Leggi una colonna sporca: costruisci `validi`, i valori convertibili, e `scartate`, le stringhe che non lo sono.",
+     "setup": "righe = [\"12.5\", \"abc\", \"3.0\", \"\"]\n",
+     "starter": "validi = []\nscartate = []\nfor r in righe:\n    \n",
+     "test": "assert validi == [12.5, 3.0], f'attesa [12.5, 3.0], hai {validi}'\nassert scartate == ['abc', ''], f'attesa [abc, stringa vuota], hai {scartate}'",
+     "hint": [
+      "try: validi.append(float(r))",
+      "except ValueError: scartate.append(r)"
+     ],
+     "soluzione": "validi = []\nscartate = []\nfor r in righe:\n    try:\n        validi.append(float(r))\n    except ValueError:\n        scartate.append(r)",
+     "spiegazione": "Due liste invece di un'eccezione: i dati buoni proseguono e quelli scartati restano visibili. Buttare via le righe sporche **senza** tenerne traccia è il modo di scoprire a fine analisi che mancava metà del dataset."
+    },
+    {
+     "id": "p06-tv-6",
+     "tipo": "predict",
+     "testo": "Che errore solleva `len(5)` ?",
+     "opzioni": [
+      "TypeError",
+      "ValueError",
+      "AttributeError",
+      "restituisce 1"
+     ],
+     "risposta": "TypeError",
+     "spiegazione": "`TypeError`: un intero non ha una lunghezza. Il messaggio lo dice quasi con queste parole — `object of type 'int' has no len()` — ed è uno dei casi in cui il testo dell'errore basta a capire tutto senza guardare il codice."
+    },
+    {
+     "id": "p06-tv-7",
+     "tipo": "write",
+     "testo": "Cattura più tipi con un solo `except`: converti e metti in `esito` la stringa `\"non valido\"` se fallisce per qualsiasi dei due motivi.",
+     "setup": "dato = [1, 2]\n",
+     "starter": "try:\n    esito = int(dato)\nexcept \n    esito = \n",
+     "test": "assert esito == 'non valido', f'atteso \\'non valido\\', hai {esito!r}'",
+     "hint": [
+      "I tipi si passano come tupla.",
+      "except (TypeError, ValueError):"
+     ],
+     "soluzione": "try:\n    esito = int(dato)\nexcept (TypeError, ValueError):\n    esito = \"non valido\"",
+     "spiegazione": "`except (TypeError, ValueError)` cattura entrambi con una tupla. È più preciso di catturare tutto, e più corto di due blocchi separati quando la reazione è la stessa."
+    },
+    {
+     "id": "p06-tv-8",
+     "tipo": "predict",
+     "testo": "`sorted([1, \"a\"])` cosa solleva?",
+     "opzioni": [
+      "TypeError: non esiste il confronto fra str e int",
+      "ValueError",
+      "restituisce [1, 'a']",
+      "restituisce ['a', 1]"
+     ],
+     "risposta": "TypeError: non esiste il confronto fra str e int",
+     "spiegazione": "`TypeError`: per ordinare bisogna confrontare, e Python non definisce `<` fra una stringa e un intero. Il messaggio nomina proprio l'operatore. È il tipico errore di una lista costruita da dati eterogenei — uno dei motivi per cui in NumPy un array ha un dtype solo."
+    },
+    {
+     "id": "p06-tv-9",
+     "tipo": "write",
+     "testo": "Valida il tipo prima di operare: `raddoppia(x)` restituisce il doppio se `x` è un numero, altrimenti `None`.",
+     "setup": "",
+     "starter": "def raddoppia(x):\n    \nnumero = \ntesto = \n",
+     "test": "assert numero == 8.4, f'atteso 8.4, hai {numero}'\nassert testo is None, f'atteso None, hai {testo!r}'\nassert raddoppia(3) == 6, 'deve funzionare anche sugli interi'",
+     "hint": [
+      "isinstance(x, (int, float))",
+      "raddoppia(4.2) e raddoppia(\"4.2\")"
+     ],
+     "soluzione": "def raddoppia(x):\n    if isinstance(x, (int, float)):\n        return x * 2\n    return None\nnumero = raddoppia(4.2)\ntesto = raddoppia(\"4.2\")",
+     "spiegazione": "`isinstance(x, (int, float))` accetta entrambi i tipi numerici. Controllare prima è preferibile a catturare dopo quando la condizione è facile da esprimere: il codice dice cosa accetta, invece di dirlo per esclusione."
+    },
+    {
+     "id": "p06-tv-10",
+     "tipo": "write",
+     "testo": "Registra cosa è andato storto: costruisci `problemi`, la lista delle coppie `(valore, nome_del_tipo_di_errore)` per ogni conversione fallita.",
+     "difficolta": 2,
+     "setup": "grezzi = [\"1.5\", \"abc\", [1], \"2.0\"]\n",
+     "starter": "problemi = []\nfor g in grezzi:\n    \n",
+     "test": "assert problemi == [('abc', 'ValueError'), ([1], 'TypeError')], f'attesa [(abc, ValueError), ([1], TypeError)], hai {problemi}'",
+     "hint": [
+      "try: float(g) / except (TypeError, ValueError) as e:",
+      "problemi.append((g, type(e).__name__))"
+     ],
+     "soluzione": "problemi = []\nfor g in grezzi:\n    try:\n        float(g)\n    except (TypeError, ValueError) as e:\n        problemi.append((g, type(e).__name__))",
+     "spiegazione": "Registrare il **tipo** insieme al valore separa i dati sporchi (`ValueError`) dagli errori di struttura (`TypeError`): due problemi diversi che richiedono due interventi diversi, e che senza questa distinzione finiscono nella stessa riga di log."
+    }
+   ]
+  },
+  {
+   "id": "p06-nomi",
+   "comando": "NameError e AttributeError",
+   "titolo": "NameError e AttributeError — e il NoneType",
+   "esercizi": [
+    {
+     "id": "p06-na-1",
+     "tipo": "predict",
+     "testo": "Che errore solleva l'uso di un nome mai definito?",
+     "opzioni": [
+      "NameError",
+      "ValueError",
+      "AttributeError",
+      "SyntaxError"
+     ],
+     "risposta": "NameError",
+     "spiegazione": "`NameError: name 'xxx' is not defined`. Le cause sono due: un refuso, oppure l'uso di un nome prima della riga che lo definisce. Il messaggio riporta il nome esatto, quindi il refuso si vede subito confrontandolo con quello giusto."
+    },
+    {
+     "id": "p06-na-2",
+     "tipo": "predict",
+     "testo": "E `\"volo\".append(\"x\")` ?",
+     "opzioni": [
+      "AttributeError",
+      "TypeError",
+      "ValueError",
+      "nessuno: restituisce 'volox'"
+     ],
+     "risposta": "AttributeError",
+     "spiegazione": "`AttributeError`: le stringhe non hanno `append`, perché sono immutabili. Il messaggio nomina sia il tipo sia l'attributo mancante — `'str' object has no attribute 'append'` — che è quasi sempre sufficiente a capire cosa avevi in mano invece di quello che credevi."
+    },
+    {
+     "id": "p06-na-3",
+     "tipo": "write",
+     "testo": "Cattura i due errori e metti i nomi dei tipi in `t1` e `t2`.",
+     "setup": "",
+     "starter": "try:\n    nome_inesistente\nexcept \n    t1 = \ntry:\n    \"volo\".append(\"x\")\nexcept \n    t2 = \n",
+     "test": "assert t1 == 'NameError', f'atteso NameError, hai {t1!r}'\nassert t2 == 'AttributeError', f'atteso AttributeError, hai {t2!r}'",
+     "hint": [
+      "except NameError as e: t1 = type(e).__name__",
+      "except AttributeError as e: t2 = type(e).__name__"
+     ],
+     "soluzione": "try:\n    nome_inesistente\nexcept NameError as e:\n    t1 = type(e).__name__\ntry:\n    \"volo\".append(\"x\")\nexcept AttributeError as e:\n    t2 = type(e).__name__",
+     "spiegazione": "`NameError` riguarda un **nome** che non esiste, `AttributeError` un **attributo** che non esiste su un oggetto che invece esiste. La distinzione dice dove guardare: nel primo caso alla riga di definizione, nel secondo al tipo dell'oggetto."
+    },
+    {
+     "id": "p06-na-4",
+     "tipo": "predict",
+     "testo": "`AttributeError: 'NoneType' object has no attribute 'append'`. Qual è quasi sempre la causa?",
+     "opzioni": [
+      "qualcosa ha restituito None invece dell'oggetto atteso",
+      "la lista e' stata cancellata",
+      "append non esiste in questa versione di Python",
+      "l'oggetto e' una tupla, non una lista"
+     ],
+     "risposta": "qualcosa ha restituito None invece dell'oggetto atteso",
+     "spiegazione": "Una funzione che ha restituito `None` invece dell'oggetto atteso: `x = lista.sort()`, o una funzione senza `return`. Quando in un messaggio leggi `NoneType`, la domanda non è cosa fare con quell'oggetto — è chi ha prodotto quel `None`, e va cercato a ritroso."
+    },
+    {
+     "id": "p06-na-5",
+     "tipo": "debug",
+     "testo": "Questo codice solleva `AttributeError` su `NoneType`. Trova la causa e correggila.",
+     "setup": "a = [3, 1, 2]\n",
+     "starter": "ordinata = a.sort()\nordinata.append(9)\n",
+     "test": "assert ordinata == [1, 2, 3, 9], f'attesa [1, 2, 3, 9], hai {ordinata!r}'",
+     "hint": [
+      "Cerca a ritroso chi ha prodotto il None.",
+      "sorted(a) restituisce una lista nuova."
+     ],
+     "soluzione": "ordinata = sorted(a)\nordinata.append(9)",
+     "spiegazione": "`a.sort()` restituisce `None`, quindi `ordinata` non è la lista ordinata ma il nulla. La correzione è `sorted(a)`, che restituisce una lista nuova. È il difetto del modulo 3 che qui si presenta col messaggio d'errore che produce davvero."
+    },
+    {
+     "id": "p06-na-6",
+     "tipo": "write",
+     "testo": "Verifica prima di chiamare: `lunghezza_sicura(x)` restituisce `len(x)` se l'oggetto ha una lunghezza, `None` altrimenti.",
+     "setup": "",
+     "starter": "def lunghezza_sicura(x):\n    \nlista = \nnumero = \n",
+     "test": "assert lista == 3, f'attesa 3, hai {lista}'\nassert numero is None, f'atteso None, hai {numero!r}'\nassert lunghezza_sicura(\"volo\") == 4, 'deve funzionare sulle stringhe'",
+     "hint": [
+      "try: return len(x) / except TypeError: return None",
+      "lunghezza_sicura([1, 2, 3]) e lunghezza_sicura(5)"
+     ],
+     "soluzione": "def lunghezza_sicura(x):\n    try:\n        return len(x)\n    except TypeError:\n        return None\nlista = lunghezza_sicura([1, 2, 3])\nnumero = lunghezza_sicura(5)",
+     "spiegazione": "Catturare `TypeError` è più semplice che elencare tutti i tipi che hanno una lunghezza — che sono liste, tuple, stringhe, dizionari, insiemi e altri ancora. È il caso in cui \"chiedere scusa\" batte \"chiedere permesso\"."
+    },
+    {
+     "id": "p06-na-7",
+     "tipo": "write",
+     "testo": "Controlla l'esistenza di un attributo senza chiamarlo: metti in `ha_append` e in `ha_upper` i due controlli su una lista.",
+     "setup": "a = [1, 2, 3]\n",
+     "starter": "ha_append = \nha_upper = \n",
+     "test": "assert ha_append is True, 'una lista ha append'\nassert ha_upper is False, 'una lista non ha upper'",
+     "hint": [
+      "La funzione e' hasattr.",
+      "ha_append = hasattr(a, \"append\")"
+     ],
+     "soluzione": "ha_append = hasattr(a, \"append\")\nha_upper = hasattr(a, \"upper\")",
+     "spiegazione": "`hasattr(oggetto, \"nome\")` risponde senza sollevare niente. È il modo di scrivere codice che si adatta a oggetti diversi — e anche il modo di scoprire, in un attimo, che quello che hai in mano non è il tipo che credevi."
+    },
+    {
+     "id": "p06-na-8",
+     "tipo": "predict",
+     "testo": "Un `NameError` su un nome che vedi definito poche righe sotto: perché?",
+     "opzioni": [
+      "Python esegue dall'alto in basso: alla riga dell'errore la definizione non e' ancora avvenuta",
+      "il nome e' stato cancellato",
+      "e' un bug dell'interprete",
+      "il nome definito sotto vale solo dentro le funzioni"
+     ],
+     "risposta": "Python esegue dall'alto in basso: alla riga dell'errore la definizione non e' ancora avvenuta",
+     "spiegazione": "Perché Python esegue **dall'alto in basso**: quando la riga che usa il nome viene eseguita, la riga che lo definisce non è ancora stata raggiunta. Dentro una funzione il problema non si pone, perché il corpo viene eseguito solo alla chiamata — ed è per questo che due funzioni possono chiamarsi a vicenda."
+    }
+   ]
+  },
+  {
+   "id": "p06-lookup",
+   "comando": "IndexError e KeyError",
+   "titolo": "IndexError e KeyError — fuori dai bordi",
+   "esercizi": [
+    {
+     "id": "p06-ik-1",
+     "tipo": "predict",
+     "testo": "Che errore solleva `[1, 2][5]` ?",
+     "opzioni": [
+      "IndexError",
+      "KeyError",
+      "ValueError",
+      "restituisce None"
+     ],
+     "risposta": "IndexError",
+     "spiegazione": "`IndexError: list index out of range`. La lista ha due elementi, gli indici validi sono 0 e 1. Non c'è nessun valore di riserva: a differenza dei dizionari, le sequenze non hanno un equivalente di `get`."
+    },
+    {
+     "id": "p06-ik-2",
+     "tipo": "predict",
+     "testo": "E `{\"a\": 1}[\"z\"]` ?",
+     "opzioni": [
+      "KeyError",
+      "IndexError",
+      "AttributeError",
+      "restituisce None"
+     ],
+     "risposta": "KeyError",
+     "spiegazione": "`KeyError: 'z'`. Il messaggio contiene la chiave cercata fra apici, il che rende ovvi i refusi: se vedi `KeyError: 'quotaa'` sai già tutto senza aprire il file."
+    },
+    {
+     "id": "p06-ik-3",
+     "tipo": "write",
+     "testo": "Cattura i due errori e metti in `t1` e `t2` i nomi dei tipi.",
+     "setup": "a = [1, 2]\nd = {\"a\": 1}\n",
+     "starter": "try:\n    a[5]\nexcept \n    t1 = \ntry:\n    d[\"z\"]\nexcept \n    t2 = \n",
+     "test": "assert t1 == 'IndexError', f'atteso IndexError, hai {t1!r}'\nassert t2 == 'KeyError', f'atteso KeyError, hai {t2!r}'",
+     "hint": [
+      "except IndexError as e: t1 = type(e).__name__",
+      "except KeyError as e: t2 = type(e).__name__"
+     ],
+     "soluzione": "try:\n    a[5]\nexcept IndexError as e:\n    t1 = type(e).__name__\ntry:\n    d[\"z\"]\nexcept KeyError as e:\n    t2 = type(e).__name__",
+     "spiegazione": "`IndexError` per le sequenze, `KeyError` per i dizionari: due tipi diversi perché due strutture diverse. Sono imparentati — entrambi discendono da `LookupError`, che si può catturare per prenderli insieme."
+    },
+    {
+     "id": "p06-ik-4",
+     "tipo": "debug",
+     "testo": "Questo ciclo sfonda la lista all'ultimo giro. Correggilo.",
+     "setup": "x = [10, 20, 30]\n",
+     "starter": "totale = 0\nfor i in range(len(x) + 1):\n    totale = totale + x[i]\n",
+     "test": "assert totale == 60, f'atteso 60, hai {totale}'",
+     "hint": [
+      "range(len(x)) arriva a len(x) - 1.",
+      "Ancora meglio: for v in x: totale = totale + v"
+     ],
+     "soluzione": "totale = 0\nfor v in x:\n    totale = totale + v",
+     "spiegazione": "`range(len(x) + 1)` arriva a `len(x)`, che è un indice fuori. `range(len(x))` si ferma a `len(x) - 1`, che è l'ultimo valido. Meglio ancora: `for v in x`, che toglie l'indice e con lui il problema."
+    },
+    {
+     "id": "p06-ik-5",
+     "tipo": "write",
+     "testo": "Leggi in modo sicuro: `elemento(seq, i)` restituisce l'elemento all'indice `i`, o `None` se l'indice è fuori.",
+     "setup": "x = [10, 20, 30]\n",
+     "starter": "def elemento(seq, i):\n    \nvalido = \nfuori = \n",
+     "test": "assert valido == 20, f'atteso 20, hai {valido}'\nassert fuori is None, f'atteso None, hai {fuori!r}'\nassert elemento(x, -1) == 30, 'un indice negativo e valido: restituisce l ultimo'",
+     "hint": [
+      "try: return seq[i] / except IndexError: return None",
+      "elemento(x, 1) e elemento(x, 99)"
+     ],
+     "soluzione": "def elemento(seq, i):\n    try:\n        return seq[i]\n    except IndexError:\n        return None\nvalido = elemento(x, 1)\nfuori = elemento(x, 99)",
+     "spiegazione": "Le sequenze non hanno un `get` come i dizionari, quindi il `try` è la forma naturale. Attenzione che un indice **negativo** è valido in Python: `elemento(x, -1)` restituisce l'ultimo, non `None`."
+    },
+    {
+     "id": "p06-ik-6",
+     "tipo": "write",
+     "testo": "Sui dizionari esiste già la forma sicura: leggi `\"z\"` con un valore di riserva 0 in `sicuro`, e cattura invece l'errore in `esplode`.",
+     "setup": "d = {\"quota\": 9000}\n",
+     "starter": "sicuro = \ntry:\n    d[\"z\"]\n    esplode = False\nexcept \n    esplode = \n",
+     "test": "assert sicuro == 0, f'atteso 0, hai {sicuro}'\nassert esplode is True, 'la lettura con le quadre deve sollevare KeyError'",
+     "hint": [
+      "sicuro = d.get(\"z\", 0)",
+      "except KeyError: esplode = True"
+     ],
+     "soluzione": "sicuro = d.get(\"z\", 0)\ntry:\n    d[\"z\"]\n    esplode = False\nexcept KeyError:\n    esplode = True",
+     "spiegazione": "`get` è la forma sicura incorporata; il `try` serve quando la chiave **deve** esserci e vuoi registrarne l'assenza. Il rischio di `get` è il silenzio: su un nome di chiave scritto male restituisce il valore di riserva e nessuno se ne accorge."
+    },
+    {
+     "id": "p06-ik-7",
+     "tipo": "predict",
+     "testo": "Quando conviene lasciar sollevare `KeyError` invece di usare `get` ?",
+     "opzioni": [
+      "quando la chiave deve esserci: l'assenza e' un problema da vedere subito",
+      "mai: get e' sempre preferibile",
+      "quando il dizionario e' grande",
+      "quando il valore di riserva sarebbe zero"
+     ],
+     "risposta": "quando la chiave deve esserci: l'assenza e' un problema da vedere subito",
+     "spiegazione": "Quando la chiave **deve** esserci: l'errore è un'informazione, dice che i dati non hanno la forma prevista, e lo dice subito con il nome della chiave nel messaggio. `get` con un valore di riserva su una chiave obbligatoria trasforma un problema di dati in un risultato sbagliato."
+    },
+    {
+     "id": "p06-ik-8",
+     "tipo": "write",
+     "testo": "Cattura entrambi con un tipo solo: `LookupError` è il genitore comune. Metti in `catturati` quanti dei due casi vengono presi.",
+     "setup": "a = [1, 2]\nd = {\"a\": 1}\n",
+     "starter": "catturati = 0\nfor prova in [lambda: a[5], lambda: d[\"z\"]]:\n    try:\n        prova()\n    except \n        catturati = \n",
+     "test": "assert catturati == 2, f'attesi 2, hai {catturati}'",
+     "hint": [
+      "except LookupError:",
+      "catturati = catturati + 1"
+     ],
+     "soluzione": "catturati = 0\nfor prova in [lambda: a[5], lambda: d[\"z\"]]:\n    try:\n        prova()\n    except LookupError:\n        catturati = catturati + 1",
+     "spiegazione": "2. `IndexError` e `KeyError` discendono entrambi da `LookupError`: catturare il genitore prende tutti i figli. È il meccanismo per cui `except Exception` prende quasi tutto — ed è anche il motivo per cui non va usato."
+    },
+    {
+     "id": "p06-ik-9",
+     "tipo": "write",
+     "testo": "Leggi una colonna che in certe righe non c'è: costruisci `quote`, con `None` dove la chiave manca.",
+     "setup": "record = [{\"quota\": 9000}, {\"mach\": 0.8}, {\"quota\": 3000}]\n",
+     "starter": "quote = \n",
+     "test": "assert quote == [9000, None, 3000], f'attesa [9000, None, 3000], hai {quote}'",
+     "hint": [
+      "Una comprehension con get.",
+      "quote = [r.get(\"quota\") for r in record]"
+     ],
+     "soluzione": "quote = [r.get(\"quota\") for r in record]",
+     "spiegazione": "`get` senza valore di riserva restituisce `None`, che qui è esattamente quello che serve: marca il dato mancante senza fermare la lettura. È lo stesso ruolo che nel modulo 9 di NumPy avrà `nan`."
+    },
+    {
+     "id": "p06-ik-10",
+     "tipo": "apply",
+     "testo": "**Un lettore che non si ferma.**\n\nLeggi le righe grezze e costruisci:\n\n- `letti`: la lista dei valori di `\"quota\"` convertiti a float, solo per le righe valide\n- `errori`: la lista delle coppie `(indice_riga, nome_del_tipo_di_errore)` per quelle che falliscono",
+     "difficolta": 3,
+     "setup": "righe = [{\"quota\": \"9000\"}, {\"mach\": \"0.8\"}, {\"quota\": \"abc\"}, {\"quota\": \"3000\"}]\n",
+     "starter": "letti = []\nerrori = []\nfor i, r in enumerate(righe):\n    \n",
+     "test": "assert letti == [9000.0, 3000.0], f'attesa [9000.0, 3000.0], hai {letti}'\nassert errori == [(1, 'KeyError'), (2, 'ValueError')], f'attesa [(1, KeyError), (2, ValueError)], hai {errori}'",
+     "hint": [
+      "try: letti.append(float(r[\"quota\"]))",
+      "except (KeyError, ValueError) as e: errori.append((i, type(e).__name__))"
+     ],
+     "soluzione": "letti = []\nerrori = []\nfor i, r in enumerate(righe):\n    try:\n        letti.append(float(r[\"quota\"]))\n    except (KeyError, ValueError) as e:\n        errori.append((i, type(e).__name__))",
+     "spiegazione": "Tre righe buone e due problemi di natura diversa: la riga senza chiave dà `KeyError`, quella con testo non numerico dà `ValueError`. Distinguerli è il punto — nel primo caso il file ha una struttura diversa da quella attesa, nel secondo ha un dato sporco, e sono due conversazioni diverse con chi ti ha dato il file.\n\nÈ anche il motivo per cui non si scrive `except Exception`: catturando tutto insieme, quelle due righe finirebbero nello stesso conteggio e non sapresti quale dei due problemi hai."
+    }
+   ]
+  },
+  {
+   "id": "p06-try",
+   "comando": "try / except",
+   "titolo": "try — catturare solo quello che sai gestire",
+   "esercizi": [
+    {
+     "id": "p06-tr-1",
+     "tipo": "write",
+     "testo": "Metti in `v` il float della riga, o `None` se non è convertibile.",
+     "setup": "riga = \"abc\"\n",
+     "starter": "try:\n    v = \nexcept \n    v = \n",
+     "test": "assert v is None, f'atteso None, hai {v!r}'",
+     "hint": [
+      "try: v = float(riga)",
+      "except ValueError: v = None"
+     ],
+     "soluzione": "try:\n    v = float(riga)\nexcept ValueError:\n    v = None",
+     "spiegazione": "La struttura minima: `try` con il codice che può fallire, `except` col tipo specifico e cosa fare. Il tipo va nominato: `except` nudo catturerebbe anche i tuoi errori di programmazione."
+    },
+    {
+     "id": "p06-tr-2",
+     "tipo": "predict",
+     "testo": "Perché `except:` nudo — senza tipo — è una cattiva idea?",
+     "opzioni": [
+      "cattura anche gli errori di programmazione e li nasconde",
+      "e' piu' lento",
+      "e' un errore di sintassi in Python 3",
+      "cattura solo il primo errore e ignora i successivi"
+     ],
+     "risposta": "cattura anche gli errori di programmazione e li nasconde",
+     "spiegazione": "Perché cattura **qualsiasi** cosa, compresi i tuoi errori di programmazione: un refuso in un nome, un tipo sbagliato. Il programma prosegue con dati incompleti e nessuno lo sa. È il modo più efficace di rendere un problema impossibile da trovare."
+    },
+    {
+     "id": "p06-tr-3",
+     "tipo": "debug",
+     "testo": "Questo blocco ingoia tutto, compreso il refuso nel nome della variabile. Restringi la cattura al solo tipo che intendevi gestire, e correggi il refuso.",
+     "setup": "riga = \"12.5\"\n",
+     "starter": "try:\n    v = float(rigaa)\nexcept:\n    v = None\n",
+     "test": "assert v == 12.5, f'attesa 12.5, hai {v!r}'",
+     "hint": [
+      "Il nome nel try e' scritto male.",
+      "except ValueError: al posto di except:"
+     ],
+     "soluzione": "try:\n    v = float(riga)\nexcept ValueError:\n    v = None",
+     "spiegazione": "Con `except` nudo il `NameError` prodotto dal refuso finiva in `None`, e il programma proseguiva. Restringendo a `ValueError`, il refuso torna a esplodere — che è quello che deve fare, perché è un difetto del codice e non un dato sporco."
+    },
+    {
+     "id": "p06-tr-4",
+     "tipo": "write",
+     "testo": "Usa l'oggetto errore: cattura e metti in `nota` la stringa `\"scartata: \"` seguita dal nome del tipo.",
+     "setup": "riga = \"abc\"\n",
+     "starter": "try:\n    v = float(riga)\nexcept \n    nota = \n",
+     "test": "assert nota == 'scartata: ValueError', f'attesa \\'scartata: ValueError\\', hai {nota!r}'",
+     "hint": [
+      "except ValueError as e:",
+      "nota = \"scartata: \" + type(e).__name__"
+     ],
+     "soluzione": "try:\n    v = float(riga)\nexcept ValueError as e:\n    nota = \"scartata: \" + type(e).__name__",
+     "spiegazione": "`as e` lega l'eccezione a un nome, così puoi registrarla invece di ingoiarla. Una riga di log che dice cosa è stato scartato e perché è la differenza fra un'analisi verificabile e una che perde dati in silenzio."
+    },
+    {
+     "id": "p06-tr-5",
+     "tipo": "write",
+     "testo": "Due tipi, due reazioni diverse: metti in `esito` la stringa `\"dato sporco\"` per un `ValueError` e `\"struttura sbagliata\"` per un `TypeError`.",
+     "setup": "dato = [1, 2]\n",
+     "starter": "try:\n    v = float(dato)\nexcept \n    esito = \nexcept \n    esito = \n",
+     "test": "assert esito == 'struttura sbagliata', f'attesa \\'struttura sbagliata\\', hai {esito!r}'",
+     "hint": [
+      "except ValueError: esito = \"dato sporco\"",
+      "except TypeError: esito = \"struttura sbagliata\""
+     ],
+     "soluzione": "try:\n    v = float(dato)\nexcept ValueError:\n    esito = \"dato sporco\"\nexcept TypeError:\n    esito = \"struttura sbagliata\"",
+     "spiegazione": "Blocchi `except` separati per reazioni diverse: si valutano in ordine e si ferma il primo che corrisponde. È il motivo per cui i tipi più specifici vanno scritti **prima** di quelli più generali — altrimenti il generale li intercetta tutti."
+    },
+    {
+     "id": "p06-tr-6",
+     "tipo": "predict",
+     "testo": "Se scrivi `except Exception:` prima di `except ValueError:`, cosa succede al secondo blocco?",
+     "opzioni": [
+      "non viene mai eseguito: Exception intercetta tutto prima",
+      "viene eseguito lo stesso, dopo il primo",
+      "e' un errore di sintassi",
+      "Python riordina automaticamente i blocchi"
+     ],
+     "risposta": "non viene mai eseguito: Exception intercetta tutto prima",
+     "spiegazione": "Non viene mai eseguito: `Exception` è il genitore di quasi tutto e intercetta anche i `ValueError`. I blocchi si valutano in ordine, quindi i tipi specifici vanno **prima** dei generali. Python non segnala questo caso in alcun modo."
+    },
+    {
+     "id": "p06-tr-7",
+     "tipo": "write",
+     "testo": "Usa `else`: metti in `esito` la stringa `\"ok\"` solo se il `try` non ha sollevato niente.",
+     "setup": "riga = \"12.5\"\n",
+     "starter": "try:\n    v = float(riga)\nexcept ValueError:\n    esito = \"errore\"\nelse:\n    esito = \n",
+     "test": "assert esito == 'ok', f'atteso ok, hai {esito!r}'\nassert v == 12.5, 'v deve valere 12.5'",
+     "hint": [
+      "Il ramo else si esegue se non ci sono state eccezioni.",
+      "esito = \"ok\""
+     ],
+     "soluzione": "try:\n    v = float(riga)\nexcept ValueError:\n    esito = \"errore\"\nelse:\n    esito = \"ok\"",
+     "spiegazione": "Il blocco `else` si esegue **solo** se il `try` è andato a buon fine. Serve a tenere fuori dal `try` il codice che non deve essere protetto: più stretto è il `try`, più è chiaro quale riga stavi proteggendo."
+    },
+    {
+     "id": "p06-tr-8",
+     "tipo": "write",
+     "testo": "Usa `finally`: qualunque cosa succeda, `chiuso` deve valere `True`.",
+     "setup": "chiuso = False\n",
+     "starter": "try:\n    v = 1 / 0\nexcept ZeroDivisionError:\n    v = None\nfinally:\n    chiuso = \n",
+     "test": "assert chiuso is True, 'finally deve essere sempre eseguito'\nassert v is None, 'v deve valere None'",
+     "hint": [
+      "Il blocco finally si esegue sempre.",
+      "chiuso = True"
+     ],
+     "soluzione": "try:\n    v = 1 / 0\nexcept ZeroDivisionError:\n    v = None\nfinally:\n    chiuso = True",
+     "spiegazione": "`finally` si esegue **sempre**, anche quando l'eccezione non viene catturata e sta risalendo. È la garanzia di pulizia — chiudere un file, rilasciare una risorsa. Nella pratica il costrutto `with` lo sostituisce quasi sempre, ed è quello che userai per i file."
+    },
+    {
+     "id": "p06-tr-9",
+     "tipo": "write",
+     "testo": "Confronta i due stili sulla stessa lettura: `con_controllo(d, k)` verifica prima con `in`, `con_try(d, k)` prova e cattura. Entrambe restituiscono `None` se la chiave manca.",
+     "setup": "d = {\"a\": 1}\n",
+     "starter": "def con_controllo(d, k):\n    \ndef con_try(d, k):\n    \nc1 = \nc2 = \n",
+     "test": "assert c1 is None and c2 is None, f'attesi None, hai {c1!r} e {c2!r}'\nassert con_controllo(d, \"a\") == 1 and con_try(d, \"a\") == 1, 'su una chiave presente devono restituire 1'",
+     "hint": [
+      "if k in d: return d[k] / return None",
+      "try: return d[k] / except KeyError: return None"
+     ],
+     "soluzione": "def con_controllo(d, k):\n    if k in d:\n        return d[k]\n    return None\ndef con_try(d, k):\n    try:\n        return d[k]\n    except KeyError:\n        return None\nc1 = con_controllo(d, \"z\")\nc2 = con_try(d, \"z\")",
+     "spiegazione": "Stesso risultato, filosofie opposte: chiedere permesso o chiedere scusa. In Python la seconda è idiomatica quando il fallimento è **raro**, perché un `try` che non fallisce non costa quasi niente mentre il controllo preventivo si paga a ogni giro."
+    },
+    {
+     "id": "p06-tr-10",
+     "tipo": "write",
+     "testo": "Restringi il `try` al minimo: proteggi **solo** la conversione, lasciando fuori il resto del corpo.",
+     "setup": "riga = \"abc\"\nregistro = []\n",
+     "starter": "try:\n    v = \nexcept \n    v = None\nregistro.append(v)\netichetta = f\"valore: {v}\"\n",
+     "test": "assert v is None, f'atteso None, hai {v!r}'\nassert registro == [None], f'attesa [None], hai {registro}'\nassert etichetta == 'valore: None', f'attesa \\'valore: None\\', hai {etichetta!r}'",
+     "hint": [
+      "Dentro il try va solo float(riga).",
+      "except ValueError:"
+     ],
+     "soluzione": "try:\n    v = float(riga)\nexcept ValueError:\n    v = None\nregistro.append(v)\netichetta = f\"valore: {v}\"",
+     "spiegazione": "Un `try` che avvolge dieci righe cattura anche gli errori delle altre nove, e il messaggio non dice quale. Tenerlo stretto sulla riga che può fallire è la differenza fra un errore diagnosticabile e uno generico."
+    },
+    {
+     "id": "p06-tr-11",
+     "tipo": "write",
+     "testo": "Conta i fallimenti senza fermarti: metti in `ok` quanti valori si convertono e in `ko` quanti no.",
+     "setup": "grezzi = [\"1\", \"x\", \"2.5\", \"\", \"3\"]\n",
+     "starter": "ok = 0\nko = 0\nfor g in grezzi:\n    \n",
+     "test": "assert ok == 3, f'attesi 3, hai {ok}'\nassert ko == 2, f'attesi 2, hai {ko}'",
+     "hint": [
+      "Il try va dentro il ciclo, non fuori.",
+      "try: float(g); ok += 1 / except ValueError: ko += 1"
+     ],
+     "soluzione": "ok = 0\nko = 0\nfor g in grezzi:\n    try:\n        float(g)\n        ok = ok + 1\n    except ValueError:\n        ko = ko + 1",
+     "spiegazione": "Tre e due. Il ciclo prosegue perché ogni giro ha il suo `try`: mettere il `try` **fuori** dal ciclo lo interromperebbe al primo dato sporco, che è l'errore di struttura più comune in un lettore di file."
+    },
+    {
+     "id": "p06-tr-12",
+     "tipo": "predict",
+     "testo": "Cosa succede al `try` se il codice protetto **non** solleva niente?",
+     "opzioni": [
+      "l'except viene saltato, con costo trascurabile",
+      "l'except viene comunque eseguito",
+      "il try rallenta sensibilmente il codice",
+      "viene eseguito il ramo finally al posto dell'except"
+     ],
+     "risposta": "l'except viene saltato, con costo trascurabile",
+     "spiegazione": "Il blocco `except` viene saltato e l'esecuzione prosegue. In Python un `try` che non fallisce ha un costo trascurabile, ed è la ragione tecnica per cui \"chiedere scusa\" è idiomatico qui e non in altri linguaggi, dove impostare la protezione costa a prescindere."
+    }
+   ]
+  },
+  {
+   "id": "p06-raise",
+   "comando": "raise",
+   "titolo": "raise — fallire presto e in chiaro",
+   "esercizi": [
+    {
+     "id": "p06-ra-1",
+     "tipo": "write",
+     "testo": "`radice(x)` calcola la radice quadrata, ma solleva `ValueError` su un numero negativo, con un messaggio che contiene il valore.",
+     "setup": "",
+     "starter": "def radice(x):\n    \nbuona = \n",
+     "test": "assert abs(buona - 3.0) < 1e-12, f'attesa 3.0, hai {buona}'\ntry:\n    radice(-1.0)\n    assert False, 'doveva sollevare ValueError'\nexcept ValueError as e:\n    assert '-1' in str(e), f'il messaggio deve contenere il valore, hai {str(e)!r}'",
+     "hint": [
+      "if x < 0: raise ValueError(f\"radice di un numero negativo: {x}\")",
+      "return x ** 0.5; poi buona = radice(9.0)"
+     ],
+     "soluzione": "def radice(x):\n    if x < 0:\n        raise ValueError(f\"radice di un numero negativo: {x}\")\n    return x ** 0.5\nbuona = radice(9.0)",
+     "spiegazione": "Fallire subito con un messaggio che nomina il valore è meglio che restituire un numero senza senso. Chi legge il messaggio non ha davanti le tue variabili: quel valore è l'unica informazione che non può ricostruire da solo."
+    },
+    {
+     "id": "p06-ra-2",
+     "tipo": "predict",
+     "testo": "Quale messaggio è più utile?\n\n```\nraise ValueError(\"valore non valido\")\nraise ValueError(f\"quota negativa: {q} m\")\n```",
+     "opzioni": [
+      "il secondo: contiene il valore che ha causato il problema",
+      "il primo: e' piu' generale e riusabile",
+      "sono equivalenti",
+      "il primo: i messaggi non devono esporre i dati"
+     ],
+     "risposta": "il secondo: contiene il valore che ha causato il problema",
+     "spiegazione": "Il secondo: contiene il **dato** che ha causato il problema. Chi legge un traceback non ha le tue variabili sotto gli occhi, e \"valore non valido\" lo costringe ad aggiungere una stampa e rieseguire tutto per scoprire quale."
+    },
+    {
+     "id": "p06-ra-3",
+     "tipo": "write",
+     "testo": "Scegli il tipo giusto: `converti(x)` solleva `TypeError` se `x` non è una stringa, e `ValueError` se è una stringa non convertibile.",
+     "difficolta": 2,
+     "setup": "",
+     "starter": "def converti(x):\n    \nbuono = \n",
+     "test": "assert abs(buono - 2.5) < 1e-12, f'attesa 2.5, hai {buono}'\ntry:\n    converti(5)\n    assert False, 'un non-stringa deve dare TypeError'\nexcept TypeError:\n    pass\ntry:\n    converti(\"abc\")\n    assert False, 'una stringa non convertibile deve dare ValueError'\nexcept ValueError:\n    pass",
+     "hint": [
+      "if not isinstance(x, str): raise TypeError(...)",
+      "Poi try: return float(x) / except ValueError: raise ValueError(...)"
+     ],
+     "soluzione": "def converti(x):\n    if not isinstance(x, str):\n        raise TypeError(f\"attesa una stringa, ricevuto {type(x).__name__}\")\n    try:\n        return float(x)\n    except ValueError:\n        raise ValueError(f\"stringa non convertibile: {x!r}\")\nbuono = converti(\"2.5\")",
+     "spiegazione": "Il tipo dell'eccezione è informazione: permette a chi ti chiama di catturare **solo** il caso che sa gestire. Sollevare sempre `Exception` costringerebbe il chiamante a catturare tutto e poi a distinguere leggendo il messaggio."
+    },
+    {
+     "id": "p06-ra-4",
+     "tipo": "write",
+     "testo": "Registra e rilancia: cattura l'errore, aggiungi una nota a `registro`, e lascia comunque fallire.",
+     "setup": "registro = []\n",
+     "starter": "try:\n    try:\n        1 / 0\n    except ZeroDivisionError:\n        registro.append(\"divisione per zero\")\n        \nexcept ZeroDivisionError:\n    rilanciato = True\n",
+     "test": "assert registro == ['divisione per zero'], f'attesa una nota nel registro, hai {registro}'\nassert rilanciato is True, 'l errore doveva essere rilanciato'",
+     "hint": [
+      "raise da solo rilancia l'eccezione corrente.",
+      "Basta la parola raise."
+     ],
+     "soluzione": "try:\n    try:\n        1 / 0\n    except ZeroDivisionError:\n        registro.append(\"divisione per zero\")\n        raise\nexcept ZeroDivisionError:\n    rilanciato = True",
+     "spiegazione": "`raise` da solo dentro un `except` rilancia quella corrente, conservando il traceback originale. È quasi sempre la cosa giusta: registrare l'errore e ingoiarlo lo rende invisibile a chi ti ha chiamato, che continuerà a lavorare su dati che non esistono."
+    },
+    {
+     "id": "p06-ra-5",
+     "tipo": "predict",
+     "testo": "Perché `assert` non va usato per validare i dati in ingresso?",
+     "opzioni": [
+      "Python eseguito con -O rimuove tutti gli assert, e il controllo sparisce",
+      "assert e' piu' lento di raise",
+      "assert non puo' avere un messaggio",
+      "assert solleva sempre lo stesso tipo di errore"
+     ],
+     "risposta": "Python eseguito con -O rimuove tutti gli assert, e il controllo sparisce",
+     "spiegazione": "Perché Python eseguito con `-O` **toglie** tutti gli `assert`: il controllo sparisce senza preavviso, ed è proprio in produzione che si usa quel flag. `assert` serve per i controlli interni e per i test — è così che questa app corregge i tuoi esercizi."
+    },
+    {
+     "id": "p06-ra-6",
+     "tipo": "apply",
+     "testo": "**Un validatore che dice cosa non va.**\n\nScrivi `valida(record)` che controlla un dizionario di volo e solleva l'errore giusto:\n\n- `KeyError` se manca la chiave `\"quota\"`\n- `TypeError` se la quota non è un numero\n- `ValueError` se la quota è negativa\n\nSe è tutto a posto, restituisce la quota.",
+     "difficolta": 3,
+     "setup": "buono = {\"quota\": 9000}\n",
+     "starter": "def valida(record):\n    \nq = \n",
+     "test": "assert q == 9000, f'attesa 9000, hai {q}'\ntry:\n    valida({})\n    assert False, 'senza chiave deve dare KeyError'\nexcept KeyError:\n    pass\ntry:\n    valida({\"quota\": \"9000\"})\n    assert False, 'una quota non numerica deve dare TypeError'\nexcept TypeError:\n    pass\ntry:\n    valida({\"quota\": -100})\n    assert False, 'una quota negativa deve dare ValueError'\nexcept ValueError as e:\n    assert '-100' in str(e), 'il messaggio deve contenere il valore'",
+     "hint": [
+      "if \"quota\" not in record: raise KeyError(\"manca la chiave quota\")",
+      "Poi il controllo di tipo con isinstance, poi quello sul segno."
+     ],
+     "soluzione": "def valida(record):\n    if \"quota\" not in record:\n        raise KeyError(\"manca la chiave quota\")\n    q = record[\"quota\"]\n    if not isinstance(q, (int, float)):\n        raise TypeError(f\"quota non numerica: {type(q).__name__}\")\n    if q < 0:\n        raise ValueError(f\"quota negativa: {q} m\")\n    return q\nq = valida(buono)",
+     "spiegazione": "Tre controlli, tre tipi diversi, tre messaggi che nominano il dato. Chi chiama può catturare solo quello che sa gestire: un `KeyError` significa che il file ha una struttura diversa da quella attesa, un `ValueError` che il dato è sporco, e sono due conversazioni diverse.\n\nL'ordine dei controlli non è arbitrario: la presenza prima del tipo, il tipo prima del valore. Invertirli farebbe sollevare `TypeError` su una chiave mancante, con un messaggio che parla di `NoneType` e manda a cercare nel posto sbagliato."
+    }
+   ]
+  }
+ ]
+}

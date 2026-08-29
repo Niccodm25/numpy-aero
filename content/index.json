@@ -12,10 +12,10 @@
         "p02",
         "p03",
         "p04",
-        "p05"
+        "p05",
+        "p06"
       ],
       "prossimi": [
-        "Leggere un errore — traceback, TypeError, NameError, IndexError, KeyError",
         "import — moduli, from ... import, e cosa succede davvero quando importi",
         "File e contesti — open, with, leggere e scrivere testo"
       ]
@@ -142,6 +142,12 @@
       "id": "p05",
       "file": "p05-funzioni.json",
       "titolo": "Funzioni",
+      "disponibile": true
+    },
+    {
+      "id": "p06",
+      "file": "p06-errori.json",
+      "titolo": "Leggere un errore",
       "disponibile": true
     },
     {

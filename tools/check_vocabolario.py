@@ -107,6 +107,15 @@ VOCAB_PY = {
         # dell'albero non distingue un argomento per nome da una funzione
         "griglia", "log",
     },
+    "p06": {
+        # i tipi di eccezione sono nomi come gli altri
+        "Exception", "LookupError", "TypeError", "ValueError", "NameError",
+        "IndexError", "KeyError", "AttributeError", "ZeroDivisionError",
+        "hasattr", "quota",
+        # nomi che NON esistono di proposito: sono il soggetto degli esercizi
+        # su NameError e sui refusi
+        "nome_inesistente", "rigaa",
+    },
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]
@@ -190,6 +199,8 @@ def main():
                                 definiti.add(n.arg)
                             elif isinstance(n, ast.FunctionDef):
                                 definiti.add(n.name)  # helper definito nel setup
+                            elif isinstance(n, ast.ExceptHandler) and n.name:
+                                definiti.add(n.name)  # la e di "except ... as e"
                     except SyntaxError:
                         pass
                 fuori = [n for n in fuori if n not in definiti]
