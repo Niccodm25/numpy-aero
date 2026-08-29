@@ -96,6 +96,9 @@ VOCAB_PY = {
         "extend", "insert", "pop", "remove", "sort", "index", "count",
         "keys", "values", "items", "get", "add",
     },
+    # Il controllo di flusso non porta nomi nuovi: if, for, while, break e continue
+    # sono parole chiave, non funzioni. Resta start, il parametro di enumerate.
+    "p04": {"start"},
 }
 
 ORDINE_PY = [f"p{i:02d}" for i in range(1, 13)]

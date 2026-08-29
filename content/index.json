@@ -10,10 +10,10 @@
       "moduli": [
         "p01",
         "p02",
-        "p03"
+        "p03",
+        "p04"
       ],
       "prossimi": [
-        "Controllo di flusso — if, for, while, range, enumerate, zip",
         "Funzioni — argomenti, default, valori di ritorno, scope",
         "Leggere un errore — traceback, TypeError, NameError, IndexError, KeyError",
         "import — moduli, from ... import, e cosa succede davvero quando importi",
@@ -130,6 +130,12 @@
       "id": "p03",
       "file": "p03-collezioni.json",
       "titolo": "Liste, tuple e dizionari",
+      "disponibile": true
+    },
+    {
+      "id": "p04",
+      "file": "p04-flusso.json",
+      "titolo": "Controllo di flusso",
       "disponibile": true
     },
     {

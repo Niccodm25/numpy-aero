@@ -1,0 +1,840 @@
+{
+ "id": "p04",
+ "titolo": "Controllo di flusso",
+ "perche": "if, for, while e i due modi di uscire da un ciclo. Il filo conduttore e' che qui gli errori non sollevano niente: l'indentazione di una riga decide se una stampa avviene una volta o mille, range(1, 5) produce quattro valori e non cinque, e togliere elementi da una lista mentre la scorri ne salta la meta'.",
+ "funzioni": [
+  "if",
+  "elif",
+  "else",
+  "for",
+  "range",
+  "while",
+  "break",
+  "continue",
+  "enumerate",
+  "zip"
+ ],
+ "lezioni": [
+  {
+   "id": "p04-l1",
+   "titolo": "if: l'indentazione è la sintassi",
+   "md": "```\nif quota > 8000:\n    stato = \"alta\"\nelif quota > 3000:\n    stato = \"media\"\nelse:\n    stato = \"bassa\"\n```\n\nI due punti aprono il blocco, e l'**indentazione** dice dove finisce. In Python non ci sono graffe: spostare una riga di quattro spazi ne cambia il significato, e il codice resta valido.\n\n```\nfor x in dati:\n    totale = totale + x\nprint(totale)      # una volta sola, fuori dal ciclo\n\nfor x in dati:\n    totale = totale + x\n    print(totale)  # a ogni giro, dentro il ciclo\n```\n\nNessuna delle due solleva un errore. È la ragione per cui l'indentazione in Python non è questione di stile.\n\n### elif non è else + if\n\n```\nif x > 10:  ...\nelif x > 5: ...\n```\n\nLe condizioni si valutano **in ordine** e si ferma alla prima vera. Con due `if` separati verrebbero valutate entrambe: per `x = 20` entrambe sono vere ed entrambi i blocchi verrebbero eseguiti.\n\n### Confronti a catena\n\n```\n3000 < quota < 8000\n```\n\nPython permette di concatenare i confronti come in matematica, e li valuta come `3000 < quota and quota < 8000`. In quasi tutti gli altri linguaggi la stessa riga fa altro, quindi vale la pena riconoscerla.\n\n### La forma su una riga\n\n```\nstato = \"alta\" if quota > 8000 else \"bassa\"\n```\n\nQuesta è un'**espressione**, quindi ha un valore e si può assegnare. L'`else` non è opzionale: senza, non ci sarebbe un valore in tutti i casi.",
+   "demo": "for quota in [12000, 5000, 1000]:\n    if quota > 8000:\n        stato = \"alta\"\n    elif quota > 3000:\n        stato = \"media\"\n    else:\n        stato = \"bassa\"\n    print(quota, \"->\", stato)\n\nprint(\"\\nconfronto a catena:\", 3000 < 5000 < 8000)\nprint(\"forma su una riga:\", \"alta\" if 12000 > 8000 else \"bassa\")"
+  },
+  {
+   "id": "p04-l2",
+   "titolo": "for: si scorre la sequenza, non gli indici",
+   "md": "```\nfor v in valori:      # cosi'\n    ...\n\nfor i in range(len(valori)):   # non cosi'\n    v = valori[i]\n```\n\nIn Python il `for` scorre direttamente gli elementi. La forma con `range(len(...))` funziona ma è quella di altri linguaggi: più lunga, più facile da sbagliare di uno, e inutile quando l'indice non ti serve.\n\nQuando l'indice **ti serve davvero**, esiste `enumerate`.\n\n### range\n\n```\nrange(5)          # 0 1 2 3 4      l'estremo destro e' escluso\nrange(1, 5)       # 1 2 3 4\nrange(0, 10, 3)   # 0 3 6 9        con passo\nrange(5, 0, -1)   # 5 4 3 2 1      all'indietro\n```\n\nL'estremo destro è sempre escluso, come nello slicing. `range(1, 5)` produce quattro valori, non cinque: è l'errore di uno in più o in meno più comune del linguaggio.\n\n`range` non costruisce una lista: genera i numeri man mano. Per vederli tutti serve `list(range(5))`.\n\n### La variabile del ciclo sopravvive\n\n```\nfor i in range(3):\n    ...\nprint(i)      # 2\n```\n\nDopo il ciclo `i` esiste ancora e vale l'ultimo valore. Non è uno scope separato, al contrario di quello che succede in molti altri linguaggi.\n\n### Non modificare una lista mentre la scorri\n\n```\nb = [1, 2, 2, 3, 2]\nfor x in b:\n    if x == 2:\n        b.remove(x)\nprint(b)      # [1, 3, 2]   <- non [1, 3]\n```\n\nIl ciclo avanza per posizione: togliendo un elemento, quello dopo scala indietro e viene saltato. Nessun errore, risultato sbagliato. La forma corretta è costruire una lista nuova con una comprehension.",
+   "demo": "valori = [10, 20, 30]\nfor v in valori:\n    print(v, end=\" \")\nprint()\n\nprint(\"\\nrange:\", list(range(5)), list(range(1, 5)), list(range(0, 10, 3)))\n\nb = [1, 2, 2, 3, 2]\nfor x in b:\n    if x == 2:\n        b.remove(x)\nprint(\"\\nmodificando durante il ciclo:\", b)\nc = [1, 2, 2, 3, 2]\nprint(\"con la comprehension:      \", [x for x in c if x != 2])"
+  },
+  {
+   "id": "p04-l3",
+   "titolo": "while: quando non sai quanti giri servono",
+   "md": "```\nn = 0\nwhile n < 5:\n    n = n + 1\n```\n\nIl `for` si usa quando sai su cosa stai iterando; il `while` quando la fine dipende da una **condizione** che cambia dentro il ciclo: un'integrazione che va avanti finché non converge, una lettura che continua finché ci sono dati.\n\n### La riga che manca sempre\n\n```\nn = 0\nwhile n < 5:\n    print(n)      # e' scritto tutto giusto, e non finisce mai\n```\n\nSe niente dentro il corpo cambia la condizione, il ciclo è infinito. In questa app significa che la scheda si blocca e devi ricaricarla. **La riga che aggiorna la condizione va scritta per prima**, prima ancora del corpo.\n\n### Il contatore di sicurezza\n\n```\ngiri = 0\nwhile errore > soglia and giri < 1000:\n    ...\n    giri += 1\n```\n\nQualunque ciclo che aspetta una convergenza va scritto con un tetto ai giri. Non è pessimismo: un metodo iterativo che diverge è un caso normale, e senza il tetto il sintomo è un programma che non risponde invece di un messaggio che dice cosa è successo.\n\n### while True e break\n\n```\nwhile True:\n    v = prossimo()\n    if v is None:\n        break\n```\n\nÈ la forma da usare quando la condizione di uscita si può valutare solo **dentro** il corpo. Leggibile, purché il `break` sia uno solo e vicino all'inizio.",
+   "demo": "n = 0\ntotale = 0\nwhile n < 5:\n    n = n + 1\n    totale = totale + n\nprint(\"n =\", n, \" totale =\", totale)\n\n# convergenza con tetto ai giri\nx = 2.0\ngiri = 0\nwhile abs(x * x - 2) > 1e-12 and giri < 100:\n    x = (x + 2 / x) / 2\n    giri += 1\nprint(\"\\nradice di 2:\", x, \"in\", giri, \"giri\")"
+  },
+  {
+   "id": "p04-l4",
+   "titolo": "break, continue e l'else del ciclo",
+   "md": "```\nfor v in valori:\n    if v < 0:\n        continue      # salta al giro dopo\n    if v > 100:\n        break         # esce dal ciclo\n    ...\n```\n\n`continue` salta il resto del corpo e passa all'elemento successivo. `break` abbandona il ciclo del tutto.\n\nEntrambi agiscono sul ciclo **più interno**: dentro due `for` annidati, `break` esce solo da quello dentro. Per uscire da entrambi serve una variabile di stato, o meglio una funzione con un `return`.\n\n### L'else del ciclo\n\n```\nfor d in range(2, n):\n    if n % d == 0:\n        break\nelse:\n    print(\"nessun divisore trovato\")\n```\n\nL'`else` attaccato a un `for` si esegue **se il ciclo è finito senza break**. Si legge male — verrebbe da leggerlo come \"altrimenti\" — ma dice esattamente \"non ho trovato niente\", che è il caso che altrimenti richiede una variabile-bandiera.\n\nÈ raro nel codice altrui, ma quando lo incontri devi sapere cosa fa: leggerlo come un `else` di `if` porta a conclusioni completamente sbagliate.\n\n### Il pattern della ricerca\n\n```\ntrovato = None\nfor v in valori:\n    if condizione(v):\n        trovato = v\n        break\n```\n\n`break` appena trovi: su una lista lunga fa la differenza fra fermarsi al decimo elemento e scorrerne un milione.",
+   "demo": "for v in [5, -3, 20, 200, 7]:\n    if v < 0:\n        continue\n    if v > 100:\n        print(\"esco a\", v)\n        break\n    print(\"tengo\", v)\n\nprint()\nfor n in [4, 7]:\n    for d in range(2, n):\n        if n % d == 0:\n            print(n, \"divisibile per\", d)\n            break\n    else:\n        print(n, \"e' primo\")"
+  },
+  {
+   "id": "p04-l5",
+   "titolo": "enumerate e zip: gli indici quando servono davvero",
+   "md": "```\nfor i, v in enumerate(valori):\n    ...\n```\n\n`enumerate` produce coppie `(indice, valore)`, e il `for` le spacchetta. È la forma da usare quando ti serve **anche** la posizione: sostituisce `range(len(...))` senza perdere l'accesso diretto all'elemento.\n\n```\nfor i, v in enumerate(valori, start=1):\n```\n\n`start` cambia da dove parte il conteggio, utile per numerare righe da 1 senza sommare 1 ovunque.\n\n### zip: due sequenze in parallelo\n\n```\nfor q, m in zip(quote, mach):\n    ...\n```\n\nÈ la forma corretta per scorrere due liste allineate. L'alternativa con gli indici — `for i in range(len(quote))` e poi `quote[i]`, `mach[i]` — funziona ma non protegge da niente.\n\n**`zip` si ferma alla più corta**, in silenzio. Se una lista ha una riga in più, quella riga sparisce dal risultato e nessuno lo dice. Quando le due lunghezze *devono* coincidere, il controllo va scritto a mano:\n\n```\nif len(quote) != len(mach):\n    ...\n```\n\n### Scorrere un dizionario\n\n```\nfor k in d:              # le chiavi\nfor v in d.values():     # i valori\nfor k, v in d.items():   # le coppie\n```\n\nLa prima forma è quella che confonde: `for k in d` dà le **chiavi**, non i valori, e non solleva niente se ti aspettavi il contrario.",
+   "demo": "valori = [10, 20, 30]\nfor i, v in enumerate(valori):\n    print(i, v)\n\nprint(\"\\ncon start=1:\")\nfor i, v in enumerate(valori, start=1):\n    print(i, v)\n\nquote = [3000, 9000, 11000]\nmach = [0.4, 0.82]\nprint(\"\\nzip si ferma alla piu' corta:\")\nfor q, m in zip(quote, mach):\n    print(q, m)"
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "p04-if",
+   "comando": "if / elif / else",
+   "titolo": "if — e l'indentazione che decide",
+   "esercizi": [
+    {
+     "id": "p04-if-1",
+     "tipo": "write",
+     "testo": "Classifica la quota: `stato` vale `\"alta\"` sopra 8000, `\"media\"` sopra 3000, `\"bassa\"` altrimenti.",
+     "setup": "quota = 9000\n",
+     "starter": "if \n    stato = \nelif \n    stato = \nelse:\n    stato = \n",
+     "test": "assert stato == 'alta', f'attesa alta, hai {stato!r}'",
+     "hint": [
+      "if quota > 8000: ... elif quota > 3000: ... else: ...",
+      "Il primo ramo vero vince, gli altri non vengono valutati."
+     ],
+     "soluzione": "if quota > 8000:\n    stato = \"alta\"\nelif quota > 3000:\n    stato = \"media\"\nelse:\n    stato = \"bassa\"",
+     "spiegazione": "Le condizioni si valutano **in ordine** e ci si ferma alla prima vera: per questo `elif quota > 3000` non ha bisogno di ripetere `and quota <= 8000`. Con tre `if` separati la ripetizione servirebbe, e dimenticarla è l'errore classico."
+    },
+    {
+     "id": "p04-if-2",
+     "tipo": "predict",
+     "testo": "Con `x = 20`, quanti blocchi vengono eseguiti?\n\n```\nif x > 10:\n    a = 1\nif x > 5:\n    b = 2\n```",
+     "opzioni": [
+      "entrambi: sono due if indipendenti",
+      "solo il primo: il secondo e' un elif implicito",
+      "solo il secondo, che sovrascrive il primo",
+      "nessuno: 20 non e' maggiore di 10"
+     ],
+     "risposta": "entrambi: sono due if indipendenti",
+     "spiegazione": "Entrambi: sono due `if` **indipendenti**, quindi tutte e due le condizioni vengono valutate e tutte e due sono vere. Con `elif` il secondo non verrebbe nemmeno guardato. È la differenza che fa assegnare due volte una variabile senza accorgersene."
+    },
+    {
+     "id": "p04-if-3",
+     "tipo": "write",
+     "testo": "Usa un confronto a catena: metti in `in_fascia` il controllo che `quota` stia fra 3000 e 8000, estremi esclusi.",
+     "setup": "quota = 5000\n",
+     "starter": "in_fascia = \n",
+     "test": "assert in_fascia is True, 'la quota e nella fascia'\nassert (3000 < quota < 8000) == in_fascia, 'usa il confronto a catena'",
+     "hint": [
+      "Si scrive come in matematica.",
+      "in_fascia = 3000 < quota < 8000"
+     ],
+     "soluzione": "in_fascia = 3000 < quota < 8000",
+     "spiegazione": "Python valuta `3000 < quota < 8000` come `3000 < quota and quota < 8000`, esattamente come in matematica. In quasi tutti gli altri linguaggi la stessa riga fa altro — confronta il risultato booleano del primo confronto con il secondo numero — quindi vale la pena riconoscerla."
+    },
+    {
+     "id": "p04-if-4",
+     "tipo": "write",
+     "testo": "Scrivi la forma su una riga: `stato` vale `\"alta\"` se la quota supera 8000, `\"bassa\"` altrimenti.",
+     "setup": "quota = 12000\n",
+     "starter": "stato = \n",
+     "test": "assert stato == 'alta', f'attesa alta, hai {stato!r}'",
+     "hint": [
+      "valore_se_vero if condizione else valore_se_falso",
+      "stato = \"alta\" if quota > 8000 else \"bassa\""
+     ],
+     "soluzione": "stato = \"alta\" if quota > 8000 else \"bassa\"",
+     "spiegazione": "È un'**espressione**, quindi ha un valore e si assegna. L'`else` non è opzionale: senza, ci sarebbero casi senza valore da assegnare. Va bene per due alternative corte; con tre rami torna più leggibile l'`if` esteso."
+    },
+    {
+     "id": "p04-if-5",
+     "tipo": "predict",
+     "testo": "Queste due versioni differiscono per l'indentazione di una riga. Cosa cambia?\n\n```\nfor x in dati:          for x in dati:\n    totale += x             totale += x\nprint(totale)               print(totale)\n```",
+     "opzioni": [
+      "la prima stampa una volta sola, la seconda a ogni giro",
+      "sono equivalenti: l'indentazione e' solo estetica",
+      "la seconda solleva IndentationError",
+      "la prima non stampa niente"
+     ],
+     "risposta": "la prima stampa una volta sola, la seconda a ogni giro",
+     "spiegazione": "La prima stampa una volta sola, alla fine; la seconda a ogni giro. L'indentazione **è** la sintassi: nessuna delle due solleva un errore, e il codice sbagliato produce output plausibile. È la ragione per cui in Python l'indentazione non è questione di stile."
+    },
+    {
+     "id": "p04-if-6",
+     "tipo": "write",
+     "testo": "Combina due condizioni: `crociera` è vero solo se la quota supera 8000 **e** il Mach supera 0.8.",
+     "setup": "quota = 9000\nmach = 0.75\n",
+     "starter": "crociera = \n",
+     "test": "assert crociera is False, f'atteso False, hai {crociera}'\nassert (quota > 8000 and mach > 0.8) == crociera, 'usa and'",
+     "hint": [
+      "L'operatore e' and, scritto a parole.",
+      "crociera = quota > 8000 and mach > 0.8"
+     ],
+     "soluzione": "crociera = quota > 8000 and mach > 0.8",
+     "spiegazione": "`and` richiede entrambe. Vale in corto circuito: se la prima è falsa la seconda non viene valutata, il che permette di scrivere il controllo di validità prima dell'operazione che lo richiede."
+    },
+    {
+     "id": "p04-if-7",
+     "tipo": "write",
+     "testo": "Gestisci il valore mancante prima di usarlo: se `v` è `None` metti in `sicuro` il valore 0, altrimenti il doppio di `v`.",
+     "setup": "v = None\n",
+     "starter": "if \n    sicuro = \nelse:\n    sicuro = \n",
+     "test": "assert sicuro == 0, f'atteso 0, hai {sicuro!r}'",
+     "hint": [
+      "Con None il confronto giusto e' is.",
+      "if v is None: sicuro = 0 else: sicuro = v * 2"
+     ],
+     "soluzione": "if v is None:\n    sicuro = 0\nelse:\n    sicuro = v * 2",
+     "spiegazione": "Il controllo del caso degenere va **prima** dell'operazione, non dopo: `v * 2` su `None` solleva `TypeError`, e a quel punto il messaggio parla di tipi invece che del dato mancante. È la struttura di ogni funzione che riceve dati reali."
+    },
+    {
+     "id": "p04-if-8",
+     "tipo": "debug",
+     "testo": "Questo codice vuole classificare in tre fasce, ma per `quota = 12000` finisce a `\"media\"`. Correggi.",
+     "setup": "quota = 12000\n",
+     "starter": "if quota > 8000:\n    stato = \"alta\"\nif quota > 3000:\n    stato = \"media\"\n",
+     "test": "assert stato == 'alta', f'attesa alta, hai {stato!r}'",
+     "hint": [
+      "Il secondo blocco sovrascrive il primo.",
+      "Serve elif al posto del secondo if."
+     ],
+     "soluzione": "if quota > 8000:\n    stato = \"alta\"\nelif quota > 3000:\n    stato = \"media\"",
+     "spiegazione": "Tre `if` indipendenti: la quota 12000 è maggiore sia di 8000 sia di 3000, quindi il secondo blocco riscrive quello del primo. Con `elif` la valutazione si ferma al primo vero. È il bug che produce sempre la fascia più bassa fra quelle che si applicano."
+    },
+    {
+     "id": "p04-if-9",
+     "tipo": "write",
+     "testo": "Conta quante quote di `quote` superano 8000, in `alte`.",
+     "setup": "quote = [3000, 9000, 11000, 500]\n",
+     "starter": "alte = 0\nfor \n    if \n        alte = \n",
+     "test": "assert alte == 2, f'attese 2, hai {alte}'",
+     "hint": [
+      "for q in quote: if q > 8000: alte = alte + 1",
+      "Il contatore va inizializzato prima del ciclo."
+     ],
+     "soluzione": "alte = 0\nfor q in quote:\n    if q > 8000:\n        alte = alte + 1",
+     "spiegazione": "È il `for` con un `if` dentro e un contatore: la struttura più comune di tutte. In una comprehension diventa `len([q for q in quote if q > 8000])`, e in NumPy una maschera booleana sommata — tre livelli dello stesso conto."
+    },
+    {
+     "id": "p04-if-10",
+     "tipo": "write",
+     "testo": "Classifica ogni quota e costruisci `stati`, la lista delle etichette `\"alta\"` o `\"bassa\"` per ciascuna.",
+     "setup": "quote = [3000, 9000, 11000]\n",
+     "starter": "stati = \n",
+     "test": "assert stati == ['bassa', 'alta', 'alta'], f'attesa [bassa, alta, alta], hai {stati}'",
+     "hint": [
+      "[valore if cond else altro for q in quote]",
+      "stati = [\"alta\" if q > 8000 else \"bassa\" for q in quote]"
+     ],
+     "soluzione": "stati = [\"alta\" if q > 8000 else \"bassa\" for q in quote]",
+     "spiegazione": "La forma su una riga dentro una comprehension: `[espressione if ... else ... for ...]`. Attenzione all'ordine — l'`if/else` che **sceglie un valore** va prima del `for`, mentre l'`if` che **filtra** va dopo. Sono due costrutti diversi che si scrivono con la stessa parola."
+    }
+   ]
+  },
+  {
+   "id": "p04-for",
+   "comando": "for e range",
+   "titolo": "for — scorrere, non indicizzare",
+   "esercizi": [
+    {
+     "id": "p04-fo-1",
+     "tipo": "write",
+     "testo": "Somma gli elementi di `valori` in `totale`, scorrendo direttamente la lista.",
+     "setup": "valori = [10, 20, 30]\n",
+     "starter": "totale = 0\nfor \n    totale = \n",
+     "test": "assert totale == 60, f'atteso 60, hai {totale}'",
+     "hint": [
+      "for v in valori:",
+      "totale = totale + v"
+     ],
+     "soluzione": "totale = 0\nfor v in valori:\n    totale = totale + v",
+     "spiegazione": "In Python il `for` scorre gli **elementi**, non gli indici. La forma `for i in range(len(valori))` funziona ma è quella di altri linguaggi: più lunga e con un indice in più da sbagliare."
+    },
+    {
+     "id": "p04-fo-2",
+     "tipo": "predict",
+     "testo": "Quanti valori produce `range(1, 5)` ?",
+     "opzioni": [
+      "quattro: 1, 2, 3, 4",
+      "cinque: 1, 2, 3, 4, 5",
+      "cinque: 0, 1, 2, 3, 4",
+      "tre: 2, 3, 4"
+     ],
+     "risposta": "quattro: 1, 2, 3, 4",
+     "spiegazione": "Quattro: 1, 2, 3, 4. L'estremo destro è **escluso**, come nello slicing. È l'errore di uno più comune del linguaggio, e non solleva niente: il ciclo gira una volta in meno e il risultato è quasi giusto."
+    },
+    {
+     "id": "p04-fo-3",
+     "tipo": "write",
+     "testo": "Costruisci `numeri`, la lista dei numeri da 1 a 5 **inclusi**, usando `range`.",
+     "setup": "",
+     "starter": "numeri = \n",
+     "test": "assert numeri == [1, 2, 3, 4, 5], f'attesa [1, 2, 3, 4, 5], hai {numeri}'",
+     "hint": [
+      "L'estremo destro e' escluso: serve 6.",
+      "numeri = list(range(1, 6))"
+     ],
+     "soluzione": "numeri = list(range(1, 6))",
+     "spiegazione": "Per includere il 5 serve `range(1, 6)`. `range` non costruisce una lista: genera i numeri man mano, ed è per questo che `range(1000000)` non occupa memoria. Per vederli tutti serve `list()` attorno."
+    },
+    {
+     "id": "p04-fo-4",
+     "tipo": "write",
+     "testo": "Costruisci `passi`, i numeri da 0 a 9 con passo 3, e `indietro`, i numeri da 5 a 1 in ordine decrescente.",
+     "setup": "",
+     "starter": "passi = \nindietro = \n",
+     "test": "assert passi == [0, 3, 6, 9], f'attesa [0, 3, 6, 9], hai {passi}'\nassert indietro == [5, 4, 3, 2, 1], f'attesa [5, 4, 3, 2, 1], hai {indietro}'",
+     "hint": [
+      "range(0, 10, 3)",
+      "range(5, 0, -1)"
+     ],
+     "soluzione": "passi = list(range(0, 10, 3))\nindietro = list(range(5, 0, -1))",
+     "spiegazione": "`range(inizio, fine, passo)`, e con passo negativo si va all'indietro — ma la fine resta esclusa, quindi `range(5, 0, -1)` arriva a 1 e non a 0. Il passo negativo con la fine sbagliata produce una sequenza vuota, senza errore."
+    },
+    {
+     "id": "p04-fo-5",
+     "tipo": "predict",
+     "testo": "Dopo `for i in range(3): ...`, quanto vale `i` fuori dal ciclo?",
+     "opzioni": [
+      "2, l'ultimo valore assunto",
+      "3",
+      "0",
+      "NameError: i non esiste fuori dal ciclo"
+     ],
+     "risposta": "2, l'ultimo valore assunto",
+     "spiegazione": "`2`, l'ultimo valore assunto. In Python il ciclo non crea uno scope separato: la variabile sopravvive. È comodo per sapere dove ti sei fermato dopo un `break`, ed è una fonte di bug quando riusi lo stesso nome più avanti."
+    },
+    {
+     "id": "p04-fo-6",
+     "tipo": "predict",
+     "testo": "```\nb = [1, 2, 2, 3, 2]\nfor x in b:\n    if x == 2:\n        b.remove(x)\n```\n\nCosa contiene `b` alla fine?",
+     "opzioni": [
+      "[1, 3, 2]",
+      "[1, 3]",
+      "[1, 2, 3, 2]",
+      "RuntimeError: lista modificata durante l'iterazione"
+     ],
+     "risposta": "[1, 3, 2]",
+     "spiegazione": "`[1, 3, 2]`, non `[1, 3]`. Il ciclo avanza per posizione: togliendo un elemento, quello successivo scala indietro di uno e viene saltato. Nessun errore, risultato sbagliato. Non si modifica mai una lista mentre la si scorre."
+    },
+    {
+     "id": "p04-fo-7",
+     "tipo": "debug",
+     "testo": "Questo codice deve togliere tutti i 2 dalla lista, ma ne lascia uno. Correggi costruendo una lista nuova.",
+     "setup": "b = [1, 2, 2, 3, 2]\n",
+     "starter": "for x in b:\n    if x == 2:\n        b.remove(x)\npuliti = b\n",
+     "test": "assert puliti == [1, 3], f'attesa [1, 3], hai {puliti}'",
+     "hint": [
+      "Non modificare la lista che stai scorrendo.",
+      "puliti = [x for x in b if x != 2]"
+     ],
+     "soluzione": "puliti = [x for x in b if x != 2]",
+     "spiegazione": "La comprehension costruisce un oggetto nuovo e non tocca quello che sta scorrendo, quindi il problema sparisce invece di essere aggirato. È la forma corretta anche quando la condizione è complicata: filtrare non è modificare."
+    },
+    {
+     "id": "p04-fo-8",
+     "tipo": "write",
+     "testo": "Scorri la stringa e conta le vocali in `vocali`.",
+     "setup": "s = \"aerodinamica\"\n",
+     "starter": "vocali = 0\nfor \n    if \n        vocali = \n",
+     "test": "assert vocali == 7, f'attese 7 vocali, hai {vocali}'",
+     "hint": [
+      "for c in s: if c in \"aeiou\":",
+      "vocali = vocali + 1"
+     ],
+     "soluzione": "vocali = 0\nfor c in s:\n    if c in \"aeiou\":\n        vocali = vocali + 1",
+     "spiegazione": "Il `for` scorre una stringa carattere per carattere, come una lista. `in \"aeiou\"` cerca una sottostringa di un carattere, che è il modo compatto di scrivere cinque confronti con `or`."
+    },
+    {
+     "id": "p04-fo-9",
+     "tipo": "write",
+     "testo": "Scorri il dizionario e metti in `righe` la lista delle stringhe `\"chiave=valore\"`, usando un `for` esplicito.",
+     "setup": "d = {\"quota\": 9000, \"mach\": 0.82}\n",
+     "starter": "righe = []\nfor \n    righe.append(\n",
+     "test": "assert righe == ['quota=9000', 'mach=0.82'], f'attesa [quota=9000, mach=0.82], hai {righe}'",
+     "hint": [
+      "for k, v in d.items():",
+      "righe.append(f\"{k}={v}\")"
+     ],
+     "soluzione": "righe = []\nfor k, v in d.items():\n    righe.append(f\"{k}={v}\")",
+     "spiegazione": "`for k, v in d.items()` spacchetta ogni coppia. Attenzione che `for k in d` da solo dà le **chiavi**: è la forma che confonde, perché sembra che debba dare i valori e non solleva niente se ti aspettavi il contrario."
+    },
+    {
+     "id": "p04-fo-10",
+     "tipo": "write",
+     "testo": "Cicli annidati: costruisci `celle`, la lista delle coppie `(i, j)` per una griglia 2×3.",
+     "setup": "",
+     "starter": "celle = []\nfor \n    for \n        celle.append(\n",
+     "test": "assert celle == [(0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2)], f'attese sei coppie in ordine, hai {celle}'",
+     "hint": [
+      "for i in range(2): for j in range(3):",
+      "celle.append((i, j))"
+     ],
+     "soluzione": "celle = []\nfor i in range(2):\n    for j in range(3):\n        celle.append((i, j))",
+     "spiegazione": "Il ciclo interno gira per intero a ogni giro di quello esterno: sei coppie da 2×3. Il costo si moltiplica, ed è il motivo per cui in NumPy queste due dimensioni diventano un broadcast invece di due `for`."
+    }
+   ]
+  },
+  {
+   "id": "p04-while",
+   "comando": "while",
+   "titolo": "while — e la riga che manca sempre",
+   "esercizi": [
+    {
+     "id": "p04-wh-1",
+     "tipo": "write",
+     "testo": "Conta da 0 a 5 con un `while`: alla fine `n` deve valere 5 e `totale` la somma dei valori assunti da 1 a 5.",
+     "setup": "",
+     "starter": "n = 0\ntotale = 0\nwhile \n    n = \n    totale = \n",
+     "test": "assert n == 5, f'atteso n = 5, hai {n}'\nassert totale == 15, f'atteso totale = 15, hai {totale}'",
+     "hint": [
+      "while n < 5:",
+      "Dentro: n = n + 1 e poi totale = totale + n"
+     ],
+     "soluzione": "n = 0\ntotale = 0\nwhile n < 5:\n    n = n + 1\n    totale = totale + n",
+     "spiegazione": "La riga che aggiorna `n` è quella che fa terminare il ciclo, e va scritta **per prima**, prima ancora del corpo. Senza, la condizione resta vera per sempre e la scheda si blocca."
+    },
+    {
+     "id": "p04-wh-2",
+     "tipo": "predict",
+     "testo": "Quando conviene un `while` invece di un `for` ?",
+     "opzioni": [
+      "quando la fine dipende da una condizione, non da una sequenza nota in partenza",
+      "quando la sequenza e' molto lunga",
+      "quando servono gli indici",
+      "mai: while e' sempre sostituibile da for"
+     ],
+     "risposta": "quando la fine dipende da una condizione, non da una sequenza nota in partenza",
+     "spiegazione": "Quando la fine dipende da una **condizione** che cambia dentro il ciclo e non da una sequenza nota in partenza: un'iterazione che va avanti finché non converge, una lettura che continua finché ci sono dati. Se sai già su cosa iteri, il `for` è più corto e non può diventare infinito."
+    },
+    {
+     "id": "p04-wh-3",
+     "tipo": "write",
+     "testo": "Trova la potenza di 2 più piccola che superi 1000: mettila in `p` e l'esponente in `k`.",
+     "setup": "",
+     "starter": "p = 1\nk = 0\nwhile \n    p = \n    k = \n",
+     "test": "assert p == 1024, f'attesa 1024, hai {p}'\nassert k == 10, f'atteso 10, hai {k}'",
+     "hint": [
+      "while p <= 1000:",
+      "p = p * 2 e k = k + 1"
+     ],
+     "soluzione": "p = 1\nk = 0\nwhile p <= 1000:\n    p = p * 2\n    k = k + 1",
+     "spiegazione": "1024, esponente 10. È il caso tipico del `while`: non sai in partenza quanti giri servono, lo sai solo guardando il risultato. Con un `for` dovresti indovinare un limite superiore."
+    },
+    {
+     "id": "p04-wh-4",
+     "tipo": "predict",
+     "testo": "```\nn = 0\nwhile n < 5:\n    print(n)\n```\n\nCosa succede?",
+     "opzioni": [
+      "il ciclo non termina mai",
+      "stampa 0 1 2 3 4 e finisce",
+      "stampa 0 e finisce",
+      "solleva un errore dopo 1000 giri"
+     ],
+     "risposta": "il ciclo non termina mai",
+     "spiegazione": "Non finisce mai: niente nel corpo cambia `n`, quindi la condizione resta vera. In questa app significa che la scheda smette di rispondere e devi ricaricarla. La riga che aggiorna la condizione va scritta prima del corpo, sempre."
+    },
+    {
+     "id": "p04-wh-5",
+     "tipo": "write",
+     "testo": "Calcola la radice di 2 con il metodo di Newton, fermandoti quando lo scarto scende sotto `1e-12` **oppure** dopo 100 giri. Metti il risultato in `x` e i giri in `giri`.",
+     "difficolta": 2,
+     "setup": "",
+     "starter": "x = 2.0\ngiri = 0\nwhile \n    x = \n    giri = \n",
+     "test": "assert abs(x * x - 2) < 1e-12, f'x non e la radice di 2: {x}'\nassert giri == 5, f'attesi 5 giri, hai {giri}'\nassert giri < 100, 'il tetto ai giri non deve scattare'",
+     "hint": [
+      "while abs(x * x - 2) > 1e-12 and giri < 100:",
+      "x = (x + 2 / x) / 2"
+     ],
+     "soluzione": "x = 2.0\ngiri = 0\nwhile abs(x * x - 2) > 1e-12 and giri < 100:\n    x = (x + 2 / x) / 2\n    giri = giri + 1",
+     "spiegazione": "Converge in cinque giri. Il tetto ai giri non è pessimismo: un metodo iterativo che diverge è un caso normale, e senza quel tetto il sintomo è un programma che non risponde invece di un messaggio che dice cosa è successo. Qualunque `while` che aspetta una convergenza va scritto così."
+    },
+    {
+     "id": "p04-wh-6",
+     "tipo": "write",
+     "testo": "Svuota una lista usandola come pila: togli l'ultimo elemento finché non è vuota, e accumula i valori tolti in `ordine`.",
+     "setup": "pila = [1, 2, 3]\n",
+     "starter": "ordine = []\nwhile \n    ordine.append(\n",
+     "test": "assert ordine == [3, 2, 1], f'attesa [3, 2, 1], hai {ordine}'\nassert pila == [], f'la pila deve restare vuota, hai {pila}'",
+     "hint": [
+      "Una lista vuota e' falsa: while pila:",
+      "ordine.append(pila.pop())"
+     ],
+     "soluzione": "ordine = []\nwhile pila:\n    ordine.append(pila.pop())",
+     "spiegazione": "Una lista vuota è **falsa**, quindi `while pila:` basta e si legge meglio di `while len(pila) > 0`. È la verità implicita del modulo 1 usata dove serve davvero."
+    },
+    {
+     "id": "p04-wh-7",
+     "tipo": "predict",
+     "testo": "Perché `while pila:` è preferibile a `while len(pila) > 0:` ?",
+     "opzioni": [
+      "dice la stessa cosa sfruttando il fatto che una sequenza vuota e' falsa",
+      "e' l'unica che funziona: len() non si usa nei while",
+      "e' molto piu' veloce",
+      "sono diverse: la prima esce anche con un solo elemento"
+     ],
+     "risposta": "dice la stessa cosa sfruttando il fatto che una sequenza vuota e' falsa",
+     "spiegazione": "Perché dice la stessa cosa in meno caratteri sfruttando la verità implicita: una sequenza vuota è falsa. Non è più veloce in modo che conti — è più leggibile, ed è la forma che troverai scritta ovunque."
+    },
+    {
+     "id": "p04-wh-8",
+     "tipo": "write",
+     "testo": "Accumula quote di 500 m finché non superi 3000: metti l'ultima quota raggiunta in `q` e i passi fatti in `passi`.",
+     "setup": "",
+     "starter": "q = 0\npassi = 0\nwhile \n    q = \n    passi = \n",
+     "test": "assert q == 3500, f'attesa 3500, hai {q}'\nassert passi == 7, f'attesi 7 passi, hai {passi}'",
+     "hint": [
+      "while q <= 3000:",
+      "q = q + 500"
+     ],
+     "soluzione": "q = 0\npassi = 0\nwhile q <= 3000:\n    q = q + 500\n    passi = passi + 1",
+     "spiegazione": "3500 in sette passi: la condizione si valuta **prima** di ogni giro, quindi il ciclo esce solo dopo aver superato la soglia. Se ti serve fermarti all'ultimo valore sotto la soglia, la condizione va spostata o il valore va salvato prima."
+    }
+   ]
+  },
+  {
+   "id": "p04-break",
+   "comando": "break e continue",
+   "titolo": "break, continue e l'else del ciclo",
+   "esercizi": [
+    {
+     "id": "p04-br-1",
+     "tipo": "write",
+     "testo": "Trova il primo valore di `valori` che supera 100 e mettilo in `trovato`, uscendo dal ciclo appena lo trovi.",
+     "setup": "valori = [5, 40, 150, 900]\n",
+     "starter": "trovato = None\nfor \n    if \n        trovato = \n        break\n",
+     "test": "assert trovato == 150, f'atteso 150, hai {trovato}'",
+     "hint": [
+      "for v in valori: if v > 100:",
+      "trovato = v e poi break"
+     ],
+     "soluzione": "trovato = None\nfor v in valori:\n    if v > 100:\n        trovato = v\n        break",
+     "spiegazione": "`break` appena trovi: su una lista lunga è la differenza fra fermarsi al terzo elemento e scorrerne un milione. Inizializzare `trovato` a `None` prima del ciclo serve a distinguere \"non trovato\" da un valore legittimo."
+    },
+    {
+     "id": "p04-br-2",
+     "tipo": "write",
+     "testo": "Somma solo i valori non negativi di `valori`, saltando gli altri con `continue`.",
+     "setup": "valori = [10, -5, 20, -1, 3]\n",
+     "starter": "totale = 0\nfor \n    if \n        continue\n    totale = \n",
+     "test": "assert totale == 33, f'atteso 33, hai {totale}'",
+     "hint": [
+      "if v < 0: continue",
+      "totale = totale + v"
+     ],
+     "soluzione": "totale = 0\nfor v in valori:\n    if v < 0:\n        continue\n    totale = totale + v",
+     "spiegazione": "`continue` salta il resto del corpo e passa al giro dopo. Qui un `if` positivo farebbe lo stesso lavoro; `continue` conviene quando i casi da scartare sono diversi e vuoi toglierli di mezzo in testa al ciclo, invece di annidare tutto il corpo dentro un `if`."
+    },
+    {
+     "id": "p04-br-3",
+     "tipo": "predict",
+     "testo": "Dentro due `for` annidati, da quale ciclo esce `break` ?",
+     "opzioni": [
+      "solo dal ciclo piu' interno",
+      "da entrambi",
+      "dal ciclo piu' esterno",
+      "dipende dall'indentazione del break"
+     ],
+     "risposta": "solo dal ciclo piu' interno",
+     "spiegazione": "Solo dal più interno: il ciclo esterno prosegue col giro successivo. Per uscire da entrambi serve una variabile di stato — o meglio, mettere i due cicli in una funzione e usare `return`, che è la soluzione pulita."
+    },
+    {
+     "id": "p04-br-4",
+     "tipo": "write",
+     "testo": "Verifica se `n` è primo: `primo` vale `True` se nessun numero fra 2 e n-1 lo divide.",
+     "setup": "n = 7\n",
+     "starter": "for \n    if \n        primo = False\n        break\nelse:\n    primo = \n",
+     "test": "assert primo is True, f'7 e primo, hai {primo}'",
+     "hint": [
+      "for d in range(2, n): if n % d == 0:",
+      "Nel ramo else: primo = True"
+     ],
+     "soluzione": "for d in range(2, n):\n    if n % d == 0:\n        primo = False\n        break\nelse:\n    primo = True",
+     "spiegazione": "L'`else` attaccato al `for` si esegue **se il ciclo è finito senza break** — dice esattamente \"non ho trovato niente\". Si legge male, perché verrebbe da leggerlo come l'`else` di un `if`, ma sostituisce la variabile-bandiera che altrimenti servirebbe."
+    },
+    {
+     "id": "p04-br-5",
+     "tipo": "predict",
+     "testo": "Quando si esegue l'`else` attaccato a un `for` ?",
+     "opzioni": [
+      "quando il ciclo finisce senza aver incontrato un break",
+      "quando il ciclo non esegue nessun giro",
+      "quando il ciclo incontra un break",
+      "sempre, dopo l'ultimo giro"
+     ],
+     "risposta": "quando il ciclo finisce senza aver incontrato un break",
+     "spiegazione": "Quando il ciclo finisce **senza** aver incontrato un `break`. È raro nel codice altrui, ma quando lo incontri devi sapere cosa fa: leggerlo come l'`else` di un `if` porta a conclusioni completamente sbagliate su cosa fa quel codice."
+    },
+    {
+     "id": "p04-br-6",
+     "tipo": "write",
+     "testo": "Trova la **posizione** del primo valore negativo in `dati`, o `-1` se non ce n'è. Mettila in `pos`.",
+     "setup": "dati = [3, 7, -2, 8]\n",
+     "starter": "pos = -1\nfor \n    if \n        pos = \n        break\n",
+     "test": "assert pos == 2, f'attesa 2, hai {pos}'",
+     "hint": [
+      "Serve anche l'indice: for i, v in enumerate(dati):",
+      "pos = i e poi break"
+     ],
+     "soluzione": "pos = -1\nfor i, v in enumerate(dati):\n    if v < 0:\n        pos = i\n        break",
+     "spiegazione": "`-1` come \"non trovato\" è la convenzione ereditata da altri linguaggi; in Python è più idiomatico `None`, perché `-1` è un indice valido e finisce per leggere l'ultimo elemento se qualcuno se ne dimentica. Qui la usiamo perché è quella che troverai nel codice altrui."
+    },
+    {
+     "id": "p04-br-7",
+     "tipo": "write",
+     "testo": "Somma i valori di `dati` fermandoti al primo negativo, che non va incluso. Metti la somma in `totale`.",
+     "setup": "dati = [10, 20, -1, 100]\n",
+     "starter": "totale = 0\nfor \n    if \n        break\n    totale = \n",
+     "test": "assert totale == 30, f'atteso 30, hai {totale}'",
+     "hint": [
+      "if v < 0: break va prima della somma.",
+      "totale = totale + v"
+     ],
+     "soluzione": "totale = 0\nfor v in dati:\n    if v < 0:\n        break\n    totale = totale + v",
+     "spiegazione": "L'ordine conta: `break` **prima** di sommare, altrimenti il negativo entra nel totale. È lo stesso motivo per cui il controllo di validità va in testa al corpo del ciclo e non in coda."
+    },
+    {
+     "id": "p04-br-8",
+     "tipo": "write",
+     "testo": "Cerca in una griglia: trova la prima cella di `griglia` che contiene un valore negativo e mettine le coordinate in `dove`. Usa una variabile di stato per uscire da entrambi i cicli.",
+     "difficolta": 2,
+     "setup": "griglia = [[1, 2], [3, -4], [5, 6]]\n",
+     "starter": "dove = None\nfor \n    for \n        if \n            dove = \n            break\n    if dove is not None:\n        break\n",
+     "test": "assert dove == (1, 1), f'attesa (1, 1), hai {dove}'",
+     "hint": [
+      "for i, riga in enumerate(griglia): for j, v in enumerate(riga):",
+      "dove = (i, j) e poi break"
+     ],
+     "soluzione": "dove = None\nfor i, riga in enumerate(griglia):\n    for j, v in enumerate(riga):\n        if v < 0:\n            dove = (i, j)\n            break\n    if dove is not None:\n        break",
+     "spiegazione": "`break` esce solo dal ciclo interno, quindi serve la bandiera per fermare anche l'esterno. È la struttura che rende evidente perché una funzione con `return` sia meglio: `return` esce da tutto, senza variabile in più da ricordarsi di aggiornare."
+    }
+   ]
+  },
+  {
+   "id": "p04-enumerate",
+   "comando": "enumerate e zip",
+   "titolo": "enumerate e zip — indici e parallelo",
+   "esercizi": [
+    {
+     "id": "p04-en-1",
+     "tipo": "write",
+     "testo": "Scorri `valori` con l'indice e costruisci `righe`, la lista delle stringhe `\"0: 10\"`, `\"1: 20\"` e così via.",
+     "setup": "valori = [10, 20, 30]\n",
+     "starter": "righe = []\nfor \n    righe.append(\n",
+     "test": "assert righe == ['0: 10', '1: 20', '2: 30'], f'attesa [0: 10, 1: 20, 2: 30], hai {righe}'",
+     "hint": [
+      "for i, v in enumerate(valori):",
+      "righe.append(f\"{i}: {v}\")"
+     ],
+     "soluzione": "righe = []\nfor i, v in enumerate(valori):\n    righe.append(f\"{i}: {v}\")",
+     "spiegazione": "`enumerate` produce coppie `(indice, valore)` e il `for` le spacchetta. Sostituisce `range(len(...))` senza perdere l'accesso diretto all'elemento — e senza l'indice da riusare per andare a rileggere la lista."
+    },
+    {
+     "id": "p04-en-2",
+     "tipo": "write",
+     "testo": "Numera le righe **da 1**: costruisci `numerate`, la lista delle coppie `(numero, valore)` partendo da 1.",
+     "setup": "valori = [\"a\", \"b\", \"c\"]\n",
+     "starter": "numerate = \n",
+     "test": "assert numerate == [(1, 'a'), (2, 'b'), (3, 'c')], f'attesa [(1, a), (2, b), (3, c)], hai {numerate}'",
+     "hint": [
+      "enumerate accetta start.",
+      "numerate = list(enumerate(valori, start=1))"
+     ],
+     "soluzione": "numerate = list(enumerate(valori, start=1))",
+     "spiegazione": "`start=1` sposta il conteggio senza sommare 1 in ogni punto in cui l'indice viene usato. È il caso della numerazione di righe di un file, dove la prima riga è la 1 e non la 0."
+    },
+    {
+     "id": "p04-en-3",
+     "tipo": "predict",
+     "testo": "Che vantaggio ha `for i, v in enumerate(x)` su `for i in range(len(x))` ?",
+     "opzioni": [
+      "da' indice e valore insieme, senza rileggere x[i]",
+      "e' molto piu' veloce",
+      "funziona anche su liste vuote, mentre range no",
+      "nessuno: sono equivalenti in tutto"
+     ],
+     "risposta": "da' indice e valore insieme, senza rileggere x[i]",
+     "spiegazione": "Dà indice e valore insieme, senza dover rileggere `x[i]`. È più corto, non può sbagliare l'indice, e continua a funzionare su sequenze che non supportano l'indicizzazione. `range(len(...))` è la forma che si porta dietro chi arriva da altri linguaggi."
+    },
+    {
+     "id": "p04-en-4",
+     "tipo": "write",
+     "testo": "Scorri quote e Mach in parallelo e costruisci `punti`, la lista delle coppie.",
+     "setup": "quote = [3000, 9000]\nmach = [0.4, 0.82]\n",
+     "starter": "punti = []\nfor \n    punti.append(\n",
+     "test": "assert punti == [(3000, 0.4), (9000, 0.82)], f'attesa [(3000, 0.4), (9000, 0.82)], hai {punti}'",
+     "hint": [
+      "for q, m in zip(quote, mach):",
+      "punti.append((q, m))"
+     ],
+     "soluzione": "punti = []\nfor q, m in zip(quote, mach):\n    punti.append((q, m))",
+     "spiegazione": "`zip` è la forma corretta per due liste allineate. L'alternativa con gli indici funziona ma non protegge da niente: se le due liste hanno lunghezza diversa, quella con gli indici solleva `IndexError` mentre `zip` tronca in silenzio."
+    },
+    {
+     "id": "p04-en-5",
+     "tipo": "predict",
+     "testo": "`zip` su due liste di lunghezza diversa: cosa fa?",
+     "opzioni": [
+      "si ferma alla piu' corta, senza segnalare niente",
+      "solleva ValueError",
+      "riempie con None i valori mancanti",
+      "ripete gli elementi della piu' corta"
+     ],
+     "risposta": "si ferma alla piu' corta, senza segnalare niente",
+     "spiegazione": "Si ferma alla **più corta**, in silenzio. Se una lista ha una riga in più, quella riga sparisce dal risultato e nessuno lo dice: è il modo silenzioso in cui si perde l'ultima misura leggendo due colonne da file diversi."
+    },
+    {
+     "id": "p04-en-6",
+     "tipo": "write",
+     "testo": "Proteggiti dal troncamento silenzioso: metti in `uguali` il controllo che le due liste abbiano la stessa lunghezza, e in `persi` quanti elementi `zip` scarterebbe.",
+     "setup": "quote = [3000, 9000, 11000]\nmach = [0.4, 0.82]\n",
+     "starter": "uguali = \npersi = \n",
+     "test": "assert uguali is False, 'le lunghezze sono diverse'\nassert persi == 1, f'atteso 1 elemento perso, hai {persi}'",
+     "hint": [
+      "uguali = len(quote) == len(mach)",
+      "persi = abs(len(quote) - len(mach))"
+     ],
+     "soluzione": "uguali = len(quote) == len(mach)\npersi = abs(len(quote) - len(mach))",
+     "spiegazione": "Una riga persa. Quando le due lunghezze **devono** coincidere, il controllo va scritto a mano prima dello `zip`: è l'unico modo di trasformare un troncamento silenzioso in un errore che vedi."
+    },
+    {
+     "id": "p04-en-7",
+     "tipo": "write",
+     "testo": "Accumula una somma pesata: `totale` è la somma di ogni valore moltiplicato per il suo indice.",
+     "setup": "valori = [10, 20, 30]\n",
+     "starter": "totale = 0\nfor \n    totale = \n",
+     "test": "assert totale == 80, f'atteso 80, hai {totale}'",
+     "hint": [
+      "for i, v in enumerate(valori):",
+      "totale = totale + i * v"
+     ],
+     "soluzione": "totale = 0\nfor i, v in enumerate(valori):\n    totale = totale + i * v",
+     "spiegazione": "80: `0*10 + 1*20 + 2*30`. È lo schema di ogni media pesata, di ogni momento rispetto a un asse, di ogni polinomio valutato per potenze — con `enumerate` a fornire il peso."
+    },
+    {
+     "id": "p04-en-8",
+     "tipo": "write",
+     "testo": "Costruisci un dizionario da due liste con un ciclo esplicito: `record` associa ogni colonna al suo valore.",
+     "setup": "colonne = [\"quota\", \"mach\"]\nvalori = [9000, 0.82]\n",
+     "starter": "record = {}\nfor \n    record[\n",
+     "test": "assert record == {'quota': 9000, 'mach': 0.82}, f'atteso quota e mach, hai {record}'",
+     "hint": [
+      "for c, v in zip(colonne, valori):",
+      "record[c] = v"
+     ],
+     "soluzione": "record = {}\nfor c, v in zip(colonne, valori):\n    record[c] = v",
+     "spiegazione": "`dict(zip(colonne, valori))` farebbe lo stesso in una riga — e in codice vero è quella la forma da usare. Scriverlo col ciclo una volta serve a vedere cosa fa quella riga, che è il punto di questo modulo."
+    },
+    {
+     "id": "p04-en-9",
+     "tipo": "write",
+     "testo": "Trova il valore massimo **e** la sua posizione scorrendo `dati`, senza usare `max`. Metti i due risultati in `massimo` e `dove`.",
+     "setup": "dati = [3, 17, 8, 17, 2]\n",
+     "starter": "massimo = dati[0]\ndove = 0\nfor \n    if \n        massimo = \n        dove = \n",
+     "test": "assert massimo == 17, f'atteso 17, hai {massimo}'\nassert dove == 1, f'attesa la prima occorrenza, indice 1, hai {dove}'",
+     "hint": [
+      "for i, v in enumerate(dati): if v > massimo:",
+      "Con > stretto si tiene la prima occorrenza."
+     ],
+     "soluzione": "massimo = dati[0]\ndove = 0\nfor i, v in enumerate(dati):\n    if v > massimo:\n        massimo = v\n        dove = i",
+     "spiegazione": "È lo schema del massimo con la posizione: si tiene il migliore visto finora e lo si aggiorna. `max(dati)` darebbe solo il valore; per avere anche l'indice serve questo ciclo, oppure `dati.index(max(dati))`, che però scorre la lista due volte."
+    },
+    {
+     "id": "p04-en-10",
+     "tipo": "apply",
+     "testo": "**Ridurre un registro di volo.**\n\nDa due liste parallele, ricava con un ciclo solo:\n\n- `n_crociera`: quanti punti hanno quota sopra 8000 e Mach sopra 0.8\n- `quota_max`: la quota più alta fra quei punti\n- `prima`: l'indice del primo punto di crociera, o `None` se non ce ne sono",
+     "difficolta": 3,
+     "setup": "quote = [3000, 9000, 11000, 9500]\nmach = [0.4, 0.82, 0.78, 0.85]\n",
+     "starter": "n_crociera = 0\nquota_max = 0\nprima = None\nfor \n",
+     "test": "assert n_crociera == 2, f'attesi 2 punti, hai {n_crociera}'\nassert quota_max == 9500, f'attesa 9500, hai {quota_max}'\nassert prima == 1, f'atteso indice 1, hai {prima}'",
+     "hint": [
+      "for i, (q, m) in enumerate(zip(quote, mach)): oppure enumerate su un indice e leggi le due liste.",
+      "Aggiorna prima solo se vale ancora None."
+     ],
+     "soluzione": "n_crociera = 0\nquota_max = 0\nprima = None\nfor i, (q, m) in enumerate(zip(quote, mach)):\n    if q > 8000 and m > 0.8:\n        n_crociera = n_crociera + 1\n        if q > quota_max:\n            quota_max = q\n        if prima is None:\n            prima = i",
+     "spiegazione": "Un solo passaggio sui dati produce tutti e tre i risultati: contatore, massimo corrente e prima occorrenza sono tre accumulatori diversi aggiornati nello stesso ciclo.\n\nIl controllo `if prima is None` è quello che rende \"prima occorrenza\" diverso da \"ultima\": senza, `prima` verrebbe riscritto a ogni punto valido. In NumPy lo stesso conto sarebbe una maschera booleana più `argmax`, e passerebbe sui dati tre volte — su array è comunque più veloce, ed è esattamente il compromesso che il modulo 11 di NumPy discute."
+    }
+   ]
+  },
+  {
+   "id": "p04-accumulo",
+   "comando": "accumulo",
+   "titolo": "accumulare — lo schema sotto ogni ciclo",
+   "esercizi": [
+    {
+     "id": "p04-ac-1",
+     "tipo": "write",
+     "testo": "Accumula il prodotto invece della somma: metti in `prodotto` il prodotto di tutti gli elementi.",
+     "setup": "valori = [2, 3, 4]\n",
+     "starter": "prodotto = \nfor \n    prodotto = \n",
+     "test": "assert prodotto == 24, f'atteso 24, hai {prodotto}'",
+     "hint": [
+      "L'accumulatore parte da 1, non da 0.",
+      "prodotto = prodotto * v"
+     ],
+     "soluzione": "prodotto = 1\nfor v in valori:\n    prodotto = prodotto * v",
+     "spiegazione": "Il valore iniziale di un accumulatore dipende dall'operazione: 0 per la somma, **1** per il prodotto. Partire da 0 su un prodotto dà sempre zero, che è un risultato plausibile e sempre sbagliato."
+    },
+    {
+     "id": "p04-ac-2",
+     "tipo": "predict",
+     "testo": "Sommando dieci volte `0.1` in un ciclo, il totale vale `0.9999999999999999`. Perché?",
+     "opzioni": [
+      "gli errori di arrotondamento delle singole somme si accumulano",
+      "Python usa float32 nei cicli",
+      "0.1 viene troncato a 0.09999",
+      "e' un errore del ciclo, non dei float"
+     ],
+     "risposta": "gli errori di arrotondamento delle singole somme si accumulano",
+     "spiegazione": "Gli errori di arrotondamento delle singole somme si accumulano: `0.1` non è rappresentabile esattamente in binario, e dieci somme sommano anche dieci piccoli errori. È il motivo per cui il totale di un ciclo di somme non va mai confrontato con `==`."
+    },
+    {
+     "id": "p04-ac-3",
+     "tipo": "write",
+     "testo": "Accumula dieci volte `0.1` in `totale`, poi metti in `esatto` il confronto con 1.0 e in `vicino` il confronto per tolleranza.",
+     "setup": "",
+     "starter": "totale = 0.0\nfor \n    totale = \nesatto = \nvicino = \n",
+     "test": "assert abs(totale - 0.9999999999999999) < 1e-18, f'atteso 0.9999999999999999, hai {totale!r}'\nassert esatto is False, 'il confronto esatto fallisce'\nassert vicino is True, 'il confronto per tolleranza riesce'",
+     "hint": [
+      "for i in range(10): totale = totale + 0.1",
+      "vicino = abs(totale - 1.0) < 1e-9"
+     ],
+     "soluzione": "totale = 0.0\nfor i in range(10):\n    totale = totale + 0.1\nesatto = totale == 1.0\nvicino = abs(totale - 1.0) < 1e-9",
+     "spiegazione": "`False` e `True`. È lo stesso risultato del modulo 1, qui prodotto da un ciclo invece che da una singola somma — e in un ciclo l'errore cresce col numero di giri, che è la ragione per cui le integrazioni lunghe non si fanno in precisione ridotta."
+    },
+    {
+     "id": "p04-ac-4",
+     "tipo": "write",
+     "testo": "Costruisci le somme progressive di `valori` in `progressive`: ogni elemento è la somma di tutti quelli fino a lì.",
+     "setup": "valori = [10, 20, 30]\n",
+     "starter": "progressive = []\ntotale = 0\nfor \n",
+     "test": "assert progressive == [10, 30, 60], f'attesa [10, 30, 60], hai {progressive}'",
+     "hint": [
+      "Accumula in totale e aggiungi a progressive a ogni giro.",
+      "progressive.append(totale)"
+     ],
+     "soluzione": "progressive = []\ntotale = 0\nfor v in valori:\n    totale = totale + v\n    progressive.append(totale)",
+     "spiegazione": "`[10, 30, 60]`. È la somma cumulata, e in NumPy si chiama `cumsum` — una chiamata al posto di questo ciclo. Riconoscere lo schema qui è quello che permette di riconoscere la funzione là."
+    },
+    {
+     "id": "p04-ac-5",
+     "tipo": "write",
+     "testo": "Raggruppa: conta quante volte compare ogni codice in `registro` e metti il risultato in `conteggi`.",
+     "setup": "registro = [\"a\", \"b\", \"a\", \"c\", \"a\"]\nconteggi = {}\n",
+     "starter": "for \n",
+     "test": "assert conteggi == {'a': 3, 'b': 1, 'c': 1}, f'attesi a:3 b:1 c:1, hai {conteggi}'",
+     "hint": [
+      "for c in registro:",
+      "conteggi[c] = conteggi.get(c, 0) + 1"
+     ],
+     "soluzione": "for c in registro:\n    conteggi[c] = conteggi.get(c, 0) + 1",
+     "spiegazione": "`conteggi.get(c, 0) + 1` è la forma canonica: il valore di riserva copre la prima volta che una chiave compare, e sostituisce un `if c in conteggi` di due righe. È lo stesso conto che in NumPy fa `unique(..., return_counts=True)`."
+    },
+    {
+     "id": "p04-ac-6",
+     "tipo": "write",
+     "testo": "Raggruppa i valori per chiave: `gruppi` associa a ogni codice la lista dei suoi valori.",
+     "setup": "coppie = [(\"a\", 1), (\"b\", 2), (\"a\", 3)]\ngruppi = {}\n",
+     "starter": "for \n",
+     "test": "assert gruppi == {'a': [1, 3], 'b': [2]}, f'attesi a:[1, 3] e b:[2], hai {gruppi}'",
+     "hint": [
+      "for c, v in coppie: if c not in gruppi: gruppi[c] = []",
+      "gruppi[c].append(v)"
+     ],
+     "soluzione": "for c, v in coppie:\n    if c not in gruppi:\n        gruppi[c] = []\n    gruppi[c].append(v)",
+     "spiegazione": "`setdefault` non è ancora nel tuo vocabolario, quindi la forma esplicita è: se la chiave manca, creala con una lista vuota; poi aggiungi. È lo schema che sta dietro a ogni raggruppamento, e la ragione per cui esiste `collections.defaultdict`."
+    },
+    {
+     "id": "p04-ac-7",
+     "tipo": "write",
+     "testo": "Somma solo la diagonale di una matrice quadrata, in `traccia`.",
+     "setup": "M = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]\n",
+     "starter": "traccia = 0\nfor \n    traccia = \n",
+     "test": "assert traccia == 15, f'attesa 15, hai {traccia}'",
+     "hint": [
+      "for i in range(len(M)):",
+      "traccia = traccia + M[i][i]"
+     ],
+     "soluzione": "traccia = 0\nfor i in range(len(M)):\n    traccia = traccia + M[i][i]",
+     "spiegazione": "Un ciclo solo, non due: la diagonale ha un elemento per riga, e l'indice serve due volte. È la traccia della matrice, e in NumPy è `np.trace` — di nuovo, uno schema che diventa una funzione."
+    },
+    {
+     "id": "p04-ac-8",
+     "tipo": "apply",
+     "testo": "**Integrazione passo-passo.**\n\nUn razzo parte da fermo e accelera a 25 m/s² per 8 secondi, con passo `dt = 0.5`. Integra con Eulero:\n\n- `v`: la velocità finale\n- `h`: la quota finale\n- `passi`: quanti passi hai fatto\n\nA ogni passo: prima aggiorna la quota con la velocità corrente, poi aggiorna la velocità.",
+     "difficolta": 3,
+     "setup": "a = 25.0\ndt = 0.5\nt_fine = 8.0\n",
+     "starter": "v = 0.0\nh = 0.0\npassi = 0\nwhile \n",
+     "test": "assert abs(v - 200.0) < 1e-9, f'velocita attesa 200.0, hai {v}'\nassert abs(h - 750.0) < 1e-9, f'quota attesa 750.0, hai {h}'\nassert passi == 16, f'attesi 16 passi, hai {passi}'",
+     "hint": [
+      "Il tempo va accumulato: t = 0.0 e while t < t_fine - 1e-12.",
+      "Dentro: h = h + v * dt, poi v = v + a * dt, poi t = t + dt e passi = passi + 1"
+     ],
+     "soluzione": "v = 0.0\nh = 0.0\npassi = 0\nt = 0.0\nwhile t < t_fine - 1e-12:\n    h = h + v * dt\n    v = v + a * dt\n    t = t + dt\n    passi = passi + 1",
+     "spiegazione": "Velocità 200 m/s, quota 750 m. Il valore esatto della quota sarebbe 800 m: Eulero in avanti usa la velocità **all'inizio** del passo per tutto il passo, e su un moto accelerato la sottostima sistematicamente. L'errore non è rumore, punta sempre nello stesso verso, e dimezzando `dt` si dimezza.\n\nQuesto è il ciclo che non si vettorizza: ogni passo dipende dal risultato del precedente. È l'eccezione di cui parla il modulo 11 di NumPy — e il motivo per cui esiste `scipy.integrate.solve_ivp`, che fa questo con metodi che sbagliano molto meno."
+    }
+   ]
+  }
+ ]
+}
