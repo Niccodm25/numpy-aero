@@ -658,8 +658,20 @@ function montaEsercizio({
   // vive quanto la schermata, e la verifica guarda dove sei arrivato.
   let term = null;
 
+  // Le opzioni si mescolano a ogni apertura. Nei file di contenuto la risposta
+  // giusta e' sempre la prima — chi scrive un esercizio la mette per prima e
+  // inventa dopo le alternative — e senza questa riga bastava premere sempre in
+  // cima per chiudere ogni domanda al primo colpo, con il ripasso che la
+  // registrava come padroneggiata.
+  //
+  // Mescolare qui invece di riordinare i JSON: resta corretto anche per i
+  // moduli scritti in futuro, e l'ordine cambia fra un ripasso e l'altro,
+  // quindi non si puo' memorizzare la posizione al posto della risposta.
+  let opzioni = null;
+
   if (es.tipo === "predict") {
-    zona.innerHTML = es.opzioni
+    opzioni = mescola(es.opzioni);
+    zona.innerHTML = opzioni
       .map((o, i) => `<label class="card riga"><input type="radio" name="op" value="${i}"> <code>${escapeHtml(o)}</code></label>`)
       .join("");
   } else if (es.tipo === "terminale") {
@@ -714,7 +726,9 @@ function montaEsercizio({
     if (es.tipo === "predict") {
       const sel = zona.querySelector("input[name=op]:checked");
       if (!sel) { btn.disabled = false; return; }
-      ok = es.opzioni[+sel.value] === es.risposta;
+      // Il confronto e' per valore, non per posizione: e' quello che permette di
+      // mescolare senza toccare i contenuti.
+      ok = opzioni[+sel.value] === es.risposta;
     } else if (es.tipo === "terminale") {
       const esitoT = SH.verifica(term.sh, es.verifica, term.trascrizione);
       ok = esitoT.ok;
@@ -822,6 +836,16 @@ const classePill = (s) => (s.fatto ? "ok" : s.tentativi ? "warn" : "");
 
 const escapeHtml = (s = "") =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** Copia mescolata, con Fisher-Yates. L'originale non si tocca. */
+function mescola(lista) {
+  const out = lista.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 const primaRiga = (t = "") =>
   escapeHtml(t.split("\n")[0].replace(/\*\*/g, "").replace(/`/g, "").slice(0, 80));
