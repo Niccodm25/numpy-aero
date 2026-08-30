@@ -26,6 +26,7 @@ export function statoProcessi(sh, processi = PROCESSI_BASE) {
   sh.processi = processi.map((p) => ({ ...p, stato: p.stato ?? "R" }));
   sh.prossimoPid = Math.max(1500, ...sh.processi.map((p) => p.pid)) + 1;
   sh.lavori = []; // i processi avviati in sottofondo da questa shell
+  sh.prossimoLavoro = 1;
   return sh;
 }
 
@@ -36,7 +37,32 @@ const suoi = (sh) => sh.processi ?? [];
  * KILL non arriva al programma, lo toglie di mezzo il kernel — ed e' il motivo
  * per cui -9 va usato solo dopo che TERM ha fallito.
  */
-const SEGNALI = { 15: "TERM", 9: "KILL", 2: "INT", TERM: "TERM", KILL: "KILL", INT: "INT" };
+const SEGNALI = {
+  15: "TERM",
+  9: "KILL",
+  2: "INT",
+  19: "STOP",
+  18: "CONT",
+  TERM: "TERM",
+  KILL: "KILL",
+  INT: "INT",
+  STOP: "STOP",
+  CONT: "CONT",
+};
+
+/** Riconosce %1 e 1, mantenendo il numero anche dopo un passaggio in fg. */
+function trovaLavoro(sh, args) {
+  const testo = args[0]?.replace(/^%/, "");
+  const numero = testo === undefined ? null : Number(testo);
+  if (testo !== undefined && (!Number.isInteger(numero) || numero < 1))
+    throw new ErroreFs(`job non valido: ${args[0]}`);
+  const lavori = sh.lavori ?? [];
+  const lavoro = numero === null
+    ? lavori.filter((l) => l.inSottofondo !== false).at(-1)
+    : lavori.find((l, i) => (l.numeroLavoro ?? i + 1) === numero);
+  if (!lavoro) throw new ErroreFs(numero === null ? "nessun job" : `nessun job: %${numero}`);
+  return lavoro;
+}
 
 export const PROCESSI = {
   ps(sh, args) {
@@ -63,6 +89,17 @@ export const PROCESSI = {
     if (!p) throw new ErroreFs(`(${pid}) - processo non esistente`);
     if (p.utente !== (sh.fs.utente ?? "tu") && (sh.fs.utente ?? "tu") !== "root")
       throw new ErroreFs(`(${pid}) - operazione non permessa`);
+    // STOP e CONT non terminano niente: sono i segnali dietro Ctrl-Z e bg/fg.
+    // Nel simulatore STOP permette di riprodurre lo stato "Fermato" senza
+    // dover intercettare una combinazione di tasti nell'interfaccia web.
+    if (nome === "STOP") {
+      p.stato = "T";
+      return "";
+    }
+    if (nome === "CONT") {
+      p.stato = "R";
+      return "";
+    }
     // Un processo bloccato ignora TERM e muore solo con KILL: e' il caso in cui
     // -9 serve davvero, e l'unico in cui si giustifica.
     if (p.bloccato && nome !== "KILL") return "";
@@ -78,22 +115,23 @@ export const PROCESSI = {
     sh.processi = suoi(sh).filter(
       (p) => !(p.nome === nome && (p.utente === (sh.fs.utente ?? "tu") || (sh.fs.utente ?? "tu") === "root"))
     );
+    sh.lavori = (sh.lavori ?? []).filter((l) => sh.processi.includes(l));
     if (prima === suoi(sh).length) throw new ErroreFs(`nessun processo di nome ${nome}`);
     return "";
   },
 
   jobs(sh) {
-    const lavori = sh.lavori ?? [];
+    const lavori = (sh.lavori ?? []).filter((l) => l.inSottofondo !== false);
     if (!lavori.length) return "";
     return lavori
-      .map((l, i) => `[${i + 1}]  ${l.stato === "T" ? "Fermato" : "In esecuzione"}  ${l.comando} &`)
+      .map((l, i) => `[${l.numeroLavoro ?? i + 1}]  ${l.stato === "T" ? "Fermato" : "In esecuzione"}  ${l.comando} &`)
       .join("\n");
   },
 
   /**
-   * Avvia un processo in sottofondo. In una shell vera lo fa la & in fondo alla
-   * riga; qui e' un comando esplicito, perche' la & andrebbe interpretata dal
-   * parser e servirebbe solo a questo.
+   * Avvia un processo in sottofondo. La shell richiama questa funzione quando
+   * trova una & in fondo alla riga; resta anche il comando esplicito `avvia`
+   * per gli esercizi iniziali che lo usavano prima del job control completo.
    */
   avvia(sh, args) {
     const comando = args.join(" ");
@@ -106,10 +144,31 @@ export const PROCESSI = {
       cpu: 0.0,
       comando,
       stato: "R",
+      figlio: true,
+      inSottofondo: true,
+      numeroLavoro: sh.prossimoLavoro ?? (sh.lavori?.length ?? 0) + 1,
     };
+    sh.prossimoLavoro = p.numeroLavoro + 1;
     sh.processi = [...suoi(sh), p];
     sh.lavori = [...(sh.lavori ?? []), p];
-    return `[${sh.lavori.length}] ${pid}`;
+    return `[${p.numeroLavoro}] ${pid}`;
+  },
+
+  /** Riprende un job fermato e lo lascia in sottofondo. */
+  bg(sh, args) {
+    const lavoro = trovaLavoro(sh, args);
+    if (lavoro.stato !== "T") throw new ErroreFs(`il job %${lavoro.numeroLavoro} non e' fermato`);
+    lavoro.stato = "R";
+    lavoro.inSottofondo = true;
+    return `[${lavoro.numeroLavoro}] ${lavoro.comando} &`;
+  },
+
+  /** Porta un job davanti al prompt. Non blocca la UI, ma lo toglie da jobs. */
+  fg(sh, args) {
+    const lavoro = trovaLavoro(sh, args);
+    lavoro.stato = "R";
+    lavoro.inSottofondo = false;
+    return lavoro.comando;
   },
 
   /** nohup: il processo sopravvive alla chiusura del terminale. */
@@ -122,7 +181,7 @@ export const PROCESSI = {
 
   /** Chiude il terminale: i figli muoiono, quelli con nohup no. */
   esci(sh) {
-    const sopravvissuti = suoi(sh).filter((p) => !(sh.lavori ?? []).includes(p) || p.nohup);
+    const sopravvissuti = suoi(sh).filter((p) => !p.figlio || p.nohup);
     const morti = suoi(sh).length - sopravvissuti.length;
     sh.processi = sopravvissuti;
     sh.lavori = (sh.lavori ?? []).filter((l) => l.nohup);

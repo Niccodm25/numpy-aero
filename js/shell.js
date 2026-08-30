@@ -115,6 +115,26 @@ export function esegui(sh, riga) {
       if (e instanceof V.ErroreFs) return { out: "", errore: e.message };
       throw e;
     }
+    const sottofondo = parole.at(-1) === "&";
+    if (sottofondo) {
+      // Una & e' un operatore di shell, non un argomento del programma. Per
+      // restare onesti non simuliamo combinazioni ambigue (pipe/redirezione in
+      // sottofondo); quelle non servono ai moduli e meritano una shell vera.
+      if (pezzi.length !== 1 || redirezione)
+        return { out: "", errore: "&: pipe e redirezioni in sottofondo non sono simulate" };
+      parole.pop();
+      if (!parole.length) return { out: "", errore: "&: manca il comando" };
+      const avvia = parole[0] === "nohup" ? sh.comandi.nohup : sh.comandi.avvia;
+      if (!avvia) return { out: "", errore: "&: job control non disponibile in questo esercizio" };
+      const argomenti = parole[0] === "nohup" ? parole.slice(1) : parole;
+      try {
+        const out = formatta(avvia(sh, argomenti) ?? "");
+        return { out, errore: null };
+      } catch (e) {
+        if (e instanceof V.ErroreFs) return { out: "", errore: `&: ${e.message}` };
+        throw e;
+      }
+    }
     const nome = parole[0];
     if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };
     const fn = sh.comandi[nome];

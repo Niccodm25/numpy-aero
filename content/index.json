@@ -85,25 +85,28 @@
         "l02",
         "l03",
         "l04",
+        "l04bis",
         "l05",
         "l06",
+        "c04",
         "l07",
         "l08",
         "l09",
         "l10",
+        "l20",
         "l11",
         "l12",
         "l13",
+        "c05",
         "l14",
         "l15",
         "l16",
-        "l17",
-        "l18",
-        "l19",
-        "c04",
-        "c05",
         "c06",
-        "c07"
+        "l17",
+        "c07",
+        "l18",
+        "c08",
+        "l19"
       ],
       "prossimi": []
     },
@@ -225,6 +228,12 @@
       "id": "l04",
       "file": "l04-processi.json",
       "titolo": "Processi",
+      "disponibile": true
+    },
+    {
+      "id": "l04bis",
+      "file": "l04bis-job-control.json",
+      "titolo": "Controllare i job interattivi",
       "disponibile": true
     },
     {
@@ -382,6 +391,12 @@
       "disponibile": false
     },
     {
+      "id": "l20",
+      "file": "",
+      "titolo": "Script operativi: Bash e Python",
+      "disponibile": false
+    },
+    {
       "id": "l11",
       "file": "",
       "titolo": "Rete",
@@ -453,6 +468,13 @@
       "id": "c07",
       "file": "",
       "titolo": "Cantiere — La pipeline riproducibile",
+      "disponibile": false,
+      "cantiere": true
+    },
+    {
+      "id": "c08",
+      "file": "",
+      "titolo": "Cantiere — La stazione che non dorme",
       "disponibile": false,
       "cantiere": true
     }

@@ -404,6 +404,47 @@ caso("which cerca lungo il PATH", () => {
   assert.equal(esegui(sh, "which inesistente").out, "");
 });
 
+// ---------- processi e job control ----------
+
+const shellProcessi = () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...PROCESSI } });
+  statoProcessi(sh);
+  return sh;
+};
+
+caso("la & avvia un job e jobs lo mostra", () => {
+  const sh = shellProcessi();
+  assert.equal(esegui(sh, "python lungo.py &").out, "[1] 1501");
+  assert.match(esegui(sh, "jobs").out, /\[1\].*python lungo\.py &/);
+});
+
+caso("STOP, bg e fg conservano lo stato del job", () => {
+  const sh = shellProcessi();
+  esegui(sh, "python lungo.py &");
+  assert.equal(esegui(sh, "kill -STOP 1501").errore, null);
+  assert.match(esegui(sh, "jobs").out, /Fermato/);
+  assert.equal(esegui(sh, "bg %1").out, "[1] python lungo.py &");
+  esegui(sh, "kill -STOP 1501");
+  assert.equal(esegui(sh, "fg %1").out, "python lungo.py");
+  assert.equal(esegui(sh, "jobs").out, "");
+});
+
+caso("nohup sopravvive alla chiusura, anche lanciato con la &", () => {
+  const sh = shellProcessi();
+  assert.match(esegui(sh, "nohup python notte.py &").out, /nohup\.out/);
+  esegui(sh, "python breve.py &");
+  assert.match(esegui(sh, "esci").out, /1 processi terminati/);
+  assert.match(esegui(sh, "ps aux").out, /notte\.py/);
+  assert.doesNotMatch(esegui(sh, "ps aux").out, /breve\.py/);
+});
+
+caso("pkill rimuove anche i job che ha terminato", () => {
+  const sh = shellProcessi();
+  esegui(sh, "python lungo.py &");
+  esegui(sh, "pkill python");
+  assert.equal(esegui(sh, "jobs").out, "");
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {

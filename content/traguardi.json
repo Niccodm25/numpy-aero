@@ -1,6 +1,6 @@
 {
   "titolo": "Traguardi",
-  "sottotitolo": "Cosa sei in grado di fare, man mano che i moduli si chiudono. Serve a decidere dove fermarti: nessuno deve arrivare in fondo per forza. I traguardi che dipendono da moduli non ancora scritti sono elencati lo stesso — dicono dove porta la strada.",
+  "sottotitolo": "Cosa sei in grado di fare, nell'ordine in cui costruisci competenze solide. Serve a decidere dove fermarti: nessuno deve arrivare in fondo per forza. I traguardi con moduli in arrivo restano visibili: dicono sia dove porta la strada sia cosa manca davvero per arrivarci.",
   "traguardi": [
     {
       "id": "t-leggere",
@@ -222,6 +222,26 @@
       "ramo": "linux"
     },
     {
+      "id": "lx-job-control",
+      "gruppo": "Linux",
+      "etichetta": "Job control",
+      "titolo": "Riprendere il controllo di un calcolo interattivo",
+      "livello": "Autonomo",
+      "sottotitolo": "Sospendere, riprendere o lasciare andare un lavoro senza confondere una shell con un servizio.",
+      "richiede": [
+        "l04",
+        "l04bis"
+      ],
+      "puoi": [
+        "distinguere un processo in sottofondo da uno sospeso",
+        "riprendere un lavoro con `bg` o riportarlo davanti con `fg`",
+        "decidere quando la sessione interattiva è ancora la scelta giusta",
+        "passare a `nohup`, `tmux` o a un servizio quando il lavoro deve sopravvivere alla shell"
+      ],
+      "md": "Questo è il ponte fra «ho lanciato un comando» e «so governare il suo ciclo di vita». Non sostituisce `systemd`: un job interattivo appartiene ancora alla tua sessione.",
+      "ramo": "linux"
+    },
+    {
       "id": "lx-automazione",
       "gruppo": "Linux",
       "etichetta": "Script",
@@ -239,7 +259,7 @@
         "riconoscere il guasto silenzioso della variabile vuota — quello che con `rm -rf` cancella la radice",
         "mettere in ordine una campagna intera: conteggi, triage del log, archiviazione, protezione dei grezzi"
       ],
-      "md": "È il punto in cui il lavoro diventa **ripetibile**: la riduzione della campagna di ottobre è lo stesso script di quella di marzo, con un argomento diverso.\n\n**Fermarti qui ha senso se** usi macchine tue e non ne amministri di altri: con i primi cinque moduli sei già autonomo su qualunque banco prova o Raspberry.\n\n**Manca ancora** in bash: condizioni e cicli. Sono la parte che assomiglia a un linguaggio, e per quella conviene Python.",
+      "md": "È il punto in cui il lavoro diventa **ripetibile**: la riduzione della campagna di ottobre è lo stesso script di quella di marzo, con un argomento diverso.\n\n**Fermarti qui ha senso se** usi macchine tue e non ne amministri di altri: con i primi cinque moduli sei già autonomo su qualunque banco prova o Raspberry.\n\nIl passo successivo, l20, aggiunge condizioni, cicli, funzioni e il punto in cui conviene passare a Python: qui la priorità resta imparare a rendere sicura una sequenza breve.",
       "ramo": "linux"
     },
     {
@@ -254,7 +274,8 @@
       ],
       "puoi": [
         "aprire e creare archivi `.tar.gz` senza cercare la sintassi ogni volta",
-        "installare software con `apt` (e leggere le istruzioni scritte per `dnf` o `pacman`)",
+        "distinguere un archivio da un pacchetto `.deb`, `.rpm`, snap o Flatpak, e scegliere da dove installare",
+        "installare software con `apt` e leggere senza panico istruzioni scritte per `dnf` o `pacman`",
         "capire da dove arriva un pacchetto e perché una versione è vecchia",
         "rispondere a «il job è morto» guardando `df -h` e `free -h` prima del codice"
       ],
@@ -320,6 +341,27 @@
       "ramo": "linux"
     },
     {
+      "id": "lx-script-operativi",
+      "gruppo": "Linux",
+      "etichetta": "Script affidabili",
+      "titolo": "Consegnare uno script che si può riusare",
+      "livello": "Tecnico",
+      "sottotitolo": "Non una riga fortunata: uno strumento con input chiari, errori leggibili e un comportamento ripetibile.",
+      "richiede": [
+        "l05",
+        "l10",
+        "l20"
+      ],
+      "puoi": [
+        "scegliere se un problema è una pipeline di shell o uno script Python",
+        "gestire parametri, file temporanei, codici di uscita e messaggi di errore",
+        "scrivere condizioni, cicli e funzioni senza nascondere lo stato del lavoro",
+        "verificare uno script su un log nuovo invece di fidarti perché ha funzionato una volta"
+      ],
+      "md": "Questo è il confine fra automatizzare il proprio lavoro e consegnare a un collega uno strumento che non gli fa perdere dati. Il criterio non è la lunghezza: è se l'errore si vede, si ferma e si può ripetere.",
+      "ramo": "linux"
+    },
+    {
       "id": "lx-rete",
       "gruppo": "Linux",
       "etichetta": "Rete",
@@ -330,10 +372,11 @@
         "l11"
       ],
       "puoi": [
-        "leggere la configurazione di rete di una macchina (`ip a`, `ip route`) e capire se è coerente",
+        "leggere la configurazione di rete di una macchina (`ip a`, `ip route`, NetworkManager) e capire se è coerente",
+        "capire se il collegamento fisico è il problema con `ethtool`, prima di cambiare configurazioni a caso",
         "distinguere «l'host non risponde» da «il nome non si risolve» da «la porta è chiusa»",
         "vedere quali porte sono in ascolto con `ss`, e quale programma le tiene",
-        "diagnosticare un problema DNS con `dig` invece di riavviare il router",
+        "diagnosticare un problema DNS con `dig` o `resolvectl` invece di riavviare il router",
         "configurare un indirizzo fisso su una macchina di laboratorio che deve restare raggiungibile"
       ],
       "md": "È il **buco strutturale** del percorso: senza rete non si arriva a un cluster, non si mette in piedi una stazione, non si comincia niente di sicurezza.\n\nUn banco di misura che pubblica i dati, un Raspberry che manda telemetria, un ricevitore che va interrogato da un altro computer: tutto passa da qui.",
@@ -374,12 +417,34 @@
       ],
       "puoi": [
         "trasformare uno script in un servizio `systemd` che parte all'avvio",
-        "leggere i log di sistema con `journalctl` e distinguere un guasto hardware da un errore tuo",
+        "leggere `journalctl` e syslog e distinguere un guasto hardware da un errore tuo",
         "programmare un lavoro periodico — acquisizione, backup, pulizia — con `cron` o un timer",
         "impedire che i log riempiano il disco dopo tre mesi (`logrotate`)",
-        "diagnosticare un servizio che non riparte, invece di riavviare la macchina"
+        "verificare che un backup si possa ripristinare e diagnosticare un servizio che non riparte, invece di riavviare la macchina"
       ],
       "md": "È il passaggio da «lancio un programma» a «gestisco un sistema che lavora anche quando dormo».\n\nUna stazione meteo, un banco che campiona per giorni, un ricevitore che ascolta passaggi satellitari: tutti vivono di questo.",
+      "ramo": "linux"
+    },
+    {
+      "id": "lx-laboratorio",
+      "gruppo": "Linux",
+      "etichetta": "Banco affidabile",
+      "titolo": "Mettere in servizio una macchina di laboratorio",
+      "livello": "Tecnico",
+      "sottotitolo": "Una macchina condivisa, raggiungibile e utile anche quando chi l'ha configurata non è presente.",
+      "richiede": [
+        "l09",
+        "l11",
+        "l13",
+        "c05"
+      ],
+      "puoi": [
+        "dare a persone e servizi solo gli accessi di cui hanno bisogno",
+        "tenere una macchina raggiungibile senza confondere rete, account e processo",
+        "far partire acquisizione, rotazione dei log e backup senza intervento manuale",
+        "fare una diagnosi ripetibile prima di riavviare, cambiare permessi o perdere dati"
+      ],
+      "md": "Questo è il primo traguardo di infrastruttura: non basta che il programma parta oggi sul tuo utente. Deve continuare a funzionare per chi arriva domani e lasciare abbastanza tracce per capire cosa è successo.",
       "ramo": "linux"
     },
     {
@@ -413,9 +478,9 @@
       ],
       "puoi": [
         "distinguere se il collo di bottiglia è CPU, memoria, disco, rete o attesa (`top`, `vmstat`, `iostat`)",
-        "vedere cosa un programma sta davvero chiedendo al sistema con `strace`",
+        "vedere cosa un programma sta davvero chiedendo al sistema con `strace` o `bpftrace`",
         "profilare dove va il tempo con `perf`, invece di indovinare",
-        "limitare le risorse di un processo con i cgroups, così un job non affoga la macchina"
+        "limitare e isolare le risorse di un processo con cgroups e namespace, così un job non affoga la macchina"
       ],
       "md": "È la differenza fra ottimizzare a caso e ottimizzare la cosa giusta: quasi sempre il problema non è il calcolo, è l'accesso ai dati.\n\nCgroups e namespaces sono anche il pavimento dei container — questo traguardo prepara il prossimo.",
       "ramo": "linux"
@@ -470,8 +535,10 @@
       "livello": "Specialista",
       "sottotitolo": "Se la stazione è raggiungibile da fuori, è raggiungibile anche da chi non ti interessa.",
       "richiede": [
+        "l09",
         "l11",
         "l12",
+        "l13",
         "l18"
       ],
       "puoi": [
@@ -492,6 +559,10 @@
       "livello": "Specialista",
       "sottotitolo": "Configurate a mano divergono in un mese. Scritte in un playbook, restano uguali per anni.",
       "richiede": [
+        "l11",
+        "l12",
+        "l13",
+        "l18",
         "l19",
         "c06"
       ],
@@ -518,6 +589,9 @@
         "l16",
         "l17",
         "l18",
+        "l20",
+        "c05",
+        "c08",
         "p08",
         "m09"
       ],

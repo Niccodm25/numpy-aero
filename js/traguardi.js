@@ -5,9 +5,9 @@
  * dice a cosa serve — ed e' l'unica cosa che permette a chi arriva di capire
  * quanto in profondita' vuole andare.
  *
- * Le tendine stanno sul bordo destro e aprono un popup. Su schermo stretto
- * resta una sola linguetta, che apre l'elenco: dodici linguette verticali su
- * un telefono coprirebbero il testo.
+ * Un solo pulsante flottante apre un pannello con il prossimo traguardo e
+ * l'elenco completo. Su telefono resta leggibile e non copre il contenuto
+ * come farebbero diverse linguette verticali.
  */
 import * as L from "./scheduler.js";
 import { md } from "./md.js";
@@ -47,8 +47,9 @@ function dialogo() {
   if (!d) {
     d = document.createElement("dialog");
     d.id = "pop-traguardi";
+    d.setAttribute("aria-label", "Traguardi");
     d.innerHTML = `<div class="pop-corpo"></div>
-      <div class="riga"><button class="chiudi">Chiudi</button></div>`;
+      <div class="pop-piede"><button class="chiudi">Chiudi</button></div>`;
     document.body.appendChild(d);
     d.addEventListener("click", (e) => {
       if (e.target === d || e.target.classList.contains("chiudi")) d.close();
@@ -67,16 +68,34 @@ function mostra(html) {
   d.querySelector(".pop-corpo").innerHTML = html;
   if (!d.open) d.showModal();
   d.querySelector(".pop-corpo").scrollTop = 0;
+  const titolo = d.querySelector("h2");
+  if (titolo) {
+    titolo.tabIndex = -1;
+    titolo.focus({ preventScroll: true });
+  }
   return d;
+}
+
+function collegaModuli(d) {
+  d.querySelectorAll("[data-modulo]").forEach((b) => {
+    b.onclick = () => {
+      d.close();
+      location.hash = `#/m/${b.dataset.modulo}`;
+    };
+  });
 }
 
 function dettaglio(t, v, indice) {
   const righe = v.parti
     .map(({ id, pr }) => {
       const nome = `${id} — ${nomeModulo(id, indice)}`;
-      if (!pr) return `<li class="muto">${nome} <span class="pill">in arrivo</span></li>`;
+      const meta = (indice.moduli || []).find((m) => m.id === id);
+      const etichetta = meta?.disponibile
+        ? `<button class="modulo-traguardo" data-modulo="${id}">${nome}</button>`
+        : `<span>${nome}</span>`;
+      if (!pr) return `<li class="muto">${etichetta} <span class="pill">in arrivo</span></li>`;
       const cl = pr.pct >= SOGLIA ? "ok" : pr.done ? "warn" : "";
-      return `<li>${nome} <span class="pill ${cl}">${pr.done}/${pr.tot}</span></li>`;
+      return `<li>${etichetta} <span class="pill ${cl}">${pr.done}/${pr.tot}</span></li>`;
     })
     .join("");
 
@@ -102,31 +121,59 @@ function dettaglio(t, v, indice) {
     <ul class="lista-moduli">${righe}</ul>`;
 }
 
+function etichettaStato(v) {
+  if (v.stato === "raggiunto") return "Raggiunto";
+  if (v.stato === "avviato") return `In corso · ${v.fatti}/${v.parti.length} solidi`;
+  if (v.mancanti.length) return `${v.mancanti.length} in arrivo`;
+  return "Da iniziare";
+}
+
 function carta(t, v) {
   // I moduli non ancora scritti si dicono qui: un traguardo fermo perche' il
   // modulo non esiste e' una cosa diversa da uno fermo perche' non l'hai fatto.
-  const n = v.mancanti.length;
-  const manca = n ? ` <span class="pill">${n} ${n === 1 ? "modulo" : "moduli"} in arrivo</span>` : "";
   return `<button class="card traguardo" data-id="${t.id}">
-    <strong>${t.titolo}</strong> <span class="pill ${CLASSE[v.stato]}">${t.livello}</span>${manca}
+    <div><strong>${t.titolo}</strong> <span class="pill">${t.livello}</span></div>
     <div class="muto">${t.sottotitolo}</div>
+    <div class="stato-traguardo"><span class="pill ${CLASSE[v.stato]}">${etichettaStato(v)}</span></div>
     <div class="barra"><i style="width:${Math.round(v.pct * 100)}%"></i></div>
   </button>`;
 }
 
 function elencoHtml(dati, valutati) {
+  const traguardi = dati.traguardi;
+  const raggiunti = traguardi.filter((t) => valutati.get(t.id).stato === "raggiunto").length;
+  const avviati = traguardi.filter((t) => valutati.get(t.id).stato === "avviato").length;
+  const inArrivo = traguardi.filter((t) => valutati.get(t.id).mancanti.length).length;
+  const prossimo =
+    traguardi.find((t) => {
+      const v = valutati.get(t.id);
+      return v.stato !== "raggiunto" && !v.mancanti.length;
+    }) || traguardi.find((t) => valutati.get(t.id).stato !== "raggiunto");
   const gruppi = [...new Set(dati.traguardi.map((t) => t.gruppo || "Traguardi"))];
   const sezioni = gruppi
     .map((g) => {
-      const carte = dati.traguardi
+      const carte = traguardi
         .filter((t) => (t.gruppo || "Traguardi") === g)
         .map((t) => carta(t, valutati.get(t.id)))
         .join("");
-      return `<h3>${g}</h3>${carte}`;
+      return `<section class="gruppo-traguardi"><h3>${g}</h3>${carte}</section>`;
     })
     .join("");
+  const passo = prossimo
+    ? `<button class="prossimo-traguardo" data-id="${prossimo.id}">
+        <span class="sopracciglio">Prossimo passo</span>
+        <strong>${prossimo.titolo}</strong>
+        <span>${prossimo.sottotitolo}</span>
+      </button>`
+    : `<p class="completo">Hai raggiunto tutti i traguardi disponibili in questo ramo.</p>`;
   return `<h2>${dati.titolo}</h2>
     <p class="muto">${dati.sottotitolo}</p>
+    <div class="riepilogo-traguardi">
+      <span class="pill ok">${raggiunti} raggiunti</span>
+      <span class="pill warn">${avviati} in corso</span>
+      <span class="pill">${inArrivo} con moduli in arrivo</span>
+    </div>
+    ${passo}
     ${sezioni}`;
 }
 
@@ -149,7 +196,20 @@ export async function montaTendine(indice, stati, caricaModulo, ramo) {
 
   // Il ramo e' dichiarato dal traguardo, non dedotto dai moduli che richiede:
   // "scrivere uno strumento" tocca anche l05, ma resta un traguardo di Python.
-  const visibili = dati.traguardi.filter((t) => t.ramo === ramo);
+  // L'ordine, invece, viene dall'indice del ramo: un traguardo arriva dopo il
+  // suo ultimo prerequisito e non dipende dall'ordine in cui e' stato scritto
+  // nel JSON. Cosi' la roadmap, le card dei moduli e i traguardi restano allineati.
+  const moduliRamo = (indice.rami || []).find((r) => r.id === ramo)?.moduli || [];
+  const posizioneModulo = new Map(moduliRamo.map((id, n) => [id, n]));
+  const passo = (t) => {
+    const posizioni = t.richiede.map((id) => posizioneModulo.get(id)).filter(Number.isInteger);
+    return posizioni.length ? Math.max(...posizioni) : Number.MAX_SAFE_INTEGER;
+  };
+  const visibili = dati.traguardi
+    .map((t, sorgente) => ({ t, sorgente, passo: passo(t) }))
+    .filter(({ t }) => t.ramo === ramo)
+    .sort((a, b) => a.passo - b.passo || a.sorgente - b.sorgente)
+    .map(({ t }) => t);
   if (!visibili.length) {
     document.getElementById("tendine")?.remove();
     return;
@@ -157,7 +217,7 @@ export async function montaTendine(indice, stati, caricaModulo, ramo) {
 
   // I moduli servono solo per contare gli esercizi: quelli non ancora scritti
   // restano null, ed e' cosi' che un traguardo sa di essere fuori portata.
-  const idsRichiesti = [...new Set(dati.traguardi.flatMap((t) => t.richiede))];
+  const idsRichiesti = [...new Set(visibili.flatMap((t) => t.richiede))];
   const avanzamenti = new Map();
   await Promise.all(
     idsRichiesti.map(async (id) => {
@@ -172,48 +232,31 @@ export async function montaTendine(indice, stati, caricaModulo, ramo) {
     })
   );
 
-  const valutati = new Map(dati.traguardi.map((t) => [t.id, valuta(t, avanzamenti)]));
+  const valutati = new Map(visibili.map((t) => [t.id, valuta(t, avanzamenti)]));
 
   const apri = (id) => {
-    const t = dati.traguardi.find((x) => x.id === id);
+    const t = visibili.find((x) => x.id === id);
     const d = mostra(dettaglio(t, valutati.get(id), indice));
+    collegaModuli(d);
     d.querySelector(".indietro-traguardi").onclick = () => apriElenco();
   };
   const apriElenco = () => {
     const d = mostra(elencoHtml({ ...dati, traguardi: visibili }, valutati));
-    d.querySelectorAll(".traguardo").forEach((b) => (b.onclick = () => apri(b.dataset.id)));
+    d.querySelectorAll(".traguardo, .prossimo-traguardo").forEach((b) => (b.onclick = () => apri(b.dataset.id)));
   };
-
-  // Sul bordo ci stanno cinque linguette leggibili, non dodici: si mostrano
-  // quelle a cui sei piu' vicino - prima quelle avviate, poi le raggiunte -
-  // e l'elenco completo resta dietro la linguetta "Traguardi".
-  const ordine = { avviato: 0, chiuso: 1, raggiunto: 2 };
-  const livelli = { Utente: 0, Autonomo: 1, Tecnico: 2, Specialista: 3 };
-  const chiave = (t) => {
-    const v = valutati.get(t.id);
-    return [ordine[v.stato], v.mancanti.length, livelli[t.livello] ?? 9];
-  };
-  const inEvidenza = [...visibili]
-    .sort((a, b) => {
-      const [x, y] = [chiave(a), chiave(b)];
-      return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
-    })
-    .slice(0, 5);
 
   document.getElementById("tendine")?.remove();
+  const raggiunti = visibili.filter((t) => valutati.get(t.id).stato === "raggiunto").length;
+  const avviati = visibili.filter((t) => valutati.get(t.id).stato === "avviato").length;
   const strip = document.createElement("div");
   strip.id = "tendine";
-  strip.innerHTML =
-    `<button class="tendina tutte">Traguardi</button>` +
-    inEvidenza
-      .map((t) => {
-        const v = valutati.get(t.id);
-        return `<button class="tendina ${CLASSE[v.stato]}" data-id="${t.id}" title="${t.titolo}: ${t.sottotitolo}">${t.etichetta || t.titolo}</button>`;
-      })
-      .join("");
+  strip.innerHTML = `<button class="tendina tutte" aria-haspopup="dialog" aria-label="Apri i traguardi: ${raggiunti} raggiunti su ${visibili.length}">
+    <span class="tendina-titolo">Traguardi</span>
+    <span class="tendina-contatore">${raggiunti}/${visibili.length}</span>
+    ${avviati ? `<span class="tendina-avviso">${avviati} in corso</span>` : ""}
+  </button>`;
   document.body.appendChild(strip);
   strip.querySelector(".tutte").onclick = apriElenco;
-  strip.querySelectorAll("[data-id]").forEach((b) => (b.onclick = () => apri(b.dataset.id)));
 }
 
 /** Via la striscia: dentro un esercizio darebbe fastidio e basta. */

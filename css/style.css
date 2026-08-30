@@ -212,59 +212,89 @@ button.minuscolo {
   color: var(--tx); font-size: .92rem; margin-top: .35rem;
 }
 
-/* ---------- traguardi: linguette sul bordo e popup ---------- */
+/* ---------- traguardi: un punto d'accesso e un pannello orientato al prossimo passo ---------- */
 
 #tendine {
   position: fixed;
-  right: 0;
-  top: 12vh;
-  display: flex;
-  flex-direction: column;
-  gap: .35rem;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   z-index: 30;
-  max-height: 76vh;
-  overflow: hidden;
 }
 .tendina {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  padding: .7rem .25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 44px;
   margin: 0;
-  font-size: .74rem;
-  line-height: 1;
-  border: 1px solid var(--bordo);
-  border-right: none;
-  border-radius: 8px 0 0 8px;
-  background: var(--card);
-  color: var(--tx2);
+  padding: .55rem .75rem;
+  border: 1px solid var(--acc);
+  border-radius: 999px;
+  background: var(--acc);
+  color: #fff;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, .2);
   cursor: pointer;
-  flex: 0 0 auto;
-  max-height: 10rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font: inherit;
 }
-.tendina:hover { color: var(--tx); border-color: var(--acc); }
-.tendina.ok { border-color: var(--ok); color: var(--ok); }
-.tendina.warn { border-color: var(--acc); color: var(--acc); }
-.tendina.tutte { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+.tendina:hover { filter: brightness(1.08); }
+.tendina:focus-visible,
+.prossimo-traguardo:focus-visible,
+.modulo-traguardo:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+.tendina-titolo { font-weight: 700; }
+.tendina-contatore {
+  padding: .08rem .38rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .2);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+.tendina-avviso { font-size: .78rem; opacity: .9; }
 
 dialog#pop-traguardi {
   border: 1px solid var(--bordo);
-  border-radius: var(--raggio);
+  border-radius: calc(var(--raggio) + 4px);
   background: var(--bg);
   color: var(--tx);
-  padding: 1rem;
-  max-width: 34rem;
+  padding: 0;
+  max-width: 40rem;
   width: calc(100% - 2rem);
-  max-height: 82vh;
+  max-height: min(44rem, calc(100dvh - 2rem));
+  overflow: hidden;
 }
 dialog#pop-traguardi::backdrop { background: rgba(0, 0, 0, .45); }
-.pop-corpo { max-height: 66vh; overflow-y: auto; }
+.pop-corpo { max-height: calc(min(44rem, 100dvh - 2rem) - 4.25rem); overflow-y: auto; padding: 1rem; }
 .pop-corpo h2 { margin-top: .4rem; }
 .pop-corpo ul { padding-left: 1.1rem; }
 .pop-corpo .lista-moduli { list-style: none; padding-left: 0; }
-.pop-corpo .lista-moduli li { padding: .25rem 0; border-bottom: 1px solid var(--bordo); font-size: .9rem; }
+.pop-corpo .lista-moduli li { padding: .4rem 0; border-bottom: 1px solid var(--bordo); font-size: .9rem; }
+.pop-piede {
+  display: flex;
+  justify-content: flex-end;
+  padding: .7rem 1rem;
+  border-top: 1px solid var(--bordo);
+  background: var(--card);
+}
+.riepilogo-traguardi { display: flex; flex-wrap: wrap; gap: .35rem; margin: .9rem 0; }
+.prossimo-traguardo {
+  display: grid;
+  width: 100%;
+  gap: .25rem;
+  margin: .8rem 0 1.25rem;
+  padding: .9rem;
+  border: 1px solid var(--acc);
+  border-radius: var(--raggio);
+  background: var(--card);
+  background: color-mix(in srgb, var(--acc) 12%, var(--card));
+  color: var(--tx);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.prossimo-traguardo strong { font-size: 1.05rem; }
+.prossimo-traguardo > span:last-child { color: var(--tx2); font-size: .9rem; }
+.sopracciglio { color: var(--acc); font-size: .74rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.completo { margin: .9rem 0 1.25rem; color: var(--ok); }
+.gruppo-traguardi + .gruppo-traguardi { margin-top: 1.4rem; }
+.gruppo-traguardi h3 { margin-bottom: .2rem; }
 button.card.traguardo {
   display: block;
   width: 100%;
@@ -273,10 +303,33 @@ button.card.traguardo {
   cursor: pointer;
   margin: .5rem 0;
 }
+.stato-traguardo { margin: .5rem 0 .35rem; }
+.modulo-traguardo {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--acc);
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
 
-/* Su un telefono dodici linguette coprirebbero il testo: resta solo quella
-   che apre l'elenco. */
-@media (max-width: 860px) {
-  .tendina[data-id] { display: none; }
-  #tendine { top: auto; bottom: 18vh; }
+@media (max-width: 600px) {
+  #tendine { right: .75rem; bottom: calc(.75rem + env(safe-area-inset-bottom, 0px)); }
+  .tendina { padding: .55rem .7rem; }
+  .tendina-avviso { display: none; }
+  dialog#pop-traguardi {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 86dvh;
+    margin: 0;
+    border-radius: 18px 18px 0 0;
+  }
+  .pop-corpo { max-height: calc(86dvh - 4.25rem); padding: 1rem; }
 }

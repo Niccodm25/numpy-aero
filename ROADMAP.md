@@ -166,8 +166,9 @@ Raspberry, un server, o WSL.
 7. **Cantiere Linux** — una campagna di prova da mettere in ordine in cinque fasi.
    **fatto** — la verifica guarda cosa resta sul disco, non i comandi digitati
 
-Fuori: condizioni e cicli in bash (vedi sopra), `ssh` e `scp` (senza una rete da
-simulare sarebbero una lezione travestita da esercizio), `awk` e `sed`.
+Fuori **per ora**: condizioni e cicli in Bash, `ssh` e `scp`, `awk` e `sed`.
+Sono tutti **in arrivo** nel piano di estensione: rispettivamente l20, l12 e
+l10. Non fanno parte dei sei moduli gia' sviluppati.
 
 **Nota sulla ridondanza fra C e D:** i concetti sono gli stessi, i comandi no. La
 struttura parallela è deliberata: fatto uno, l'altro diventa una tabella di traduzione.
@@ -259,6 +260,23 @@ Modifiche contenute, perché i contenuti sono già separati dal motore.
   sessione — cosa che non aiuta nessuno dei due.
 - **Il service worker** già ricava i contenuti dall'indice: seguirà i rami da solo.
 
+### Traguardi di infrastruttura
+
+L'infrastruttura non deve inseguire ogni modulo con eccezioni speciali. Ogni
+traguardo qui sotto è una capacità riusabile da tutti i rami e ha un criterio di
+uscita verificabile; i contenuti nuovi si appoggiano alla piattaforma, non la
+riscrivono.
+
+| Traguardo | Capacità da aggiungere | Fatto quando |
+|---|---|---|
+| **I1 — Contratto dei contenuti** | Metadati uniformi per stato (`disponibile`), file, tipo (modulo/cantiere), prerequisiti e ordine; schema controllato per indice, moduli e traguardi. | Un modulo pianificato appare come *in arrivo* senza fetch falliti; uno disponibile ha un file, ID univoci e prerequisiti risolvibili. |
+| **I2 — Controlli come porta di uscita** | Un comando di verifica che riunisce shell, progressione delle lezioni e soluzioni Python; controlli per ID duplicati, file orfani, riferimenti mancanti e cantiere non verificabile. | Ogni commit passa `test_shell`, `check_lezioni` e `check_content`; un riferimento rotto ferma il controllo prima del deploy. |
+| **I3 — Progresso durevole** | Versione del formato di salvataggio, migrazioni piccole e verificabili, esportazione/importazione con anteprima e fusione per esercizio. | Un export vecchio può essere importato senza perdere statistiche; due dispositivi divergenti possono fondere il progresso senza azzerarlo. |
+| **I4 — PWA rilasciabile** | Versione esplicita della cache, messaggio di aggiornamento, strategia testabile per asset e contenuti, prova offline. | Un push porta una versione coerente su GitHub Pages e il secondo avvio usa il nuovo service worker senza asset mescolati. |
+| **I5 — Mondi simulati componibili** | Il terminale dichiara capacità e stato del mondo (filesystem, processi, pacchetti, rete, macchina remota, servizi) invece di accumulare eccezioni per ramo. | Un esercizio può creare uno scenario isolato e verificare stato finale, output ed errore atteso senza dipendere dall'esecuzione precedente. |
+| **I6 — Autore e revisore** | Template di modulo/cantiere, fixture di scenario, checklist di accessibilità e matrice browser/mobile/offline. | Un nuovo modulo è leggibile su telefono, ha almeno una verifica reale per ogni soluzione e può essere revisionato senza conoscere il motore. |
+| **I7 — Sync e accesso, solo quando serve** | Sincronizzazione opt-in prima del login; conflitti e privacy decisi prima della UI. | PC e telefono ritrovano gli stessi progressi; l'app resta pienamente usabile offline e senza account. |
+
 ---
 
 ## 7. Decisioni ancora aperte
@@ -296,11 +314,43 @@ stretto di comandi, otto esercizi ciascuna, tipo `terminale` dove il
 simulatore puo' eseguire davvero e `predict` dove fingerlo insegnerebbe il
 finto.
 
+### Ordine didattico completo
+
+Il percorso non segue l'ordine alfabetico degli strumenti, ma i modelli mentali
+che ciascuno richiede. Prima impari a non perdere file o processi; poi a rendere
+ripetibile un lavoro; solo dopo a collegare, mantenere e mettere in sicurezza
+una macchina. I cantieri sono verifiche di trasferimento: arrivano appena il
+gruppo di moduli precedente permette di chiuderli senza indovinare.
+
+| Passo | Modulo o cantiere | Perché qui |
+|---:|---|---|
+| 1–4 | l01 File · l02 ricerca · l03 permessi · l04 processi | Il terminale, i dati che contiene, i confini di accesso e i programmi che stanno girando. **fatti** |
+| 5 | l04-bis Job control | Completa subito i processi con `bg` e `fg`, prima di affidare lavori a uno script. **in arrivo** |
+| 6–8 | l05 script · l06 WSL · c04 Cantiere Linux | Trasformare una sequenza manuale in un lavoro ripetibile, farlo sul proprio PC e applicarlo a una campagna. **fatti** |
+| 9–12 | l07 archivi/pacchetti · l08 editor/link · l09 utenti/gruppi · l10 testo avanzato | Gestire ciò che arriva dall'esterno, modificare una macchina remota, condividerla e trasformare dati in massa. **in arrivo** |
+| 13 | l20 Script operativi | Condizioni, cicli, funzioni e Python: il confine fra una riga di shell e uno strumento affidabile. **in arrivo** |
+| 14–17 | l11 rete · l12 remoto · l13 servizi · c05 Server | Prima fai comunicare le macchine, poi ci entri, poi lasci un servizio acceso e lo diagnostichi. **in arrivo** |
+| 18–21 | l14 hardware/kernel · l15 prestazioni · l16 storage · c06 Cluster | Osservare la macchina fisica, diagnosticare i colli di bottiglia, progettare i dati e usare più nodi. **in arrivo** |
+| 22–23 | l17 container · c07 Pipeline | Rendere un'analisi portabile e verificabile su portatile e cluster. **in arrivo** |
+| 24–25 | l18 sicurezza · c08 Stazione | Indurire una macchina esposta e tenerla operativa senza perdere dati. **in arrivo** |
+| 26 | l19 automazione a scala | Solo alla fine replichi la configurazione: automatizzare un errore su dieci macchine è peggio che farlo una volta. **in arrivo** |
+
 ### Stadio 1 — completare le basi (colonna rossa)
 
+**l04-bis — Controllare i job interattivi** ← **in arrivo**
+Raccolte: `&`, `jobs`, `bg` e `fg` · sospendere e riprendere un lavoro ·
+quando usare `nohup` o `tmux` invece del controllo interattivo.
+Perche': l04 oggi copre processi, segnali e sottofondo; questo completa i
+comandi di job control della mappa di base senza fingere che siano identici a
+un servizio persistente.
+Motore: richiede che il parser del terminale mantenga lo stato dei job sospesi
+e del processo in primo piano. Finche' non c'e', gli esempi restano
+esplicitamente `predict`.
+
 **l07 — Archivi, pacchetti e spazio**
-Raccolte: `tar` · `gzip e gunzip` · `apt` (con `dnf` e `pacman` a confronto) ·
-`df, du, free, uname`.
+Raccolte: `tar` · `gzip e gunzip` · formati di pacchetto (`.deb`, `.rpm`,
+snap e Flatpak) · `apt` (con `dnf` e `pacman` a confronto) · `df, du, free,
+uname`.
 Perche': i dati arrivano e partono compressi, il software si installa da un
 gestore e non da un sito, e "il job e' morto" nove volte su dieci e' disco
 pieno o memoria finita.
@@ -318,8 +368,8 @@ piu' invasiva di tutto il piano. In alternativa: `nano` a schermo vero, `vim`
 solo per predizione (i tasti, la modalita', `:wq`).
 
 **l09 — Utenti, gruppi e permessi speciali**
-Raccolte: `useradd e passwd` · `groups e usermod` · `/etc/passwd e /etc/group` ·
-`setuid, setgid, sticky bit`.
+Raccolte: `useradd e passwd` · `groups, usermod e chgrp` ·
+`/etc/passwd e /etc/group` · `setuid, setgid, sticky bit`.
 Perche': completa l03. Il bit `s` su `passwd` e lo sticky su `/tmp` spiegano
 come mai certi programmi possono fare cose che tu non puoi.
 Motore: il filesystem virtuale ha gia' proprietario e modo; servono i gruppi e
@@ -334,11 +384,23 @@ Motore: `cut`, `tr`, `tee` sono banali. `sed` con la sola `s///` e `awk` con i
 soli campi `$1`, `$3` e `NR` coprono il novanta per cento dell'uso reale —
 oltre non si va, e va detto nella lezione.
 
+**l20 — Script operativi: Bash e Python** ← **in arrivo**
+Raccolte: Bash con condizioni, cicli, funzioni, input/output standard, codici
+di uscita e `trap` · script Python per automazione di file, log e comandi ·
+quando scegliere l'uno o l'altro.
+Perche': l05 insegna a non avere paura di uno script breve; qui si arriva agli
+script che controllano un processo ripetibile e segnalano un errore senza
+richiedere un amministratore a ogni passaggio.
+Motore: Bash resta nel terminale simulato con un sottoinsieme dichiarato;
+Python usa Pyodide, come il ramo Python, e gli esercizi verificano artefatti e
+codici di uscita anziche' simulare una macchina reale.
+
 ### Stadio 2 — la macchina come servizio (colonna verde)
 
 **l11 — Rete**
 Raccolte: `ip e ifconfig` · `ping e traceroute` · `ss e netstat` ·
-`dig, nslookup e la risoluzione dei nomi` · `nmcli e NetworkManager`.
+`dig, nslookup e resolvectl` per la risoluzione dei nomi · `nmcli e
+NetworkManager` · `ethtool`.
 Perche': **e' il buco strutturale del percorso.** Meta' dei guasti e meta'
 degli attacchi vivono qui, e oggi nessun ramo ne parla.
 Motore: serve un **modello di rete finto** — interfacce, indirizzi, tabella di
@@ -356,8 +418,9 @@ virtuale con un suo utente — e `ssh` che sposta la sessione da uno all'altro.
 Concettualmente semplice, e rende esercitabili anche `scp` e `rsync`.
 
 **l13 — Servizi, log e lavori periodici**
-Raccolte: `systemctl` · `scrivere una unit` · `journalctl e dmesg` ·
-`cron e systemd-timer` · `logrotate`.
+Raccolte: `systemctl` · `scrivere una unit` · `journalctl, dmesg e syslog` ·
+`cron e systemd-timer` · `logrotate` · backup ripetibili con controllo del
+ripristino.
 Perche': un programma che deve girare sempre non si lancia a mano. E quando
 qualcosa si rompe, la risposta e' nei log — se sai dove sono.
 Motore: le unit sono file nel filesystem, lo stato dei servizi e' una tabella
@@ -375,8 +438,8 @@ simulazione qui e' piu' fedele che altrove, perche' sul serio sono file.
 ### Stadio 3 — amministrare sul serio (colonna blu)
 
 **l15 — Prestazioni e diagnosi**
-Raccolte: `top, vmstat, iostat` · `strace` · `perf` · `cgroups e namespaces` ·
-`hdparm e tuned`.
+Raccolte: `top, vmstat, iostat` · `strace e bpftrace` · `perf` · `cgroups e
+namespaces` · `hdparm e tuned`.
 Perche': la domanda "perche' e' lento" ha cinque risposte possibili (CPU,
 memoria, disco, rete, attesa) e strumenti diversi per distinguerle. `cgroups` e
 `namespaces` sono anche il pavimento dei container, quindi preparano l17.
@@ -423,13 +486,21 @@ filesystem finto e' fattibile, ma e' l'ultimo pezzo e il meno urgente.
 ### Cantieri (progetti aperti, fuori dalla coda di ripasso)
 
 - **c05 — Il server che regge** (dopo l13): un servizio che deve restare in
-  piedi. Unit, log, rotazione, job periodico, e un guasto da diagnosticare
-  leggendo `journalctl`.
+  piedi. Unit, log, rotazione, job periodico, backup verificato con ripristino
+  e un guasto da diagnosticare leggendo `journalctl` e syslog.
 - **c06 — Il cluster in miniatura** (dopo l16): quattro macchine finte, chiavi
   ssh, storage condiviso, un job lanciato da remoto che sopravvive alla
-  disconnessione, i risultati riportati indietro con `rsync`.
+  disconnessione, i risultati riportati indietro con `rsync`. Il risultato non
+  e' «il comando ha risposto»: e' un job rintracciabile, dati integri e spazio
+  richiesto in modo ragionevole.
 - **c07 — La pipeline riproducibile** (dopo l17): la stessa analisi di c04,
   ma dentro un container, con un `Dockerfile` che chiunque puo' rieseguire.
+  Deve produrre lo stesso artefatto sia in locale sia sul nodo finto.
+- **c08 — La stazione che non dorme** (dopo l18 e l20): una ground station
+  simulata con ricevitore, servizio di acquisizione, rete, firewall, storage,
+  backup, log e pipeline containerizzata. Si valutano avvio dopo un blackout,
+  recupero da disco quasi pieno e accesso minimo necessario: il primo cantiere
+  che verifica una piccola infrastruttura intera, non un comando alla volta.
 
 ### Note sul piano
 

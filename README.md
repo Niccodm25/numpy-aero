@@ -22,40 +22,40 @@ comportamento di prima.
 
 ## Verifiche
 
+Prima di ogni commit esegui, in quest'ordine:
+
+```bash
+node tools/test_shell.mjs
+python tools/check_lezioni.py
+.venv/Scripts/python tools/check_content.py
+```
+
+- `test_shell.mjs` riesegue le soluzioni di terminale e HTML contro le loro
+  verifiche, oltre ai casi del motore shell.
+- `check_lezioni.py` impedisce a un esercizio di chiedere un comando o un'opzione
+  non ancora introdotti da una lezione precedente.
+- `check_content.py` esegue tutte le soluzioni Python contro i test nascosti.
+  Richiede NumPy 2.2.5, la stessa versione dell'app.
+
+Setup Python una volta sola:
+
+```bash
+python -m venv .venv
+.venv/Scripts/pip install numpy==2.2.5
+.venv/Scripts/python tools/check_content.py
+```
+
+Su Linux e macOS il percorso è `.venv/bin/python`. `check_content.py` rifiuta
+una versione diversa e spiega come allinearla.
+
+Quando modifichi il ripasso, esegui anche:
+
 ```bash
 node js/scheduler.test.mjs
 ```
 
-Controlla che ogni soluzione degli esercizi passi davvero il suo test nascosto.
-Deve girare sullo stesso NumPy che Pyodide carica nel browser (2.2.5), altrimenti
-il controllo non dice niente sull'app: fra 1.x e 2.x cambiano nomi (`trapz` →
-`trapezoid`) e spariscono funzioni (`lookfor`). Setup una volta sola:
-
-```bash
-python -m venv .venv && .venv/Scripts/pip install numpy==2.2.5
-```
-
-Poi, a ogni modifica dei contenuti:
-
-```bash
-.venv/Scripts/python tools/check_content.py
-```
-
-Lo script si rifiuta di girare se la versione non corrisponde, e dice come
-allinearla. Su Linux e macOS il percorso è `.venv/bin/python`.
-
-Controlla che nessun esercizio chieda comandi che il suo modulo non ha ancora
-insegnato:
-
-```bash
-.venv/Scripts/python tools/check_vocabolario.py
-```
-
-Analizza l'albero sintattico di `setup`, `starter` e `soluzione` di ogni
-esercizio e li confronta con il vocabolario cumulativo dei moduli. Distingue
-ciò che lo studente deve **scrivere** da ciò che gli viene solo **fornito**: il
-campo `test` è nascosto e non viene controllato. Il vocabolario per modulo sta
-in cima allo script — se aggiungi una funzione a una lezione, aggiungila lì.
+Il controllo storico `tools/check_vocabolario.py` resta disponibile per audit
+mirati del curriculum Python, ma non sostituisce i tre controlli di rilascio.
 
 ## Struttura
 
@@ -64,8 +64,16 @@ in cima allo script — se aggiungi una funzione a una lezione, aggiungila lì.
 | `js/runner.js` | Avvia Pyodide, esegue il codice dell'utente e le asserzioni nascoste |
 | `js/scheduler.js` | Leitner: cosa ripassare e quando un esercizio è chiuso |
 | `js/app.js` | Router e viste |
+| `js/shell.js`, `js/vfs.js` | Terminale POSIX simulato e filesystem isolato per ogni esercizio |
+| `js/powershell.js`, `js/ambienti.js`, `js/processi.js` | Adattatori di ramo sullo stesso motore: cmdlet, ambienti e processi |
+| `js/traguardi.js` | Mostra capacità raggiunte e quelle che richiedono moduli in arrivo |
 | `js/md.js` | Markdown minimo per il testo delle lezioni |
 | `sw.js` | Cachea Pyodide (rete-prima per l'app, cache-prima per il CDN) |
-| `content/*.json` | Lezioni ed esercizi, un file per modulo |
+| `content/index.json` | Rami, ordine didattico, moduli disponibili e pianificati |
+| `content/traguardi.json` | Competenze, prerequisiti e punti sensati in cui fermarsi |
+| `content/*.json` | Lezioni ed esercizi, un file per modulo o cantiere |
+| `tools/` | Porte di qualità per contenuti, lezioni e motore shell |
 
-Aggiungere contenuti significa editare un JSON in `content/`, mai il motore.
+Aggiungere contenuti significa aggiornare JSON, indice e traguardi; il motore si
+tocca solo quando una nuova capacità non può essere descritta dai contratti già
+esistenti.
