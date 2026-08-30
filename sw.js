@@ -5,7 +5,10 @@
 // Pyodide dal CDN (~12 MB, URL con versione fissa) -> cache per prima. Scaricarlo
 //   una volta sola e' il vero motivo per cui questo service worker esiste.
 
-const VERSIONE = "v1";
+// Incrementare a ogni release che aggiunge o rinomina asset dell'app. Una
+// versione nuova obbliga Safari a installare la shell completa invece di
+// riusare una cache vecchia che non conosce i moduli appena importati.
+const VERSIONE = "v2";
 const SHELL = "shell-" + VERSIONE;
 const RUNTIME = "runtime-" + VERSIONE;
 
@@ -28,6 +31,16 @@ const PRECACHE = [
   "js/html.js",
   "js/frasi.js",
   "js/processi.js",
+  "js/sistema.js",
+  "js/utenti.js",
+  "js/testo.js",
+  "js/rete.js",
+  "js/remoto.js",
+  "js/servizi.js",
+  "js/hardware.js",
+  "js/prestazioni.js",
+  "js/storage.js",
+  "js/container.js",
   "js/traguardi.js",
   "content/index.json",
   "content/traguardi.json",
