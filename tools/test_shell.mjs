@@ -10,6 +10,7 @@ import assert from "node:assert";
 import * as V from "../js/vfs.js";
 import { creaShell, esegui, eseguiTutto, dividi, verifica } from "../js/shell.js";
 import { AMBIENTI, statoAmbienti } from "../js/ambienti.js";
+import { comandiPowerShell } from "../js/powershell.js";
 
 let fatti = 0;
 const casi = [];
@@ -400,6 +401,91 @@ caso("un file locale con lo stesso nome oscura il pacchetto", () => {
   assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
 });
 
+// ---------- PowerShell: la pipeline a oggetti ----------
+
+const PROG = {
+  "/home/tu/volo/note.txt": "campagna\n",
+  "/home/tu/volo/dati/a.csv": "quota\n9000\n",
+  "/home/tu/volo/dati/b.csv": "quota\n3000\n11000\n",
+};
+const shellPs = (fs = PROG, cwd) => creaShell(fs, { cwd, comandi: comandiPowerShell() });
+
+caso("Get-ChildItem restituisce oggetti, non righe di testo", () => {
+  const sh = shellPs();
+  const r = esegui(sh, "Get-ChildItem volo");
+  assert.match(r.out, /Mode/, "la tabella ha le intestazioni");
+  assert.match(r.out, /note.txt/);
+});
+
+caso("gli alias fanno arrivare dov'e' abituato chi viene da bash", () => {
+  const sh = shellPs();
+  assert.equal(esegui(sh, "pwd").out, "/home/tu");
+  assert.equal(esegui(sh, "cd volo").errore, null);
+  assert.equal(esegui(sh, "Get-Location").out, "/home/tu/volo");
+});
+
+caso("Where-Object filtra su un CAMPO, senza ritagliare colonne", () => {
+  const sh = shellPs();
+  // a.csv sono 11 caratteri, b.csv 17: la soglia sta in mezzo.
+  const r = esegui(sh, "Get-ChildItem volo/dati | Where-Object Length -gt 12");
+  assert.match(r.out, /b\.csv/);
+  assert.equal(/a\.csv/.test(r.out), false, "a.csv e' piu' corto e non passa");
+});
+
+caso("Sort-Object ordina i numeri come numeri", () => {
+  const sh = shellPs();
+  const r = esegui(sh, "Get-ChildItem volo/dati | Sort-Object Length | Select-Object Name");
+  const righe = r.out.split("\n").slice(2);
+  assert.match(righe[0], /a\.csv/, "il piu' corto per primo");
+});
+
+caso("Measure-Object conta e somma un campo", () => {
+  const sh = shellPs();
+  assert.match(esegui(sh, "Get-ChildItem volo/dati | Measure-Object").out, /Count/);
+  assert.match(esegui(sh, "Get-ChildItem volo/dati | Measure-Object Length -Sum").out, /Sum/);
+});
+
+caso("Get-Content restituisce le righe, e Measure-Object le conta", () => {
+  const sh = shellPs();
+  const out = esegui(sh, "Get-Content volo/dati/b.csv | Measure-Object").out;
+  assert.equal(out.split("\n").pop().trim(), "3");
+});
+
+caso("New-Item distingue file e directory con -ItemType", () => {
+  const sh = shellPs();
+  esegui(sh, "New-Item -Path volo/out -ItemType Directory");
+  esegui(sh, "New-Item -Path volo/out/vuoto.txt");
+  assert.equal(V.eDir(sh.fs, "/home/tu/volo/out"), true);
+  assert.equal(V.eFile(sh.fs, "/home/tu/volo/out/vuoto.txt"), true);
+});
+
+caso("i percorsi con la barra rovesciata funzionano lo stesso", () => {
+  const sh = shellPs();
+  assert.equal(esegui(sh, "Set-Location volo\\dati").errore, null);
+  assert.equal(sh.fs.cwd, "/home/tu/volo/dati");
+});
+
+caso("Select-String cerca dentro un file e ignora le maiuscole", () => {
+  const sh = shellPs({ "/home/tu/log.txt": "Errore grave\nok\nerrore lieve\n" });
+  const r = esegui(sh, "Select-String -Pattern errore -Path log.txt");
+  assert.match(r.out, /LineNumber/);
+  assert.match(r.out, /Errore grave/);
+  assert.match(r.out, /errore lieve/);
+});
+
+caso("Select-Object prende piu' campi anche scritti con lo spazio dopo la virgola", () => {
+  const sh = shellPs();
+  const r = esegui(sh, "Get-ChildItem volo/dati | Select-Object Name, Length");
+  assert.match(r.out, /Name +Length/, "servono entrambe le colonne");
+});
+
+caso("Remove-Item su una cartella vuole -Recurse", () => {
+  const sh = shellPs();
+  assert.match(esegui(sh, "Remove-Item volo").errore, /directory/);
+  assert.equal(esegui(sh, "Remove-Item volo -Recurse").errore, null);
+  assert.equal(V.esiste(sh.fs, "/home/tu/volo"), false);
+});
+
 // ---------- contenuti: ogni soluzione deve passare la propria verifica ----------
 //
 // E' l'equivalente di check_content.py per gli esercizi di terminale: la
@@ -420,7 +506,12 @@ for (const meta of indice.moduli) {
         const sh = creaShell(es.filesystem || {}, {
           cwd: es.cwd,
           env: es.env,
-          comandi: es.interpreti ? AMBIENTI : undefined,
+          comandi:
+            es.shell === "powershell"
+              ? comandiPowerShell()
+              : es.interpreti
+                ? AMBIENTI
+                : undefined,
         });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         const t = eseguiTutto(sh, es.soluzione);

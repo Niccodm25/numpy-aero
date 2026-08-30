@@ -5,6 +5,7 @@ import * as L from "./scheduler.js";
 import * as P from "./percorso.js";
 import * as SH from "./shell.js";
 import * as A from "./ambienti.js";
+import * as PS from "./powershell.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -264,11 +265,15 @@ function montaTerminale(zona, es) {
   // Gli esercizi che dichiarano degli interpreti ottengono anche i comandi
   // python, pip e venv: e' quello che distingue il ramo degli ambienti da uno
   // di sola shell, e si accende dal contenuto invece che dal codice.
-  const sh = SH.creaShell(es.filesystem || {}, {
-    cwd: es.cwd,
-    env: es.env,
-    comandi: es.interpreti ? A.AMBIENTI : undefined,
-  });
+  // Tre dizionari di comandi, scelti dal contenuto e non dal codice: POSIX di
+  // default, PowerShell quando l'esercizio lo chiede, e i comandi degli
+  // ambienti quando dichiara degli interpreti.
+  const comandi = es.shell === "powershell"
+    ? PS.comandiPowerShell()
+    : es.interpreti
+      ? A.AMBIENTI
+      : undefined;
+  const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   const trascrizione = [];
 
@@ -283,9 +288,10 @@ function montaTerminale(zona, es) {
 
   const out = zona.querySelector("#t-out");
   const input = zona.querySelector("#t-in");
+  const segno = es.shell === "powershell" ? "PS>" : "$";
   const aggiornaStato = () => {
     zona.querySelector("#t-cwd").textContent = sh.fs.cwd;
-    zona.querySelector("#t-prompt").textContent = "$";
+    zona.querySelector("#t-prompt").textContent = segno;
   };
 
   const scrivi = (testo, classe = "") => {
@@ -320,7 +326,7 @@ function montaTerminale(zona, es) {
     const riga = input.value;
     input.value = "";
     indiceStoria = null;
-    scrivi(`$ ${riga}`, "eco");
+    scrivi(`${segno} ${riga}`, "eco");
     const r = SH.esegui(sh, riga);
     trascrizione.push({ riga, ...r });
     if (r.out) scrivi(r.out);

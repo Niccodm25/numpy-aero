@@ -24,6 +24,7 @@ const PRECACHE = [
   "js/vfs.js",
   "js/shell.js",
   "js/ambienti.js",
+  "js/powershell.js",
   "content/index.json",
 ];
 

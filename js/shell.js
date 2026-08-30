@@ -86,7 +86,11 @@ export function esegui(sh, riga) {
 
     sh.stdin = ingresso;
     try {
-      const out = fn(sh, parole.slice(1)) ?? "";
+      // Un comando puo' restituire testo oppure oggetti. Nella pipe passa il
+      // valore grezzo — e' la differenza fra una shell POSIX e PowerShell, e
+      // qui serve poterle rappresentare entrambe con lo stesso motore.
+      const valore = fn(sh, parole.slice(1)) ?? "";
+      const out = formatta(valore);
       if (redirezione) {
         if (!redirezione.file) return { out: "", errore: "manca il nome del file dopo >" };
         const testoOut = out.endsWith("\n") || out === "" ? out : out + "\n";
@@ -96,7 +100,7 @@ export function esegui(sh, riga) {
       } else {
         ultimo = { out, errore: null };
       }
-      ingresso = out;
+      ingresso = valore;
     } catch (e) {
       if (e instanceof V.ErroreFs) return { out: "", errore: `${nome}: ${e.message}` };
       throw e;
@@ -105,6 +109,31 @@ export function esegui(sh, riga) {
     }
   }
   return ultimo;
+}
+
+/**
+ * Da qualunque cosa un comando abbia restituito al testo da mostrare.
+ * Gli oggetti diventano una tabella con le intestazioni, come fa PowerShell:
+ * e' li' che si vede che nella pipeline non stava passando del testo.
+ */
+export function formatta(valore) {
+  if (valore === null || valore === undefined) return "";
+  if (typeof valore === "string") return valore;
+  if (!Array.isArray(valore)) return formatta([valore]);
+  if (valore.length === 0) return "";
+  if (valore.every((v) => typeof v !== "object" || v === null))
+    return valore.map(String).join("\n");
+
+  const colonne = [...new Set(valore.flatMap((v) => Object.keys(v)))];
+  const larghezza = Object.fromEntries(
+    colonne.map((c) => [c, Math.max(c.length, ...valore.map((v) => String(v[c] ?? "").length))])
+  );
+  const riga = (celle) => colonne.map((c, i) => String(celle[i]).padEnd(larghezza[c])).join("  ").trimEnd();
+  return [
+    riga(colonne),
+    riga(colonne.map((c) => "-".repeat(larghezza[c]))),
+    ...valore.map((v) => riga(colonne.map((c) => v[c] ?? ""))),
+  ].join("\n");
 }
 
 /** Spezza sulle pipe di primo livello, lasciando stare quelle fra virgolette. */
@@ -156,7 +185,9 @@ function ingresso(sh, file) {
   if (file !== undefined) return V.leggi(sh.fs, file);
   if (sh.stdin === null || sh.stdin === undefined)
     throw new V.ErroreFs("manca il nome del file");
-  return sh.stdin;
+  // I comandi POSIX lavorano su testo: se dalla pipe arrivano oggetti — cosa
+  // che succede solo nel ramo PowerShell — li si appiattisce qui.
+  return formatta(sh.stdin);
 }
 
 export const POSIX = {

@@ -128,15 +128,14 @@ Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre vi
 
 I moduli 5 e 7 sono i più preziosi: sono i problemi che avrai davvero.
 
-### Ramo C — PowerShell (Windows)
+### Ramo C — PowerShell (Windows)  ← **iniziato**
 
 Simulato, filesystem virtuale in stile Windows.
 
-1. **Navigazione** — `Get-ChildItem`, `Set-Location`, percorsi, `C:\` contro `/`
-2. **File** — creare, copiare, spostare, eliminare, leggere
-3. **La pipeline a oggetti** — la differenza che conta: `Get-Process | Where-Object CPU -gt 100`
-   filtra oggetti, non righe di testo. È il motivo per cui PowerShell non è bash
-4. **Filtrare e ordinare** — `Where-Object`, `Select-Object`, `Sort-Object`, `Measure-Object`
+1. **La pipeline a oggetti** — Verbo-Sostantivo, `Get-ChildItem`, `New-Item`,
+   `Where-Object`, `Sort-Object`, `Select-Object`, `Measure-Object`,
+   `Select-String`. **fatto** — e' la differenza che conta: nella pipeline
+   passano oggetti con dei campi, non righe di testo
 5. **Testo e file di dati** — `Select-String`, import/export CSV, JSON
 6. **Script** — variabili, cicli, funzioni, execution policy
 7. **Sistema** — processi, servizi, variabili d'ambiente, task pianificati
@@ -222,7 +221,7 @@ poi come farlo girare, poi gli strumenti di calcolo, poi il sistema sotto.
 | 2 | **Ramo E — Python base** | ~~Da fare~~ **fatto**: otto moduli sul motore che c'era gia', nessun software nuovo |
 | 3 | **Motore del terminale simulato** | ~~Da fare~~ **fatto**: `js/vfs.js` e `js/shell.js`, piu' `js/ambienti.js` per python/pip/venv. 59 casi in `tools/test_shell.mjs` |
 | 4 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
-| 5 | **Ramo C — PowerShell** | La macchina che usi tutti i giorni |
+| 5 | **Ramo C — PowerShell** | ~~Da fare~~ **iniziato**: stesso motore, dizionario di cmdlet e pipeline a oggetti |
 | 6 | **Matplotlib** | Completa NumPy, motore già pronto |
 | 7 | **Ramo D — Linux** | Quando serve: cluster, WSL, server |
 | 8 | **SciPy** | Quando i problemi superano quello che NumPy risolve da solo |

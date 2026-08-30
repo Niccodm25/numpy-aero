@@ -64,12 +64,11 @@
       "id": "powershell",
       "titolo": "PowerShell",
       "perche": "La shell vera di Windows: oggetti invece di testo. cmd.exe resta una lezione sola.",
-      "disponibile": false,
-      "moduli": [],
+      "disponibile": true,
+      "moduli": [
+        "w01"
+      ],
       "prossimi": [
-        "Navigazione e file",
-        "La pipeline a oggetti",
-        "Filtrare e ordinare",
         "Testo, CSV, JSON",
         "Script ed execution policy",
         "Processi, servizi, variabili d'ambiente"
@@ -180,6 +179,12 @@
       "id": "l02",
       "file": "l02-cercare.json",
       "titolo": "Cercare, filtrare, comporre",
+      "disponibile": true
+    },
+    {
+      "id": "w01",
+      "file": "w01-pipeline.json",
+      "titolo": "La pipeline a oggetti",
       "disponibile": true
     },
     {

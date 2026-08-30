@@ -1,0 +1,614 @@
+{
+ "id": "w01",
+ "titolo": "La pipeline a oggetti",
+ "perche": "PowerShell non e' bash con i nomi lunghi: nella pipeline passano oggetti con dei campi, non righe di testo. Significa che filtrare per dimensione non richiede di ritagliare la quinta colonna sperando che sia la quinta, e che ordinare per numero non richiede di ricordarsi -n. La tabella che vedi a schermo viene prodotta solo alla fine.",
+ "funzioni": [
+  "Get-Location",
+  "Set-Location",
+  "Get-ChildItem",
+  "New-Item",
+  "Remove-Item",
+  "Get-Content",
+  "Where-Object",
+  "Sort-Object",
+  "Select-Object",
+  "Measure-Object",
+  "Select-String"
+ ],
+ "lezioni": [
+  {
+   "id": "w01-l1",
+   "titolo": "Verbo-Sostantivo: i nomi si indovinano",
+   "md": "```\nGet-ChildItem       # elenca\nSet-Location        # spostati\nNew-Item            # crea\nRemove-Item         # cancella\nCopy-Item           # copia\n```\n\nOgni comando di PowerShell si chiama **Verbo-Sostantivo**, e i verbi sono un elenco chiuso: `Get`, `Set`, `New`, `Remove`, `Copy`, `Move`, `Select`, `Where`, `Sort`, `Measure`.\n\nÈ verboso e si indovina. Non sapere come si elencano i processi non e' un problema: sono `Get-` qualcosa, e quel qualcosa e' `Process`. In bash lo stesso ragionamento non porta da nessuna parte, perche' `ls`, `ps` e `df` non hanno niente in comune.\n\n### Gli alias, per chi arriva da bash\n\n```\nls      ->  Get-ChildItem\ncd      ->  Set-Location\ncat     ->  Get-Content\nrm      ->  Remove-Item\npwd     ->  Get-Location\n```\n\nEsistono apposta perche' i comandi che conosci funzionino. Con un limite che si scopre subito: **`ls` funziona, `ls -l` no.** L'alias punta a un cmdlet che quell'opzione non ce l'ha, perche' non ne ha bisogno — vedrai fra poco perche'.\n\nNegli script gli alias non si usano mai: si scrive il nome completo, che chi legge capisce senza conoscere le abbreviazioni.\n\n### I parametri hanno un nome\n\n```\nGet-ChildItem -Path volo -Recurse\nNew-Item -Path note.txt -ItemType File\nRemove-Item -Path vecchi -Recurse\n```\n\nNiente lettere singole: `-Recurse`, non `-r`. Piu' lungo da scrivere, e leggibile senza manuale — e la maggior parte si puo' abbreviare finche' resta non ambigua.\n\n### Le barre\n\nWindows usa `\\`, ma PowerShell accetta anche `/`. Nei percorsi che scrivi tu, usa quella che preferisci; negli script che devono girare anche altrove, `/` e' la scelta prudente."
+  },
+  {
+   "id": "w01-l2",
+   "titolo": "La differenza che conta: oggetti, non testo",
+   "md": "In bash, `ls -l` stampa **testo**. Per prendere la dimensione di un file bisogna ritagliare la quinta colonna con `awk` o `cut`, sperando che le colonne siano davvero cinque e che nessun nome contenga uno spazio.\n\nIn PowerShell `Get-ChildItem` non stampa niente: **restituisce oggetti**, ognuno con dei campi.\n\n```\nGet-ChildItem volo/dati\n\nMode   Length  Name\n-----  ------  -----------\n-a---  30      prova1.csv\n-a---  22      prova2.csv\n```\n\nQuella tabella e' solo il modo in cui gli oggetti vengono **mostrati** alla fine. Nella pipeline non sta passando quel testo: stanno passando gli oggetti.\n\n### Filtrare su un campo\n\n```\nGet-ChildItem volo/dati | Where-Object Length -gt 25\n```\n\n`Where-Object` guarda il campo `Length`, che e' un **numero**. Non c'e' niente da ritagliare, niente da convertire, e nessuna colonna da contare.\n\nIn bash lo stesso risultato richiede `ls -l | awk '$5 > 25'` — e quel `$5` e' la ragione per cui gli script bash si rompono quando cambia il formato di `ls`.\n\n### Ordinare per un campo\n\n```\nGet-ChildItem | Sort-Object Length -Descending\n```\n\nI numeri si confrontano come numeri. In bash `sort` legge testo e mette `100` prima di `9`, a meno di ricordarsi `-n` — un problema che qui non puo' esistere, perche' `Length` non e' mai stato testo.\n\n### Contare e sommare\n\n```\nGet-ChildItem | Measure-Object\nGet-ChildItem | Measure-Object Length -Sum\n```\n\n`Measure-Object` conta gli oggetti che gli arrivano; con il nome di una proprieta' ne somma i valori. È `wc -l` e molto di piu', senza dover trasformare niente in testo prima."
+  },
+  {
+   "id": "w01-l3",
+   "titolo": "I quattro cmdlet della pipeline",
+   "md": "Quasi tutto quello che si fa in PowerShell passa da questi quattro, nell'ordine in cui li scrivi:\n\n```\nGet-ChildItem volo -Recurse | Where-Object Name -like *.csv | Sort-Object Length -Descending | Select-Object Name, Length\n```\n\n| cmdlet | cosa fa | in bash |\n|---|---|---|\n| `Where-Object` | tiene solo quelli che passano il test | `grep`, `awk` |\n| `Sort-Object` | ordina per un campo | `sort` |\n| `Select-Object` | sceglie **quali campi**, o quanti oggetti | `cut`, `head` |\n| `Measure-Object` | conta, somma, fa la media | `wc`, `awk` |\n\n### Where-Object: la forma corta\n\n```\nWhere-Object Length -gt 1000\nWhere-Object Name -like *.csv\nWhere-Object Mode -eq d----\n```\n\nGli operatori si scrivono col trattino: `-eq`, `-ne`, `-gt`, `-lt`, `-ge`, `-le`, `-like`, `-match`. Non esistono `>` e `<`, che in una shell significano gia' redirezione — ed e' il motivo per cui PowerShell ha dovuto inventarsi questa forma.\n\n### Select-Object: due mestieri\n\n```\nSelect-Object Name, Length     # sceglie i CAMPI\nSelect-Object -First 3         # sceglie i primi tre OGGETTI\n```\n\nIl primo e' `cut`, il secondo e' `head`. Stesso cmdlet, e lo si capisce dal parametro.\n\n### L'ordine conta\n\n`Where` prima di `Sort` e' quasi sempre giusto: ordinare mille oggetti per poi buttarne novecento e' lavoro sprecato. `Select-Object -First` va invece **dopo** `Sort`, altrimenti prendi i primi tre in ordine casuale invece dei tre piu' grandi."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "w01-verbo",
+   "comando": "Verbo-Sostantivo",
+   "titolo": "i nomi si indovinano",
+   "esercizi": [
+    {
+     "id": "w01-vs-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Dove sei? Usa il cmdlet, non l'alias.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-Location",
+     "verifica": {
+      "stampa": "/home/tu",
+      "usa": [
+       "Get-Location"
+      ]
+     },
+     "hint": [
+      "Il verbo e' Get, il sostantivo e' Location.",
+      "Get-Location"
+     ],
+     "spiegazione": "`Get-Location`. Verbo-Sostantivo: `Get` perche' chiedi, `Location` perche' e' la posizione. L'alias `pwd` esiste e fa lo stesso, ma negli script si scrive il nome completo — chi legge lo capisce senza conoscere le abbreviazioni."
+    },
+    {
+     "id": "w01-vs-2",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Elenca il contenuto di `volo`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo",
+     "verifica": {
+      "stampa": "note.txt",
+      "usa": [
+       "Get-ChildItem"
+      ]
+     },
+     "hint": [
+      "Get-ChildItem seguito dal percorso.",
+      "Get-ChildItem volo"
+     ],
+     "spiegazione": "`Get-ChildItem` — gli \"elementi figli\" del percorso. Il nome e' verboso e si indovina: non serve sapere che si chiama `ls`, basta sapere che i comandi che chiedono qualcosa iniziano per `Get`."
+    },
+    {
+     "id": "w01-vs-3",
+     "tipo": "predict",
+     "testo": "Perche' i cmdlet si chiamano tutti Verbo-Sostantivo?",
+     "opzioni": [
+      "perche' cosi' i nomi dei comandi si indovinano invece di impararli",
+      "per compatibilita' con il vecchio cmd.exe",
+      "perche' il trattino separa comando e argomenti",
+      "e' una convenzione estetica, senza conseguenze pratiche"
+     ],
+     "risposta": "perche' cosi' i nomi dei comandi si indovinano invece di impararli",
+     "spiegazione": "Perche' cosi' si **indovinano**. I verbi sono un elenco chiuso — `Get`, `Set`, `New`, `Remove` — e davanti a un problema nuovo la domanda diventa \"quale sostantivo\", che e' molto piu' facile. In bash lo stesso ragionamento non porta da nessuna parte: `ls`, `ps` e `df` non hanno niente in comune."
+    },
+    {
+     "id": "w01-vs-4",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Entra in `volo/dati` e conferma dove sei.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Set-Location volo/dati\nGet-Location",
+     "verifica": {
+      "cwd": "/home/tu/volo/dati",
+      "usa": [
+       "Set-Location"
+      ]
+     },
+     "hint": [
+      "Il verbo per spostarsi e' Set.",
+      "Set-Location volo/dati"
+     ],
+     "spiegazione": "`Set-Location` — l'alias `cd` funziona identico. Nota che i percorsi si possono scrivere con la barra normale anche su Windows: PowerShell accetta entrambe, e negli script che devono girare anche altrove `/` e' la scelta prudente."
+    },
+    {
+     "id": "w01-vs-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Crea una cartella `risultati` dentro `volo`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "New-Item -Path volo/risultati -ItemType Directory",
+     "verifica": {
+      "dir": [
+       "volo/risultati"
+      ],
+      "usa": [
+       "New-Item"
+      ]
+     },
+     "hint": [
+      "Il cmdlet e' New-Item, e serve dire che tipo di elemento.",
+      "New-Item -Path volo/risultati -ItemType Directory"
+     ],
+     "spiegazione": "`New-Item` con `-ItemType Directory`. Senza quel parametro creerebbe un **file** chiamato risultati: e' lo stesso cmdlet per entrambi, e il tipo va detto."
+    },
+    {
+     "id": "w01-vs-6",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Crea un file vuoto `volo/risultati.md`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "New-Item -Path volo/risultati.md",
+     "verifica": {
+      "esiste": [
+       "volo/risultati.md"
+      ],
+      "usa": [
+       "New-Item"
+      ]
+     },
+     "hint": [
+      "Come prima, senza il tipo.",
+      "New-Item -Path volo/risultati.md"
+     ],
+     "spiegazione": "Lo stesso `New-Item`, senza `-ItemType Directory`: il default e' `File`. Un cmdlet, un sostantivo, e il tipo come parametro — invece di `mkdir` e `touch`, due comandi diversi che fanno la stessa cosa su tipi diversi."
+    },
+    {
+     "id": "w01-vs-7",
+     "tipo": "predict",
+     "testo": "`ls` funziona in PowerShell. E `ls -l` ?",
+     "opzioni": [
+      "no: l'alias punta a Get-ChildItem, che quel parametro non ce l'ha",
+      "si': gli alias supportano le opzioni di bash",
+      "si', ma solo dentro WSL",
+      "no: -l va scritto --long"
+     ],
+     "risposta": "no: l'alias punta a Get-ChildItem, che quel parametro non ce l'ha",
+     "spiegazione": "No: l'alias punta a `Get-ChildItem`, che non ha il parametro `-l`. E non ne ha bisogno — `-l` in bash serve a stampare le colonne, mentre qui i campi ci sono gia' negli oggetti. È il primo punto in cui l'abitudine da bash si rompe."
+    },
+    {
+     "id": "w01-vs-8",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Cancella la cartella `volo/dati` con tutto quello che contiene.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Remove-Item -Path volo/dati -Recurse",
+     "verifica": {
+      "nonEsiste": [
+       "volo/dati"
+      ],
+      "usa": [
+       "Remove-Item"
+      ]
+     },
+     "hint": [
+      "Il cmdlet e' Remove-Item, e serve il parametro per scendere.",
+      "Remove-Item -Path volo/dati -Recurse"
+     ],
+     "spiegazione": "`-Recurse` per intero, scritto per esteso. Niente lettere singole: piu' lungo da scrivere e leggibile senza manuale, che negli script conta piu' della brevita'."
+    }
+   ]
+  },
+  {
+   "id": "w01-oggetti",
+   "comando": "oggetti",
+   "titolo": "la pipeline porta oggetti",
+   "esercizi": [
+    {
+     "id": "w01-og-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Elenca `volo/dati` e guarda **quali colonne** compaiono.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati",
+     "verifica": {
+      "stampa": "Length",
+      "usa": [
+       "Get-ChildItem"
+      ]
+     },
+     "hint": [
+      "Basta elencare.",
+      "Get-ChildItem volo/dati"
+     ],
+     "spiegazione": "`Mode`, `Length`, `Name`, `FullName`. Non sono colonne di testo allineate a mano: sono i **campi** degli oggetti che il cmdlet ha restituito, e la tabella e' solo il modo in cui vengono mostrati alla fine."
+    },
+    {
+     "id": "w01-og-2",
+     "tipo": "predict",
+     "testo": "Cosa passa nella pipeline di `Get-ChildItem | Where-Object ...` ?",
+     "opzioni": [
+      "oggetti con dei campi, non righe di testo",
+      "righe di testo, come in bash",
+      "i nomi dei file, uno per riga",
+      "un unico blocco di testo con le colonne allineate"
+     ],
+     "risposta": "oggetti con dei campi, non righe di testo",
+     "spiegazione": "**Oggetti** con dei campi, non righe di testo. La tabella che vedi a schermo viene prodotta solo alla fine, quando qualcosa deve essere mostrato. È la differenza centrale da bash, e tutto il resto ne discende."
+    },
+    {
+     "id": "w01-og-3",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Tieni solo i file di `volo/dati` piu' lunghi di 25 caratteri.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Where-Object Length -gt 25",
+     "verifica": {
+      "stampa": "prova3.csv",
+      "usa": [
+       "Where-Object"
+      ]
+     },
+     "hint": [
+      "Where-Object Proprieta -operatore valore.",
+      "Get-ChildItem volo/dati | Where-Object Length -gt 25"
+     ],
+     "spiegazione": "`Where-Object` guarda il campo `Length`, che e' un **numero**. Non c'e' niente da ritagliare e niente da convertire.\n\nIn bash lo stesso risultato richiede `ls -l | awk '$5 > 25'`, e quel `$5` e' la ragione per cui gli script bash si rompono quando cambia il formato di `ls`."
+    },
+    {
+     "id": "w01-og-4",
+     "tipo": "predict",
+     "testo": "Perche' in PowerShell si scrive `-gt` invece di `>` ?",
+     "opzioni": [
+      "perche' > in una shell significa gia' redirezione",
+      "per coerenza con i nomi dei parametri",
+      "perche' > confronta solo le stringhe",
+      "e' una scelta ereditata da cmd.exe"
+     ],
+     "risposta": "perche' > in una shell significa gia' redirezione",
+     "spiegazione": "Perche' `>` in una shell significa gia' **redirezione**: scrivere `Where-Object Length > 25` manderebbe l'uscita in un file chiamato 25. Gli operatori di confronto hanno dovuto prendere una forma diversa, ed e' quella col trattino."
+    },
+    {
+     "id": "w01-og-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Ordina i file di `volo/dati` dal piu' grande al piu' piccolo.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Sort-Object Length -Descending",
+     "verifica": {
+      "stampa": "prova3.csv",
+      "usa": [
+       "Sort-Object"
+      ]
+     },
+     "hint": [
+      "Sort-Object seguito dal nome del campo.",
+      "Get-ChildItem volo/dati | Sort-Object Length -Descending"
+     ],
+     "spiegazione": "`Sort-Object Length -Descending`. I numeri si confrontano come numeri, perche' `Length` non e' mai stato testo.\n\nIn bash `sort` legge testo e mette `100` prima di `9` a meno di ricordarsi `-n`. Qui quel problema non puo' esistere."
+    },
+    {
+     "id": "w01-og-6",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Conta quanti elementi ci sono in `volo/dati`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Measure-Object",
+     "verifica": {
+      "stampa": "Count",
+      "usa": [
+       "Measure-Object"
+      ]
+     },
+     "hint": [
+      "Il verbo per misurare e' Measure.",
+      "Get-ChildItem volo/dati | Measure-Object"
+     ],
+     "spiegazione": "`Measure-Object` conta gli oggetti che gli arrivano, e restituisce a sua volta un oggetto con il campo `Count`. È `wc -l` senza dover trasformare niente in testo prima."
+    },
+    {
+     "id": "w01-og-7",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Somma le dimensioni di tutti i file in `volo/dati`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Measure-Object Length -Sum",
+     "verifica": {
+      "stampa": "Sum",
+      "usa": [
+       "Measure-Object"
+      ]
+     },
+     "hint": [
+      "Serve il nome del campo e il parametro -Sum.",
+      "Get-ChildItem volo/dati | Measure-Object Length -Sum"
+     ],
+     "spiegazione": "`Measure-Object Length -Sum`: gli si dice **su quale campo** misurare e cosa calcolare. Esistono anche `-Average`, `-Maximum` e `-Minimum`, e si possono chiedere insieme.\n\nIn bash questo richiede `awk` e una variabile di accumulo."
+    },
+    {
+     "id": "w01-og-8",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Mostra **solo** i campi Name e Length dei file in `volo/dati`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Select-Object Name, Length",
+     "verifica": {
+      "stampa": "Name",
+      "usa": [
+       "Select-Object"
+      ]
+     },
+     "hint": [
+      "Select-Object seguito dai nomi separati da virgola.",
+      "Get-ChildItem volo/dati | Select-Object Name, Length"
+     ],
+     "spiegazione": "`Select-Object` con i nomi dei campi e' il `cut` di PowerShell — con la differenza che scegli i campi per **nome** invece che per posizione, e il risultato resta un oggetto invece di diventare testo."
+    }
+   ]
+  },
+  {
+   "id": "w01-pipeline",
+   "comando": "Where, Sort, Select",
+   "titolo": "i quattro cmdlet della pipeline",
+   "esercizi": [
+    {
+     "id": "w01-pi-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Prendi solo i **primi due** elementi di `volo/dati`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Select-Object -First 2",
+     "verifica": {
+      "usa": [
+       "Select-Object"
+      ],
+      "stampa": "prova1.csv"
+     },
+     "hint": [
+      "Il parametro e' -First.",
+      "Get-ChildItem volo/dati | Select-Object -First 2"
+     ],
+     "spiegazione": "`Select-Object -First 2` e' l'`head` di PowerShell. Stesso cmdlet di prima, mestiere diverso: con i nomi dei campi sceglie **quali campi**, con `-First` sceglie **quanti oggetti**."
+    },
+    {
+     "id": "w01-pi-2",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Trova il file **piu' grande** di `volo/dati`: ordinalo e prendine uno solo.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Sort-Object Length -Descending | Select-Object -First 1",
+     "verifica": {
+      "stampa": "prova3.csv",
+      "usa": [
+       "Sort-Object",
+       "Select-Object"
+      ]
+     },
+     "hint": [
+      "Prima ordina al contrario, poi prendi il primo.",
+      "... | Sort-Object Length -Descending | Select-Object -First 1"
+     ],
+     "spiegazione": "`Sort-Object -Descending` e poi `-First 1`. L'ordine dei due conta: `-First` prima di `Sort` prenderebbe il primo in ordine qualsiasi, non il piu' grande — ed e' un errore che restituisce comunque un risultato plausibile."
+    },
+    {
+     "id": "w01-pi-3",
+     "tipo": "predict",
+     "testo": "Conviene mettere `Where-Object` prima o dopo `Sort-Object` ?",
+     "opzioni": [
+      "prima: filtrare riduce quello che poi va ordinato",
+      "dopo: l'ordinamento rende il filtro piu' veloce",
+      "e' indifferente",
+      "devono sempre stare nell'ordine in cui compaiono nella documentazione"
+     ],
+     "risposta": "prima: filtrare riduce quello che poi va ordinato",
+     "spiegazione": "Prima. Ordinare mille oggetti per poi buttarne novecento e' lavoro sprecato: si filtra e poi si ordina quello che resta. `Select-Object -First` invece va **dopo** l'ordinamento, altrimenti prendi i primi in ordine casuale."
+    },
+    {
+     "id": "w01-pi-4",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Cerca tutti i file `.csv` sotto `volo`, a qualunque profondita'.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo -Recurse | Where-Object Name -like *.csv",
+     "verifica": {
+      "stampa": "prova2.csv",
+      "usa": [
+       "Get-ChildItem",
+       "Where-Object"
+      ]
+     },
+     "hint": [
+      "-Recurse per scendere, Where-Object Name -like per filtrare.",
+      "Get-ChildItem volo -Recurse | Where-Object Name -like *.csv"
+     ],
+     "spiegazione": "`-Recurse` scende in tutto l'albero, e `Where-Object Name -like *.csv` filtra sul nome. `-like` e' l'operatore che accetta l'asterisco; `-eq` confronterebbe il nome per intero e non troverebbe niente."
+    },
+    {
+     "id": "w01-pi-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Leggi il log e tieni solo le righe che parlano di errori.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Select-String -Pattern error -Path volo/log.txt",
+     "verifica": {
+      "stampa": "LineNumber",
+      "usa": [
+       "Select-String"
+      ]
+     },
+     "hint": [
+      "Il cmdlet e' Select-String, con -Pattern e -Path.",
+      "Select-String -Pattern error -Path volo/log.txt"
+     ],
+     "spiegazione": "`Select-String` e' il `grep` di PowerShell, e **ignora le maiuscole** di suo: trova sia `ERROR` sia `error` senza opzioni. È l'opposto di `grep`, dove distinguerle e' il default e `-i` va chiesto.\n\nRestituisce oggetti con `Filename`, `LineNumber` e `Line`: il numero di riga arriva gratis, mentre in bash serve `grep -n`."
+    },
+    {
+     "id": "w01-pi-6",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Conta quante righe ha il file `volo/log.txt`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-Content volo/log.txt | Measure-Object",
+     "verifica": {
+      "stampa": "4",
+      "usa": [
+       "Get-Content",
+       "Measure-Object"
+      ]
+     },
+     "hint": [
+      "Get-Content da' le righe, Measure-Object le conta.",
+      "Get-Content volo/log.txt | Measure-Object"
+     ],
+     "spiegazione": "`Get-Content` restituisce **un array di righe**, non una stringa unica: per questo `Measure-Object` le conta senza bisogno di `-l` o di altro. È la stessa differenza di prima, applicata al contenuto di un file."
+    },
+    {
+     "id": "w01-pi-7",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Salva l'elenco dei nomi dei CSV in `volo/elenco.txt`.",
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo/dati | Select-Object Name > volo/elenco.txt\nGet-Content volo/elenco.txt",
+     "verifica": {
+      "esiste": [
+       "volo/elenco.txt"
+      ],
+      "contiene": {
+       "volo/elenco.txt": "prova1.csv"
+      }
+     },
+     "hint": [
+      "Come in bash, con il maggiore.",
+      "Get-ChildItem volo/dati | Select-Object Name > volo/elenco.txt"
+     ],
+     "spiegazione": "La redirezione `>` esiste anche qui e funziona come in bash: manda in un file quello che sarebbe andato a schermo — cioe' la **tabella formattata**, non gli oggetti.\n\nÈ il punto in cui gli oggetti finiscono: appena scrivi su un file di testo, tornano testo. Per conservarli come oggetti esistono `Export-Csv` e `ConvertTo-Json`."
+    },
+    {
+     "id": "w01-pi-8",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "**La catena completa.** Dai file sotto `volo`, tieni i `.csv`, ordinali dal piu' grande, e mostra nome e dimensione dei primi due.",
+     "difficolta": 3,
+     "filesystem": {
+      "/home/tu/volo/note.txt": "campagna di agosto\n",
+      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+      "/home/tu/volo/dati/prova3.csv": "quota,mach\n5000,0.55\n7000,0.66\n9500,0.85\n",
+      "/home/tu/volo/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n"
+     },
+     "soluzione": "Get-ChildItem volo -Recurse | Where-Object Name -like *.csv | Sort-Object Length -Descending | Select-Object Name, Length -First 2",
+     "verifica": {
+      "stampa": "prova3.csv",
+      "usa": [
+       "Get-ChildItem",
+       "Where-Object",
+       "Sort-Object",
+       "Select-Object"
+      ]
+     },
+     "hint": [
+      "Get-ChildItem -Recurse, poi Where-Object, poi Sort-Object, poi Select-Object.",
+      "L'ultimo pezzo: Select-Object Name, Length -First 2"
+     ],
+     "spiegazione": "Quattro cmdlet in fila, e ognuno riceve oggetti e restituisce oggetti. La tabella compare una volta sola, alla fine.\n\nLa stessa cosa in bash sarebbe `find volo -name '*.csv' | xargs ls -l | sort -k5 -n -r | head -2 | awk '{print $9, $5}'` — cinque comandi, due riferimenti a colonne per numero, e la certezza che si rompa il giorno in cui un nome di file contiene uno spazio.\n\nÈ questo il senso della pipeline a oggetti: non e' piu' corta, e' che non ha punti in cui indovinare."
+    }
+   ]
+  }
+ ]
+}
