@@ -24,6 +24,7 @@ import { PRESTAZIONI, statoPrestazioni } from "../js/prestazioni.js";
 import { STORAGE, statoStorage } from "../js/storage.js";
 import { CONTAINER, statoContainer } from "../js/container.js";
 import { SICUREZZA, statoSicurezza } from "../js/sicurezza.js";
+import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
 
 let fatti = 0;
 const casi = [];
@@ -584,6 +585,7 @@ caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
 caso("prestazioni e storage mostrano uno stato interrogabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...PRESTAZIONI,...STORAGE}});statoPrestazioni(sh);statoStorage(sh);assert.match(esegui(sh,"iostat").out,/nvme/);esegui(sh,"mount /dev/sdb /dati");assert.match(esegui(sh,"mount").out,/\/dati/);});
 caso("docker simulato costruisce e avvia immagini",()=>{const sh=creaShell({}, {comandi:{...POSIX,...CONTAINER}});statoContainer(sh);esegui(sh,"docker build -t analisi:1 .");assert.match(esegui(sh,"docker run analisi:1").out,/isolamento/);});
 caso("ufw conserva una policy difensiva verificabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...SICUREZZA}});statoSicurezza(sh);esegui(sh,"ufw enable");esegui(sh,"ufw allow 443");assert.match(esegui(sh,"ufw status").out,/443\/tcp/);});
+caso("playbook idempotente cambia solo alla prima esecuzione",()=>{const sh=creaShell({}, {comandi:{...POSIX,...AUTOMAZIONE}});statoAutomazione(sh);esegui(sh,"ansible-playbook sito.yml");assert.match(esegui(sh,"ansible-playbook sito.yml").out,/changed=0/);});
 
 // ---------- verifica degli esercizi ----------
 
@@ -1064,6 +1066,7 @@ for (const meta of indice.moduli) {
         if (es.storage) comandi = { ...(comandi ?? POSIX), ...STORAGE };
         if (es.container) comandi = { ...(comandi ?? POSIX), ...CONTAINER };
         if (es.sicurezza) comandi = { ...(comandi ?? POSIX), ...SICUREZZA };
+        if (es.automazione) comandi = { ...(comandi ?? POSIX), ...AUTOMAZIONE };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -1077,6 +1080,7 @@ for (const meta of indice.moduli) {
         if (es.storage) statoStorage(sh, es.storage === true ? undefined : es.storage);
         if (es.container) statoContainer(sh, es.container === true ? undefined : es.container);
         if (es.sicurezza) statoSicurezza(sh, es.sicurezza === true ? undefined : es.sicurezza);
+        if (es.automazione) statoAutomazione(sh);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(

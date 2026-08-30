@@ -446,9 +446,9 @@
     },
     {
       "id": "l19",
-      "file": "",
+      "file": "l19-automazione.json",
       "titolo": "Automazione a scala",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "c05",
