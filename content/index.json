@@ -434,9 +434,9 @@
     },
     {
       "id": "l17",
-      "file": "",
+      "file": "l17-container.json",
       "titolo": "Container e virtualizzazione",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l18",

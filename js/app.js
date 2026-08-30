@@ -17,6 +17,7 @@ import * as SV from "./servizi.js";
 import * as HW from "./hardware.js";
 import * as PF from "./prestazioni.js";
 import * as ST from "./storage.js";
+import * as CT from "./container.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 
@@ -330,6 +331,7 @@ function montaTerminale(zona, es) {
     comandi = { ...(comandi ?? SH.POSIX), ...HW.HARDWARE };
   if (es.prestazioni) comandi = { ...(comandi ?? SH.POSIX), ...PF.PRESTAZIONI };
   if (es.storage) comandi = { ...(comandi ?? SH.POSIX), ...ST.STORAGE };
+  if (es.container) comandi = { ...(comandi ?? SH.POSIX), ...CT.CONTAINER };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -341,6 +343,7 @@ function montaTerminale(zona, es) {
   if (es.hardware) HW.statoHardware(sh, es.hardware === true ? undefined : es.hardware);
   if (es.prestazioni) PF.statoPrestazioni(sh, es.prestazioni === true ? undefined : es.prestazioni);
   if (es.storage) ST.statoStorage(sh, es.storage === true ? undefined : es.storage);
+  if (es.container) CT.statoContainer(sh, es.container === true ? undefined : es.container);
   const trascrizione = [];
 
   zona.innerHTML = `

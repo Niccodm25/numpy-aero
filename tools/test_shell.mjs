@@ -22,6 +22,7 @@ import { SERVIZI, statoServizi } from "../js/servizi.js";
 import { HARDWARE, statoHardware } from "../js/hardware.js";
 import { PRESTAZIONI, statoPrestazioni } from "../js/prestazioni.js";
 import { STORAGE, statoStorage } from "../js/storage.js";
+import { CONTAINER, statoContainer } from "../js/container.js";
 
 let fatti = 0;
 const casi = [];
@@ -580,6 +581,7 @@ caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
   assert.match(esegui(sh,"sysctl -w vm.swappiness=10").out,/10/);
 });
 caso("prestazioni e storage mostrano uno stato interrogabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...PRESTAZIONI,...STORAGE}});statoPrestazioni(sh);statoStorage(sh);assert.match(esegui(sh,"iostat").out,/nvme/);esegui(sh,"mount /dev/sdb /dati");assert.match(esegui(sh,"mount").out,/\/dati/);});
+caso("docker simulato costruisce e avvia immagini",()=>{const sh=creaShell({}, {comandi:{...POSIX,...CONTAINER}});statoContainer(sh);esegui(sh,"docker build -t analisi:1 .");assert.match(esegui(sh,"docker run analisi:1").out,/isolamento/);});
 
 // ---------- verifica degli esercizi ----------
 
@@ -1058,6 +1060,7 @@ for (const meta of indice.moduli) {
           comandi = { ...(comandi ?? POSIX), ...HARDWARE };
         if (es.prestazioni) comandi = { ...(comandi ?? POSIX), ...PRESTAZIONI };
         if (es.storage) comandi = { ...(comandi ?? POSIX), ...STORAGE };
+        if (es.container) comandi = { ...(comandi ?? POSIX), ...CONTAINER };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -1069,6 +1072,7 @@ for (const meta of indice.moduli) {
         if (es.hardware) statoHardware(sh, es.hardware === true ? undefined : es.hardware);
         if (es.prestazioni) statoPrestazioni(sh, es.prestazioni === true ? undefined : es.prestazioni);
         if (es.storage) statoStorage(sh, es.storage === true ? undefined : es.storage);
+        if (es.container) statoContainer(sh, es.container === true ? undefined : es.container);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(
