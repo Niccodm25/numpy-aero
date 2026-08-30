@@ -18,6 +18,7 @@ import { UTENTI, statoUtenti } from "../js/utenti.js";
 import { TESTO } from "../js/testo.js";
 import { RETE, statoRete } from "../js/rete.js";
 import { REMOTO, statoRemoto } from "../js/remoto.js";
+import { SERVIZI, statoServizi } from "../js/servizi.js";
 
 let fatti = 0;
 const casi = [];
@@ -563,6 +564,13 @@ caso("scp e rsync spostano dati fra filesystem locale e remoto", () => {
   assert.equal(V.leggi(sh.remoto.fs, "nota.txt"), "ciao\n");
 });
 
+caso("systemctl e journalctl condividono lo stato del servizio", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...SERVIZI } }); statoServizi(sh);
+  esegui(sh, "systemctl start acquisizione.service");
+  assert.match(esegui(sh, "systemctl status acquisizione.service").out, /active/);
+  assert.match(esegui(sh, "journalctl -u acquisizione.service").out, /avviato/);
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -1034,6 +1042,8 @@ for (const meta of indice.moduli) {
           comandi = { ...(comandi ?? POSIX), ...RETE };
         if (es.remoto)
           comandi = { ...(comandi ?? POSIX), ...REMOTO };
+        if (es.servizi)
+          comandi = { ...(comandi ?? POSIX), ...SERVIZI };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -1041,6 +1051,7 @@ for (const meta of indice.moduli) {
         if (es.utenti) statoUtenti(sh, es.utenti === true ? undefined : es.utenti);
         if (es.rete) statoRete(sh, es.rete === true ? undefined : es.rete);
         if (es.remoto) statoRemoto(sh, es.remoto === true ? undefined : es.remoto);
+        if (es.servizi) statoServizi(sh, es.servizi === true ? undefined : es.servizi);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(
