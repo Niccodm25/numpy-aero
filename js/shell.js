@@ -28,9 +28,23 @@ export function creaShell(iniziale = {}, opzioni = {}) {
  */
 export function dividi(riga) {
   const parole = [];
+  // Fra apici singoli il dollaro non si espande, e ">" o "|" non sono operatori:
+  // e' l'unico modo per scrivere uno script con echo senza che la riga venga
+  // eseguita dalla shell di fuori.
+  const letterali = [];
   let corrente = "";
   let virgoletta = null;
   let aperta = false;
+  let letterale = false;
+  const chiudi = () => {
+    if (corrente || aperta) {
+      parole.push(corrente);
+      letterali.push(letterale);
+    }
+    corrente = "";
+    aperta = false;
+    letterale = false;
+  };
   for (const c of riga) {
     if (virgoletta) {
       if (c === virgoletta) virgoletta = null;
@@ -40,28 +54,28 @@ export function dividi(riga) {
     if (c === '"' || c === "'") {
       virgoletta = c;
       aperta = true;
+      if (c === "'") letterale = true;
       continue;
     }
-    if (c === " " || c === "\t") {
-      if (corrente || aperta) parole.push(corrente);
-      corrente = "";
-      aperta = false;
+    if (c === " " || c === "	") {
+      chiudi();
       continue;
     }
     corrente += c;
   }
-  if (corrente || aperta) parole.push(corrente);
+  chiudi();
 
   // La redirezione si stacca qui: i comandi non devono saperne niente.
   let redirezione = null;
   for (let i = 0; i < parole.length; i++) {
-    if (parole[i] === ">" || parole[i] === ">>") {
+    if (!letterali[i] && (parole[i] === ">" || parole[i] === ">>")) {
       redirezione = { modo: parole[i], file: parole[i + 1] };
       parole.splice(i, 2);
+      letterali.splice(i, 2);
       break;
     }
   }
-  return { parole, redirezione };
+  return { parole, redirezione, letterali };
 }
 
 /** Esegue una riga. Restituisce sempre un oggetto: gli errori non si sollevano. */
@@ -87,8 +101,8 @@ export function esegui(sh, riga) {
   let ultimo = { out: "", errore: null };
 
   for (let i = 0; i < pezzi.length; i++) {
-    const { parole: grezze, redirezione: redGrezza } = dividi(pezzi[i]);
-    const parole = grezze.map((p) => espandi(sh, p));
+    const { parole: grezze, redirezione: redGrezza, letterali } = dividi(pezzi[i]);
+    const parole = grezze.map((p, k) => (letterali[k] ? p : espandi(sh, p)));
     const redirezione = redGrezza && { ...redGrezza, file: espandi(sh, redGrezza.file ?? "") };
     const nome = parole[0];
     if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };

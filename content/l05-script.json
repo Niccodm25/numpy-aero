@@ -1,0 +1,507 @@
+{
+  "id": "l05",
+  "titolo": "Variabili e script",
+  "perche": "L'uguale senza spazi, il dollaro solo in lettura, e la variabile inesistente che diventa la stringa vuota senza dire niente — da cui rm -rf $CARTELLA/ che cancella la radice. Poi uno script, che e' solo un file di comandi con tre cose attorno: lo shebang, il permesso di esecuzione, e le due righe set -eu che lo fermano quando qualcosa va storto.",
+  "funzioni": [
+    "NOME=valore",
+    "$NOME",
+    "${NOME}",
+    "#!/bin/bash",
+    "chmod +x",
+    "./script.sh",
+    "bash script.sh",
+    "$1",
+    "$#",
+    "set -eu"
+  ],
+  "lezioni": [
+    {
+      "id": "l05-l1",
+      "titolo": "Variabili: l'uguale senza spazi",
+      "md": "```bash\nCARTELLA=dati\necho $CARTELLA\n```\n\nDue regole, e sono entrambe controintuitive.\n\n**Niente spazi attorno all'uguale.** `CARTELLA = dati` non e' un'assegnazione: la shell legge `CARTELLA` come **comando** e `=` e `dati` come argomenti, e risponde `comando non trovato`. È il primo errore che fa chiunque arrivi da un altro linguaggio.\n\n**Il dollaro solo quando la leggi.** Si assegna `CARTELLA=dati`, si legge `$CARTELLA`. Metterlo anche a sinistra e' un altro errore comune, e produce lo stesso `comando non trovato`.\n\n### Le graffe, quando il nome finisce dentro altro testo\n\n```bash\necho $CARTELLAdati       # cerca la variabile CARTELLAdati, che non esiste\necho ${CARTELLA}dati     # cosi'\n```\n\n### La variabile che non esiste\n\n```bash\necho [$MANCA]\n[]\n```\n\n**Diventa la stringa vuota, senza nessun errore.** È il comportamento di bash, ed e' la causa del disastro piu' famoso della shell:\n\n```bash\nrm -rf $CARTELLA/          # con CARTELLA vuota diventa  rm -rf /\n```\n\nUn refuso nel nome della variabile, e il comando cancella la radice invece di una cartella. La difesa e' `set -u`, che fa fallire lo script su una variabile non definita — e va messa in cima a ogni script prima di scrivere qualsiasi altra cosa.\n\n### Le virgolette\n\n```bash\nFILE=\"note importanti.txt\"\ncat $FILE      # diventa due argomenti: \"note\" e \"importanti.txt\"\ncat \"$FILE\"    # un argomento solo\n```\n\nUna variabile che puo' contenere spazi va **sempre** fra virgolette quando la usi. È la seconda causa di script che funzionano finche' qualcuno non mette uno spazio in un nome di file."
+    },
+    {
+      "id": "l05-l2",
+      "titolo": "Uno script e' un file di comandi",
+      "md": "```bash\n#!/bin/bash\n# raccogli i risultati\nmkdir -p risultati\ncp dati/*.csv risultati/\necho fatto\n```\n\nNient'altro: le stesse righe che scriveresti a mano, in un file.\n\n### Le tre cose che servono\n\n**La prima riga**, `#!/bin/bash` — si chiama *shebang* e dice al sistema con quale programma eseguire il file. Senza, il sistema tira a indovinare, e su alcune macchine sceglie una shell diversa da quella per cui hai scritto lo script.\n\n**Il permesso di esecuzione**: `chmod +x script.sh`. Uno script appena scritto non e' eseguibile — il primo tentativo di lanciarlo fallisce sempre, ed e' il modulo sui permessi che torna.\n\n**Come si lancia**:\n\n```bash\n./script.sh      # serve il permesso x e lo shebang\nbash script.sh   # funziona comunque, ignora shebang e permessi\n```\n\nIl `./` davanti non e' decorativo: la cartella corrente **non e' nel PATH**, quindi senza di esso la shell cerca `script.sh` fra i comandi di sistema e non lo trova. È una scelta di sicurezza — altrimenti un file chiamato `ls` lasciato in una cartella verrebbe eseguito al posto del comando vero.\n\n### I commenti\n\nTutto quello che segue `#` viene ignorato. Uno script senza commenti fra sei mesi e' un enigma: bastano due righe in cima che dicono cosa fa e cosa si aspetta.\n\n### Cosa questo simulatore non fa\n\nQui `bash script.sh` esegue le righe **in questa stessa shell**. Su un sistema vero ne avvia una nuova, ed e' il motivo per cui le variabili assegnate dentro uno script **non sopravvivono** alla sua fine — a meno di lanciarlo con `source script.sh`, che lo esegue nella shell corrente.\n\nÈ una differenza reale e vale la pena conoscerla: se uno script deve cambiare il tuo PATH, va lanciato con `source`. È esattamente il motivo per cui gli ambienti virtuali si attivano cosi'."
+    },
+    {
+      "id": "l05-l3",
+      "titolo": "Argomenti, e le due righe che salvano gli script",
+      "md": "```bash\n#!/bin/bash\necho \"elaboro $1\"\necho \"argomenti ricevuti: $#\"\n```\n\n```\nbash raccogli.sh dati\nelaboro dati\nargomenti ricevuti: 1\n```\n\n`$1`, `$2`, `$3` sono gli argomenti; `$#` quanti sono; `$0` il nome dello script stesso. Sono l'unico modo in cui uno script riceve informazioni da chi lo lancia — senza, e' un elenco di comandi fissi.\n\n### Le due righe da mettere in cima\n\n```bash\nset -e     # fermati al primo comando che fallisce\nset -u     # fallisci se usi una variabile non definita\n```\n\nSenza `set -e`, uno script che fallisce a meta' **prosegue**: il `mkdir` non riesce, e il `cp` che segue copia in una cartella che non esiste. L'errore che vedi alla fine non e' quello vero.\n\nSenza `set -u`, un refuso in un nome di variabile diventa la stringa vuota — con le conseguenze della lezione precedente.\n\nSi scrivono insieme come `set -eu`, ed e' la prima riga dopo lo shebang di ogni script scritto da qualcuno che ci e' gia' passato.\n\n*(Questo simulatore si ferma comunque al primo errore, quindi `set -e` qui non cambia niente. Su un sistema vero cambia tutto.)*\n\n### Controllare gli argomenti\n\n```bash\nif [ $# -lt 1 ]; then\n  echo \"uso: $0 CARTELLA\"\n  exit 1\nfi\n```\n\nDue righe che trasformano \"non funziona\" in \"ecco come si usa\". `exit 1` chiude lo script con un codice di errore, che e' come un altro script sapra' che e' andato storto.\n\n*(Le condizioni e i cicli non sono simulati qui: sono la parte di bash che assomiglia a un linguaggio, e per quella conviene il ramo Python — ma lo schema qui sopra va riconosciuto, perche' e' in cima a meta' degli script che leggerai.)*"
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l05-variabili",
+      "comando": "NOME=valore",
+      "titolo": "variabili — e la stringa vuota che cancella",
+      "esercizi": [
+        {
+          "id": "l05-va-1",
+          "tipo": "terminale",
+          "testo": "Assegna a `CARTELLA` il valore `dati` e stampalo.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "CARTELLA=dati\necho $CARTELLA",
+          "verifica": {
+            "stampa": "dati"
+          },
+          "hint": [
+            "Niente spazi attorno all'uguale.",
+            "CARTELLA=dati e poi echo $CARTELLA"
+          ],
+          "spiegazione": "L'uguale **senza spazi**, e il dollaro solo quando la leggi. Sono le due regole, e sono entrambe controintuitive per chi arriva da un altro linguaggio."
+        },
+        {
+          "id": "l05-va-2",
+          "tipo": "terminale",
+          "testo": "Prova a scrivere l'assegnazione **con** gli spazi, e leggi cosa risponde.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "CARTELLA = dati",
+          "verifica": {
+            "errore": "comando non trovato"
+          },
+          "hint": [
+            "Provaci e basta.",
+            "CARTELLA = dati"
+          ],
+          "spiegazione": "`comando non trovato`. Con gli spazi la shell legge `CARTELLA` come **comando** e `=` e `dati` come suoi argomenti. È il primo errore che fa chiunque, e il messaggio non aiuta a capirlo."
+        },
+        {
+          "id": "l05-va-3",
+          "tipo": "predict",
+          "testo": "`echo $MANCA` con `MANCA` mai assegnata: cosa stampa?",
+          "opzioni": [
+            "una riga vuota, senza errore",
+            "il testo $MANCA cosi' com'e'",
+            "un errore: variabile non definita",
+            "la parola null"
+          ],
+          "risposta": "una riga vuota, senza errore",
+          "spiegazione": "Una riga vuota, senza nessun errore: una variabile inesistente diventa la **stringa vuota**. È il comportamento di bash, ed e' la causa del disastro piu' famoso della shell — `rm -rf $CARTELLA/` con la variabile vuota diventa `rm -rf /`."
+        },
+        {
+          "id": "l05-va-4",
+          "tipo": "terminale",
+          "testo": "Verificalo: stampa la variabile inesistente fra parentesi quadre, cosi' si vede che non c'e' niente.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo [$MANCA]",
+          "verifica": {
+            "stampa": "[]"
+          },
+          "hint": [
+            "Metti la variabile fra quadre.",
+            "echo [$MANCA]"
+          ],
+          "spiegazione": "`[]`: fra le parentesi non c'e' nulla, e nessun errore. La difesa e' `set -u`, che fa fallire lo script su una variabile non definita e va messa in cima prima di scrivere qualsiasi altra cosa."
+        },
+        {
+          "id": "l05-va-5",
+          "tipo": "terminale",
+          "testo": "Usa una variabile per costruire un percorso: assegna la cartella e elencane il contenuto.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "CARTELLA=dati\nls $CARTELLA",
+          "verifica": {
+            "stampa": "prova1.csv"
+          },
+          "hint": [
+            "Assegna, poi usa la variabile come argomento di ls.",
+            "CARTELLA=dati e poi ls $CARTELLA"
+          ],
+          "spiegazione": "La variabile si espande anche dentro un percorso piu' lungo. È il modo in cui uno script diventa riusabile: si cambia una riga in cima invece di dieci in mezzo."
+        },
+        {
+          "id": "l05-va-6",
+          "tipo": "predict",
+          "testo": "Perche' `echo ${NOME}dati` e `echo $NOMEdati` danno risultati diversi?",
+          "opzioni": [
+            "senza graffe la shell cerca la variabile NOMEdati, che non esiste",
+            "le graffe sono decorative, il risultato e' lo stesso",
+            "con le graffe la variabile non viene espansa",
+            "il secondo e' un errore di sintassi"
+          ],
+          "risposta": "senza graffe la shell cerca la variabile NOMEdati, che non esiste",
+          "spiegazione": "Il secondo cerca una variabile chiamata `NOMEdati`, che non esiste, e stampa una riga vuota. Le graffe dicono dove **finisce il nome**, e servono ogni volta che la variabile e' attaccata ad altro testo."
+        },
+        {
+          "id": "l05-va-7",
+          "tipo": "terminale",
+          "testo": "Salva un risultato in un file il cui nome viene da una variabile.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "FILE=esito.txt\necho analisi completata > $FILE\ncat $FILE",
+          "verifica": {
+            "esiste": [
+              "esito.txt"
+            ],
+            "contiene": {
+              "esito.txt": "analisi completata"
+            }
+          },
+          "hint": [
+            "Assegna il nome, poi redirigi con la variabile.",
+            "FILE=esito.txt e poi echo ... > $FILE"
+          ],
+          "spiegazione": "L'espansione avviene anche nella redirezione: `> $FILE` scrive nel file che la variabile nomina. È il modo di scrivere uno script che produce file con nomi diversi a ogni esecuzione."
+        },
+        {
+          "id": "l05-va-8",
+          "tipo": "predict",
+          "testo": "Una variabile che contiene un nome di file **con uno spazio**: come si usa?",
+          "opzioni": [
+            "fra virgolette: cat \"$FILE\"",
+            "cosi' com'e': la shell rispetta il valore della variabile",
+            "con le graffe: cat ${FILE}",
+            "sostituendo gli spazi con dei trattini bassi"
+          ],
+          "risposta": "fra virgolette: cat \"$FILE\"",
+          "spiegazione": "Fra virgolette: `cat \"$FILE\"`. Senza, la shell spezza il valore sugli spazi e passa due argomenti invece di uno. È la seconda causa di script che funzionano finche' qualcuno non mette uno spazio in un nome di file."
+        }
+      ]
+    },
+    {
+      "id": "l05-script",
+      "comando": "script.sh",
+      "titolo": "uno script e' un file di comandi",
+      "esercizi": [
+        {
+          "id": "l05-sc-1",
+          "tipo": "terminale",
+          "testo": "Scrivi uno script `raccogli.sh` che crea una cartella `risultati` e stampa `fatto`.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo mkdir -p risultati > raccogli.sh\necho echo fatto >> raccogli.sh\ncat raccogli.sh",
+          "verifica": {
+            "esiste": [
+              "raccogli.sh"
+            ],
+            "contiene": {
+              "raccogli.sh": "mkdir -p risultati"
+            }
+          },
+          "hint": [
+            "Si costruisce con echo e le redirezioni: > per la prima riga, >> per le altre.",
+            "echo mkdir -p risultati > raccogli.sh"
+          ],
+          "spiegazione": "Le stesse righe che scriveresti a mano, in un file. Nient'altro: uno script bash e' esattamente questo."
+        },
+        {
+          "id": "l05-sc-2",
+          "tipo": "terminale",
+          "testo": "Eseguilo e verifica che la cartella sia stata creata.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/home/tu/raccogli.sh": "mkdir -p risultati\necho fatto\n"
+          },
+          "soluzione": "bash raccogli.sh\nls",
+          "verifica": {
+            "dir": [
+              "risultati"
+            ],
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "bash seguito dal nome del file.",
+            "bash raccogli.sh"
+          ],
+          "spiegazione": "`bash script.sh` funziona sempre, anche senza permesso di esecuzione e senza shebang: si sta chiedendo a bash di leggere quel file, non al sistema di eseguirlo."
+        },
+        {
+          "id": "l05-sc-3",
+          "tipo": "predict",
+          "testo": "A cosa serve la prima riga `#!/bin/bash` ?",
+          "opzioni": [
+            "dice al sistema con quale programma eseguire il file",
+            "e' un commento che indica l'autore",
+            "carica la libreria standard di bash",
+            "e' obbligatoria per la sintassi di bash"
+          ],
+          "risposta": "dice al sistema con quale programma eseguire il file",
+          "spiegazione": "Dice al sistema **con quale programma** eseguire il file. Si chiama *shebang*, e senza di esso il sistema tira a indovinare — su alcune macchine sceglie una shell diversa da quella per cui hai scritto lo script."
+        },
+        {
+          "id": "l05-sc-4",
+          "tipo": "terminale",
+          "testo": "Aggiungi lo shebang in cima a uno script, riscrivendolo per intero.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo #!/bin/bash > pulisci.sh\necho echo pulizia > pulisci.sh\ncat pulisci.sh",
+          "verifica": {
+            "esiste": [
+              "pulisci.sh"
+            ]
+          },
+          "hint": [
+            "Prima riga con >, poi le altre con >>.",
+            "Attenzione che il cancelletto apre un commento: qui basta che il file esista."
+          ],
+          "spiegazione": "Lo shebang deve stare sulla **prima** riga, prima di qualunque commento: se c'e' altro sopra, il sistema non lo riconosce e torna a tirare a indovinare."
+        },
+        {
+          "id": "l05-sc-5",
+          "tipo": "predict",
+          "testo": "Perche' uno script si lancia con `./script.sh` e non con `script.sh` ?",
+          "opzioni": [
+            "perche' la cartella corrente non e' nel PATH, per sicurezza",
+            "perche' il ./ indica che e' uno script e non un programma",
+            "e' una convenzione senza conseguenze",
+            "perche' senza ./ bash non trova lo shebang"
+          ],
+          "risposta": "perche' la cartella corrente non e' nel PATH, per sicurezza",
+          "spiegazione": "Perche' la cartella corrente **non e' nel PATH**. È una scelta di sicurezza: altrimenti un file chiamato `ls` lasciato in una cartella verrebbe eseguito al posto del comando vero, semplicemente entrandoci."
+        },
+        {
+          "id": "l05-sc-6",
+          "tipo": "terminale",
+          "testo": "Rendi eseguibile lo script, e controlla i permessi.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/home/tu/raccogli.sh": "echo fatto\n"
+          },
+          "soluzione": "chmod +x raccogli.sh\nls -l",
+          "verifica": {
+            "stampa": "rwxr-xr-x",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "chmod +x seguito dal nome.",
+            "chmod +x raccogli.sh"
+          ],
+          "spiegazione": "`chmod +x` — il modulo sui permessi che torna. Uno script appena scritto **non** e' eseguibile, e il primo tentativo di lanciarlo con `./` fallisce sempre con `permesso negato`."
+        },
+        {
+          "id": "l05-sc-7",
+          "tipo": "predict",
+          "testo": "Una variabile assegnata **dentro** uno script esiste ancora dopo che lo script finisce?",
+          "opzioni": [
+            "no: lo script gira in una shell figlia, e serve source per cambiare quella corrente",
+            "si': le variabili degli script sono globali",
+            "si', se lo script ha lo shebang",
+            "dipende se la variabile e' stata esportata con export"
+          ],
+          "risposta": "no: lo script gira in una shell figlia, e serve source per cambiare quella corrente",
+          "spiegazione": "No: lo script gira in una shell **figlia**, e le sue variabili muoiono con lei. Per cambiare l'ambiente della shell corrente si usa `source script.sh` — ed e' esattamente il motivo per cui gli ambienti virtuali si attivano con `source` e non con `./`."
+        },
+        {
+          "id": "l05-sc-8",
+          "tipo": "terminale",
+          "testo": "Uno script che fallisce a meta': eseguilo e guarda dove si ferma.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/home/tu/rotto.sh": "echo comincio\ncat manca.txt\necho finito\n"
+          },
+          "soluzione": "bash rotto.sh",
+          "verifica": {
+            "errore": "non esistente",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Eseguilo e leggi il messaggio.",
+            "bash rotto.sh"
+          ],
+          "spiegazione": "L'errore nomina lo script e la riga che ha fallito. Su un sistema vero, **senza `set -e`** lo script proseguirebbe: il `cat` fallisce, e il comando dopo viene eseguito lo stesso — cosi' l'errore che vedi alla fine non e' quello vero.\n\n`set -eu` in cima e' la prima riga dopo lo shebang di ogni script scritto da qualcuno che ci e' gia' passato."
+        }
+      ]
+    },
+    {
+      "id": "l05-argomenti",
+      "comando": "$1 e set -eu",
+      "titolo": "argomenti, e le due righe che salvano",
+      "esercizi": [
+        {
+          "id": "l05-ar-1",
+          "tipo": "terminale",
+          "testo": "Scrivi uno script che saluta l'argomento che riceve, e lanciamolo con `mondo`.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'echo ciao $1' > saluta.sh\nbash saluta.sh mondo",
+          "verifica": {
+            "stampa": "ciao mondo",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Nello script: echo ciao $1",
+            "Gli apici singoli servono: senza, $1 viene sostituito subito dalla shell",
+            "Poi bash saluta.sh mondo"
+          ],
+          "spiegazione": "`$1` e' il primo argomento. È l'unico modo in cui uno script riceve informazioni da chi lo lancia — senza, e' un elenco di comandi fissi. Nota gli apici singoli attorno alla riga: senza, `$1` verrebbe espanso ora, dalla shell che scrive il file, e nello script finirebbe la stringa vuota."
+        },
+        {
+          "id": "l05-ar-2",
+          "tipo": "predict",
+          "testo": "Cosa contengono `$1`, `$#` e `$0` ?",
+          "opzioni": [
+            "il primo argomento, il numero di argomenti, il nome dello script",
+            "il nome dello script, il primo argomento, il numero di argomenti",
+            "tutti e tre il primo argomento, in forme diverse",
+            "il codice di uscita, il numero di righe, il nome del file"
+          ],
+          "risposta": "il primo argomento, il numero di argomenti, il nome dello script",
+          "spiegazione": "`$1` il primo argomento, `$#` **quanti** argomenti sono arrivati, `$0` il nome dello script stesso. `$#` e' quello che serve per controllare che ne sia arrivato il numero giusto prima di partire."
+        },
+        {
+          "id": "l05-ar-3",
+          "tipo": "terminale",
+          "testo": "Scrivi uno script che stampa **quanti** argomenti ha ricevuto, e lanciamolo con due.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'echo argomenti: $#' > conta.sh\nbash conta.sh dati risultati",
+          "verifica": {
+            "stampa": "argomenti: 2",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Nello script: echo argomenti: $#",
+            "Apici singoli, altrimenti $# sparisce nella scrittura",
+            "bash conta.sh dati risultati"
+          ],
+          "spiegazione": "`$#` vale 2. È il controllo che sta in cima a ogni script serio: se il numero non e' quello atteso, si stampa come si usa e si esce, invece di proseguire su dati che non ci sono. Anche qui gli apici: `$#` deve arrivare dentro al file, non essere risolto mentre lo scrivi."
+        },
+        {
+          "id": "l05-ar-4",
+          "tipo": "terminale",
+          "testo": "Uno script che usa l'argomento come nome di cartella: creala e verificala.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'mkdir -p $1' > crea.sh\nbash crea.sh risultati\nls",
+          "verifica": {
+            "dir": [
+              "risultati"
+            ],
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Nello script: mkdir -p $1",
+            "Apici singoli attorno alla riga",
+            "bash crea.sh risultati"
+          ],
+          "spiegazione": "Lo stesso script crea cartelle diverse a seconda di come lo lanci. È il passaggio da \"comandi scritti a mano\" a \"strumento\", e costa un `$1`."
+        },
+        {
+          "id": "l05-ar-5",
+          "tipo": "predict",
+          "testo": "A cosa serve `set -e` in cima a uno script?",
+          "opzioni": [
+            "ferma lo script al primo comando che fallisce",
+            "attiva i messaggi di errore dettagliati",
+            "esporta tutte le variabili",
+            "esegue lo script in modalita' sicura, senza sudo"
+          ],
+          "risposta": "ferma lo script al primo comando che fallisce",
+          "spiegazione": "A fermarlo al **primo comando che fallisce**. Senza, lo script prosegue: il `mkdir` non riesce e il `cp` che segue copia in una cartella che non esiste, quindi l'errore che vedi alla fine non e' quello vero."
+        },
+        {
+          "id": "l05-ar-6",
+          "tipo": "predict",
+          "testo": "E `set -u` ?",
+          "opzioni": [
+            "fa fallire lo script su una variabile non definita",
+            "rende le variabili di sola lettura",
+            "disattiva l'espansione delle variabili",
+            "unifica le variabili di ambiente e di shell"
+          ],
+          "risposta": "fa fallire lo script su una variabile non definita",
+          "spiegazione": "Fa fallire lo script quando usa una **variabile non definita**, invece di sostituirla con la stringa vuota. È la difesa diretta contro `rm -rf $CARTELLA/` con la variabile vuota, e costa tre caratteri."
+        },
+        {
+          "id": "l05-ar-7",
+          "tipo": "terminale",
+          "testo": "**Uno script utile.** Scrivi `riassumi.sh` che riceve il nome di un log e ne conta le righe di errore, e lanciamolo.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'grep -i error $1 | wc -l' > riassumi.sh\nbash riassumi.sh log.txt",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Nello script: grep -i error $1 | wc -l",
+            "Apici singoli: servono anche per la pipe, che altrimenti verrebbe eseguita subito invece di finire nel file",
+            "bash riassumi.sh log.txt"
+          ],
+          "spiegazione": "Un argomento, una pipe, un numero. Questo script funziona su qualunque log, non su quello per cui l'hai scritto — ed e' tutta la differenza fra un comando e uno strumento. Gli apici qui fanno due lavori: tengono `$1` intatto e impediscono che la pipe venga eseguita mentre scrivi il file."
+        },
+        {
+          "id": "l05-ar-8",
+          "tipo": "terminale",
+          "testo": "**Il compito sulla macchina vera.** Sul tuo terminale, scrivi uno script di due righe con `set -eu` in cima, rendilo eseguibile con `chmod +x`, e lancialo con `./`.\n\nQui sotto scrivi `fatto > script.txt` per registrarlo.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo fatto > script.txt",
+          "verifica": {
+            "esiste": [
+              "script.txt"
+            ]
+          },
+          "hint": [
+            "Qui basta registrare che l'hai fatto davvero.",
+            "echo fatto > script.txt"
+          ],
+          "spiegazione": "Le tre cose da fare sempre, in ordine: shebang, `set -eu`, `chmod +x`. Il primo tentativo con `./` fallira' se hai saltato il terzo, ed e' il modo migliore di ricordarselo.\n\nQuesto simulatore non ha condizioni ne' cicli — sono la parte di bash che assomiglia a un linguaggio, e per quella conviene il ramo Python. Ma lo schema che hai visto va riconosciuto, perche' sta in cima a meta' degli script che leggerai."
+        }
+      ]
+    }
+  ]
+}

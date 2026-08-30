@@ -191,6 +191,15 @@ caso("la variabile si espande anche nella redirezione e negli argomenti", () => 
   assert.equal(esegui(sh, "cat $FILE").out, "ciao");
 });
 
+caso("gli apici singoli tengono fuori dollaro, pipe e redirezione", () => {
+  const sh = shell();
+  esegui(sh, "NOME=fuori");
+  assert.equal(esegui(sh, "echo '$NOME'").out, "$NOME", "apici singoli: niente espansione");
+  assert.equal(esegui(sh, 'echo "$NOME"').out, "fuori", "doppi: si espande");
+  esegui(sh, "echo 'grep x $1 | wc -l' > s.sh");
+  assert.equal(V.leggi(sh.fs, "/home/tu/s.sh"), "grep x $1 | wc -l" + String.fromCharCode(10), "la pipe finisce nel file, non viene eseguita");
+});
+
 caso("bash esegue le righe di un file e salta i commenti", () => {
   const sh = shell({
     "/home/tu/prova.sh": "# un commento\nmkdir dati\necho fatto\n",
