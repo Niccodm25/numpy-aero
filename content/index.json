@@ -416,9 +416,9 @@
     },
     {
       "id": "l14",
-      "file": "",
+      "file": "l14-hardware-kernel.json",
       "titolo": "Hardware e kernel",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l15",

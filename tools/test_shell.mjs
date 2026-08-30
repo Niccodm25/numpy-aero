@@ -19,6 +19,7 @@ import { TESTO } from "../js/testo.js";
 import { RETE, statoRete } from "../js/rete.js";
 import { REMOTO, statoRemoto } from "../js/remoto.js";
 import { SERVIZI, statoServizi } from "../js/servizi.js";
+import { HARDWARE, statoHardware } from "../js/hardware.js";
 
 let fatti = 0;
 const casi = [];
@@ -571,6 +572,12 @@ caso("systemctl e journalctl condividono lo stato del servizio", () => {
   assert.match(esegui(sh, "journalctl -u acquisizione.service").out, /avviato/);
 });
 
+caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
+  const sh=creaShell({}, {comandi:{...POSIX,...HARDWARE}}); statoHardware(sh);
+  esegui(sh,"modprobe sdr"); assert.match(esegui(sh,"lsmod").out,/sdr/);
+  assert.match(esegui(sh,"sysctl -w vm.swappiness=10").out,/10/);
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -1044,6 +1051,8 @@ for (const meta of indice.moduli) {
           comandi = { ...(comandi ?? POSIX), ...REMOTO };
         if (es.servizi)
           comandi = { ...(comandi ?? POSIX), ...SERVIZI };
+        if (es.hardware)
+          comandi = { ...(comandi ?? POSIX), ...HARDWARE };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -1052,6 +1061,7 @@ for (const meta of indice.moduli) {
         if (es.rete) statoRete(sh, es.rete === true ? undefined : es.rete);
         if (es.remoto) statoRemoto(sh, es.remoto === true ? undefined : es.remoto);
         if (es.servizi) statoServizi(sh, es.servizi === true ? undefined : es.servizi);
+        if (es.hardware) statoHardware(sh, es.hardware === true ? undefined : es.hardware);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(
