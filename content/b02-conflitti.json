@@ -1,0 +1,731 @@
+{
+ "id": "b02",
+ "titolo": "Conflitti e diagnostica",
+ "perche": "Il modulo che serve quando il pacchetto e' installato e l'importazione fallisce lo stesso. Quattro cause, tre comandi per distinguerle, e la riga che nessuno digita — pip -V, che dice a quale interprete sta installando. Piu' i due casi che sembrano successi e non lo sono: \"Requirement already satisfied\" e un tuo file chiamato come il pacchetto.",
+ "funzioni": [
+  "which -a",
+  "pip -V",
+  "python -m pip",
+  "pip install --upgrade",
+  "__version__",
+  "__file__",
+  "pip freeze",
+  "requirements.txt"
+ ],
+ "lezioni": [
+  {
+   "id": "b02-l1",
+   "titolo": "ModuleNotFoundError: quattro cause, un metodo",
+   "md": "```\nModuleNotFoundError: No module named 'numpy'\n```\n\nIl messaggio dice una cosa sola: **questo interprete non ha quel pacchetto**. Non dice che il pacchetto non esiste, né che l'installazione sia fallita.\n\nLe cause sono quattro, e si distinguono in tre comandi.\n\n### 1. Installato in un altro interprete\n\nLa piu' comune. Hai installato fuori dall'ambiente e poi lo hai attivato, o viceversa. `which python` prima e dopo l'attivazione lo mostra in un istante.\n\n### 2. L'ambiente non e' attivo\n\nHai aperto un secondo terminale, o riaperto l'editor. L'attivazione vale solo nella shell in cui l'hai fatta: e' un PATH, e i PATH non si ereditano fra finestre.\n\n### 3. Il nome del pacchetto non e' quello del modulo\n\n```\npip install scikit-learn     # si installa cosi'\nimport sklearn               # ma si importa cosi'\n```\n\nSuccede spesso: `pillow` si importa `PIL`, `opencv-python` si importa `cv2`, `pyyaml` si importa `yaml`. Il messaggio d'errore nomina il **modulo**, non il pacchetto, e cercare quel nome su PyPI non trova niente.\n\n### 4. Un tuo file lo oscura\n\nUn file `numpy.py` nella cartella corrente **e'** numpy per quel programma, perche' la cartella corrente viene prima dei pacchetti installati. Qui l'import di solito riesce, e l'errore arriva dopo — un `AttributeError` su qualcosa che il pacchetto vero avrebbe.\n\nÈ lo stesso meccanismo del `random.py` visto nel ramo Python, e il messaggio non nomina mai il tuo file."
+  },
+  {
+   "id": "b02-l2",
+   "titolo": "\"Requirement already satisfied\" non vuol dire aggiornato",
+   "md": "```\npip install numpy\nRequirement already satisfied: numpy in /usr/lib/python3.12\n```\n\nQuesta riga si legge come un successo e non lo e': `pip` ha trovato **una** versione di numpy e si e' fermato. Non ha guardato se ce ne fosse una piu' recente, perche' non glielo hai chiesto.\n\n```\npip install --upgrade numpy\n```\n\nQuesto invece aggiorna. La forma breve e' `-U`.\n\n### La versione conta piu' della presenza\n\n```\npython -c \"import numpy; print(numpy.__version__)\"\n```\n\nÈ la domanda giusta quando il codice di qualcun altro non funziona da te: non \"ho numpy?\" ma \"quale numpy ho?\". Una funzione introdotta nella 2.0 non esiste nella 1.24, e l'errore che ottieni e' un `AttributeError`, che non nomina mai le versioni.\n\n### Da dove viene, esattamente\n\n```\npython -c \"import numpy; print(numpy.__file__)\"\n```\n\nStampa il file da cui il modulo e' stato caricato davvero. È il comando che chiude ogni discussione: se quel percorso non e' dentro l'ambiente che credevi, hai la risposta.\n\nÈ anche l'unico modo di riconoscere la quarta causa, quella del file che oscura: li' il percorso e' la tua cartella di lavoro, non una cartella di pacchetti."
+  },
+  {
+   "id": "b02-l3",
+   "titolo": "Le tre righe, in ordine",
+   "md": "Davanti a qualunque problema di pacchetti, sempre queste, sempre in quest'ordine:\n\n```\nwhich python      # 1. quale interprete risponde\npip -V            # 2. a quale interprete appartiene pip\npip list          # 3. cosa c'e' dentro davvero\n```\n\n**La prima** dice dove sei. Se non e' quello che ti aspettavi, hai gia' finito.\n\n**La seconda** e' quella che nessuno digita. Stampa, fra parentesi, l'interprete a cui quel `pip` sta installando. Se non coincide con la risposta della prima riga, ogni `pip install` che fai sta finendo in un posto diverso da quello che poi esegue il codice — ed e' un guasto che puo' durare mesi senza essere capito.\n\n**La terza** dice cosa c'e', con le versioni. Solo dopo le prime due, perche' senza sapere *di quale interprete* stai leggendo l'elenco, l'elenco non significa niente.\n\n### La forma che rende inutile la seconda riga\n\n```\npython -m pip install NOME\n```\n\n`python -m pip` usa il pip **di quel python**, sempre. Il disallineamento fra i due non puo' avvenire. Se prendi un'abitudine da questo ramo, prendi questa.\n\n### Quando conviene cancellare invece di capire\n\nUn ambiente virtuale e' una cartella e si ricostruisce in dieci secondi da un `requirements.txt`:\n\n```\nrm -r .venv\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\nDavanti a un ambiente che si comporta in modo inspiegabile, questo e' spesso il percorso piu' breve — e non e' una resa, e' il motivo per cui si tiene il `requirements.txt` sotto controllo di versione e la cartella `.venv` no."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "b02-modulenotfound",
+   "comando": "ModuleNotFoundError",
+   "titolo": "quattro cause, un metodo",
+   "esercizi": [
+    {
+     "id": "b02-mn-1",
+     "tipo": "terminale",
+     "testo": "Il codice fallisce con `ModuleNotFoundError` su numpy. Scopri **quale** interprete sta rispondendo e cosa contiene.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "which python\npip list",
+     "verifica": {
+      "usa": [
+       "which",
+       "pip"
+      ],
+      "stampa": "/home/tu/.venv/bin/python"
+     },
+     "hint": [
+      "Prima which python.",
+      "Poi pip list, per vedere cosa c'e' davvero."
+     ],
+     "spiegazione": "L'interprete e' quello dell'ambiente, e l'elenco e' vuoto: numpy non c'e'. Due comandi e la causa e' gia' ristretta a \"installato altrove o non installato affatto\".\n\nNota che l'ordine conta: leggere `pip list` senza prima sapere di quale interprete stai leggendo l'elenco non dice niente."
+    },
+    {
+     "id": "b02-mn-2",
+     "tipo": "terminale",
+     "testo": "**Causa 1: installato altrove.** Verifica l'ipotesi — esci dall'ambiente e guarda se numpy e' nel Python di sistema.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "deactivate\npip list",
+     "verifica": {
+      "stampa": "numpy",
+      "usa": [
+       "deactivate"
+      ]
+     },
+     "hint": [
+      "Esci dall'ambiente e ripeti l'elenco.",
+      "deactivate e poi pip list"
+     ],
+     "spiegazione": "Eccolo: numpy e' installato nel Python di sistema, non nell'ambiente. Nessuno ha sbagliato un comando — l'installazione e' avvenuta prima dell'attivazione, o in un terminale diverso.\n\nLa riparazione e' installarlo dove serve, non spostarlo: i pacchetti non si spostano fra ambienti."
+    },
+    {
+     "id": "b02-mn-3",
+     "tipo": "terminale",
+     "testo": "Ripara: rientra nell'ambiente e installa numpy **li' dentro**, poi verifica che l'importazione funzioni.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "source .venv/bin/activate\npip install numpy\npython -c import numpy",
+     "verifica": {
+      "usa": [
+       "source",
+       "pip"
+      ],
+      "esiste": [
+       ".venv/bin/python"
+      ]
+     },
+     "hint": [
+      "Prima si attiva, poi si installa.",
+      "source .venv/bin/activate, poi pip install numpy"
+     ],
+     "spiegazione": "Installato nell'ambiente, l'import riesce. Il numpy di sistema resta dov'era: non c'e' nessun conflitto e nessuno spreco da correggere, sono due elenchi separati e ognuno risponde al suo interprete."
+    },
+    {
+     "id": "b02-mn-4",
+     "tipo": "predict",
+     "testo": "**Causa 3.** `pip install scikit-learn` e poi `import scikit-learn` da' errore. Perche'?",
+     "opzioni": [
+      "il pacchetto si chiama scikit-learn ma il modulo si importa sklearn",
+      "l'installazione non e' andata a buon fine",
+      "i trattini non sono ammessi negli import, va usato scikit_learn",
+      "serve riavviare l'interprete"
+     ],
+     "risposta": "il pacchetto si chiama scikit-learn ma il modulo si importa sklearn",
+     "spiegazione": "Perche' il modulo si importa `sklearn`: il nome del **pacchetto** e quello del **modulo** non coincidono. Succede spesso — `pillow` si importa `PIL`, `opencv-python` si importa `cv2`, `pyyaml` si importa `yaml`. Il messaggio nomina il modulo, e cercare quel nome su PyPI non trova niente."
+    },
+    {
+     "id": "b02-mn-5",
+     "tipo": "terminale",
+     "testo": "**Causa 4: un tuo file oscura il pacchetto.** numpy e' installato, ma l'importazione si comporta in modo strano. Chiedi al modulo da quale file e' stato caricato.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/numpy.py": "# prove sui vettori\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "python -c import numpy; print(numpy.__file__)",
+     "verifica": {
+      "stampa": "/home/tu/numpy.py"
+     },
+     "hint": [
+      "L'attributo che dice da dove viene un modulo e' __file__.",
+      "python -c import numpy; print(numpy.__file__)"
+     ],
+     "spiegazione": "`/home/tu/numpy.py`: non e' il pacchetto, e' il tuo file. La cartella corrente viene prima dei pacchetti installati, quindi quel file **e'** numpy per questo programma.\n\nL'import riesce, ed e' proprio questo che rende il guasto difficile: l'errore arriva dopo, su un attributo che il pacchetto vero avrebbe. È lo stesso meccanismo del `random.py` del ramo Python."
+    },
+    {
+     "id": "b02-mn-6",
+     "tipo": "terminale",
+     "testo": "Ripara il guasto: rinomina il file che sta oscurando il pacchetto e verifica che ora si carichi quello vero.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/numpy.py": "# prove sui vettori\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "mv numpy.py prove_vettori.py\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "nonEsiste": [
+       "numpy.py"
+      ],
+      "esiste": [
+       "prove_vettori.py"
+      ],
+      "stampa": "2.2.5"
+     },
+     "hint": [
+      "Il file va rinominato, non il pacchetto.",
+      "mv numpy.py prove_vettori.py"
+     ],
+     "spiegazione": "Rinominato il file, `__file__` torna a puntare alla libreria e `__version__` risponde. La regola: **mai** chiamare un file come un pacchetto che userai — `numpy.py`, `random.py`, `json.py`, `test.py`.\n\nCancellare non basta se e' rimasto un `__pycache__` accanto: su un sistema vero va tolto anche quello, ed e' la ragione per cui a volte il problema sembra sopravvivere alla cancellazione."
+    },
+    {
+     "id": "b02-mn-7",
+     "tipo": "predict",
+     "testo": "**Causa 2.** Il codice funzionava ieri, oggi da' `ModuleNotFoundError`. Non hai toccato niente. Cosa e' successo?",
+     "opzioni": [
+      "e' un terminale nuovo, e l'ambiente non e' attivo",
+      "un aggiornamento di sistema ha rimosso il pacchetto",
+      "il file requirements.txt e' cambiato",
+      "l'ambiente virtuale scade dopo un certo tempo"
+     ],
+     "risposta": "e' un terminale nuovo, e l'ambiente non e' attivo",
+     "spiegazione": "Hai aperto un terminale nuovo, e l'ambiente non e' attivo. L'attivazione e' una modifica del PATH **di quella shell**: non si eredita fra finestre e non sopravvive alla chiusura. È anche il motivo per cui il terminale integrato di un editor puo' essere in un ambiente diverso da quello del pulsante Esegui."
+    },
+    {
+     "id": "b02-mn-8",
+     "tipo": "terminale",
+     "testo": "Sei in un terminale nuovo e l'ambiente non e' attivo. Riportati dentro e verifica di esserci.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "source .venv/bin/activate\nwhich python",
+     "verifica": {
+      "stampa": "/home/tu/.venv/bin/python",
+      "usa": [
+       "source"
+      ]
+     },
+     "hint": [
+      "Si attiva con source.",
+      "source .venv/bin/activate"
+     ],
+     "spiegazione": "Due comandi. Vale la pena prendere l'abitudine di controllare `which python` **dopo** l'attivazione e non solo prima: e' un secondo, e distingue un ambiente attivo da uno che credi attivo."
+    }
+   ]
+  },
+  {
+   "id": "b02-versioni",
+   "comando": "versioni",
+   "titolo": "installato non vuol dire aggiornato",
+   "esercizi": [
+    {
+     "id": "b02-ve-1",
+     "tipo": "terminale",
+     "testo": "Il codice usa una funzione che esiste solo da numpy 2.0. Scopri quale versione hai davvero.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "python -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "1.24.0"
+     },
+     "hint": [
+      "L'attributo e' __version__.",
+      "python -c import numpy; print(numpy.__version__)"
+     ],
+     "spiegazione": "1.24.0: il pacchetto c'e', ma e' vecchio. La domanda giusta non e' \"ho numpy?\" ma \"quale numpy ho?\" — e la risposta non compare in nessun messaggio d'errore, perche' l'errore che ottieni e' un `AttributeError` su una funzione mancante."
+    },
+    {
+     "id": "b02-ve-2",
+     "tipo": "terminale",
+     "testo": "Prova ad aggiornare con un semplice `pip install numpy` e leggi bene cosa risponde.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "pip install numpy\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "already satisfied",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "Basta lanciare l'installazione e leggere la risposta.",
+      "pip install numpy"
+     ],
+     "spiegazione": "`Requirement already satisfied`. Si legge come un successo e non lo e': pip ha trovato **una** versione e si e' fermato, senza guardare se ce ne fosse una piu' recente — perche' non glielo hai chiesto.\n\nÈ la riga che fa perdere piu' tempo di tutte, perche' sembra dire che va tutto bene."
+    },
+    {
+     "id": "b02-ve-3",
+     "tipo": "terminale",
+     "testo": "Ora aggiorna davvero, e verifica la versione.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "pip install --upgrade numpy\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "2.2.5",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "Serve un'opzione: --upgrade, o la sua forma breve -U.",
+      "pip install --upgrade numpy"
+     ],
+     "spiegazione": "`--upgrade` — o `-U` — e' quello che mancava. Senza, pip considera il requisito soddisfatto dalla presenza, non dalla recenza."
+    },
+    {
+     "id": "b02-ve-4",
+     "tipo": "terminale",
+     "testo": "Ti serve una versione **precisa**, non l'ultima: installa numpy 2.2.5 esattamente.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "pip install numpy==2.2.5\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "2.2.5",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "La versione si indica col doppio uguale.",
+      "pip install numpy==2.2.5"
+     ],
+     "spiegazione": "Il doppio uguale blocca la versione. È la forma che va in un `requirements.txt`, e la sola che rende un ambiente ricostruibile identico fra sei mesi."
+    },
+    {
+     "id": "b02-ve-5",
+     "tipo": "predict",
+     "testo": "Cosa vuol dire esattamente `Requirement already satisfied` ?",
+     "opzioni": [
+      "pip ha trovato una versione qualsiasi e non ha cercato oltre",
+      "il pacchetto e' gia' all'ultima versione disponibile",
+      "l'installazione e' stata completata correttamente",
+      "il pacchetto e' installato in tutti gli ambienti"
+     ],
+     "risposta": "pip ha trovato una versione qualsiasi e non ha cercato oltre",
+     "spiegazione": "Che pip ha trovato **una** versione di quel pacchetto e si e' fermato. Non che sia l'ultima, non che sia quella che ti serve: solo che ce n'e' una. Per aggiornare serve `--upgrade`."
+    },
+    {
+     "id": "b02-ve-6",
+     "tipo": "terminale",
+     "testo": "Due ambienti, due versioni diverse dello stesso pacchetto. Verifica che convivano: guarda la versione dentro l'ambiente e poi fuori.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "python -c import numpy; print(numpy.__version__)\ndeactivate\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "2.2.5",
+      "usa": [
+       "deactivate"
+      ]
+     },
+     "hint": [
+      "Chiedi la versione, esci dall'ambiente, richiedila.",
+      "deactivate fra le due domande"
+     ],
+     "spiegazione": "1.24.0 dentro, 2.2.5 fuori. Non c'e' nessun conflitto da risolvere: sono due elenchi separati, e ogni interprete vede solo il suo.\n\nÈ esattamente il problema che gli ambienti virtuali risolvono — un progetto vecchio che ha bisogno della versione vecchia continua a funzionare mentre quello nuovo usa l'ultima."
+    },
+    {
+     "id": "b02-ve-7",
+     "tipo": "predict",
+     "testo": "Due progetti hanno bisogno di due versioni diverse della stessa libreria. Come si risolve?",
+     "opzioni": [
+      "un ambiente virtuale per progetto, ognuno con la sua versione",
+      "installando entrambe le versioni nello stesso ambiente",
+      "aggiornando entrambi i progetti all'ultima versione",
+      "usando due versioni diverse di Python"
+     ],
+     "risposta": "un ambiente virtuale per progetto, ognuno con la sua versione",
+     "spiegazione": "Con due ambienti virtuali, uno per progetto. Non e' un ripiego: e' il motivo per cui gli ambienti esistono. Senza, l'unica alternativa e' reinstallare la versione giusta ogni volta che si cambia progetto — che e' esattamente il caos che gli ambienti hanno eliminato."
+    },
+    {
+     "id": "b02-ve-8",
+     "tipo": "terminale",
+     "testo": "Registra la versione esatta che stai usando in `requirements.txt`, e controlla che ci sia il numero.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.24.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "pip freeze > requirements.txt\ncat requirements.txt",
+     "verifica": {
+      "contiene": {
+       "requirements.txt": "numpy==1.24.0"
+      }
+     },
+     "hint": [
+      "pip freeze stampa l'elenco con le versioni.",
+      "pip freeze > requirements.txt"
+     ],
+     "spiegazione": "`numpy==1.24.0`, con la versione. `pip freeze` scrive sempre il doppio uguale, ed e' la differenza fra un ambiente riproducibile e uno che funziona solo sul tuo computer — chi lo ricostruisce fra sei mesi, senza quel numero, prende l'ultima uscita."
+    }
+   ]
+  },
+  {
+   "id": "b02-diagnosi",
+   "comando": "le tre righe",
+   "titolo": "which python, pip -V, pip list",
+   "esercizi": [
+    {
+     "id": "b02-di-1",
+     "tipo": "terminale",
+     "testo": "Su questo sistema ci sono due Python. Elencali **tutti** con un comando solo, invece di indovinare.",
+     "interpreti": {
+      "/opt/python312/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/opt/python312/bin:/usr/bin:/bin"
+     },
+     "soluzione": "which -a python",
+     "verifica": {
+      "stampa": "/usr/bin/python",
+      "usa": [
+       "which"
+      ]
+     },
+     "hint": [
+      "C'e' un'opzione che le mostra tutte.",
+      "which -a python"
+     ],
+     "spiegazione": "`which -a` elenca tutte le copie, in ordine di PATH, invece della sola prima. È il modo di vedere in un colpo quante ne hai e in che ordine si contendono il nome — informazione che `which` da solo nasconde."
+    },
+    {
+     "id": "b02-di-2",
+     "tipo": "terminale",
+     "testo": "**La riga che nessuno digita.** Chiedi a pip a quale interprete appartiene.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "which python\npip -V",
+     "verifica": {
+      "stampa": "pip 24.0",
+      "usa": [
+       "pip",
+       "which"
+      ]
+     },
+     "hint": [
+      "L'opzione e' -V, o --version.",
+      "pip -V"
+     ],
+     "spiegazione": "`pip -V` stampa, fra parentesi, l'interprete a cui quel pip installa. Se non coincide con la risposta di `which python`, ogni `pip install` sta finendo in un posto diverso da quello che poi esegue il codice — un guasto che puo' durare mesi senza essere capito."
+    },
+    {
+     "id": "b02-di-3",
+     "tipo": "predict",
+     "testo": "`which python` risponde `/home/tu/.venv/bin/python` e `pip -V` dice `(python /usr/bin/python)`. Cosa sta succedendo?",
+     "opzioni": [
+      "pip installa nel Python di sistema mentre python esegue quello dell'ambiente",
+      "l'ambiente virtuale e' corrotto e va ricreato",
+      "e' normale: pip sta sempre nel sistema",
+      "manca il pacchetto pip dentro l'ambiente"
+     ],
+     "risposta": "pip installa nel Python di sistema mentre python esegue quello dell'ambiente",
+     "spiegazione": "`pip` sta installando nel Python di sistema mentre `python` esegue quello dell'ambiente. Ogni installazione finisce nel posto sbagliato, e ogni importazione fallisce — con il pacchetto regolarmente installato. La soluzione immediata e' `python -m pip`, che non puo' disallinearsi."
+    },
+    {
+     "id": "b02-di-4",
+     "tipo": "terminale",
+     "testo": "Usa la forma che non puo' disallinearsi: installa `pandas` passando da python, e verifica.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "python -m pip install pandas\npip list",
+     "verifica": {
+      "stampa": "pandas"
+     },
+     "hint": [
+      "Si passa da python: python -m pip install ...",
+      "python -m pip install pandas"
+     ],
+     "spiegazione": "`python -m pip` risolve prima `python` lungo il PATH e poi usa il pip che gli sta accanto: il legame fra i due non puo' rompersi. Se prendi una sola abitudine da questo ramo, prendi questa."
+    },
+    {
+     "id": "b02-di-5",
+     "tipo": "terminale",
+     "testo": "**Le tre righe, in ordine.** Esegui la diagnostica completa su questo ambiente.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "requests": "2.32.3"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "which python\npip -V\npip list",
+     "verifica": {
+      "usa": [
+       "which",
+       "pip"
+      ],
+      "stampa": "requests"
+     },
+     "hint": [
+      "Quale interprete, a chi appartiene pip, cosa c'e' dentro.",
+      "which python / pip -V / pip list"
+     ],
+     "spiegazione": "`which python`, `pip -V`, `pip list`. In quest'ordine, perche' ognuna da' senso alla successiva: senza sapere quale interprete risponde, l'elenco dei pacchetti non dice niente.\n\nSono tre secondi, e sostituiscono mezz'ora di tentativi."
+    },
+    {
+     "id": "b02-di-6",
+     "tipo": "terminale",
+     "testo": "**Quando conviene ricostruire.** Questo ambiente si comporta in modo inspiegabile, ma esiste un `requirements.txt`. Cancellalo, ricrealo, riattivalo e reinstalla tutto.",
+     "difficolta": 3,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": "",
+      "/home/tu/requirements.txt": "numpy==2.2.5\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.0.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "deactivate\nrm -r .venv\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\npip list",
+     "verifica": {
+      "esiste": [
+       ".venv/bin/python"
+      ],
+      "stampa": "numpy",
+      "usa": [
+       "rm",
+       "pip"
+      ]
+     },
+     "hint": [
+      "Esci, cancella la cartella, ricreala, riattiva, reinstalla da requirements.",
+      "deactivate / rm -r .venv / python -m venv .venv / source .venv/bin/activate / pip install -r requirements.txt"
+     ],
+     "spiegazione": "Quattro comandi, dieci secondi. Non e' una resa: e' il motivo per cui il `requirements.txt` sta sotto controllo di versione e la cartella `.venv` no.\n\nDavanti a un ambiente che si comporta in modo che non riesci a spiegare, ricostruirlo e' spesso il percorso piu' breve — e se il problema sopravvive alla ricostruzione, hai imparato qualcosa di importante: non era l'ambiente."
+    },
+    {
+     "id": "b02-di-7",
+     "tipo": "predict",
+     "testo": "Perche' `.venv` non va messa nel controllo di versione, mentre `requirements.txt` si?",
+     "opzioni": [
+      "la cartella si ricostruisce dal file, pesa molto e contiene percorsi del tuo computer",
+      "il controllo di versione non supporta le cartelle nascoste",
+      "requirements.txt e' piu' recente come formato",
+      "sono equivalenti: si puo' scegliere l'uno o l'altra"
+     ],
+     "risposta": "la cartella si ricostruisce dal file, pesa molto e contiene percorsi del tuo computer",
+     "spiegazione": "Perche' `.venv` si ricostruisce da `requirements.txt` in dieci secondi, pesa centinaia di megabyte e contiene percorsi assoluti del tuo computer che su un altro non hanno senso. Il file di testo con nomi e versioni e' l'unica cosa che serve davvero conservare."
+    },
+    {
+     "id": "b02-di-8",
+     "tipo": "terminale",
+     "testo": "**Il compito sulla macchina vera.** Sul tuo terminale — quello vero — esegui le tre righe della diagnostica su un progetto che hai davvero: `which python` (o `where python`), `pip -V`, `pip list`.\n\nGuarda se le prime due concordano. Qui sotto scrivi `fatto > diagnosi.txt` per registrarlo.",
+     "filesystem": {
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "echo fatto > diagnosi.txt",
+     "verifica": {
+      "esiste": [
+       "diagnosi.txt"
+      ]
+     },
+     "hint": [
+      "Qui basta registrare che l'hai fatto davvero.",
+      "echo fatto > diagnosi.txt"
+     ],
+     "spiegazione": "Se le prime due righe non concordano sul tuo computer, hai appena trovato la causa di problemi che davi per casuali.\n\nUn simulatore non e' la tua macchina: non ha i tuoi tre Python installati in tre momenti diversi, non ha Anaconda che ha modificato il PATH all'installazione, non ha l'editor con la sua idea di quale interprete usare. Il transfer si ottiene solo rifacendo la stessa cosa li'."
+    }
+   ]
+  }
+ ]
+}

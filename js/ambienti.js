@@ -85,8 +85,27 @@ export const AMBIENTI = {
       const m = codice.match(/import\s+([A-Za-z_][A-Za-z0-9_]*)/);
       if (!m) return "";
       const nome = m[1];
-      if (attivo.dati.pacchetti[nome]) return "";
-      throw new V.ErroreFs(`ModuleNotFoundError: No module named '${nome}'`);
+
+      // La cartella corrente viene prima dei pacchetti installati: un tuo file
+      // chiamato numpy.py **e'** numpy per quel programma. L'import riesce, il
+      // pacchetto vero non viene mai caricato, e il messaggio d'errore che
+      // segue non nomina mai il tuo file.
+      const locale = V.normalizza(sh.fs, nome + ".py");
+      if (V.esiste(sh.fs, locale)) {
+        if (/__file__/.test(codice)) return locale;
+        if (/__version__/.test(codice))
+          throw new V.ErroreFs(`AttributeError: module '${nome}' has no attribute '__version__'`);
+        return "";
+      }
+
+      const versione = attivo.dati.pacchetti[nome];
+      if (!versione) throw new V.ErroreFs(`ModuleNotFoundError: No module named '${nome}'`);
+      // print(x.__version__) e print(x.__file__): le due domande che si fanno a un
+      // pacchetto quando non si capisce quale copia sia stata importata.
+      if (/__version__/.test(codice)) return versione;
+      if (/__file__/.test(codice))
+        return `${V.genitore(V.genitore(attivo.percorso))}/lib/${nome}/__init__.py`;
+      return "";
     }
 
     return `Python ${attivo.dati.versione}`;
@@ -119,6 +138,13 @@ export const AMBIENTI = {
           continue;
         }
         const [nome, versione] = spec.split("==");
+        // --upgrade porta all'ultima versione nota: senza, un pacchetto gia'
+        // presente non viene toccato, ed e' il motivo per cui "l'ho installato"
+        // e "ho la versione giusta" sono due affermazioni diverse.
+        if (p[nome] && !versione && !resto.includes("--upgrade") && !resto.includes("-U")) {
+          righe.push(`Requirement already satisfied: ${nome} in ${V.genitore(attivo.percorso)}`);
+          continue;
+        }
         p[nome] = versione || VERSIONI[nome] || "1.0.0";
         righe.push(`Successfully installed ${nome}-${p[nome]}`);
       }

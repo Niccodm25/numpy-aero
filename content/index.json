@@ -25,11 +25,10 @@
       "perche": "pip, venv, PATH, conda: quello che ti blocca quando il codice e' giusto ma non parte.",
       "disponibile": true,
       "moduli": [
-        "b01"
+        "b01",
+        "b02"
       ],
       "prossimi": [
-        "requirements.txt — bloccare le versioni",
-        "Conflitti — ModuleNotFoundError con il pacchetto installato",
         "conda — cosa risolve in piu', e come non mescolarlo con pip",
         "VS Code — selezionare l'interprete"
       ]
@@ -164,6 +163,12 @@
       "id": "b01",
       "file": "b01-dove-sta-python.json",
       "titolo": "Dove sta Python",
+      "disponibile": true
+    },
+    {
+      "id": "b02",
+      "file": "b02-conflitti.json",
+      "titolo": "Conflitti e diagnostica",
       "disponibile": true
     },
     {

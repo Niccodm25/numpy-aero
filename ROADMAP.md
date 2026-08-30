@@ -117,10 +117,10 @@ Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre vi
    "installato": in quale Python
 3. **venv** — creare, attivare, disattivare, perché l'attivazione è solo una modifica
    temporanea del PATH, cosa cambia nel prompt
-4. **requirements.txt** — bloccare le versioni, `pip freeze > requirements.txt`,
-   ricostruire un ambiente, e perché il progetto NumPy di questo repo ne ha uno
-5. **Conflitti** — la stessa libreria in due versioni, `ModuleNotFoundError` con il
-   pacchetto "installato", l'ambiente sbagliato attivo. **Il modulo diagnostico**
+4. **requirements.txt** — bloccare le versioni, ricostruire un ambiente. Coperto in
+   parte da 1 e 5; resta da fare un modulo suo se serve piu' spazio
+5. **Conflitti** — quattro cause del `ModuleNotFoundError`, le tre righe di
+   diagnostica, il file che oscura il pacchetto. **Il modulo diagnostico** — **fatto**
 6. **conda e Anaconda** — cosa risolvono in più (pacchetti non-Python, compilatori),
    perché in ambito scientifico si usano, e la regola per non mescolarli con pip
 7. **VS Code** — selezionare l'interprete, perché il terminale integrato può avere un

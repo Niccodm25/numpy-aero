@@ -253,13 +253,17 @@ export const POSIX = {
   env: (sh) => Object.entries(sh.env).map(([k, v]) => `${k}=${v}`).join("\n"),
 
   which(sh, args) {
-    const nome = args[0];
+    const { flag, resto } = opzioni(args);
+    const nome = resto[0];
     if (!nome) throw new V.ErroreFs("manca il nome del comando");
+    const trovati = [];
     for (const dir of sh.env.PATH.split(":")) {
       const p = dir + "/" + nome;
-      if (V.esiste(sh.fs, p)) return p;
+      if (V.esiste(sh.fs, p)) trovati.push(p);
     }
-    return "";
+    // -a li elenca tutti invece del primo: e' il modo di vedere in un colpo
+    // quante copie dello stesso comando hai, e in che ordine si contendono.
+    return flag.has("a") ? trovati.join("\n") : trovati[0] ?? "";
   },
 };
 

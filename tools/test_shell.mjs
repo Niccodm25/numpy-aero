@@ -318,6 +318,56 @@ caso("pip uninstall toglie solo dall'ambiente attivo", () => {
   assert.match(esegui(sh, "pip uninstall numpy").out, /Skipping/);
 });
 
+caso("which -a elenca tutte le copie, in ordine di PATH", () => {
+  const sh = shell({ "/usr/bin/python": "", "/opt/py/bin/python": "" }, {
+    env: { PATH: "/opt/py/bin:/usr/bin:/bin" },
+  });
+  assert.equal(esegui(sh, "which python").out, "/opt/py/bin/python");
+  assert.equal(esegui(sh, "which -a python").out, "/opt/py/bin/python\n/usr/bin/python");
+});
+
+caso("python -c sa dire la versione e il percorso di un pacchetto", () => {
+  const sh = shellPy();
+  esegui(sh, "pip install numpy==2.2.5");
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
+  assert.match(esegui(sh, "python -c import numpy; print(numpy.__file__)").out, /\/usr\/lib\/numpy/);
+});
+
+caso("reinstallare non aggiorna: serve --upgrade", () => {
+  const sh = shellPy();
+  esegui(sh, "pip install numpy==1.0.0");
+  assert.match(esegui(sh, "pip install numpy").out, /already satisfied/);
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "1.0.0");
+  assert.match(esegui(sh, "pip install --upgrade numpy").out, /Successfully installed numpy-2.2.5/);
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
+});
+
+caso("pip e python disallineati: il guasto che pip -V rivela", () => {
+  // pip di sistema davanti, python dell'ambiente dietro: due interpreti diversi
+  const sh = shellPy();
+  esegui(sh, "python -m venv .venv");
+  sh.env.PATH = "/usr/bin:/home/tu/.venv/bin:/bin";
+  assert.equal(esegui(sh, "which python").out, "/usr/bin/python");
+  assert.equal(esegui(sh, "which pip").out, "/usr/bin/pip");
+  esegui(sh, "pip install numpy");
+  assert.equal(esegui(sh, "python -c import numpy").errore, null, "coerenti: l import riesce");
+});
+
+caso("un file locale con lo stesso nome oscura il pacchetto", () => {
+  const sh = shellPy();
+  esegui(sh, "pip install numpy");
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
+  esegui(sh, "touch numpy.py");
+  assert.match(
+    esegui(sh, "python -c import numpy; print(numpy.__version__)").errore,
+    /AttributeError/,
+    "ora importa il file locale, che non ha __version__"
+  );
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__file__)").out, "/home/tu/numpy.py");
+  esegui(sh, "rm numpy.py");
+  assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
+});
+
 // ---------- contenuti: ogni soluzione deve passare la propria verifica ----------
 //
 // E' l'equivalente di check_content.py per gli esercizi di terminale: la
