@@ -9,7 +9,7 @@
 import assert from "node:assert";
 import * as V from "../js/vfs.js";
 import { creaShell, esegui, eseguiTutto, dividi, verifica } from "../js/shell.js";
-import { AMBIENTI, statoAmbienti } from "../js/ambienti.js";
+import { AMBIENTI, AMBIENTI_CONDA, statoAmbienti } from "../js/ambienti.js";
 import { comandiPowerShell } from "../js/powershell.js";
 import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
 
@@ -402,6 +402,85 @@ caso("un file locale con lo stesso nome oscura il pacchetto", () => {
   assert.equal(esegui(sh, "python -c import numpy; print(numpy.__version__)").out, "2.2.5");
 });
 
+// ---------- conda ----------
+
+function shellConda() {
+  const sh = creaShell({ "/usr/bin": null }, {
+    env: { PATH: "/opt/conda/bin:/usr/bin:/bin", CONDA_DEFAULT_ENV: "base" },
+    comandi: AMBIENTI_CONDA,
+  });
+  statoAmbienti(sh, {
+    "/opt/conda/bin/python": { versione: "3.12.0", pacchetti: { numpy: "2.2.5" } },
+  });
+  V.scrivi(sh.fs, "/opt/conda/bin/pip", "");
+  return sh;
+}
+
+caso("conda create fa un ambiente vuoto con la versione chiesta", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n prove python=3.11");
+  assert.equal(V.esiste(sh.fs, "/opt/conda/envs/prove/bin/python"), true);
+  esegui(sh, "conda activate prove");
+  assert.equal(esegui(sh, "python --version").out, "Python 3.11");
+  assert.equal(esegui(sh, "conda list").out.includes("numpy"), false, "nasce vuoto");
+});
+
+caso("conda activate cambia il PATH, come fa venv", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n prove");
+  esegui(sh, "conda activate prove");
+  assert.equal(esegui(sh, "which python").out, "/opt/conda/envs/prove/bin/python");
+  assert.equal(sh.env.CONDA_DEFAULT_ENV, "prove");
+  esegui(sh, "conda deactivate");
+  assert.equal(sh.env.CONDA_DEFAULT_ENV, undefined);
+});
+
+caso("attivare un ambiente ne disattiva un altro invece di impilarli", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n uno");
+  esegui(sh, "conda create -n due");
+  esegui(sh, "conda activate uno");
+  esegui(sh, "conda activate due");
+  assert.equal(esegui(sh, "which python").out, "/opt/conda/envs/due/bin/python");
+  assert.equal(sh.env.PATH.includes("/opt/conda/envs/uno/bin"), false);
+});
+
+caso("conda list mostra da dove viene ogni pacchetto", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n prove");
+  esegui(sh, "conda activate prove");
+  esegui(sh, "conda install numpy");
+  esegui(sh, "pip install requests");
+  const out = esegui(sh, "conda list").out;
+  assert.match(out, /numpy.*conda-forge/, "numpy viene da conda");
+  assert.match(out, /requests.*pypi/, "requests viene da pip");
+});
+
+caso("conda che sovrascrive un pacchetto di pip lo dice", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n prove");
+  esegui(sh, "conda activate prove");
+  esegui(sh, "pip install numpy");
+  assert.match(esegui(sh, "conda list").out, /numpy.*pypi/);
+  const r = esegui(sh, "conda install numpy");
+  assert.match(r.out, /ATTENZIONE/, "deve segnalare la sovrascrittura");
+  assert.match(esegui(sh, "conda list").out, /numpy.*conda-forge/);
+});
+
+caso("conda env list segna l'ambiente attivo", () => {
+  const sh = shellConda();
+  esegui(sh, "conda create -n prove");
+  esegui(sh, "conda activate prove");
+  const out = esegui(sh, "conda env list").out;
+  assert.match(out, /prove\s+\*/);
+  assert.match(out, /base\s{2}/);
+});
+
+caso("attivare un ambiente che non esiste lo dice", () => {
+  const sh = shellConda();
+  assert.match(esegui(sh, "conda activate manca").errore, /non trovato/);
+});
+
 // ---------- PowerShell: la pipeline a oggetti ----------
 
 const PROG = {
@@ -587,9 +666,11 @@ for (const meta of indice.moduli) {
           comandi:
             es.shell === "powershell"
               ? comandiPowerShell()
-              : es.interpreti
-                ? AMBIENTI
-                : undefined,
+              : es.shell === "conda"
+                ? AMBIENTI_CONDA
+                : es.interpreti
+                  ? AMBIENTI
+                  : undefined,
         });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         const t = eseguiTutto(sh, es.soluzione);

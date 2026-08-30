@@ -26,12 +26,12 @@
       "disponibile": true,
       "moduli": [
         "b01",
-        "b02"
+        "b02",
+        "b03",
+        "b04",
+        "b05"
       ],
-      "prossimi": [
-        "conda — cosa risolve in piu', e come non mescolarlo con pip",
-        "VS Code — selezionare l'interprete"
-      ]
+      "prossimi": []
     },
     {
       "id": "libpy",
@@ -166,6 +166,24 @@
       "id": "b02",
       "file": "b02-conflitti.json",
       "titolo": "Conflitti e diagnostica",
+      "disponibile": true
+    },
+    {
+      "id": "b03",
+      "file": "b03-requirements.json",
+      "titolo": "requirements e riproducibilita'",
+      "disponibile": true
+    },
+    {
+      "id": "b04",
+      "file": "b04-conda.json",
+      "titolo": "conda e Anaconda",
+      "disponibile": true
+    },
+    {
+      "id": "b05",
+      "file": "b05-vscode.json",
+      "titolo": "VS Code e l'interprete",
       "disponibile": true
     },
     {

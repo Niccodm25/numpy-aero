@@ -1,0 +1,502 @@
+{
+ "id": "b05",
+ "titolo": "VS Code e l'interprete",
+ "perche": "Dentro l'editor ci sono due posti in cui gira Python e non sono lo stesso: l'interprete della barra di stato, che usa il pulsante Esegui, e il terminale integrato, che e' una shell vera con il suo PATH. Il sintomo e' che Esegui funziona e lo stesso comando a mano no. Piu' la disposizione che toglie il problema alla radice: l'ambiente dentro il progetto, chiamato .venv, che l'editor trova da solo.",
+ "funzioni": [
+  "barra di stato",
+  "Python: Select Interpreter",
+  ".venv nel progetto",
+  ".vscode/settings.json",
+  "which python"
+ ],
+ "lezioni": [
+  {
+   "id": "b05-l1",
+   "titolo": "VS Code ha due Python, e non lo dice",
+   "md": "Dentro l'editor ci sono **due posti** in cui gira Python, e non sono lo stesso.\n\n**L'interprete selezionato.** Quello che usa il pulsante Esegui, il debugger, e i controlli che sottolineano gli errori mentre scrivi. Si sceglie dalla barra di stato in basso a destra, dove c'e' scritto `Python 3.12.0 ('.venv')`.\n\n**Il terminale integrato.** È una shell vera, con il suo PATH. Se non attivi un ambiente, usa quello del sistema — indipendentemente da quello che hai selezionato sopra.\n\n### Il sintomo\n\nPremi Esegui e funziona. Apri il terminale, lanci `python script.py` a mano, e ottieni `ModuleNotFoundError`. Oppure il contrario.\n\nNon e' un guasto dell'editor: sono due ambienti diversi, e ognuno fa quello che gli e' stato detto.\n\n### La riconciliazione\n\nVS Code, se trova una cartella `.venv` dentro il progetto, **la seleziona da solo** e attiva l'ambiente nei terminali che apri **da quel momento in poi**. I terminali gia' aperti restano com'erano.\n\nDa cui la regola pratica: dopo aver cambiato interprete, **chiudi i terminali aperti**. Quelli nuovi nasceranno giusti.\n\n### Come si verifica, in dieci secondi\n\nNel terminale integrato:\n\n```\nwhich python      # oppure where python su Windows\n```\n\nE si confronta con quello che dice la barra di stato. Se non coincidono, hai trovato la causa prima di cercarla."
+  },
+  {
+   "id": "b05-l2",
+   "titolo": "Fare in modo che sia l'editor ad adattarsi",
+   "md": "La convenzione che toglie il problema alla radice: **l'ambiente sta dentro la cartella del progetto e si chiama `.venv`**.\n\n```\nprogetto/\n├── .venv/              <- l'ambiente, qui dentro\n├── .gitignore          <- con dentro .venv/\n├── requirements.txt\n└── analisi.py\n```\n\nCon questa disposizione VS Code lo trova da solo, senza configurare niente. È il motivo per cui `.venv` e' diventato il nome standard: non e' piu' bello di `env` o `venv`, e' quello che gli editor cercano.\n\n### Selezionarlo a mano\n\n`Ctrl+Shift+P` → *Python: Select Interpreter*. Compare l'elenco di tutti gli interpreti trovati, e si sceglie quello nel progetto.\n\nLa scelta viene ricordata **per cartella**, in `.vscode/settings.json`:\n\n```json\n{\n  \"python.defaultInterpreterPath\": \".venv/bin/python\"\n}\n```\n\nQuel file si puo' mettere sotto controllo di versione: chi apre il progetto dopo di te si trova l'interprete gia' giusto — a patto che l'ambiente si chiami come dice il file.\n\n### Le tre righe di diagnosi, qui\n\nSono le stesse del modulo sui conflitti, con una in piu':\n\n```\nwhich python              # nel terminale integrato\npip -V\n```\n\ne poi si guarda la **barra di stato**. Tre informazioni, e una delle tre non e' nel terminale: e' proprio quella la ragione per cui questo guasto sopravvive tanto a lungo.\n\n### Il caso che confonde di piu'\n\nApri l'editor su una cartella, e i file di un altro progetto stanno da un'altra parte. L'interprete selezionato vale per la **cartella aperta**, non per il file che stai guardando: aprire un singolo file invece della cartella e' il modo piu' rapido di ritrovarsi con l'interprete sbagliato senza capire perche'."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "b05-due",
+   "comando": "i due Python",
+   "titolo": "Esegui funziona, il terminale no",
+   "esercizi": [
+    {
+     "id": "b05-du-1",
+     "tipo": "predict",
+     "testo": "Premi Esegui in VS Code e funziona. Apri il terminale integrato, lanci lo stesso script a mano, e ottieni `ModuleNotFoundError`. Cosa sta succedendo?",
+     "opzioni": [
+      "il pulsante Esegui e il terminale integrato usano due interpreti diversi",
+      "l'editor deve essere riavviato dopo l'installazione",
+      "il terminale integrato non supporta gli ambienti virtuali",
+      "lo script va lanciato sempre dal pulsante, mai a mano"
+     ],
+     "risposta": "il pulsante Esegui e il terminale integrato usano due interpreti diversi",
+     "spiegazione": "Sono **due ambienti diversi**. Il pulsante Esegui usa l'interprete selezionato nella barra di stato; il terminale integrato e' una shell vera con il suo PATH, e se non attivi niente usa il Python di sistema. Non e' un guasto dell'editor: ognuno dei due fa quello che gli e' stato detto."
+    },
+    {
+     "id": "b05-du-2",
+     "tipo": "terminale",
+     "testo": "Sei nel terminale integrato di VS Code, aperto sulla cartella del progetto. Scopri quale Python risponde qui.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "which python",
+     "verifica": {
+      "stampa": "/usr/bin/python",
+      "usa": [
+       "which"
+      ]
+     },
+     "hint": [
+      "La solita prima riga.",
+      "which python"
+     ],
+     "spiegazione": "Il Python di sistema: il terminale non ha attivato niente. Se la barra di stato dice `('.venv')`, quello che vedi qui e' un altro interprete — ed e' esattamente il caso in cui Esegui funziona e il terminale no."
+    },
+    {
+     "id": "b05-du-3",
+     "tipo": "terminale",
+     "testo": "Conferma il sospetto: prova a importare numpy, che nel progetto e' installato.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "python -c import numpy",
+     "verifica": {
+      "errore": "ModuleNotFoundError",
+      "usa": [
+       "python"
+      ]
+     },
+     "hint": [
+      "python -c import numpy",
+      "L'errore e' quello che ti aspetti."
+     ],
+     "spiegazione": "`ModuleNotFoundError`, e numpy e' installato — dentro `.venv`, che qui non e' attivo. È lo stesso guasto del modulo sui conflitti, con una causa in piu': qui non lo hai provocato tu, lo ha provocato un terminale che si e' aperto senza ambiente."
+    },
+    {
+     "id": "b05-du-4",
+     "tipo": "terminale",
+     "testo": "Ripara **questo** terminale: attiva l'ambiente del progetto e verifica.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "source .venv/bin/activate\nwhich python\npython -c import numpy",
+     "verifica": {
+      "stampa": "/home/tu/progetto/.venv/bin/python",
+      "usa": [
+       "source"
+      ]
+     },
+     "hint": [
+      "source .venv/bin/activate",
+      "Poi ricontrolla con which python."
+     ],
+     "spiegazione": "Attivare a mano risolve il singolo terminale. Non e' la soluzione — la soluzione e' far si' che l'editor lo attivi da solo — ma e' quello che si fa quando serve andare avanti adesso."
+    },
+    {
+     "id": "b05-du-5",
+     "tipo": "predict",
+     "testo": "Cambi interprete dalla barra di stato. Il terminale gia' aperto si adegua?",
+     "opzioni": [
+      "no: solo i terminali aperti dopo il cambio",
+      "si': l'editor aggiorna tutti i terminali",
+      "si', ma serve premere invio una volta",
+      "dipende dal sistema operativo"
+     ],
+     "risposta": "no: solo i terminali aperti dopo il cambio",
+     "spiegazione": "No. VS Code attiva l'ambiente nei terminali che apri **da quel momento in poi**; quelli gia' aperti restano com'erano. Da cui la regola pratica: dopo aver cambiato interprete, chiudi i terminali aperti — quelli nuovi nasceranno giusti."
+    },
+    {
+     "id": "b05-du-6",
+     "tipo": "predict",
+     "testo": "Come si verifica in dieci secondi se editor e terminale concordano?",
+     "opzioni": [
+      "which python nel terminale, confrontato con la barra di stato",
+      "si guarda solo la barra di stato, che e' sempre affidabile",
+      "si esegue lo script due volte e si confrontano i risultati",
+      "non c'e' modo di saperlo senza riavviare l'editor"
+     ],
+     "risposta": "which python nel terminale, confrontato con la barra di stato",
+     "spiegazione": "`which python` nel terminale integrato — `where python` su Windows — e si confronta con quello che dice la barra di stato in basso a destra. Due informazioni, e una delle due **non e' nel terminale**: e' proprio per questo che il guasto sopravvive tanto a lungo."
+    },
+    {
+     "id": "b05-du-7",
+     "tipo": "terminale",
+     "testo": "**Il caso che confonde di piu'.** Hai aperto l'editor su `/home/tu` invece che su `/home/tu/progetto`. Da qui, l'ambiente del progetto si vede?",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "ls -a\nls -a progetto",
+     "verifica": {
+      "stampa": ".venv",
+      "usa": [
+       "ls"
+      ]
+     },
+     "hint": [
+      "Guarda cosa c'e' qui e cosa c'e' dentro progetto.",
+      "ls -a e poi ls -a progetto"
+     ],
+     "spiegazione": "Il terminale parte in `/home/tu`, e li' non c'e' nessun `.venv`: VS Code non ha niente da trovare e da attivare. L'interprete selezionato vale per la **cartella aperta**, non per il file che stai guardando.\n\nAprire un singolo file invece della cartella del progetto e' il modo piu' rapido di ritrovarsi con l'interprete sbagliato senza capire perche'."
+    },
+    {
+     "id": "b05-du-8",
+     "tipo": "terminale",
+     "testo": "Dal posto giusto: entra nella cartella del progetto e verifica che l'ambiente ci sia.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "cd progetto\nls -a",
+     "verifica": {
+      "cwd": "/home/tu/progetto",
+      "stampa": ".venv",
+      "usa": [
+       "cd"
+      ]
+     },
+     "hint": [
+      "Entra e guarda, con i nascosti.",
+      "cd progetto e poi ls -a"
+     ],
+     "spiegazione": "`.venv` e' li', dentro la cartella del progetto. È la disposizione che permette all'editor di trovarlo da solo — e il motivo per cui aprire **la cartella** e non il singolo file cambia tutto."
+    }
+   ]
+  },
+  {
+   "id": "b05-convenzione",
+   "comando": ".venv nel progetto",
+   "titolo": "far si' che sia l'editor ad adattarsi",
+   "esercizi": [
+    {
+     "id": "b05-co-1",
+     "tipo": "predict",
+     "testo": "Perche' l'ambiente si chiama `.venv` e sta dentro la cartella del progetto?",
+     "opzioni": [
+      "perche' e' il nome che gli editor cercano da soli, dentro il progetto",
+      "perche' il punto lo rende nascosto e piu' sicuro",
+      "perche' Python rifiuta altri nomi",
+      "e' solo una preferenza estetica"
+     ],
+     "risposta": "perche' e' il nome che gli editor cercano da soli, dentro il progetto",
+     "spiegazione": "Perche' e' quello che gli editor cercano. Non e' un nome piu' bello di `env` o `venv`: e' la convenzione che permette a VS Code di trovarlo e selezionarlo da solo, senza configurare niente. Metterlo altrove funziona lo stesso, e ti costringe a dirlo all'editor ogni volta."
+    },
+    {
+     "id": "b05-co-2",
+     "tipo": "terminale",
+     "testo": "Metti in ordine il progetto: crea l'ambiente **dentro** la cartella del progetto, col nome che l'editor cerca.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/analisi.py": "import numpy\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "cwd": "/home/tu",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "cd progetto\npython -m venv .venv\nls -a",
+     "verifica": {
+      "esiste": [
+       "/home/tu/progetto/.venv/bin/python"
+      ],
+      "cwd": "/home/tu/progetto"
+     },
+     "hint": [
+      "Entra nel progetto e crea l'ambiente li'.",
+      "cd progetto e poi python -m venv .venv"
+     ],
+     "spiegazione": "`.venv` dentro `progetto/`. Con questa disposizione VS Code lo trova da solo alla prossima apertura, e i terminali nuovi nascono gia' attivati."
+    },
+    {
+     "id": "b05-co-3",
+     "tipo": "terminale",
+     "testo": "Aggiungi il `.gitignore` che tiene fuori l'ambiente, e il `requirements.txt` che permette di ricostruirlo.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/home/tu/progetto/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/progetto/.venv"
+     },
+     "soluzione": "echo .venv/ > .gitignore\npip freeze > requirements.txt\ncat .gitignore",
+     "verifica": {
+      "esiste": [
+       ".gitignore",
+       "requirements.txt"
+      ],
+      "contiene": {
+       ".gitignore": ".venv/"
+      }
+     },
+     "hint": [
+      "echo .venv/ > .gitignore",
+      "pip freeze > requirements.txt"
+     ],
+     "spiegazione": "I due file che vanno **sempre** insieme: uno esclude la cartella, l'altro la rende ricostruibile. Senza il secondo, il primo butta via qualcosa che nessuno sa piu' ricreare."
+    },
+    {
+     "id": "b05-co-4",
+     "tipo": "terminale",
+     "testo": "VS Code ricorda la scelta dell'interprete per cartella, in `.vscode/settings.json`. Scrivilo.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/home/tu/progetto/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/progetto/.venv"
+     },
+     "soluzione": "mkdir .vscode\necho {\"python.defaultInterpreterPath\": \".venv/bin/python\"} > .vscode/settings.json\ncat .vscode/settings.json",
+     "verifica": {
+      "esiste": [
+       ".vscode/settings.json"
+      ],
+      "contiene": {
+       ".vscode/settings.json": "defaultInterpreterPath"
+      }
+     },
+     "hint": [
+      "Prima la cartella .vscode, poi il file dentro.",
+      "mkdir .vscode e poi echo con la redirezione"
+     ],
+     "spiegazione": "Quel file si puo' mettere sotto controllo di versione: chi apre il progetto dopo di te si trova l'interprete gia' giusto — a patto che l'ambiente si chiami come dice il file, che e' un altro motivo per usare `.venv`."
+    },
+    {
+     "id": "b05-co-5",
+     "tipo": "predict",
+     "testo": "Il file `.vscode/settings.json` va nel controllo di versione?",
+     "opzioni": [
+      "si', quando contiene scelte che valgono per chiunque apra il progetto",
+      "no: e' una cartella di configurazione personale",
+      "no: contiene percorsi assoluti del tuo computer",
+      "solo se il progetto e' pubblico"
+     ],
+     "risposta": "si', quando contiene scelte che valgono per chiunque apra il progetto",
+     "spiegazione": "Sì, quando contiene scelte che valgono per **tutti** — come il percorso dell'interprete relativo al progetto. Chi apre il progetto dopo si trova tutto configurato. Vanno invece tenute fuori le preferenze personali, come il tema o la dimensione del carattere."
+    },
+    {
+     "id": "b05-co-6",
+     "tipo": "terminale",
+     "testo": "**Il collaudo.** Da un terminale che parte pulito nella cartella del progetto, verifica che l'ambiente ci sia, attivalo, e controlla che l'importazione funzioni.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/usr/bin:/bin"
+     },
+     "soluzione": "ls -a\nsource .venv/bin/activate\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "2.2.5",
+      "usa": [
+       "source",
+       "python"
+      ]
+     },
+     "hint": [
+      "Guarda che ci sia, attivalo, prova l'import.",
+      "ls -a / source .venv/bin/activate / python -c import numpy; print(numpy.__version__)"
+     ],
+     "spiegazione": "Tre comandi e la certezza. È il collaudo da fare quando apri un progetto che non tocchi da mesi, prima di concludere che qualcosa si e' rotto: quasi sempre non si e' rotto niente, semplicemente il terminale e' partito senza ambiente."
+    },
+    {
+     "id": "b05-co-7",
+     "tipo": "predict",
+     "testo": "Riassumendo il ramo: qual e' la domanda da farsi **per prima** davanti a qualunque problema di pacchetti?",
+     "opzioni": [
+      "quale python sto usando",
+      "ho installato il pacchetto",
+      "quale versione del pacchetto ho",
+      "l'ambiente virtuale e' corrotto"
+     ],
+     "risposta": "quale python sto usando",
+     "spiegazione": "\"Quale python sto usando?\" — non \"ho installato il pacchetto?\". La seconda domanda contiene la prima, e senza la prima la risposta alla seconda non significa niente. Si risponde con `which python`, e costa un secondo."
+    },
+    {
+     "id": "b05-co-8",
+     "tipo": "terminale",
+     "testo": "**Il compito sulla macchina vera, e la fine del ramo.** Apri VS Code su un tuo progetto. Nel terminale integrato esegui `where python` (Windows) o `which python`, e confrontalo con quello che c'e' scritto nella barra di stato in basso a destra.\n\nQui sotto scrivi `fatto > vscode.txt`.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/pip": "",
+      "/home/tu/progetto/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/progetto/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "cwd": "/home/tu/progetto",
+     "env": {
+      "PATH": "/home/tu/progetto/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/progetto/.venv"
+     },
+     "soluzione": "echo fatto > vscode.txt",
+     "verifica": {
+      "esiste": [
+       "vscode.txt"
+      ]
+     },
+     "hint": [
+      "Qui basta registrare che l'hai fatto davvero.",
+      "echo fatto > vscode.txt"
+     ],
+     "spiegazione": "Se le due cose non coincidono, hai appena trovato la causa di problemi che davi per casuali — ed e' esattamente il tipo di guasto che non compare in nessun messaggio d'errore.\n\nCon questo il ramo e' finito. Quello che porti via sono tre righe: `which python` per sapere dove sei, `pip -V` per sapere dove installa pip, `pip list` per sapere cosa c'e'. In quest'ordine, perche' ognuna da' senso alla successiva — e nessuna delle tre richiede di indovinare niente."
+    }
+   ]
+  }
+ ]
+}

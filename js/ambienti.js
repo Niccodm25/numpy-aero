@@ -18,6 +18,9 @@ export function statoAmbienti(sh, interpreti = {}) {
     sh.interpreti[percorso] = {
       versione: dati.versione ?? "3.12.0",
       pacchetti: { ...(dati.pacchetti || {}) },
+      // Chi ha installato cosa: serve solo a conda, che deve poter dire quali
+      // pacchetti sono arrivati da pip e quindi sfuggono al suo controllo.
+      daPip: new Set(dati.daPip || []),
       base: dati.base ?? null, // per i venv: da quale interprete sono nati
     };
     if (!V.esiste(sh.fs, percorso)) {
@@ -219,6 +222,143 @@ export const AMBIENTI = {
       .join(" ");
   },
 };
+
+// ---------- conda ----------
+//
+// Stesso modello di interprete, con una cosa in piu': si tiene traccia di **chi**
+// ha installato ogni pacchetto. E' l'unica informazione che serve per insegnare
+// il guasto vero di conda — che conda non sa cosa ha fatto pip, e sovrascrivendo
+// un pacchetto installato da pip lascia l'ambiente in uno stato che nessuno dei
+// due strumenti sa piu' descrivere.
+
+const RADICE_CONDA = "/opt/conda";
+
+/** Il segno di chi ha installato: "pypi" per pip, il canale per conda. */
+function canale(dati, nome) {
+  return (dati.daPip && dati.daPip.has(nome)) ? "pypi" : "conda-forge";
+}
+
+function ambienteConda(sh) {
+  const attivo = sh.env.CONDA_DEFAULT_ENV;
+  const percorso = attivo === "base"
+    ? RADICE_CONDA + "/bin/python"
+    : `${RADICE_CONDA}/envs/${attivo}/bin/python`;
+  const dati = sh.interpreti?.[percorso];
+  if (!dati) throw new V.ErroreFs("nessun ambiente conda attivo");
+  return { nome: attivo, percorso, dati };
+}
+
+export const CONDA = {
+  conda(sh, args) {
+    const [azione, ...resto] = args;
+    const nomi = resto.filter((a) => !a.startsWith("-"));
+
+    if (azione === "--version" || azione === "-V") return "conda 24.7.1";
+
+    if (azione === "create") {
+      const i = resto.indexOf("-n");
+      const nome = i >= 0 ? resto[i + 1] : nomi[0];
+      if (!nome) throw new V.ErroreFs("manca il nome dell'ambiente: conda create -n NOME");
+      const radice = `${RADICE_CONDA}/envs/${nome}`;
+      V.creaDir(sh.fs, radice + "/bin", true);
+      V.scrivi(sh.fs, radice + "/bin/python", "");
+      V.scrivi(sh.fs, radice + "/bin/pip", "");
+      // "python=3.12" fra gli argomenti fissa la versione: e' la cosa che venv
+      // NON sa fare, ed e' il motivo principale per cui conda esiste.
+      const spec = resto.find((a) => a.startsWith("python="));
+      sh.interpreti[radice + "/bin/python"] = {
+        versione: spec ? spec.slice("python=".length) : "3.12.0",
+        pacchetti: {},
+        daPip: new Set(),
+        base: null,
+      };
+      return `# To activate this environment, use\n#     $ conda activate ${nome}`;
+    }
+
+    if (azione === "activate") {
+      const nome = nomi[0] ?? "base";
+      const bin = nome === "base"
+        ? RADICE_CONDA + "/bin"
+        : `${RADICE_CONDA}/envs/${nome}/bin`;
+      if (!V.esiste(sh.fs, bin + "/python"))
+        throw new V.ErroreFs(`EnvironmentNameNotFound: ambiente '${nome}' non trovato`);
+      if (sh.env.CONDA_DEFAULT_ENV) CONDA.conda(sh, ["deactivate"]);
+      sh.env.PATH = bin + ":" + sh.env.PATH;
+      sh.env.CONDA_DEFAULT_ENV = nome;
+      return "";
+    }
+
+    if (azione === "deactivate") {
+      if (!sh.env.CONDA_DEFAULT_ENV) return "";
+      const nome = sh.env.CONDA_DEFAULT_ENV;
+      const bin = nome === "base" ? RADICE_CONDA + "/bin" : `${RADICE_CONDA}/envs/${nome}/bin`;
+      sh.env.PATH = sh.env.PATH.split(":").filter((d) => d !== bin).join(":");
+      delete sh.env.CONDA_DEFAULT_ENV;
+      return "";
+    }
+
+    if (azione === "install") {
+      const amb = ambienteConda(sh);
+      if (!nomi.length) throw new V.ErroreFs("manca il nome del pacchetto");
+      const righe = [];
+      for (const spec of nomi) {
+        const [nome, versione] = spec.split("=").filter(Boolean);
+        const eraDiPip = amb.dati.daPip?.has(nome);
+        amb.dati.pacchetti[nome] = versione || VERSIONI[nome] || "1.0.0";
+        amb.dati.daPip?.delete(nome);
+        righe.push(
+          eraDiPip
+            ? `# ATTENZIONE: ${nome} era stato installato da pip ed e' stato sovrascritto`
+            : `Preparing transaction: done\n# installato ${nome}-${amb.dati.pacchetti[nome]}`
+        );
+      }
+      return righe.join("\n");
+    }
+
+    if (azione === "list") {
+      const amb = ambienteConda(sh);
+      const nomiP = Object.keys(amb.dati.pacchetti).sort();
+      const intestazione = `# packages in environment at ${V.genitore(V.genitore(amb.percorso))}:\n#\n# Name  Version  Channel`;
+      if (!nomiP.length) return intestazione;
+      return [
+        intestazione,
+        ...nomiP.map((n) => `${n}  ${amb.dati.pacchetti[n]}  ${canale(amb.dati, n)}`),
+      ].join("\n");
+    }
+
+    if (azione === "env" && resto[0] === "list") {
+      const righe = ["# conda environments:", "#"];
+      for (const p of Object.keys(sh.interpreti)) {
+        if (!p.startsWith(RADICE_CONDA)) continue;
+        const nome = p === RADICE_CONDA + "/bin/python"
+          ? "base"
+          : p.slice((RADICE_CONDA + "/envs/").length).split("/")[0];
+        const segno = sh.env.CONDA_DEFAULT_ENV === nome ? "*" : " ";
+        righe.push(`${nome.padEnd(12)}${segno}  ${V.genitore(V.genitore(p))}`);
+      }
+      return righe.join("\n");
+    }
+
+    throw new V.ErroreFs(`azione sconosciuta: ${azione}`);
+  },
+
+  // pip resta quello di prima, ma dentro un ambiente conda deve marcare cio' che
+  // installa: e' l'informazione che conda list mostra come "pypi", e senza la
+  // quale il guasto del mescolamento sarebbe invisibile.
+  pip(sh, args) {
+    const risultato = AMBIENTI.pip(sh, args);
+    if (args[0] === "install" && sh.env.CONDA_DEFAULT_ENV) {
+      const amb = ambienteConda(sh);
+      amb.dati.daPip = amb.dati.daPip ?? new Set();
+      for (const spec of args.slice(1).filter((a) => !a.startsWith("-")))
+        amb.dati.daPip.add(spec.split("=")[0]);
+    }
+    return risultato;
+  },
+};
+
+/** Il dizionario per gli esercizi su conda: comandi degli ambienti piu' conda. */
+export const AMBIENTI_CONDA = { ...AMBIENTI, ...CONDA };
 
 // Versioni plausibili per i pacchetti che compaiono negli esercizi. Non serve a
 // niente di tecnico: serve perche' "numpy-1.0.0" a schermo distrae.

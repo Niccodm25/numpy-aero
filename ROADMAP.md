@@ -108,7 +108,7 @@ Estensione diretta di quello che c'è. Motore invariato.
 Matplotlib prima di SciPy: completa NumPy invece di aprire un fronte nuovo, e senza
 grafici non vedi mai i risultati che calcoli.
 
-### Ramo B — Ambienti e pacchetti  ← **iniziato**
+### Ramo B — Ambienti e pacchetti  ← **finito**
 
 Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre visibile.
 
@@ -117,14 +117,16 @@ Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre vi
    "installato": in quale Python
 3. **venv** — creare, attivare, disattivare, perché l'attivazione è solo una modifica
    temporanea del PATH, cosa cambia nel prompt
-4. **requirements.txt** — bloccare le versioni, ricostruire un ambiente. Coperto in
-   parte da 1 e 5; resta da fare un modulo suo se serve piu' spazio
+4. **requirements e riproducibilita'** — `freeze`, `install -r`, `==` contro `>=`,
+   il `.gitignore` che tiene fuori la cartella. **fatto**
 5. **Conflitti** — quattro cause del `ModuleNotFoundError`, le tre righe di
    diagnostica, il file che oscura il pacchetto. **Il modulo diagnostico** — **fatto**
-6. **conda e Anaconda** — cosa risolvono in più (pacchetti non-Python, compilatori),
-   perché in ambito scientifico si usano, e la regola per non mescolarli con pip
-7. **VS Code** — selezionare l'interprete, perché il terminale integrato può avere un
-   ambiente diverso da quello del pulsante Run, come si legge la barra di stato
+6. **conda e Anaconda** — le due cose che risolve e `venv` no, e il modo tipico in
+   cui un ambiente conda si rompe: due registri che non si parlano. **fatto**
+7. **VS Code** — i due Python dell'editor, e la disposizione che toglie il problema
+   alla radice. **fatto**
+
+Cinque moduli, 104 esercizi. Il ramo e' completo.
 
 I moduli 5 e 7 sono i più preziosi: sono i problemi che avrai davvero.
 
@@ -222,7 +224,7 @@ poi come farlo girare, poi gli strumenti di calcolo, poi il sistema sotto.
 | 1 | **Usare NumPy per qualche settimana** | Il sistema di ripasso non è mai stato provato da uno studente vero. Tararlo prima di replicarlo su sei rami |
 | 2 | **Ramo E — Python base** | ~~Da fare~~ **fatto**: otto moduli sul motore che c'era gia', nessun software nuovo |
 | 3 | **Motore del terminale simulato** | ~~Da fare~~ **fatto**: `js/vfs.js` e `js/shell.js`, piu' `js/ambienti.js` per python/pip/venv. 59 casi in `tools/test_shell.mjs` |
-| 4 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
+| 4 | **Ramo B — Ambienti** | ~~Da fare~~ **fatto**: cinque moduli, dal PATH a VS Code |
 | 5 | **Ramo C — PowerShell** | ~~Da fare~~ **iniziato**: stesso motore, dizionario di cmdlet e pipeline a oggetti |
 | 6 | **Matplotlib** | Completa NumPy, motore già pronto |
 | 7 | **Ramo D — Linux** | Quando serve: cluster, WSL, server |

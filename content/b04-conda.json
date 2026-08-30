@@ -1,0 +1,587 @@
+{
+ "id": "b04",
+ "titolo": "conda e Anaconda",
+ "perche": "Conda risolve due cose che venv non risolve — la versione di Python e le librerie che non sono Python — e per il resto funziona identico. Il modulo serve soprattutto a sapere quando NON usarlo, e a conoscere il modo tipico in cui un ambiente conda si rompe: conda e pip non si parlano, tengono due registri separati, e chi li alterna finisce con un ambiente che nessuno dei due sa piu' descrivere.",
+ "funzioni": [
+  "conda create",
+  "conda activate",
+  "conda deactivate",
+  "conda install",
+  "conda list",
+  "conda env list",
+  "Miniconda"
+ ],
+ "lezioni": [
+  {
+   "id": "b04-l1",
+   "titolo": "Cosa risolve conda che venv non risolve",
+   "md": "Due cose, e solo due.\n\n**Primo: la versione di Python.**\n\n```\npython -m venv .venv          # usa il python con cui l'hai lanciato\nconda create -n prove python=3.11\n```\n\n`venv` non puo' cambiare versione di Python: crea un ambiente con **quello che gia' hai**. Conda scarica e installa la versione che chiedi. Se un codice richiede la 3.9 e tu hai la 3.13, con `venv` devi prima installare la 3.9 a mano.\n\n**Secondo: i pacchetti che non sono Python.**\n\nMolte librerie scientifiche sono involucri attorno a codice C o Fortran: NumPy, SciPy, e soprattutto le cose che dipendono da librerie di sistema — HDF5, GDAL, i compilatori. `pip` deve trovare un pacchetto precompilato per il tuo sistema o compilarlo sul momento; conda installa anche **le librerie di sistema** dentro l'ambiente.\n\nÈ il motivo per cui conda e' diffuso in ambito scientifico e quasi assente altrove.\n\n### Cosa non risolve\n\nTutto il resto e' uguale: un ambiente e' una cartella, si attiva mettendola in testa al PATH, e `which python` risponde alla stessa domanda. Quello che hai imparato su `venv` vale identico.\n\n### Anaconda contro Miniconda\n\n**Anaconda** e' conda piu' trecento pacchetti preinstallati, qualche giga. **Miniconda** e' conda e basta, poche decine di MB: si installa quello che serve.\n\nMiniconda e' quasi sempre la scelta migliore — con Anaconda ti ritrovi un ambiente `base` pieno di roba che non hai chiesto, e la tentazione di lavorarci dentro invece di crearne uno per progetto.\n\n### L'ambiente base\n\nDopo l'installazione, conda attiva `base` da solo a ogni apertura del terminale. È il motivo per cui il prompt mostra `(base)` — e **non e' l'ambiente in cui lavorare**: e' quello di conda stesso. Un progetto ha il suo."
+  },
+  {
+   "id": "b04-l2",
+   "titolo": "La regola per non rompere un ambiente conda",
+   "md": "```\nconda install numpy      # da conda\npip install numpy        # da pip\n```\n\nFanno la stessa cosa e **non si parlano**. Conda tiene il proprio registro di cosa ha installato; pip tiene il suo. Nessuno dei due sa cosa ha fatto l'altro.\n\n### Cosa succede davvero\n\n```\nconda list\n\n# Name     Version  Channel\nnumpy      2.2.5    conda-forge\nrequests   2.32.3   pypi          <- questo lo ha messo pip\n```\n\n`conda list` **mostra** i pacchetti installati da pip, marcandoli `pypi`. È l'unica cosa che sa dirti: che ci sono. Non sa che dipendenze abbiano portato, e quando calcola cosa installare non ne tiene conto.\n\nIl guasto arriva dopo: conda installa qualcosa che dipende da `numpy`, decide che gli serve una versione diversa, e sovrascrive il numpy di pip. Da quel momento pip crede di avere una versione che non c'e' piu'.\n\n### La regola, in tre righe\n\n1. **Prima conda, poi pip.** Installa con conda tutto quello che conda ha.\n2. **pip solo per quello che manca**, e tutto insieme alla fine.\n3. **Dopo aver usato pip, non tornare a conda** in quell'ambiente. Se serve, si ricrea.\n\n### Perche' ricreare e' facile\n\n```\nconda env export > ambiente.yml\nconda env create -f ambiente.yml\n```\n\nÈ il `requirements.txt` di conda, e registra sia i pacchetti conda sia quelli pip, in due sezioni separate. Con quello, ricreare un ambiente rotto costa un comando.\n\n### E se lavori con pip e basta?\n\nAllora `venv` va benissimo, ed e' piu' leggero. Conda serve quando ti serve conda: una versione di Python che non hai, o una libreria che pip non riesce a installare sul tuo sistema. Usarlo per abitudine, su un progetto di solo Python, aggiunge un livello di complicazione senza contropartita."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "b04-quando",
+   "comando": "conda create",
+   "titolo": "cosa risolve, e quando non serve",
+   "esercizi": [
+    {
+     "id": "b04-qu-1",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Guarda in che ambiente conda ti trova il terminale appena aperto.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "base"
+     },
+     "soluzione": "conda env list",
+     "verifica": {
+      "stampa": "base",
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "Il comando elenca gli ambienti.",
+      "conda env list"
+     ],
+     "spiegazione": "`base`, l'ambiente di conda stesso. Dopo l'installazione conda lo attiva da solo a ogni apertura del terminale — e' il motivo per cui il prompt mostra `(base)`.\n\n**Non e' l'ambiente in cui lavorare.** Un progetto ha il suo."
+    },
+    {
+     "id": "b04-qu-2",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Crea un ambiente `prove` che usi Python **3.11**, non la versione che hai.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "base"
+     },
+     "soluzione": "conda create -n prove python=3.11",
+     "verifica": {
+      "esiste": [
+       "/opt/conda/envs/prove/bin/python"
+      ],
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "conda create -n NOME python=VERSIONE",
+      "conda create -n prove python=3.11"
+     ],
+     "spiegazione": "Questo `venv` non lo sa fare: crea un ambiente con **quello che gia' hai**. Conda scarica e installa la versione che chiedi, ed e' la prima delle due ragioni per cui conda esiste."
+    },
+    {
+     "id": "b04-qu-3",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Attiva l'ambiente `prove` e verifica quale Python risponde e con che versione.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.11",
+       "pacchetti": {},
+       "daPip": []
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "base"
+     },
+     "soluzione": "conda activate prove\nwhich python\npython --version",
+     "verifica": {
+      "stampa": "3.11",
+      "usa": [
+       "conda",
+       "which"
+      ]
+     },
+     "hint": [
+      "conda activate seguito dal nome.",
+      "conda activate prove"
+     ],
+     "spiegazione": "3.11, dentro `/opt/conda/envs/prove/bin`. L'attivazione fa la stessa identica cosa di `venv`: mette la cartella dell'ambiente in testa al PATH. Quello che hai imparato prima vale identico."
+    },
+    {
+     "id": "b04-qu-4",
+     "tipo": "predict",
+     "testo": "Quali due cose fa conda che `venv` non sa fare?",
+     "opzioni": [
+      "installa la versione di Python che chiedi, e librerie non-Python di sistema",
+      "isola meglio l'ambiente dal sistema operativo",
+      "gestisce le dipendenze, mentre venv no",
+      "funziona su Windows, mentre venv no"
+     ],
+     "risposta": "installa la versione di Python che chiedi, e librerie non-Python di sistema",
+     "spiegazione": "Installa la **versione di Python** che chiedi, e installa **librerie che non sono Python** — codice C o Fortran, librerie di sistema come HDF5 o GDAL. È il motivo per cui e' diffuso in ambito scientifico e quasi assente altrove."
+    },
+    {
+     "id": "b04-qu-5",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Un ambiente conda nuovo e' vuoto come uno di venv. Verificalo.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "base"
+     },
+     "soluzione": "conda create -n vuoto\nconda activate vuoto\nconda list",
+     "verifica": {
+      "usa": [
+       "conda"
+      ],
+      "esiste": [
+       "/opt/conda/envs/vuoto/bin/python"
+      ]
+     },
+     "hint": [
+      "Crea, attiva, elenca.",
+      "conda create -n vuoto / conda activate vuoto / conda list"
+     ],
+     "spiegazione": "Vuoto, anche se `base` ha numpy. Vale la stessa regola: un ambiente nuovo eredita la versione di Python, non i pacchetti — ed e' voluto, perche' il senso di un ambiente e' partire da un elenco noto."
+    },
+    {
+     "id": "b04-qu-6",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Installa numpy nell'ambiente attivo con conda, e guarda l'elenco.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {},
+       "daPip": []
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "conda install numpy\nconda list",
+     "verifica": {
+      "stampa": "conda-forge",
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "conda install seguito dal nome.",
+      "conda install numpy"
+     ],
+     "spiegazione": "`conda list` mostra nome, versione e **canale** — da dove viene il pacchetto. Quella terza colonna e' l'informazione che `pip list` non ha, e fra poco si vedra' perche' conta."
+    },
+    {
+     "id": "b04-qu-7",
+     "tipo": "predict",
+     "testo": "Anaconda o Miniconda?",
+     "opzioni": [
+      "Miniconda: conda e basta, e si installa quello che serve",
+      "Anaconda: avere tutto preinstallato fa risparmiare tempo",
+      "sono identiche, cambia solo il nome",
+      "Anaconda per Windows, Miniconda per Linux"
+     ],
+     "risposta": "Miniconda: conda e basta, e si installa quello che serve",
+     "spiegazione": "Miniconda quasi sempre: e' conda e basta, poche decine di MB. Anaconda e' conda piu' trecento pacchetti preinstallati e qualche giga — ti ritrovi un `base` pieno di roba che non hai chiesto, e la tentazione di lavorarci dentro invece di crearne uno per progetto."
+    },
+    {
+     "id": "b04-qu-8",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Torna fuori dall'ambiente e verifica di essere di nuovo in `base`.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {},
+       "daPip": []
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "conda deactivate\nconda env list",
+     "verifica": {
+      "stampa": "base",
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "Il comando e' conda deactivate.",
+      "conda deactivate"
+     ],
+     "spiegazione": "`conda deactivate` toglie l'ambiente dal PATH e ti riporta a `base` — non fuori da conda del tutto. Per uscire anche da `base` serve un secondo `deactivate`, ed e' il motivo per cui a volte servono due comandi per tornare al Python di sistema."
+    }
+   ]
+  },
+  {
+   "id": "b04-mescolare",
+   "comando": "conda e pip",
+   "titolo": "i due registri che non si parlano",
+   "esercizi": [
+    {
+     "id": "b04-mi-1",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "In questo ambiente c'e' un pacchetto messo da conda e uno messo da pip. Guarda l'elenco e nota la differenza.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5",
+        "requests": "2.32.3"
+       },
+       "daPip": [
+        "requests"
+       ]
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "conda list",
+     "verifica": {
+      "stampa": "pypi",
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "Basta elencare.",
+      "conda list"
+     ],
+     "spiegazione": "`numpy` viene da `conda-forge`, `requests` da `pypi`. `conda list` **mostra** i pacchetti installati da pip, marcandoli — ed e' l'unica cosa che sa dirti su di loro: che ci sono."
+    },
+    {
+     "id": "b04-mi-2",
+     "tipo": "predict",
+     "testo": "`conda list` mostra i pacchetti installati da pip. Vuol dire che conda li gestisce?",
+     "opzioni": [
+      "no: li vede soltanto, e non ne considera le dipendenze",
+      "si': conda gestisce tutto quello che elenca",
+      "si', ma solo se sono stati installati dopo conda",
+      "no: quelli di pip non compaiono affatto"
+     ],
+     "risposta": "no: li vede soltanto, e non ne considera le dipendenze",
+     "spiegazione": "No: li **vede** e basta. Conda tiene il proprio registro, pip tiene il suo, e nessuno dei due sa cosa ha fatto l'altro. Quando conda calcola cosa installare, non tiene conto delle dipendenze che pip ha portato."
+    },
+    {
+     "id": "b04-mi-3",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "**Il guasto.** Installa numpy con pip, poi installalo con conda e leggi cosa risponde.",
+     "difficolta": 2,
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {},
+       "daPip": []
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "pip install numpy\nconda list\nconda install numpy\nconda list",
+     "verifica": {
+      "stampa": "ATTENZIONE",
+      "usa": [
+       "pip",
+       "conda"
+      ]
+     },
+     "hint": [
+      "Prima pip install numpy, poi conda install numpy.",
+      "Fra i due, conda list per vedere il canale."
+     ],
+     "spiegazione": "Conda sovrascrive il numpy di pip. Da quel momento pip crede di avere una versione che non c'e' piu': i due registri raccontano storie diverse, e il primo strumento che prova a risolvere delle dipendenze si comporta in modo inspiegabile.\n\nÈ il modo tipico in cui un ambiente conda \"si rompe\", e nessuno dei due strumenti puo' accorgersene da solo."
+    },
+    {
+     "id": "b04-mi-4",
+     "tipo": "predict",
+     "testo": "Qual e' la regola per non rompere un ambiente conda?",
+     "opzioni": [
+      "prima conda, poi pip solo per cio' che manca, e non tornare a conda dopo",
+      "usare sempre e solo pip, che e' piu' aggiornato",
+      "usare sempre e solo conda, che gestisce tutto",
+      "alternarli liberamente: conda risolve i conflitti da solo"
+     ],
+     "risposta": "prima conda, poi pip solo per cio' che manca, e non tornare a conda dopo",
+     "spiegazione": "Prima conda per tutto quello che conda ha, poi pip **solo** per quello che manca e tutto insieme alla fine, e dopo aver usato pip non si torna a conda in quell'ambiente. Se serve tornarci, si ricrea — che con un file di ambiente esportato costa un comando."
+    },
+    {
+     "id": "b04-mi-5",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Fai le cose nell'ordine giusto: prima conda per numpy, poi pip per un pacchetto che conda non ha.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {},
+       "daPip": []
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "conda install numpy\npip install requests\nconda list",
+     "verifica": {
+      "stampa": "pypi",
+      "usa": [
+       "conda",
+       "pip"
+      ]
+     },
+     "hint": [
+      "Prima conda install numpy, poi pip install requests.",
+      "Alla fine conda list per vedere entrambi."
+     ],
+     "spiegazione": "Conda per primo, pip in fondo. In quest'ordine conda ha gia' deciso tutte le sue dipendenze prima che pip tocchi qualcosa, e pip aggiunge senza far spostare niente.\n\nÈ l'ordine, non la scelta degli strumenti, a fare la differenza."
+    },
+    {
+     "id": "b04-mi-6",
+     "tipo": "predict",
+     "testo": "Il tuo progetto usa solo pacchetti che pip installa senza problemi. Conda o venv?",
+     "opzioni": [
+      "venv: piu' leggero, e fa parte di Python",
+      "conda: e' sempre preferibile quando e' installato",
+      "conda, perche' gestisce meglio le dipendenze",
+      "indifferente: fanno esattamente la stessa cosa"
+     ],
+     "risposta": "venv: piu' leggero, e fa parte di Python",
+     "spiegazione": "`venv`: e' piu' leggero e fa parte di Python. Conda serve quando ti serve conda — una versione di Python che non hai, o una libreria che pip non riesce a installare sul tuo sistema. Usarlo per abitudine su un progetto di solo Python aggiunge un livello di complicazione senza contropartita."
+    },
+    {
+     "id": "b04-mi-7",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "Un ambiente rotto si ricrea invece di ripararlo. Creane uno nuovo, attivalo e reinstalla con conda.",
+     "difficolta": 2,
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": "",
+      "/opt/conda/envs/prove/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      },
+      "/opt/conda/envs/prove/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       },
+       "daPip": [
+        "numpy"
+       ]
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/envs/prove/bin:/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "prove"
+     },
+     "soluzione": "conda create -n pulito python=3.12\nconda activate pulito\nconda install numpy\nconda list",
+     "verifica": {
+      "esiste": [
+       "/opt/conda/envs/pulito/bin/python"
+      ],
+      "stampa": "conda-forge",
+      "usa": [
+       "conda"
+      ]
+     },
+     "hint": [
+      "Crea, attiva, installa.",
+      "conda create -n pulito python=3.12 / conda activate pulito / conda install numpy"
+     ],
+     "spiegazione": "Tre comandi. Vale qui quello che valeva per `venv`: davanti a un ambiente che si comporta in modo inspiegabile, ricrearlo e' il percorso piu' breve — e conda ha `conda env export` per non perdere l'elenco."
+    },
+    {
+     "id": "b04-mi-8",
+     "tipo": "terminale",
+     "shell": "conda",
+     "testo": "**Il compito sulla macchina vera.** Se hai Anaconda o Miniconda installato, apri il tuo terminale ed esegui `conda env list` e `conda list` nell'ambiente attivo. Guarda quante righe hanno `pypi` nel canale.\n\nQui sotto scrivi `fatto > conda.txt` per registrarlo.",
+     "filesystem": {
+      "/opt/conda/bin/pip": "",
+      "/usr/bin/pip": ""
+     },
+     "interpreti": {
+      "/opt/conda/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      },
+      "/usr/bin/python": {
+       "versione": "3.9.2",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/opt/conda/bin:/usr/bin:/bin",
+      "CONDA_DEFAULT_ENV": "base"
+     },
+     "soluzione": "echo fatto > conda.txt",
+     "verifica": {
+      "esiste": [
+       "conda.txt"
+      ]
+     },
+     "hint": [
+      "Qui basta registrare che l'hai fatto davvero.",
+      "echo fatto > conda.txt"
+     ],
+     "spiegazione": "Se il tuo `base` ha decine di righe `pypi`, hai un ambiente in cui i due registri si sono gia' mescolati — e conviene crearne uno per progetto invece di continuare a lavorarci.\n\nSe non hai conda installato e non lavori con librerie che ne hanno bisogno, la risposta giusta a questo modulo e' non installarlo: `venv` fa tutto quello che ti serve."
+    }
+   ]
+  }
+ ]
+}

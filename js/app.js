@@ -271,9 +271,11 @@ function montaTerminale(zona, es) {
   // ambienti quando dichiara degli interpreti.
   const comandi = es.shell === "powershell"
     ? PS.comandiPowerShell()
-    : es.interpreti
-      ? A.AMBIENTI
-      : undefined;
+    : es.shell === "conda"
+      ? A.AMBIENTI_CONDA
+      : es.interpreti
+        ? A.AMBIENTI
+        : undefined;
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   const trascrizione = [];

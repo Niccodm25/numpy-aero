@@ -1,0 +1,539 @@
+{
+ "id": "b03",
+ "titolo": "requirements e riproducibilita'",
+ "perche": "Le due righe che separano un progetto che funziona sul tuo computer da uno che funziona anche altrove: pip freeze per fotografare, pip install -r per ricostruire. Piu' la scelta fra bloccare una versione e non bloccarla, che ha risposte opposte per un'analisi e per una libreria — e il file che manca piu' spesso, il .gitignore che tiene fuori la cartella dell'ambiente.",
+ "funzioni": [
+  "pip freeze",
+  "pip install -r",
+  ">=",
+  "==",
+  "~=",
+  ".gitignore"
+ ],
+ "lezioni": [
+  {
+   "id": "b03-l1",
+   "titolo": "Due righe, e il progetto e' ricostruibile",
+   "md": "```\npip freeze > requirements.txt      # fotografa l'ambiente\npip install -r requirements.txt    # lo ricostruisce altrove\n```\n\nSono le due righe che separano un progetto che funziona sul tuo computer da uno che funziona anche altrove — su un altro portatile, su un cluster, sul tuo stesso computer fra sei mesi.\n\n### freeze scrive le versioni\n\n```\nnumpy==2.2.5\nmatplotlib==3.9.2\n```\n\nIl doppio uguale non e' un dettaglio di formato: **e' l'informazione**. Senza, chi ricostruisce l'ambiente prende l'ultima uscita di ogni pacchetto, che fra un anno puo' comportarsi diversamente — e ottiene un guasto che non e' nel tuo codice e che tu non riesci a riprodurre.\n\n### Cosa va nel controllo di versione\n\n```\nrequirements.txt     si'  — poche righe di testo\n.venv/               no   — centinaia di MB, e percorsi del tuo computer\n```\n\nLa cartella dell'ambiente non si conserva: si **ricostruisce** dal file in dieci secondi. Contiene anche percorsi assoluti del tuo disco, che su un'altra macchina non significano niente.\n\nÈ per questo che ogni progetto Python ha un `.gitignore` con dentro `.venv/` — e che dimenticarlo produce un repository da mezzo giga di cui nessuno capisce il motivo.\n\n### freeze fotografa **tutto**\n\nCompreso quello che non hai chiesto tu: le dipendenze delle dipendenze. Installando `matplotlib` arrivano una decina di pacchetti, e `freeze` li elenca tutti allo stesso modo.\n\nÈ voluto — riproducibilita' significa riprodurre **tutto** — ma rende il file illeggibile come dichiarazione d'intenti. Da qui l'abitudine di tenerne due: uno scritto a mano con quello che il progetto usa davvero, e uno generato con `freeze` per bloccare l'esatta combinazione che funziona."
+  },
+  {
+   "id": "b03-l2",
+   "titolo": "Bloccare, o non bloccare",
+   "md": "```\nnumpy==2.2.5      # esattamente questa\nnumpy>=2.0        # questa o piu' recente\nnumpy~=2.2.0      # 2.2.x, ma non 2.3\nnumpy             # qualunque cosa esca\n```\n\nSono quattro promesse diverse, e la scelta dipende da cosa stai scrivendo.\n\n**Per un'analisi che deve dare lo stesso risultato**: `==`. Un cambio di versione puo' cambiare l'ultima cifra di un conto, e su una tesi o una relazione quella cifra e' la differenza fra riprodurre e non riprodurre.\n\n**Per una libreria che userai in altri progetti**: `>=`. Bloccare una versione esatta costringe chiunque la usi a quella versione, e due librerie che bloccano versioni incompatibili non si possono installare insieme.\n\n**`~=` e' il compromesso**: accetta le correzioni, rifiuta i cambiamenti che possono rompere. Presuppone che chi pubblica il pacchetto rispetti la convenzione sui numeri di versione — cosa vera quasi sempre e non sempre.\n\n### Il commento e la riga vuota\n\n```\n# calcolo numerico\nnumpy==2.2.5\n\n# grafici\nmatplotlib==3.9.2\n```\n\n`requirements.txt` accetta commenti con `#` e righe vuote. Sono l'unica documentazione che quel file avra' mai, e costano niente.\n\n### Ricostruire, non riparare\n\nDavanti a un ambiente che si comporta in modo inspiegabile:\n\n```\ndeactivate\nrm -r .venv\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\n```\n\nDieci secondi. Non e' una resa: e' il motivo per cui il file sta sotto controllo di versione e la cartella no. E se il problema sopravvive alla ricostruzione, hai imparato qualcosa di importante — non era l'ambiente."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "b03-freeze",
+   "comando": "pip freeze",
+   "titolo": "fotografare e ricostruire",
+   "esercizi": [
+    {
+     "id": "b03-fr-1",
+     "tipo": "terminale",
+     "testo": "Fotografa l'ambiente attivo in `requirements.txt`, poi guarda cosa ci e' finito.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5",
+        "matplotlib": "3.9.2"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip freeze > requirements.txt\ncat requirements.txt",
+     "verifica": {
+      "esiste": [
+       "requirements.txt"
+      ],
+      "contiene": {
+       "requirements.txt": "numpy==2.2.5"
+      }
+     },
+     "hint": [
+      "pip freeze stampa l'elenco, la redirezione lo salva.",
+      "pip freeze > requirements.txt"
+     ],
+     "spiegazione": "Nomi **e** versioni, una per riga. È la differenza fra un ambiente riproducibile e uno che funziona solo qui: senza il numero, chi lo ricostruisce fra sei mesi prende l'ultima uscita di ogni pacchetto."
+    },
+    {
+     "id": "b03-fr-2",
+     "tipo": "predict",
+     "testo": "Perche' `pip freeze` scrive `numpy==2.2.5` invece del solo `numpy` ?",
+     "opzioni": [
+      "senza la versione l'ambiente non e' riproducibile nel tempo",
+      "e' solo una convenzione di formato di pip",
+      "serve a pip per risolvere le dipendenze",
+      "perche' i nomi da soli non sono validi nel file"
+     ],
+     "risposta": "senza la versione l'ambiente non e' riproducibile nel tempo",
+     "spiegazione": "Perche' senza la versione l'ambiente non e' riproducibile: chi lo ricostruisce prende l'ultima uscita, che puo' comportarsi diversamente. Il risultato e' un guasto che non e' nel tuo codice e che tu non riesci a riprodurre — la peggiore categoria di problema."
+    },
+    {
+     "id": "b03-fr-3",
+     "tipo": "terminale",
+     "testo": "Ricostruisci: sei in un ambiente vuoto appena attivato, e hai il `requirements.txt`. Installa tutto e verifica.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": "",
+      "/home/tu/requirements.txt": "numpy==2.2.5\nmatplotlib==3.9.2\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip install -r requirements.txt\npip list",
+     "verifica": {
+      "stampa": "numpy",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "L'opzione e' -r, come requirements.",
+      "pip install -r requirements.txt"
+     ],
+     "spiegazione": "`pip install -r` legge il file e installa quello che c'e' scritto, alle versioni indicate. Sono le due righe — `freeze` e `install -r` — che rendono un progetto trasportabile, e le sole due che servono davvero."
+    },
+    {
+     "id": "b03-fr-4",
+     "tipo": "terminale",
+     "testo": "Il file accetta commenti e righe vuote. Scrivine uno a mano con due sezioni commentate, poi installalo.",
+     "difficolta": 2,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "echo # calcolo numerico > requirements.txt\necho numpy==2.2.5 >> requirements.txt\necho >> requirements.txt\necho # grafici >> requirements.txt\necho matplotlib==3.9.2 >> requirements.txt\npip install -r requirements.txt\npip list",
+     "verifica": {
+      "esiste": [
+       "requirements.txt"
+      ],
+      "contiene": {
+       "requirements.txt": "# calcolo numerico"
+      },
+      "stampa": "matplotlib"
+     },
+     "hint": [
+      "Si costruisce con echo e le redirezioni, > per la prima riga e >> per le altre.",
+      "echo # calcolo numerico > requirements.txt"
+     ],
+     "spiegazione": "`#` per i commenti, righe vuote per separare. Sono l'unica documentazione che quel file avra' mai, e costano niente: fra un anno spiegano perche' un pacchetto e' li'."
+    },
+    {
+     "id": "b03-fr-5",
+     "tipo": "predict",
+     "testo": "Cosa va messo nel controllo di versione: `requirements.txt`, la cartella `.venv`, o entrambi?",
+     "opzioni": [
+      "solo requirements.txt: la cartella si ricostruisce dal file",
+      "entrambi, per essere sicuri che l'ambiente sia identico",
+      "solo la cartella .venv, che contiene tutto",
+      "nessuno dei due: si reinstalla a mano"
+     ],
+     "risposta": "solo requirements.txt: la cartella si ricostruisce dal file",
+     "spiegazione": "Solo `requirements.txt`. La cartella pesa centinaia di megabyte, si ricostruisce dal file in dieci secondi, e contiene percorsi assoluti del tuo disco che altrove non significano niente. Ogni progetto Python ha un `.gitignore` con dentro `.venv/`, e dimenticarlo produce un repository da mezzo giga."
+    },
+    {
+     "id": "b03-fr-6",
+     "tipo": "terminale",
+     "testo": "Scrivi il `.gitignore` che tiene fuori la cartella dell'ambiente, e verificalo.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "echo .venv/ > .gitignore\ncat .gitignore",
+     "verifica": {
+      "esiste": [
+       ".gitignore"
+      ],
+      "contiene": {
+       ".gitignore": ".venv/"
+      }
+     },
+     "hint": [
+      "Basta il nome della cartella con la barra finale.",
+      "echo .venv/ > .gitignore"
+     ],
+     "spiegazione": "Una riga. È il file che manca piu' spesso nei progetti alle prime armi, e il sintomo e' un repository enorme che nessuno riesce a scaricare — con dentro percorsi assoluti del computer di chi lo ha creato."
+    },
+    {
+     "id": "b03-fr-7",
+     "tipo": "terminale",
+     "testo": "`freeze` fotografa **tutto**, comprese le dipendenze delle dipendenze. Guardalo: qui matplotlib ne ha portate altre tre.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5",
+        "matplotlib": "3.9.2",
+        "cycler": "0.12.1",
+        "pyparsing": "3.1.4",
+        "kiwisolver": "1.4.7"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip freeze",
+     "verifica": {
+      "stampa": "cycler",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "Basta pip freeze.",
+      "pip freeze"
+     ],
+     "spiegazione": "Sei righe per due pacchetti chiesti. È voluto — riproducibilita' significa riprodurre tutto — ma rende il file illeggibile come dichiarazione d'intenti.\n\nDa qui l'abitudine di tenerne **due**: uno scritto a mano con quello che il progetto usa davvero, e uno generato con `freeze` per bloccare l'esatta combinazione che funziona."
+    },
+    {
+     "id": "b03-fr-8",
+     "tipo": "terminale",
+     "testo": "Verifica che il giro completo funzioni: fotografa questo ambiente, esci, creane uno nuovo, attivalo e ricostruiscilo.",
+     "difficolta": 3,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "2.2.5"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip freeze > requirements.txt\ndeactivate\npython -m venv nuovo\nsource nuovo/bin/activate\npip install -r requirements.txt\npip list",
+     "verifica": {
+      "esiste": [
+       "requirements.txt",
+       "nuovo/bin/python"
+      ],
+      "stampa": "numpy",
+      "usa": [
+       "pip",
+       "deactivate",
+       "source"
+      ]
+     },
+     "hint": [
+      "freeze, deactivate, python -m venv nuovo, source nuovo/bin/activate, install -r.",
+      "L'ultimo comando e' pip list, per controllare."
+     ],
+     "spiegazione": "Sei comandi, e alla fine il secondo ambiente contiene esattamente quello che c'era nel primo. È il collaudo che vale la pena fare **una volta** su un progetto vero: se il file non basta a ricostruire l'ambiente, e' meglio scoprirlo adesso che il giorno della consegna."
+    }
+   ]
+  },
+  {
+   "id": "b03-vincoli",
+   "comando": "== e >=",
+   "titolo": "bloccare, o non bloccare",
+   "esercizi": [
+    {
+     "id": "b03-vb-1",
+     "tipo": "predict",
+     "testo": "`numpy==2.2.5` e `numpy>=2.0` sono due promesse diverse. Quale si usa per un'analisi che deve dare lo stesso risultato?",
+     "opzioni": [
+      "==, la versione esatta",
+      ">=, cosi' si prendono anche le correzioni",
+      "nessuna delle due: si lascia il nome nudo",
+      "dipende dal sistema operativo"
+     ],
+     "risposta": "==, la versione esatta",
+     "spiegazione": "`==`, la versione esatta. Un cambio di versione puo' cambiare l'ultima cifra di un conto, e su una tesi o una relazione quella cifra e' la differenza fra riprodurre e non riprodurre."
+    },
+    {
+     "id": "b03-vb-2",
+     "tipo": "predict",
+     "testo": "E per una libreria che altri installeranno insieme ad altre cose?",
+     "opzioni": [
+      ">=, per non costringere chi la installa a una versione precisa",
+      "==, per garantire il funzionamento",
+      "~=, sempre e comunque",
+      "nessun vincolo: si scrive solo il nome"
+     ],
+     "risposta": ">=, per non costringere chi la installa a una versione precisa",
+     "spiegazione": "`>=`. Bloccare una versione esatta costringe chiunque la usi a quella versione, e due librerie che ne bloccano di incompatibili non si possono installare insieme. È il motivo per cui una libreria pubblica quasi mai usa `==`."
+    },
+    {
+     "id": "b03-vb-3",
+     "tipo": "terminale",
+     "testo": "Installa una versione **precisa**: numpy 1.26.4, non l'ultima.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip install numpy==1.26.4\npython -c import numpy; print(numpy.__version__)",
+     "verifica": {
+      "stampa": "1.26.4",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "La versione si indica col doppio uguale.",
+      "pip install numpy==1.26.4"
+     ],
+     "spiegazione": "Il doppio uguale chiede quella e nessun'altra. Serve quando un codice che devi far girare e' stato scritto per una versione precisa — capita spesso con il codice di una tesi di qualcun altro."
+    },
+    {
+     "id": "b03-vb-4",
+     "tipo": "terminale",
+     "testo": "Blocca l'ambiente cosi' com'e' e controlla che il file riporti proprio quella versione, non l'ultima.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.26.4"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip freeze > requirements.txt\ncat requirements.txt",
+     "verifica": {
+      "contiene": {
+       "requirements.txt": "numpy==1.26.4"
+      }
+     },
+     "hint": [
+      "pip freeze e la redirezione.",
+      "pip freeze > requirements.txt"
+     ],
+     "spiegazione": "`freeze` scrive quello che c'e', non quello che ci sarebbe potuto essere. È la sua unica funzione, ed e' anche il motivo per cui va rigenerato ogni volta che l'ambiente cambia — un `requirements.txt` vecchio e' peggio di nessuno, perche' sembra affidabile."
+    },
+    {
+     "id": "b03-vb-5",
+     "tipo": "predict",
+     "testo": "Cosa significa `numpy~=2.2.0` ?",
+     "opzioni": [
+      "accetta le correzioni 2.2.x ma non la 2.3",
+      "accetta qualunque versione 2.x",
+      "accetta solo la 2.2.0 esatta",
+      "e' un errore di sintassi"
+     ],
+     "risposta": "accetta le correzioni 2.2.x ma non la 2.3",
+     "spiegazione": "Accetta `2.2.x` — le correzioni — ma non `2.3`. È il compromesso fra bloccare e non bloccare, e presuppone che chi pubblica il pacchetto rispetti la convenzione sui numeri di versione: vero quasi sempre, non sempre."
+    },
+    {
+     "id": "b03-vb-6",
+     "tipo": "terminale",
+     "testo": "Un `requirements.txt` senza versioni: installalo e guarda cosa ti ritrovi.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": "",
+      "/home/tu/requirements.txt": "numpy\nmatplotlib\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "pip install -r requirements.txt\npip freeze",
+     "verifica": {
+      "stampa": "numpy==",
+      "usa": [
+       "pip"
+      ]
+     },
+     "hint": [
+      "Installa e poi guarda le versioni con freeze.",
+      "pip install -r requirements.txt e poi pip freeze"
+     ],
+     "spiegazione": "L'ultima versione di tutto. Oggi funziona; fra un anno, sullo stesso file, prendi qualcos'altro. Un file senza versioni non e' una fotografia dell'ambiente, e' una lista della spesa."
+    },
+    {
+     "id": "b03-vb-7",
+     "tipo": "terminale",
+     "testo": "**Ricostruire invece di riparare.** Questo ambiente si comporta in modo inspiegabile. Cancellalo e rifallo dal `requirements.txt`.",
+     "difficolta": 3,
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": "",
+      "/home/tu/requirements.txt": "numpy==2.2.5\n"
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {
+        "numpy": "1.0.0"
+       }
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "deactivate\nrm -r .venv\npython -m venv .venv\nsource .venv/bin/activate\npip install -r requirements.txt\npip list",
+     "verifica": {
+      "esiste": [
+       ".venv/bin/python"
+      ],
+      "stampa": "numpy",
+      "usa": [
+       "rm",
+       "pip",
+       "deactivate"
+      ]
+     },
+     "hint": [
+      "Esci, cancella, ricrea, riattiva, reinstalla.",
+      "deactivate / rm -r .venv / python -m venv .venv / source .venv/bin/activate / pip install -r requirements.txt"
+     ],
+     "spiegazione": "Cinque comandi, dieci secondi. Non e' una resa: e' esattamente il motivo per cui il file sta sotto controllo di versione e la cartella no.\n\nE se il problema sopravvive alla ricostruzione, hai imparato qualcosa di importante — non era l'ambiente, ed e' inutile continuare a cercare li'."
+    },
+    {
+     "id": "b03-vb-8",
+     "tipo": "terminale",
+     "testo": "**Il compito sulla macchina vera.** Su un tuo progetto vero, esegui `pip freeze` e guarda quante righe escono, e quante di quelle avevi chiesto tu.\n\nQui sotto scrivi `fatto > freeze.txt` per registrarlo.",
+     "filesystem": {
+      "/usr/bin/pip": "",
+      "/home/tu/.venv/bin/pip": "",
+      "/home/tu/.venv/bin/activate": ""
+     },
+     "interpreti": {
+      "/usr/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      },
+      "/home/tu/.venv/bin/python": {
+       "versione": "3.12.0",
+       "pacchetti": {}
+      }
+     },
+     "env": {
+      "PATH": "/home/tu/.venv/bin:/usr/bin:/bin",
+      "VIRTUAL_ENV": "/home/tu/.venv"
+     },
+     "soluzione": "echo fatto > freeze.txt",
+     "verifica": {
+      "esiste": [
+       "freeze.txt"
+      ]
+     },
+     "hint": [
+      "Qui basta registrare che l'hai fatto davvero.",
+      "echo fatto > freeze.txt"
+     ],
+     "spiegazione": "Su un progetto con matplotlib e pandas, `freeze` produce trenta o quaranta righe: tu ne avevi chieste due. Tutto il resto sono dipendenze di dipendenze.\n\nÈ il momento in cui si capisce perche' conviene tenere due file: uno che dichiara **cosa vuoi**, e uno generato che blocca **cosa serve perche' funzioni**."
+    }
+   ]
+  }
+ ]
+}
