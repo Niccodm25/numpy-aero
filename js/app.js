@@ -12,6 +12,7 @@ import * as SI from "./sistema.js";
 import * as U from "./utenti.js";
 import * as TX from "./testo.js";
 import * as N from "./rete.js";
+import * as RM from "./remoto.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 
@@ -317,12 +318,15 @@ function montaTerminale(zona, es) {
     comandi = { ...(comandi ?? SH.POSIX), ...TX.TESTO };
   if (es.rete)
     comandi = { ...(comandi ?? SH.POSIX), ...N.RETE };
+  if (es.remoto)
+    comandi = { ...(comandi ?? SH.POSIX), ...RM.REMOTO };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
   if (es.sistema) SI.statoSistema(sh, es.sistema === true ? undefined : es.sistema);
   if (es.utenti) U.statoUtenti(sh, es.utenti === true ? undefined : es.utenti);
   if (es.rete) N.statoRete(sh, es.rete === true ? undefined : es.rete);
+  if (es.remoto) RM.statoRemoto(sh, es.remoto === true ? undefined : es.remoto);
   const trascrizione = [];
 
   zona.innerHTML = `

@@ -404,9 +404,9 @@
     },
     {
       "id": "l12",
-      "file": "",
+      "file": "l12-remoto.json",
       "titolo": "La macchina remota",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l13",

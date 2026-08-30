@@ -17,6 +17,7 @@ import { SISTEMA, statoSistema } from "../js/sistema.js";
 import { UTENTI, statoUtenti } from "../js/utenti.js";
 import { TESTO } from "../js/testo.js";
 import { RETE, statoRete } from "../js/rete.js";
+import { REMOTO, statoRemoto } from "../js/remoto.js";
 
 let fatti = 0;
 const casi = [];
@@ -554,6 +555,14 @@ caso("rete: DNS, ping, porte e route descrivono lo stesso scenario", () => {
   assert.match(esegui(sh, "ip route").out, /192\.168\.1\.1/);
 });
 
+caso("scp e rsync spostano dati fra filesystem locale e remoto", () => {
+  const sh = creaShell({ "/home/tu/nota.txt": "ciao\n" }, { comandi: { ...POSIX, ...REMOTO } }); statoRemoto(sh);
+  esegui(sh, "scp anna@cluster:risultati/quota.csv quota.csv");
+  assert.match(V.leggi(sh.fs, "quota.csv"), /1000/);
+  esegui(sh, "rsync -av nota.txt anna@cluster:nota.txt");
+  assert.equal(V.leggi(sh.remoto.fs, "nota.txt"), "ciao\n");
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -1023,12 +1032,15 @@ for (const meta of indice.moduli) {
           comandi = { ...(comandi ?? POSIX), ...TESTO };
         if (es.rete)
           comandi = { ...(comandi ?? POSIX), ...RETE };
+        if (es.remoto)
+          comandi = { ...(comandi ?? POSIX), ...REMOTO };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
         if (es.sistema) statoSistema(sh, es.sistema === true ? undefined : es.sistema);
         if (es.utenti) statoUtenti(sh, es.utenti === true ? undefined : es.utenti);
         if (es.rete) statoRete(sh, es.rete === true ? undefined : es.rete);
+        if (es.remoto) statoRemoto(sh, es.remoto === true ? undefined : es.remoto);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(
