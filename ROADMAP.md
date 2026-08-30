@@ -148,8 +148,9 @@ Simulato, filesystem virtuale in stile Windows.
 Stesso motore, dizionario POSIX. Serve appena toccherai un cluster di calcolo, un
 Raspberry, un server, o WSL.
 
-1. **Filesystem e navigazione** — `ls`, `cd`, `pwd`, percorsi assoluti e relativi, `~`
-2. **File** — `cp`, `mv`, `rm`, `mkdir`, `cat`, `less`
+1. **Muoversi e maneggiare file** — `pwd`, `ls`, `cd`, percorsi, `mkdir`, `touch`,
+   `cat`, redirezione, `cp`, `mv`, `rm`. **fatto** — stesso motore del ramo B,
+   zero righe di codice nuove
 3. **Pipe e redirezione** — `|`, `>`, `>>`, `grep`, `wc`, `sort`, `head`, `tail`
 4. **Ricerca** — `find`, `grep -r`, i glob
 5. **Permessi** — `chmod`, `chown`, e perché `sudo` non è la risposta a tutto

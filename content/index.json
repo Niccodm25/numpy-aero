@@ -79,11 +79,11 @@
       "id": "linux",
       "titolo": "Linux",
       "perche": "Appena tocchi un cluster, un Raspberry, un server o WSL.",
-      "disponibile": false,
-      "moduli": [],
+      "disponibile": true,
+      "moduli": [
+        "l01"
+      ],
       "prossimi": [
-        "Filesystem e navigazione",
-        "File e directory",
         "Pipe e redirezione",
         "Ricerca: find, grep, glob",
         "Permessi e sudo",
@@ -169,6 +169,12 @@
       "id": "b02",
       "file": "b02-conflitti.json",
       "titolo": "Conflitti e diagnostica",
+      "disponibile": true
+    },
+    {
+      "id": "l01",
+      "file": "l01-navigazione.json",
+      "titolo": "Muoversi e maneggiare file",
       "disponibile": true
     },
     {
