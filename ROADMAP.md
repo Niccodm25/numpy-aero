@@ -151,8 +151,8 @@ Raspberry, un server, o WSL.
 1. **Muoversi e maneggiare file** — `pwd`, `ls`, `cd`, percorsi, `mkdir`, `touch`,
    `cat`, redirezione, `cp`, `mv`, `rm`. **fatto** — stesso motore del ramo B,
    zero righe di codice nuove
-3. **Pipe e redirezione** — `|`, `>`, `>>`, `grep`, `wc`, `sort`, `head`, `tail`
-4. **Ricerca** — `find`, `grep -r`, i glob
+2. **Cercare, filtrare, comporre** — `grep`, `find`, `wc`, `head`, `tail`, `sort`,
+   `uniq`, la pipe e la redirezione. **fatto**
 5. **Permessi** — `chmod`, `chown`, e perché `sudo` non è la risposta a tutto
 6. **Processi** — `ps`, `kill`, background, `nohup`, `top`
 7. **Bash scripting** — variabili, condizioni, cicli, argomenti
@@ -251,11 +251,12 @@ Modifiche contenute, perché i contenuti sono già separati dal motore.
 
 ## 7. Decisioni ancora aperte
 
-- ~~**Quanto in profondità simulare?**~~ **Deciso.** Filesystem, venti comandi POSIX,
+- ~~**Quanto in profondità simulare?**~~ **Deciso.** Filesystem, ventidue comandi POSIX
+  con pipe e redirezione,
   e per gli ambienti un solo modello: un interprete e' un percorso con dentro dei
   pacchetti, e il PATH decide quale risponde. Niente permessi, niente processi,
-  niente rete, niente pipe — e il terminale lo dice quando incontra qualcosa che
-  non supporta, invece di far finta.
+  niente rete, niente glob nei comandi — e il terminale lo dice quando incontra
+  qualcosa che non supporta, invece di far finta.
 - **Come si correggono gli esercizi di terminale.** Non con codice ma con un blocco
   dichiarativo (`cwd`, `esiste`, `contenuto`, `usa`, `stampa`, `errore`) che descrive
   lo stato finale atteso. Sta nel JSON accanto al testo, non c'e' niente da eseguire,

@@ -142,10 +142,42 @@ caso("la redirezione scrive e quella doppia aggiunge", () => {
   assert.equal(esegui(sh, "cat note.txt").out, "prima\nseconda");
 });
 
-caso("cio' che non e' supportato lo dice, invece di rompere", () => {
+caso("un comando sconosciuto lo dice, invece di rompere", () => {
   const sh = shell();
-  assert.match(esegui(sh, "ls -l | grep x").errore, /non supporta la pipe/);
   assert.match(esegui(sh, "sudo rm -rf /").errore, /comando non trovato/);
+  assert.match(esegui(sh, "ls | ").errore, /attorno alla pipe/);
+});
+
+caso("la pipe passa l uscita di un comando al successivo", () => {
+  const sh = shell({ "/home/tu/log.txt": "alfa\nbeta\nalfa2\n" });
+  assert.equal(esegui(sh, "cat log.txt | grep alfa").out, "alfa\nalfa2");
+  assert.equal(esegui(sh, "cat log.txt | grep alfa | wc -l").out, "2");
+});
+
+caso("la pipe si combina con la redirezione", () => {
+  const sh = shell({ "/home/tu/log.txt": "alfa\nbeta\n" });
+  esegui(sh, "cat log.txt | grep alfa > trovate.txt");
+  assert.equal(V.leggi(sh.fs, "/home/tu/trovate.txt"), "alfa\n");
+});
+
+caso("sort ordina, e -n cambia il risultato", () => {
+  const sh = shell({ "/home/tu/n.txt": "10\n9\n100\n" });
+  assert.equal(esegui(sh, "sort n.txt").out, "10\n100\n9", "come stringhe");
+  assert.equal(esegui(sh, "sort -n n.txt").out, "9\n10\n100", "come numeri");
+  assert.equal(esegui(sh, "sort -n -r n.txt").out, "100\n10\n9");
+});
+
+caso("uniq toglie solo i duplicati adiacenti", () => {
+  const sh = shell({ "/home/tu/c.txt": "a\nb\na\n" });
+  assert.equal(esegui(sh, "uniq c.txt").out, "a\nb\na", "senza sort non trova il terzo");
+  assert.equal(esegui(sh, "sort c.txt | uniq").out, "a\nb");
+  assert.equal(esegui(sh, "sort c.txt | uniq -c").out, "2 a\n1 b");
+});
+
+caso("wc senza file non stampa il nome del file", () => {
+  const sh = shell({ "/home/tu/log.txt": "a\nb\n" });
+  assert.equal(esegui(sh, "wc -l log.txt").out, "2 log.txt");
+  assert.equal(esegui(sh, "cat log.txt | wc -l").out, "2");
 });
 
 caso("rm -f tace sui file che non ci sono", () => {

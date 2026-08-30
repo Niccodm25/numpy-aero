@@ -20,9 +20,11 @@ export function creaShell(iniziale = {}, opzioni = {}) {
 
 /**
  * Divide una riga in parole rispettando le virgolette, e riconosce le
- * redirezioni > e >>. Non e' una shell vera: niente pipe, niente variabili,
- * niente glob. Coprono il 90% di quello che serve insegnare, e ognuna di quelle
- * tre aggiungerebbe piu' codice di tutto il resto messo insieme.
+ * redirezioni > e >>. La riga arriva qui gia' spezzata sulle pipe.
+ *
+ * Non e' una shell vera: niente variabili nei comandi, niente glob, niente
+ * sostituzione di comando. Sono le tre cose che aggiungerebbero piu' codice di
+ * tutto il resto messo insieme, e nessuna delle tre serve a insegnare le altre.
  */
 export function dividi(riga) {
   const parole = [];
@@ -68,31 +70,60 @@ export function esegui(sh, riga) {
   if (!testo || testo.startsWith("#")) return { out: "", errore: null };
   sh.storia.push(testo);
 
-  // La pipe non e' supportata. Dirlo apertamente e' meglio che passarla come
-  // argomento al comando: cosi' l'errore parla della shell e non di un file
-  // chiamato "|" che non esiste.
-  if (testo.includes("|"))
-    return { out: "", errore: "questo terminale non supporta la pipe |" };
+  // La pipe si risolve qui: ogni pezzo riceve come ingresso l'uscita del
+  // precedente. I comandi non ne sanno niente — leggono da sh.stdin quando non
+  // ricevono un nome di file, ed e' l'unica cosa che devono sapere.
+  const pezzi = spezzaSuPipe(testo);
+  let ingresso = null;
+  let ultimo = { out: "", errore: null };
 
-  const { parole, redirezione } = dividi(testo);
-  const nome = parole[0];
-  const fn = sh.comandi[nome];
-  if (!fn) return { out: "", errore: `${nome}: comando non trovato` };
+  for (let i = 0; i < pezzi.length; i++) {
+    const { parole, redirezione } = dividi(pezzi[i]);
+    const nome = parole[0];
+    if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };
+    const fn = sh.comandi[nome];
+    if (!fn) return { out: "", errore: `${nome}: comando non trovato` };
 
-  try {
-    const out = fn(sh, parole.slice(1)) ?? "";
-    if (redirezione) {
-      if (!redirezione.file) return { out: "", errore: "manca il nome del file dopo >" };
-      const testoOut = out.endsWith("\n") || out === "" ? out : out + "\n";
-      if (redirezione.modo === ">") V.scrivi(sh.fs, redirezione.file, testoOut);
-      else V.aggiungi(sh.fs, redirezione.file, testoOut);
-      return { out: "", errore: null };
+    sh.stdin = ingresso;
+    try {
+      const out = fn(sh, parole.slice(1)) ?? "";
+      if (redirezione) {
+        if (!redirezione.file) return { out: "", errore: "manca il nome del file dopo >" };
+        const testoOut = out.endsWith("\n") || out === "" ? out : out + "\n";
+        if (redirezione.modo === ">") V.scrivi(sh.fs, redirezione.file, testoOut);
+        else V.aggiungi(sh.fs, redirezione.file, testoOut);
+        ultimo = { out: "", errore: null };
+      } else {
+        ultimo = { out, errore: null };
+      }
+      ingresso = out;
+    } catch (e) {
+      if (e instanceof V.ErroreFs) return { out: "", errore: `${nome}: ${e.message}` };
+      throw e;
+    } finally {
+      sh.stdin = null;
     }
-    return { out, errore: null };
-  } catch (e) {
-    if (e instanceof V.ErroreFs) return { out: "", errore: `${nome}: ${e.message}` };
-    throw e;
   }
+  return ultimo;
+}
+
+/** Spezza sulle pipe di primo livello, lasciando stare quelle fra virgolette. */
+function spezzaSuPipe(riga) {
+  const pezzi = [];
+  let corrente = "";
+  let virgoletta = null;
+  for (const c of riga) {
+    if (virgoletta) {
+      if (c === virgoletta) virgoletta = null;
+      corrente += c;
+      continue;
+    }
+    if (c === '"' || c === "'") { virgoletta = c; corrente += c; continue; }
+    if (c === "|") { pezzi.push(corrente); corrente = ""; continue; }
+    corrente += c;
+  }
+  pezzi.push(corrente);
+  return pezzi.map((p) => p.trim());
 }
 
 /** Esegue piu' righe in sequenza e restituisce la trascrizione. */
@@ -116,6 +147,17 @@ function opzioni(args) {
 }
 
 const righeDi = (testo) => (testo === "" ? [] : testo.replace(/\n$/, "").split("\n"));
+
+/**
+ * Il contenuto su cui lavorare: il file se e' stato nominato, altrimenti quello
+ * che arriva dalla pipe. E' la sola cosa che un comando deve sapere delle pipe.
+ */
+function ingresso(sh, file) {
+  if (file !== undefined) return V.leggi(sh.fs, file);
+  if (sh.stdin === null || sh.stdin === undefined)
+    throw new V.ErroreFs("manca il nome del file");
+  return sh.stdin;
+}
 
 export const POSIX = {
   pwd: (sh) => sh.fs.cwd,
@@ -202,29 +244,65 @@ export const POSIX = {
     const { resto } = opzioni(args);
     const n = args.includes("-n") ? Number(args[args.indexOf("-n") + 1]) : 10;
     const file = resto.filter((a) => !/^\d+$/.test(a)).at(-1);
-    return righeDi(V.leggi(sh.fs, file)).slice(0, n).join("\n");
+    return righeDi(ingresso(sh, file)).slice(0, n).join("\n");
   },
 
   tail(sh, args) {
     const { resto } = opzioni(args);
     const n = args.includes("-n") ? Number(args[args.indexOf("-n") + 1]) : 10;
     const file = resto.filter((a) => !/^\d+$/.test(a)).at(-1);
-    return righeDi(V.leggi(sh.fs, file)).slice(-n).join("\n");
+    return righeDi(ingresso(sh, file)).slice(-n).join("\n");
   },
 
   wc(sh, args) {
     const { flag, resto } = opzioni(args);
-    const righe = righeDi(V.leggi(sh.fs, resto[0]));
-    if (flag.has("l")) return `${righe.length} ${resto[0]}`;
+    const testo = ingresso(sh, resto[0]);
+    const righe = righeDi(testo);
+    // Il nome del file compare in fondo solo se glielo hai dato: leggendo dalla
+    // pipe, wc non sa da dove venga il testo, ed e' cosi' anche in una shell vera.
+    const etichetta = resto[0] ? " " + resto[0] : "";
+    if (flag.has("l")) return `${righe.length}${etichetta}`;
     const parole = righe.join(" ").split(/\s+/).filter(Boolean).length;
-    const caratteri = V.leggi(sh.fs, resto[0]).length;
-    return `${righe.length} ${parole} ${caratteri} ${resto[0]}`;
+    return `${righe.length} ${parole} ${testo.length}${etichetta}`;
+  },
+
+  sort(sh, args) {
+    const { flag, resto } = opzioni(args);
+    let righe = righeDi(ingresso(sh, resto[0])).slice();
+    // -n ordina per valore numerico: senza, "10" viene prima di "9" perche' il
+    // confronto e' fra stringhe. E' l'errore piu' comune con sort, e non segnala
+    // niente perche' un ordinamento sbagliato e' pur sempre un ordinamento.
+    righe = flag.has("n") ? righe.sort((a, b) => parseFloat(a) - parseFloat(b)) : righe.sort();
+    if (flag.has("r")) righe.reverse();
+    return righe.join("\n");
+  },
+
+  uniq(sh, args) {
+    const { flag, resto } = opzioni(args);
+    const out = [];
+    for (const r of righeDi(ingresso(sh, resto[0]))) {
+      const ultimo = out[out.length - 1];
+      // uniq confronta solo righe ADIACENTI: su dati non ordinati non toglie i
+      // duplicati lontani, ed e' il motivo per cui si scrive sempre dopo sort.
+      if (ultimo && ultimo.riga === r) ultimo.n++;
+      else out.push({ riga: r, n: 1 });
+    }
+    return out.map((o) => (flag.has("c") ? `${o.n} ${o.riga}` : o.riga)).join("\n");
   },
 
   grep(sh, args) {
     const { flag, resto } = opzioni(args);
     const [motivo, ...file] = resto;
-    if (!motivo || !file.length) throw new V.ErroreFs("servono un motivo e un file");
+    if (!motivo) throw new V.ErroreFs("serve un motivo da cercare");
+    if (!file.length) {
+      const soloTesto = flag.has("i") ? motivo.toLowerCase() : motivo;
+      return righeDi(ingresso(sh, undefined))
+        .filter((r) => {
+          const c = flag.has("i") ? r.toLowerCase() : r;
+          return c.includes(soloTesto) !== flag.has("v");
+        })
+        .join("\n");
+    }
     const cerca = flag.has("i") ? motivo.toLowerCase() : motivo;
     const out = [];
     for (const f of file) {
@@ -303,8 +381,12 @@ export function verifica(sh, attesa, trascrizione = []) {
   // "usa" guarda i comandi digitati, non lo stato: serve quando l'esercizio
   // insegna proprio quel comando e raggiungere il risultato in altro modo
   // significherebbe non aver fatto l'esercizio.
-  for (const c of attesa.usa || [])
-    if (!sh.storia.some((r) => dividi(r).parole[0] === c)) p(`non hai usato ${c}`);
+  // Una riga con le pipe contiene piu' comandi: vanno guardati tutti, altrimenti
+  // "cat x | grep y" risulterebbe non aver usato grep.
+  const usati = new Set(
+    sh.storia.flatMap((r) => spezzaSuPipe(r).map((pezzo) => dividi(pezzo).parole[0]))
+  );
+  for (const c of attesa.usa || []) if (!usati.has(c)) p(`non hai usato ${c}`);
 
   if (attesa.stampa !== undefined) {
     const uscite = trascrizione.map((t) => t.out).filter(Boolean).join("\n");

@@ -81,11 +81,10 @@
       "perche": "Appena tocchi un cluster, un Raspberry, un server o WSL.",
       "disponibile": true,
       "moduli": [
-        "l01"
+        "l01",
+        "l02"
       ],
       "prossimi": [
-        "Pipe e redirezione",
-        "Ricerca: find, grep, glob",
         "Permessi e sudo",
         "Processi",
         "Bash scripting",
@@ -175,6 +174,12 @@
       "id": "l01",
       "file": "l01-navigazione.json",
       "titolo": "Muoversi e maneggiare file",
+      "disponibile": true
+    },
+    {
+      "id": "l02",
+      "file": "l02-cercare.json",
+      "titolo": "Cercare, filtrare, comporre",
       "disponibile": true
     },
     {
