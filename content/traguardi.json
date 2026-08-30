@@ -1,0 +1,239 @@
+{
+  "titolo": "Traguardi",
+  "sottotitolo": "Cosa sei in grado di fare, man mano che i moduli si chiudono. Serve a decidere dove fermarti: non tutti devono arrivare in fondo.",
+  "traguardi": [
+    {
+      "id": "t-leggere",
+      "titolo": "Leggere il codice degli altri",
+      "livello": "Utente",
+      "sottotitolo": "Capire uno script che trovi in un repository o in un articolo, invece di eseguirlo e sperare.",
+      "richiede": [
+        "p01",
+        "p02",
+        "p03",
+        "p04",
+        "p05",
+        "p06"
+      ],
+      "puoi": [
+        "seguire uno script di analisi riga per riga e dire cosa fa",
+        "leggere un messaggio di errore fino in fondo e capire quale riga lo ha causato",
+        "modificare un parametro o un percorso senza rompere il resto",
+        "riconoscere quando un risultato strano viene dai tipi e non dalla fisica"
+      ],
+      "md": "È il primo gradino, e il più sottovalutato: la maggior parte del codice che userai in tesi non l'hai scritto tu.\n\nQui non stai ancora scrivendo strumenti — stai smettendo di trattare uno script come una scatola nera.\n\n**Fermarti qui ha senso se** ti serve solo far girare quello che ti passano, e l'analisi vera la fai altrove.",
+      "etichetta": "Leggere codice"
+    },
+    {
+      "id": "t-ambiente",
+      "titolo": "Far girare il codice di chiunque",
+      "livello": "Utente",
+      "sottotitolo": "Le istruzioni di installazione di un pacchetto scientifico smettono di essere una lotteria.",
+      "richiede": [
+        "b01",
+        "b02",
+        "b03",
+        "b04",
+        "b05"
+      ],
+      "puoi": [
+        "creare un ambiente isolato per ogni progetto, e sapere perché serve",
+        "leggere un requirements.txt e ricostruire l'ambiente di un collega",
+        "capire un ModuleNotFoundError su un pacchetto che 'avevi installato'",
+        "decidere fra pip e conda con un criterio invece che per abitudine"
+      ],
+      "md": "Il novanta per cento dei blocchi che sembrano problemi di programmazione sono problemi di ambiente: il PATH, l'interprete sbagliato, un pacchetto installato altrove.\n\nÈ il traguardo che fa risparmiare più ore in assoluto, e costa cinque moduli.",
+      "etichetta": "Ambienti"
+    },
+    {
+      "id": "t-campagna",
+      "titolo": "Ridurre una campagna di misure",
+      "livello": "Autonomo",
+      "sottotitolo": "Dai file grezzi del banco o del volo ai numeri che finiscono nella relazione.",
+      "richiede": [
+        "m01",
+        "m02",
+        "m03",
+        "m04",
+        "m05",
+        "m06",
+        "m09",
+        "m11",
+        "c03"
+      ],
+      "puoi": [
+        "leggere migliaia di righe di acquisizione e ripulirle dai valori sentinella",
+        "calcolare medie, deviazioni, percentili e inviluppi su matrici di dati",
+        "riconoscere quando un risultato è rumore numerico e non un fenomeno",
+        "rifare la stessa riduzione su una campagna nuova in un minuto"
+      ],
+      "md": "È il lavoro che si fa davvero in un laboratorio di prove: i dati arrivano sporchi, con letture perse e unità miste, e la parte difficile non è la matematica.\n\n**Manca ancora**, per una relazione completa: i grafici. Matplotlib non è nel percorso — è il primo modulo del ramo *Librerie* che andrà aggiunto.",
+      "etichetta": "Campagna dati"
+    },
+    {
+      "id": "t-traiettoria",
+      "titolo": "Simulare una traiettoria",
+      "livello": "Autonomo",
+      "sottotitolo": "Lancio, rientro, stabilità: il modello lo scrivi tu, non lo compili in un foglio.",
+      "richiede": [
+        "m07",
+        "m08",
+        "m10",
+        "c01",
+        "c02"
+      ],
+      "puoi": [
+        "integrare un moto a più gradi di libertà passo per passo",
+        "gestire matrici, autovalori e modi di un velivolo linearizzato",
+        "fare una campagna Monte Carlo su dispersioni di lancio",
+        "verificare da solo se un risultato è credibile, con controlli di coerenza"
+      ],
+      "md": "Qui la macchina smette di essere una calcolatrice e diventa un banco di prova numerico: cambi una condizione iniziale e vedi cosa succede a mille traiettorie.\n\nÈ il punto in cui un esame di meccanica del volo diventa qualcosa che puoi *guardare*.",
+      "etichetta": "Traiettorie"
+    },
+    {
+      "id": "t-strumento",
+      "titolo": "Scrivere uno strumento riutilizzabile",
+      "livello": "Autonomo",
+      "sottotitolo": "Non più uno script per una volta sola: qualcosa che usi anche il mese prossimo, e che può usare un altro.",
+      "richiede": [
+        "p05",
+        "p07",
+        "p08",
+        "l05"
+      ],
+      "puoi": [
+        "organizzare il codice in funzioni e moduli invece che in un blocco unico",
+        "leggere e scrivere file di dati e di configurazione",
+        "prendere parametri dalla riga di comando invece di modificare il sorgente",
+        "scrivere uno script bash che incatena i pezzi e si ferma quando qualcosa fallisce"
+      ],
+      "md": "La differenza fra un'analisi e uno strumento è che il secondo funziona su dati che ancora non esistono.\n\n**Manca ancora**: il versionamento. Senza git, uno strumento vive in una cartella che nessun altro vede — è la lacuna più urgente di tutto il percorso.",
+      "etichetta": "Strumenti"
+    },
+    {
+      "id": "t-banco",
+      "titolo": "Lavorare su un banco prova o un Raspberry",
+      "livello": "Tecnico",
+      "sottotitolo": "La macchina che acquisisce i dati non ha desktop: c'è un terminale, e sei tu.",
+      "richiede": [
+        "l01",
+        "l02",
+        "l03",
+        "l04",
+        "l06",
+        "c04"
+      ],
+      "puoi": [
+        "muoverti in un sistema Linux senza interfaccia grafica",
+        "trovare in un log di acquisizione l'errore che conta, fra migliaia di righe",
+        "capire perché un programma non parte: permessi, proprietario, o eseguibile mancante",
+        "vedere cosa sta girando, ucciderlo, e lanciare un processo che sopravvive alla disconnessione",
+        "far convivere Windows e Linux sulla stessa macchina con WSL"
+      ],
+      "md": "Il computer di un banco prova, di un drone o di un CubeSat è una macchina Linux senza schermo. Da qui in poi puoi metterci le mani.\n\n**Fermarti qui ha senso se** vuoi essere autonomo sul tuo hardware ma non amministrare macchine di altri: è già più di quello che sa fare la maggior parte dei laureati in ingegneria.",
+      "etichetta": "Banco prova"
+    },
+    {
+      "id": "t-remoto",
+      "titolo": "Usare un cluster di calcolo",
+      "livello": "Tecnico",
+      "sottotitolo": "La simulazione che sul portatile impiega due settimane, altrove impiega una notte.",
+      "richiede": [
+        "l05",
+        "l10",
+        "l12",
+        "l13"
+      ],
+      "puoi": [
+        "collegarti a una macchina remota con le chiavi, senza password",
+        "portare i dati di là e riprendere i risultati di qua",
+        "lanciare un calcolo lungo che non muore quando chiudi il portatile",
+        "capire dallo stato dei log se il job è morto per il codice o per la macchina"
+      ],
+      "md": "Ogni cluster universitario e ogni nodo cloud si tocca così: `ssh`, una coda di job, e file che vanno avanti e indietro.\n\nÈ il traguardo che sblocca la parte pesante di una tesi di simulazione, e per te vale più di tutto quello che viene dopo.\n\n**Manca ancora**: il gestore di code (SLURM) — un modulo dedicato, che sta sopra questo.",
+      "etichetta": "Cluster"
+    },
+    {
+      "id": "t-servizio",
+      "titolo": "Far girare qualcosa 24 ore su 24",
+      "livello": "Tecnico",
+      "sottotitolo": "Un programma che deve stare in piedi da solo, riavviarsi dopo un blackout e lasciare tracce leggibili.",
+      "richiede": [
+        "l13",
+        "l14",
+        "l15"
+      ],
+      "puoi": [
+        "trasformare uno script in un servizio che parte all'accensione",
+        "leggere i log di sistema e distinguere un guasto hardware da un errore tuo",
+        "programmare un lavoro periodico — acquisizione, backup, pulizia",
+        "capire perché una macchina è lenta: CPU, memoria, disco o attesa"
+      ],
+      "md": "È il passaggio da \"lancio un programma\" a \"gestisco un sistema che lavora anche quando dormo\".\n\nServe per qualunque acquisizione continua: una stazione meteo, un banco che campiona per giorni, un ricevitore che ascolta passaggi satellitari.",
+      "etichetta": "Servizi 24/7"
+    },
+    {
+      "id": "t-groundstation",
+      "titolo": "Montare una ground station per CubeSat",
+      "livello": "Specialista",
+      "sottotitolo": "Il segmento di terra completo: ricezione, decodifica, archivio, elaborazione, e tutto sopravvive a un riavvio.",
+      "richiede": [
+        "l11",
+        "l12",
+        "l13",
+        "l16",
+        "l17",
+        "p08",
+        "m09"
+      ],
+      "puoi": [
+        "configurare la rete di una macchina che deve stare raggiungibile",
+        "far girare la catena di ricezione come servizi che si riavviano da soli",
+        "archiviare la telemetria su uno storage che non si riempie di sorpresa",
+        "impacchettare la pipeline di elaborazione in un container, così gira uguale ovunque",
+        "accedere alla stazione da fuori senza aprire la porta a chiunque"
+      ],
+      "md": "È il progetto più ambizioso che questo percorso rende possibile, ed esiste davvero in decine di università: una stazione che riceve, decodifica e archivia i passaggi di un satellite, 24 ore su 24, senza che nessuno la guardi.\n\nOgni pezzo del ramo Linux serve qui dentro: rete, servizi, dischi, container, accesso remoto.\n\n**Fermarti qui vuol dire** essere la persona che nel gruppo tiene in piedi l'infrastruttura — un ruolo che nei progetti studenteschi manca quasi sempre.",
+      "etichetta": "Ground station"
+    },
+    {
+      "id": "t-riproducibile",
+      "titolo": "Rendere un'analisi riproducibile",
+      "livello": "Specialista",
+      "sottotitolo": "Chiunque, fra due anni, riottiene i tuoi numeri con un comando.",
+      "richiede": [
+        "b03",
+        "l17",
+        "c07"
+      ],
+      "puoi": [
+        "descrivere l'ambiente di calcolo in un file, invece che in un README",
+        "impacchettare codice, dipendenze e versioni in un'immagine che gira uguale ovunque",
+        "far girare la stessa immagine sul portatile e sul cluster (Apptainer)",
+        "consegnare a un revisore qualcosa che non richiede la tua macchina"
+      ],
+      "md": "La riproducibilità è il requisito che distingue un risultato scientifico da uno screenshot. È anche quello che rende una tesi utile a chi viene dopo di te, invece di finire in un cassetto.\n\nÈ la versione seria del problema che il ramo *Ambienti e pacchetti* affronta con `venv` e `conda`.",
+      "etichetta": "Riproducibile"
+    },
+    {
+      "id": "t-sicurezza",
+      "titolo": "Sicurezza dei sistemi aerospaziali",
+      "livello": "Specialista",
+      "sottotitolo": "Indurire quello che vola, quello che riceve, e quello che ci parla.",
+      "richiede": [
+        "l11",
+        "l12",
+        "l18"
+      ],
+      "puoi": [
+        "chiudere una macchina esposta invece di sperare che nessuno la trovi",
+        "capire cosa protegge davvero un firewall, e cosa no",
+        "ragionare su privilegi minimi: chi può fare cosa, e perché",
+        "leggere un incidente nei log invece di riformattare e ricominciare"
+      ],
+      "md": "Questo traguardo copre il **lato difensivo** — indurire sistemi tuoi o che ti sono affidati. È il pavimento di qualunque percorso di sicurezza, non la stanza intera.\n\n**Manca ancora**, e non è poco: reti a fondo, crittografia applicata, sicurezza applicativa, analisi binaria. E soprattutto pratica su bersagli legali — CTF, macchine tue, laboratori autorizzati.\n\nLa nicchia dove la laurea in aerospaziale vale doppio: certificazione di sicurezza per l'aeronavigabilità (DO-326A), bus embedded (CAN, ARINC 429, MIL-STD-1553), link satellitari, spoofing GNSS. Lì un informatico deve imparare il volo; tu no.",
+      "etichetta": "Sicurezza"
+    }
+  ]
+}

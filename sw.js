@@ -28,7 +28,9 @@ const PRECACHE = [
   "js/html.js",
   "js/frasi.js",
   "js/processi.js",
+  "js/traguardi.js",
   "content/index.json",
+  "content/traguardi.json",
 ];
 
 self.addEventListener("install", (e) => {

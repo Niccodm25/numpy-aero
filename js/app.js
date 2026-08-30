@@ -9,6 +9,7 @@ import * as PS from "./powershell.js";
 import * as H from "./html.js";
 import * as PR from "./processi.js";
 import { fraseSbagliato } from "./frasi.js";
+import * as T from "./traguardi.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -181,6 +182,7 @@ async function home() {
     </div>`;
 
   mostraSw();
+  T.montaTendine(indice, stati, modulo);
   app.querySelector("#exp").onclick = () => S.esporta(dati);
   app.querySelector("#imp").onclick = () => app.querySelector("#file").click();
   app.querySelector("#file").onchange = (ev) => {
@@ -218,10 +220,13 @@ async function vistaRamo(id) {
       ? `<h2>In arrivo</h2>
          ${r.prossimi.map((t) => `<div class="card muto">${t}</div>`).join("")}`
       : ""}`;
+
+  T.montaTendine(indice, stati, modulo, r.moduli);
 }
 
 async function vistaModulo(id) {
   modoRipasso = false;
+  T.togliTendine();
   const m = await modulo(id);
   const lez = m.lezioni
     .map((l, i) => `<a class="card" href="#/l/${id}/${l.id}"><strong>${i + 1}. ${l.titolo}</strong></a>`)

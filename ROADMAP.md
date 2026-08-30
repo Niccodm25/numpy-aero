@@ -446,3 +446,54 @@ filesystem finto e' fattibile, ma e' l'ultimo pezzo e il meno urgente.
 - **Corrispondenza con le certificazioni**, per chi volesse un riscontro
   esterno: stadio 1 e 2 coprono in larga parte LFCS; stadi 1-3 insieme sono
   l'area di RHCSA, con l18 e l19 che sconfinano in RHCE.
+
+
+---
+
+## 9. Cosa manca per un percorso davvero completo  ← **tutto in arrivo**
+
+Il piano del ramo Linux (§8) chiude quel ramo. Questi sono i buchi che restano
+**fuori** da Linux, e che oggi impediscono di dire "il percorso e' completo".
+In ordine di urgenza, non di difficolta'.
+
+1. **git** — *il buco piu' grave dell'intero percorso.* Senza versionamento uno
+   strumento vive in una cartella che nessuno vede, non c'e' modo di tornare
+   indietro da una modifica sbagliata, e collaborare significa scambiarsi file
+   per email. Va fatto come **ramo suo**, non come modulo: `commit`, branch,
+   merge e conflitti, remote, e cosa NON si mette in un repository (i dati
+   grezzi di una campagna). Simulabile bene: e' un grafo e un filesystem, che
+   sono cose che il motore gia' sa rappresentare.
+2. **matplotlib** — nel ramo *Librerie Python* si calcola e non si disegna. Una
+   relazione senza grafici non esiste, ed e' la prima cosa che chiede un
+   relatore. Difficolta' vera: verificare un grafico non e' verificare un
+   numero — si controlla la struttura della figura (assi, serie, etichette),
+   non i pixel.
+3. **pandas** — NumPy regge le matrici, non le tabelle con nomi di colonna e
+   dati misti. Un CSV di campagna con testo, numeri e buchi e' pandas, non
+   NumPy. Va dopo NumPy e prima di qualunque cosa seria sui dati.
+4. **Espressioni regolari** — trasversali: servono in `grep`, in `sed`, in
+   Python, negli editor. Oggi compaiono di sfuggita e non sono mai spiegate.
+   Modulo corto, resa altissima.
+5. **SciPy** — integrazione, ottimizzazione, interpolazione, FFT, statistica.
+   È il pezzo che trasforma NumPy in uno strumento di ingegneria: `solve_ivp`
+   al posto di un Eulero scritto a mano, `curve_fit` per una taratura, la FFT
+   per un'analisi di vibrazioni.
+6. **SLURM e le code** — sta sopra il traguardo *cluster*: `sbatch`, `squeue`,
+   uno script di sottomissione, quanta memoria chiedere e cosa succede se
+   sbagli. Senza, `ssh` da solo apre la porta ma non fa entrare.
+7. **Jupyter** — dove l'analisi esplorativa si fa davvero, e dove si prendono le
+   peggiori abitudini (celle eseguite fuori ordine, stato invisibile). Un
+   modulo che insegna a usarlo *e* a sapere quando abbandonarlo per uno script.
+8. **Test e verifica del proprio codice** — `assert`, casi limite, `pytest` di
+   base. Per un ingegnere e' la domanda "come faccio a sapere che il risultato
+   e' giusto", che e' il mestiere.
+9. **Compilare codice altrui** — `gcc`, `make`, un `configure` che fallisce, le
+   librerie di sviluppo mancanti. Serve la prima volta che un solutore CFD non
+   arriva come pacchetto ma come sorgente.
+10. **Reti, a fondo** — TCP/IP, DNS, TLS. Il modulo l11 del piano Linux ne
+    insegna l'uso pratico; capirle davvero e' un'altra cosa, ed e' il
+    prerequisito serio per qualunque percorso di sicurezza.
+
+Fuori piano per scelta, con la ragione: **C e assembly** (un altro mestiere,
+non un modulo), **sviluppo web** (irrilevante qui), **machine learning** (senza
+pandas, SciPy e statistica prima sarebbe una scatola nera addestrata a caso).

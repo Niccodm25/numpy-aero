@@ -211,3 +211,72 @@ button.minuscolo {
 .esito.ko .frase {
   color: var(--tx); font-size: .92rem; margin-top: .35rem;
 }
+
+/* ---------- traguardi: linguette sul bordo e popup ---------- */
+
+#tendine {
+  position: fixed;
+  right: 0;
+  top: 12vh;
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  z-index: 30;
+  max-height: 76vh;
+  overflow: hidden;
+}
+.tendina {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding: .7rem .25rem;
+  margin: 0;
+  font-size: .74rem;
+  line-height: 1;
+  border: 1px solid var(--bordo);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  background: var(--card);
+  color: var(--tx2);
+  cursor: pointer;
+  flex: 0 0 auto;
+  max-height: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tendina:hover { color: var(--tx); border-color: var(--acc); }
+.tendina.ok { border-color: var(--ok); color: var(--ok); }
+.tendina.warn { border-color: var(--acc); color: var(--acc); }
+.tendina.tutte { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+
+dialog#pop-traguardi {
+  border: 1px solid var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--bg);
+  color: var(--tx);
+  padding: 1rem;
+  max-width: 34rem;
+  width: calc(100% - 2rem);
+  max-height: 82vh;
+}
+dialog#pop-traguardi::backdrop { background: rgba(0, 0, 0, .45); }
+.pop-corpo { max-height: 66vh; overflow-y: auto; }
+.pop-corpo h2 { margin-top: .4rem; }
+.pop-corpo ul { padding-left: 1.1rem; }
+.pop-corpo .lista-moduli { list-style: none; padding-left: 0; }
+.pop-corpo .lista-moduli li { padding: .25rem 0; border-bottom: 1px solid var(--bordo); font-size: .9rem; }
+button.card.traguardo {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  margin: .5rem 0;
+}
+
+/* Su un telefono dodici linguette coprirebbero il testo: resta solo quella
+   che apre l'elenco. */
+@media (max-width: 860px) {
+  .tendina[data-id] { display: none; }
+  #tendine { top: auto; bottom: 18vh; }
+}
