@@ -81,10 +81,10 @@
       "disponibile": true,
       "moduli": [
         "l01",
-        "l02"
+        "l02",
+        "l03"
       ],
       "prossimi": [
-        "Permessi e sudo",
         "Processi",
         "Bash scripting",
         "WSL"
@@ -196,6 +196,12 @@
       "id": "l02",
       "file": "l02-cercare.json",
       "titolo": "Cercare, filtrare, comporre",
+      "disponibile": true
+    },
+    {
+      "id": "l03",
+      "file": "l03-permessi.json",
+      "titolo": "Permessi e sudo",
       "disponibile": true
     },
     {

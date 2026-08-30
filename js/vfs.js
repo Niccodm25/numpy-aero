@@ -6,15 +6,35 @@
 // ricomincerebbe a scendere di nodo in nodo. L'unico prezzo e' che elencare una
 // cartella scorre tutte le chiavi, che su un filesystem didattico non si nota.
 
+// Permessi di default, come su un sistema vero: i file si leggono e si scrivono
+// dal proprietario, le directory si attraversano anche dagli altri.
+export const MODO_FILE = 0o644;
+export const MODO_DIR = 0o755;
+export const UTENTE = "tu";
+
 export function crea(iniziale = {}) {
-  const nodi = new Map([["/", { tipo: "dir" }]]);
-  const fs = { nodi, cwd: "/" };
+  const nodi = new Map([["/", { tipo: "dir", modo: MODO_DIR, proprietario: "root" }]]);
+  // L'utente corrente sta nel filesystem e non nella shell: cosi' ogni funzione
+  // che controlla un permesso lo trova senza doverselo far passare, e sudo deve
+  // cambiare una cosa sola.
+  const fs = { nodi, cwd: "/", utente: UTENTE };
   // Lo stato iniziale crea da se' le cartelle mancanti: descriverlo dovendo
   // elencare ogni genitore renderebbe illeggibile il setup di ogni esercizio.
   for (const [percorso, contenuto] of Object.entries(iniziale)) {
-    if (contenuto === null) creaDir(fs, percorso, true);
-    else {
-      creaDir(fs, genitore(normalizza(fs, percorso)), true);
+    if (contenuto === null) {
+      creaDir(fs, percorso, true);
+      continue;
+    }
+    creaDir(fs, genitore(normalizza(fs, percorso)), true);
+    // Un file si descrive con il solo contenuto, oppure con un oggetto quando
+    // servono permessi o proprietario diversi dai default — senza questo, un
+    // esercizio sui permessi non potrebbe partire da un file che non e' tuo.
+    if (typeof contenuto === "object") {
+      scrivi(fs, percorso, contenuto.contenuto ?? "");
+      const n = fs.nodi.get(normalizza(fs, percorso));
+      if (contenuto.modo !== undefined) n.modo = contenuto.modo;
+      if (contenuto.proprietario !== undefined) n.proprietario = contenuto.proprietario;
+    } else {
       scrivi(fs, percorso, contenuto);
     }
   }
@@ -51,10 +71,11 @@ export const tipo = (fs, p) => fs.nodi.get(normalizza(fs, p))?.tipo ?? null;
 export const eDir = (fs, p) => tipo(fs, p) === "dir";
 export const eFile = (fs, p) => tipo(fs, p) === "file";
 
-export function leggi(fs, p) {
+export function leggi(fs, p, utente = fs.utente ?? UTENTE) {
   const n = fs.nodi.get(normalizza(fs, p));
   if (!n) throw new ErroreFs(`${p}: file o directory non esistente`);
   if (n.tipo === "dir") throw new ErroreFs(`${p}: e' una directory`);
+  if (!puoi(fs, p, "r", utente)) throw new ErroreFs(`${p}: permesso negato`);
   return n.contenuto;
 }
 
@@ -62,8 +83,39 @@ export function scrivi(fs, p, contenuto) {
   const abs = normalizza(fs, p);
   const dir = genitore(abs);
   if (!fs.nodi.has(dir)) throw new ErroreFs(`${dir}: directory non esistente`);
-  if (fs.nodi.get(abs)?.tipo === "dir") throw new ErroreFs(`${p}: e' una directory`);
-  fs.nodi.set(abs, { tipo: "file", contenuto: String(contenuto) });
+  const vecchio = fs.nodi.get(abs);
+  if (vecchio?.tipo === "dir") throw new ErroreFs(`${p}: e' una directory`);
+  if (vecchio && !puoi(fs, abs, "w")) throw new ErroreFs(`${p}: permesso negato`);
+  fs.nodi.set(abs, {
+    tipo: "file",
+    contenuto: String(contenuto),
+    // Riscrivere un file non ne cambia i permessi: e' quello che succede davvero,
+    // ed e' il motivo per cui un file reso eseguibile resta tale.
+    modo: vecchio?.modo ?? MODO_FILE,
+    proprietario: vecchio?.proprietario ?? fs.utente ?? UTENTE,
+  });
+}
+
+/**
+ * Il permesso richiesto e' concesso? Si guarda la terna del proprietario se il
+ * file e' tuo, altrimenti quella degli altri. Niente gruppi: sarebbero una terza
+ * terna e nessuna domanda in piu' a cui rispondere.
+ */
+export function puoi(fs, percorso, quale, utente = fs.utente ?? UTENTE) {
+  const n = fs.nodi.get(normalizza(fs, percorso));
+  if (!n) return false;
+  if (utente === "root") return true; // root passa sempre, ed e' tutto il senso di sudo
+  const modo = n.modo ?? (n.tipo === "dir" ? MODO_DIR : MODO_FILE);
+  const terna = (n.proprietario ?? UTENTE) === utente ? (modo >> 6) & 7 : modo & 7;
+  const bit = { r: 4, w: 2, x: 1 }[quale];
+  return (terna & bit) !== 0;
+}
+
+/** I permessi in forma leggibile: rwxr-xr-x */
+export function permessiTesto(n) {
+  const modo = n.modo ?? (n.tipo === "dir" ? MODO_DIR : MODO_FILE);
+  const terna = (t) => (t & 4 ? "r" : "-") + (t & 2 ? "w" : "-") + (t & 1 ? "x" : "-");
+  return terna((modo >> 6) & 7) + terna((modo >> 3) & 7) + terna(modo & 7);
 }
 
 export function aggiungi(fs, p, contenuto) {
@@ -85,7 +137,7 @@ export function creaDir(fs, p, ricorsivo = false) {
     if (!ricorsivo) throw new ErroreFs(`${dir}: directory non esistente`);
     creaDir(fs, dir, true);
   }
-  fs.nodi.set(abs, { tipo: "dir" });
+  fs.nodi.set(abs, { tipo: "dir", modo: MODO_DIR, proprietario: fs.utente ?? UTENTE });
 }
 
 /** I figli diretti di una cartella, ordinati. Solo i nomi, non i percorsi. */

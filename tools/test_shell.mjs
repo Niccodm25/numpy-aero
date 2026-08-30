@@ -146,9 +146,89 @@ caso("la redirezione scrive e quella doppia aggiunge", () => {
 
 caso("un comando sconosciuto lo dice, invece di rompere", () => {
   const sh = shell();
-  assert.match(esegui(sh, "sudo rm -rf /").errore, /comando non trovato/);
+  assert.match(esegui(sh, "aptitude install x").errore, /comando non trovato/);
   assert.match(esegui(sh, "ls | ").errore, /attorno alla pipe/);
 });
+
+// ---------- permessi ----------
+
+caso("ls -l mostra permessi e proprietario veri", () => {
+  const sh = shell({ "/home/tu/a.txt": "ciao", "/home/tu/dati": null });
+  const out = esegui(sh, "ls -l").out;
+  assert.match(out, /-rw-r--r--\s+tu\s+4\s+a\.txt/);
+  assert.match(out, /drwxr-xr-x\s+tu/);
+});
+
+caso("chmod numerico cambia i permessi", () => {
+  const sh = shell({ "/home/tu/a.sh": "echo ciao" });
+  esegui(sh, "chmod 755 a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-rwxr-xr-x/);
+  esegui(sh, "chmod 600 a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-rw-------/);
+});
+
+caso("chmod simbolico aggiunge e toglie un bit solo", () => {
+  const sh = shell({ "/home/tu/a.sh": "echo ciao" });
+  esegui(sh, "chmod +x a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-rwxr-xr-x/, "+x da' a tutti");
+  esegui(sh, "chmod go-x a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-rwxr--r--/);
+  esegui(sh, "chmod u-w a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-r-xr--r--/);
+});
+
+caso("senza permesso di lettura, cat fallisce", () => {
+  const sh = shell({ "/home/tu/segreto.txt": "x" });
+  assert.equal(esegui(sh, "cat segreto.txt").errore, null);
+  esegui(sh, "chmod 000 segreto.txt");
+  assert.match(esegui(sh, "cat segreto.txt").errore, /permesso negato/);
+});
+
+caso("senza permesso di scrittura, la redirezione fallisce", () => {
+  const sh = shell({ "/home/tu/log.txt": "x\n" });
+  esegui(sh, "chmod 444 log.txt");
+  assert.match(esegui(sh, "echo nuovo > log.txt").errore, /permesso negato/);
+  assert.equal(V.leggi(sh.fs, "/home/tu/log.txt"), "x\n", "il contenuto non e' cambiato");
+});
+
+caso("un file di root non si legge ne' si modifica, ma con sudo si'", () => {
+  const sh = shell({ "/etc/conf": "chiave=1\n" });
+  sh.fs.nodi.get("/etc/conf").proprietario = "root";
+  sh.fs.nodi.get("/etc/conf").modo = 0o600;
+  assert.match(esegui(sh, "cat /etc/conf").errore, /permesso negato/);
+  assert.equal(esegui(sh, "sudo cat /etc/conf").out, "chiave=1");
+});
+
+caso("chmod su un file altrui serve sudo", () => {
+  const sh = shell({ "/etc/conf": "x" });
+  sh.fs.nodi.get("/etc/conf").proprietario = "root";
+  assert.match(esegui(sh, "chmod 777 /etc/conf").errore, /non permessa/);
+  assert.equal(esegui(sh, "sudo chmod 777 /etc/conf").errore, null);
+});
+
+caso("chown richiede sempre root, anche sui tuoi file", () => {
+  const sh = shell({ "/home/tu/a.txt": "x" });
+  assert.match(esegui(sh, "chown altro a.txt").errore, /serve sudo/);
+  assert.equal(esegui(sh, "sudo chown altro a.txt").errore, null);
+  assert.match(esegui(sh, "ls -l").out, /altro/);
+});
+
+caso("sudo vale per una riga sola", () => {
+  const sh = shell({ "/etc/conf": "x" });
+  sh.fs.nodi.get("/etc/conf").proprietario = "root";
+  sh.fs.nodi.get("/etc/conf").modo = 0o600;
+  esegui(sh, "sudo cat /etc/conf");
+  assert.equal(esegui(sh, "whoami").out, "tu", "dopo sudo si torna se stessi");
+  assert.match(esegui(sh, "cat /etc/conf").errore, /permesso negato/);
+});
+
+caso("riscrivere un file non ne azzera i permessi", () => {
+  const sh = shell({ "/home/tu/a.sh": "uno" });
+  esegui(sh, "chmod 755 a.sh");
+  esegui(sh, "echo due > a.sh");
+  assert.match(esegui(sh, "ls -l").out, /-rwxr-xr-x/, "resta eseguibile");
+});
+
 
 caso("la pipe passa l uscita di un comando al successivo", () => {
   const sh = shell({ "/home/tu/log.txt": "alfa\nbeta\nalfa2\n" });

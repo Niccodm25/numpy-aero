@@ -213,9 +213,10 @@ export const POSIX = {
         return nomi
           .map((n) => {
             const p = base + (base === "/" ? "" : "/") + n;
-            const dir = V.eDir(sh.fs, p);
-            const dim = dir ? 0 : V.leggi(sh.fs, p).length;
-            return `${dir ? "d" : "-"}rw-r--r--  ${String(dim).padStart(6)}  ${n}`;
+            const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, p));
+            const dir = nodo.tipo === "dir";
+            const dim = dir ? 0 : nodo.contenuto.length;
+            return `${dir ? "d" : "-"}${V.permessiTesto(nodo)}  ${(nodo.proprietario ?? "tu").padEnd(5)}  ${String(dim).padStart(6)}  ${n}`;
           })
           .join("\n");
       }
@@ -361,6 +362,58 @@ export const POSIX = {
 
   env: (sh) => Object.entries(sh.env).map(([k, v]) => `${k}=${v}`).join("\n"),
 
+  whoami: (sh) => sh.fs.utente ?? "tu",
+
+  /**
+   * chmod accetta la forma numerica (755) e quella simbolica (+x, u+w, go-r).
+   * Solo il proprietario puo' cambiare i permessi — o root, ed e' il motivo per
+   * cui su un file di sistema serve sudo.
+   */
+  chmod(sh, args) {
+    const { resto } = opzioni(args);
+    const [spec, ...file] = resto;
+    if (!spec || !file.length) throw new V.ErroreFs("servono i permessi e un file");
+    for (const f of file) {
+      const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, f));
+      if (!nodo) throw new V.ErroreFs(`${f}: file o directory non esistente`);
+      const io = sh.fs.utente ?? "tu";
+      if (io !== "root" && (nodo.proprietario ?? "tu") !== io)
+        throw new V.ErroreFs(`${f}: operazione non permessa`);
+      nodo.modo = nuovoModo(nodo.modo ?? (nodo.tipo === "dir" ? V.MODO_DIR : V.MODO_FILE), spec);
+    }
+    return "";
+  },
+
+  chown(sh, args) {
+    const { resto } = opzioni(args);
+    const [proprietario, ...file] = resto;
+    if (!proprietario || !file.length) throw new V.ErroreFs("servono un utente e un file");
+    // Cambiare proprietario richiede sempre root: se bastasse essere proprietari,
+    // si potrebbe regalare un file per sfuggire a una quota disco.
+    if ((sh.fs.utente ?? "tu") !== "root")
+      throw new V.ErroreFs("operazione non permessa: serve sudo");
+    for (const f of file) {
+      const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, f));
+      if (!nodo) throw new V.ErroreFs(`${f}: file o directory non esistente`);
+      nodo.proprietario = proprietario;
+    }
+    return "";
+  },
+
+  /** sudo esegue il resto della riga come root, e solo quella riga. */
+  sudo(sh, args) {
+    if (!args.length) throw new V.ErroreFs("manca il comando da eseguire");
+    const fn = sh.comandi[args[0]];
+    if (!fn) throw new V.ErroreFs(`${args[0]}: comando non trovato`);
+    const prima = sh.fs.utente ?? "tu";
+    sh.fs.utente = "root";
+    try {
+      return fn(sh, args.slice(1));
+    } finally {
+      sh.fs.utente = prima;
+    }
+  },
+
   which(sh, args) {
     const { flag, resto } = opzioni(args);
     const nome = resto[0];
@@ -377,6 +430,24 @@ export const POSIX = {
 };
 
 const fuggi = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Da un modo esistente e una specifica (755, +x, u+w, go-r) al modo nuovo. */
+function nuovoModo(modo, spec) {
+  if (/^[0-7]{3}$/.test(spec)) return parseInt(spec, 8);
+  const m = spec.match(/^([ugoa]*)([+-=])([rwx]+)$/);
+  if (!m) throw new V.ErroreFs(`permessi non validi: ${spec}`);
+  const [, chi, segno, quali] = m;
+  const bersagli = (chi === "" || chi.includes("a") ? "ugo" : chi).split("");
+  const bit = quali.split("").reduce((a, c) => a | { r: 4, w: 2, x: 1 }[c], 0);
+  let out = modo;
+  for (const b of bersagli) {
+    const scorri = { u: 6, g: 3, o: 0 }[b];
+    if (segno === "+") out |= bit << scorri;
+    else if (segno === "-") out &= ~(bit << scorri);
+    else out = (out & ~(7 << scorri)) | (bit << scorri);
+  }
+  return out;
+}
 
 // ---------- verifica degli esercizi ----------
 
@@ -414,8 +485,15 @@ export function verifica(sh, attesa, trascrizione = []) {
   // significherebbe non aver fatto l'esercizio.
   // Una riga con le pipe contiene piu' comandi: vanno guardati tutti, altrimenti
   // "cat x | grep y" risulterebbe non aver usato grep.
+  // Con sudo il comando vero e' la parola dopo, non "sudo": senza questa riga
+  // "sudo chown ..." risulterebbe non aver usato chown.
   const usati = new Set(
-    sh.storia.flatMap((r) => spezzaSuPipe(r).map((pezzo) => dividi(pezzo).parole[0]))
+    sh.storia.flatMap((r) =>
+      spezzaSuPipe(r).flatMap((pezzo) => {
+        const parole = dividi(pezzo).parole;
+        return parole[0] === "sudo" ? [parole[0], parole[1]] : [parole[0]];
+      })
+    )
   );
   for (const c of attesa.usa || []) if (!usati.has(c)) p(`non hai usato ${c}`);
 
