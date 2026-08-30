@@ -466,9 +466,9 @@
     },
     {
       "id": "c07",
-      "file": "",
       "titolo": "Cantiere — La pipeline riproducibile",
-      "disponibile": false,
+      "file": "c07-pipeline.json",
+      "disponibile": true,
       "cantiere": true
     },
     {
