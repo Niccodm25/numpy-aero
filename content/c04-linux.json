@@ -1,0 +1,185 @@
+{
+  "id": "c04",
+  "cantiere": true,
+  "titolo": "Cantiere Linux - La campagna che nessuno ha ordinato",
+  "perche": "Il primo problema aperto in terminale: una campagna di prova da mettere in ordine, dal conteggio dei file allo script che rifa' il lavoro da solo. Nessun comando suggerito, nessuna riga da indovinare - la verifica guarda cosa resta sul disco.",
+  "funzioni": [
+    "find",
+    "grep",
+    "sort",
+    "uniq",
+    "mv",
+    "rm",
+    "chmod",
+    "$1",
+    "bash script.sh"
+  ],
+  "lezioni": [
+    {
+      "id": "c04-b",
+      "titolo": "Briefing",
+      "md": "## La situazione\n\nUna campagna di prova finita male dal punto di vista dell'ordine. In `campagna` trovi:\n\n```\ncampagna/\n|-- log.txt          il log dell'acquisizione, dodici righe\n|-- codici.txt       i codici di errore, uno per riga, come li sputa il sistema\n|-- prova1.csv       le tre prove buone\n|-- prova2.csv\n|-- prova3.csv\n|-- vecchi/\n|   `-- prova0.csv   una prova di taratura, di un'altra settimana\n|-- tmp1.tmp         scarti, da buttare\n|-- tmp2.tmp\n`-- note.txt\n```\n\nNessuno ha ordinato niente, e fra due mesi qualcuno dovra' ritrovarci qualcosa.\n\n## Cosa devi produrre\n\nCinque fasi, ciascuna costruita sul risultato della precedente:\n\n1. **Ricognizione** - quanti file di dati ci sono davvero, e quanti errori nel log\n2. **Triage** - le righe di errore separate, e la classifica dei codici\n3. **Riordino** - i dati grezzi al loro posto, gli scarti fuori\n4. **Protezione** - i grezzi diventano non riscrivibili, e lo dimostri\n5. **Automazione** - uno script che rifa' il conteggio su qualunque log\n\n## Non c'e' una sola strada\n\nLa verifica guarda **quello che resta sul disco** e quello che stampi, non i comandi che hai usato. `cat log.txt | grep ERROR` e `grep ERROR log.txt` vanno bene entrambi, e se trovi una via piu' corta di quella che avevo in mente e' la tua a essere giusta.\n\nSe una fase ti si incastra, la soluzione e' li' sotto: guardala, capiscila, e rifalla a mano.\n\n## Una regola sola\n\n`rm` non ha cestino. In questo terminale si puo' sbagliare quanto si vuole - e' il motivo per cui esiste - ma le abitudini che prendi qui te le porti sulla macchina vera."
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c04-f1",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 1 - Ricognizione.**\n\nPrima di toccare qualcosa, sapere cosa c'e'. Due numeri:\n\n1. quanti file `.csv` ci sono sotto `campagna`, **comprese le sottocartelle**\n2. quante righe del log contengono `ERROR`\n\nScrivili in `conteggi.txt`, nella tua home, uno per riga, in quest'ordine. Solo i numeri.",
+      "filesystem": {
+        "/home/tu/campagna/log.txt": "2026-08-20 09:00 INFO avvio campagna\n2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:05 INFO ripristinato\n2026-08-20 09:11 WARN batteria bassa\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:31 INFO nuova prova\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:44 WARN vento fuori limite\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:01 INFO fine campagna\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/codici.txt": "E12\nE07\nE12\nE12\nE07\nE31\n",
+        "/home/tu/campagna/prova1.csv": "quota,mach\n9000,0.82\n",
+        "/home/tu/campagna/prova2.csv": "quota,mach\n3000,0.40\n",
+        "/home/tu/campagna/prova3.csv": "quota,mach\n12000,0.91\n",
+        "/home/tu/campagna/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+        "/home/tu/campagna/tmp1.tmp": "scarto\n",
+        "/home/tu/campagna/tmp2.tmp": "scarto\n",
+        "/home/tu/campagna/note.txt": "campagna di agosto, tre prove utili\n"
+      },
+      "soluzione": "find campagna -name *.csv | wc -l > conteggi.txt\ngrep ERROR campagna/log.txt | wc -l >> conteggi.txt\ncat conteggi.txt",
+      "verifica": {
+        "contenuto": {
+          "conteggi.txt": "4\n6"
+        }
+      },
+      "spiegazione": "Quattro CSV, non tre: `vecchi/prova0.csv` non si vede con `ls` e si conta con `find`. E' la differenza che conta fra i due comandi, e qui costava un file dimenticato.\n\nSei righe di errore su dodici: meta' della campagna. La freccia doppia sulla seconda riga e' obbligatoria - con `>` avresti riscritto il file e ti sarebbe rimasto un numero solo.\n\nNota che `wc -l` dopo una pipe stampa il numero e basta, senza il nome del file: non sa da dove arriva il testo."
+    },
+    {
+      "id": "c04-f2",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 2 - Triage.**\n\nServe una cartella `campagna/diagnosi` con dentro due file:\n\n- `errori.txt` - solo le righe del log che contengono `ERROR`, come sono\n- `classifica.txt` - i codici di `codici.txt` contati, **dal piu' frequente al meno frequente**, nella forma `3 E12`\n\nIl secondo file e' quello che si guarda per primo in una riunione: dice quale guasto e' *il* guasto.",
+      "filesystem": {
+        "/home/tu/campagna/log.txt": "2026-08-20 09:00 INFO avvio campagna\n2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:05 INFO ripristinato\n2026-08-20 09:11 WARN batteria bassa\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:31 INFO nuova prova\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:44 WARN vento fuori limite\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:01 INFO fine campagna\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/codici.txt": "E12\nE07\nE12\nE12\nE07\nE31\n",
+        "/home/tu/campagna/prova1.csv": "quota,mach\n9000,0.82\n",
+        "/home/tu/campagna/prova2.csv": "quota,mach\n3000,0.40\n",
+        "/home/tu/campagna/prova3.csv": "quota,mach\n12000,0.91\n",
+        "/home/tu/campagna/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+        "/home/tu/campagna/tmp1.tmp": "scarto\n",
+        "/home/tu/campagna/tmp2.tmp": "scarto\n",
+        "/home/tu/campagna/note.txt": "campagna di agosto, tre prove utili\n",
+        "/home/tu/conteggi.txt": "4\n6\n"
+      },
+      "soluzione": "mkdir -p campagna/diagnosi\ngrep ERROR campagna/log.txt > campagna/diagnosi/errori.txt\nsort campagna/codici.txt | uniq -c | sort -n -r > campagna/diagnosi/classifica.txt\ncat campagna/diagnosi/classifica.txt",
+      "verifica": {
+        "dir": [
+          "campagna/diagnosi"
+        ],
+        "contenuto": {
+          "campagna/diagnosi/classifica.txt": "3 E12\n2 E07\n1 E31"
+        },
+        "contiene": {
+          "campagna/diagnosi/errori.txt": "E31 file non scritto"
+        }
+      },
+      "spiegazione": "`E12` tre volte su sei: meta' degli errori e' un sensore solo. Senza la classifica avresti letto sei righe e ricordato l'ultima.\n\nLa catena `sort | uniq -c | sort -n -r` contiene `sort` due volte con due mestieri diversi: la prima mette vicini i doppioni, perche' `uniq` guarda solo la riga precedente; la seconda ordina i conteggi.\n\nE nota perche' esiste `codici.txt`: sul log non avresti potuto contare niente, perche' con l'orario davanti due righe non sono mai identiche."
+    },
+    {
+      "id": "c04-f3",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 3 - Riordino.**\n\nI tre CSV della campagna vanno in `campagna/grezzi`. Gli scarti - i due `.tmp` - vanno via.\n\n`vecchi/prova0.csv` e' di un'altra settimana: lascialo dov'e'.\n\nAlla fine `campagna` deve contenere solo `log.txt`, `codici.txt`, `note.txt`, `grezzi/`, `diagnosi/` e `vecchi/`.",
+      "filesystem": {
+        "/home/tu/campagna/log.txt": "2026-08-20 09:00 INFO avvio campagna\n2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:05 INFO ripristinato\n2026-08-20 09:11 WARN batteria bassa\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:31 INFO nuova prova\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:44 WARN vento fuori limite\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:01 INFO fine campagna\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/codici.txt": "E12\nE07\nE12\nE12\nE07\nE31\n",
+        "/home/tu/campagna/prova1.csv": "quota,mach\n9000,0.82\n",
+        "/home/tu/campagna/prova2.csv": "quota,mach\n3000,0.40\n",
+        "/home/tu/campagna/prova3.csv": "quota,mach\n12000,0.91\n",
+        "/home/tu/campagna/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+        "/home/tu/campagna/tmp1.tmp": "scarto\n",
+        "/home/tu/campagna/tmp2.tmp": "scarto\n",
+        "/home/tu/campagna/note.txt": "campagna di agosto, tre prove utili\n",
+        "/home/tu/conteggi.txt": "4\n6\n",
+        "/home/tu/campagna/diagnosi/errori.txt": "2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/diagnosi/classifica.txt": "3 E12\n2 E07\n1 E31\n"
+      },
+      "soluzione": "mkdir -p campagna/grezzi\nmv campagna/prova1.csv campagna/grezzi\nmv campagna/prova2.csv campagna/grezzi\nmv campagna/prova3.csv campagna/grezzi\nrm campagna/tmp1.tmp campagna/tmp2.tmp\nls campagna",
+      "verifica": {
+        "dir": [
+          "campagna/grezzi"
+        ],
+        "esiste": [
+          "campagna/grezzi/prova1.csv",
+          "campagna/grezzi/prova2.csv",
+          "campagna/grezzi/prova3.csv",
+          "campagna/vecchi/prova0.csv"
+        ],
+        "nonEsiste": [
+          "campagna/prova1.csv",
+          "campagna/prova2.csv",
+          "campagna/prova3.csv",
+          "campagna/tmp1.tmp",
+          "campagna/tmp2.tmp"
+        ]
+      },
+      "spiegazione": "`mv` con una cartella come destinazione sposta dentro, mantenendo il nome. Se `grezzi` non fosse esistita, `mv prova1.csv grezzi` avrebbe creato un **file** chiamato `grezzi`, e il secondo `mv` ci avrebbe scritto sopra: due prove perse senza un errore. Per questo la cartella si crea prima.\n\n`rm` accetta piu' file di seguito, come quasi tutti i comandi che agiscono sui file."
+    },
+    {
+      "id": "c04-f4",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 4 - Protezione.**\n\nI dati grezzi non si toccano piu': nessuno deve poterci scrivere sopra, nemmeno tu per sbaglio. Mettili in sola lettura per tutti.\n\nPoi **dimostralo**: prova a scriverci sopra con `echo`, e fai vedere che il file e' rimasto quello di prima.",
+      "filesystem": {
+        "/home/tu/campagna/log.txt": "2026-08-20 09:00 INFO avvio campagna\n2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:05 INFO ripristinato\n2026-08-20 09:11 WARN batteria bassa\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:31 INFO nuova prova\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:44 WARN vento fuori limite\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:01 INFO fine campagna\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/codici.txt": "E12\nE07\nE12\nE12\nE07\nE31\n",
+        "/home/tu/campagna/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+        "/home/tu/campagna/note.txt": "campagna di agosto, tre prove utili\n",
+        "/home/tu/conteggi.txt": "4\n6\n",
+        "/home/tu/campagna/diagnosi/errori.txt": "2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/diagnosi/classifica.txt": "3 E12\n2 E07\n1 E31\n",
+        "/home/tu/campagna/grezzi/prova1.csv": "quota,mach\n9000,0.82\n",
+        "/home/tu/campagna/grezzi/prova2.csv": "quota,mach\n3000,0.40\n",
+        "/home/tu/campagna/grezzi/prova3.csv": "quota,mach\n12000,0.91\n"
+      },
+      "soluzione": "chmod 444 campagna/grezzi/prova1.csv\nchmod 444 campagna/grezzi/prova2.csv\nchmod 444 campagna/grezzi/prova3.csv\necho rovinato > campagna/grezzi/prova1.csv\ncat campagna/grezzi/prova1.csv",
+      "verifica": {
+        "errore": "permesso negato",
+        "contiene": {
+          "campagna/grezzi/prova1.csv": "9000,0.82"
+        }
+      },
+      "spiegazione": "`444` e' `r--r--r--`: leggibile da tutti, scrivibile da nessuno. La redirezione fallisce **prima** che `echo` venga eseguito, quindi il file non viene nemmeno svuotato - ed e' la ragione per cui questa protezione vale la pena su dati raccolti una volta sola.\n\nResta vero che `sudo chmod` puo' rimettere tutto com'era in un secondo: i permessi fermano gli sbagli, non le decisioni."
+    },
+    {
+      "id": "c04-f5",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 5 - Automazione.**\n\nLa prossima campagna avra' un altro log, e il conteggio degli errori andra' rifatto.\n\nScrivi `analizza.sh` che riceve il nome di un log **come argomento** e scrive quante righe di errore contiene dentro `errori_totali.txt`. Poi lancialo su `campagna/log.txt` e controlla il risultato.\n\nDeve funzionare su qualunque log, non solo su questo.",
+      "filesystem": {
+        "/home/tu/campagna/log.txt": "2026-08-20 09:00 INFO avvio campagna\n2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:05 INFO ripristinato\n2026-08-20 09:11 WARN batteria bassa\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:31 INFO nuova prova\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:44 WARN vento fuori limite\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:01 INFO fine campagna\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/codici.txt": "E12\nE07\nE12\nE12\nE07\nE31\n",
+        "/home/tu/campagna/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+        "/home/tu/campagna/note.txt": "campagna di agosto, tre prove utili\n",
+        "/home/tu/conteggi.txt": "4\n6\n",
+        "/home/tu/campagna/diagnosi/errori.txt": "2026-08-20 09:03 ERROR E12 sensore quota non risponde\n2026-08-20 09:12 ERROR E07 timeout lettura\n2026-08-20 09:20 ERROR E12 sensore quota non risponde\n2026-08-20 09:40 ERROR E12 sensore quota non risponde\n2026-08-20 09:52 ERROR E07 timeout lettura\n2026-08-20 10:02 ERROR E31 file non scritto\n",
+        "/home/tu/campagna/diagnosi/classifica.txt": "3 E12\n2 E07\n1 E31\n",
+        "/home/tu/campagna/grezzi/prova1.csv": {
+          "contenuto": "quota,mach\n9000,0.82\n",
+          "modo": 292
+        },
+        "/home/tu/campagna/grezzi/prova2.csv": {
+          "contenuto": "quota,mach\n3000,0.40\n",
+          "modo": 292
+        },
+        "/home/tu/campagna/grezzi/prova3.csv": {
+          "contenuto": "quota,mach\n12000,0.91\n",
+          "modo": 292
+        }
+      },
+      "soluzione": "echo 'grep ERROR $1 | wc -l > errori_totali.txt' > analizza.sh\nbash analizza.sh campagna/log.txt\ncat errori_totali.txt",
+      "verifica": {
+        "esiste": [
+          "analizza.sh"
+        ],
+        "contenuto": {
+          "errori_totali.txt": "6"
+        },
+        "stampa": "6"
+      },
+      "spiegazione": "Sei, come nella fase 1 - ma questa volta il conteggio e' ripetibile su un file che ancora non esiste.\n\nGli apici singoli attorno alla riga sono l'unico punto delicato: senza, `$1` verrebbe espanso adesso, dalla shell che scrive il file, e nello script finirebbe `grep ERROR` con un argomento vuoto. Anche la pipe verrebbe eseguita subito invece di finire dentro `analizza.sh`.\n\nSe hai scritto `campagna/log.txt` dentro lo script invece di `$1`, la fase non e' passata per il verso giusto: quel file conta gli errori di un log solo, ed e' quello che stavi gia' facendo a mano."
+    }
+  ]
+}

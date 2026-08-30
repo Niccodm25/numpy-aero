@@ -85,7 +85,8 @@
         "l02",
         "l03",
         "l04",
-        "l05"
+        "l05",
+        "c04"
       ],
       "prossimi": [
         "WSL"
@@ -327,6 +328,13 @@
       "titolo": "Cantiere 3 — Riduzione di una campagna",
       "disponibile": true,
       "cantiere": true
+    },
+    {
+      "id": "c04",
+      "file": "c04-linux.json",
+      "titolo": "Cantiere Linux - La campagna che nessuno ha ordinato",
+      "cantiere": true,
+      "disponibile": true
     }
   ]
 }

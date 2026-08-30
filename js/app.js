@@ -165,7 +165,7 @@ async function home() {
       coda.length
         ? `<a class="card" href="#/ripasso" style="border-color:var(--acc)">
              <strong>Ripassa ${coda.length} ${coda.length === 1 ? "esercizio" : "esercizi"}</strong>
-             <div class="muto">Prima i più deboli. Un esercizio è chiuso solo dopo ${L.MASTERED} risposte corrette senza aiuti.</div>
+             <div class="muto">Prima i più deboli. Un esercizio esce dal ripasso dopo ${L.MASTERED} risposte corrette senza aiuti — ma risulta fatto dalla prima volta che lo risolvi.</div>
            </a>`
         : ""
     }
@@ -231,7 +231,7 @@ async function vistaModulo(id) {
       const pr = L.progress(stati, r.esercizi.map((e) => e.id));
       return `<a class="card" href="#/r/${id}/${r.id}">
         <strong><code>${r.comando}</code></strong>
-        <div class="muto">${r.esercizi.length} esercizi · ${pr.done} fatti</div>
+        <div class="muto">${r.esercizi.length} ${m.cantiere ? "fasi" : "esercizi"} · ${pr.done} ${m.cantiere ? "fatte" : "fatti"}</div>
         <div class="barra"><i style="width:${Math.round(pr.pct * 100)}%"></i></div>
       </a>`;
     })
@@ -242,8 +242,12 @@ async function vistaModulo(id) {
     <h1>${m.titolo}</h1>
     <p>${m.perche}</p>
     <h2>Lezioni</h2>${lez}
-    <h2>Esercizi</h2>
-    <p class="muto">Una raccolta per comando: aprine una per allenarti su quel comando soltanto.</p>
+    <h2>${m.cantiere ? "Fasi" : "Esercizi"}</h2>
+    <p class="muto">${
+      m.cantiere
+        ? "Le fasi vanno in fila: ognuna parte da dove finisce la precedente."
+        : "Una raccolta per comando: aprine una per allenarti su quel comando soltanto."
+    }</p>
     ${racc}
     ${
       // Il percorso ruota sui comandi: su un cantiere, che ha una fase sola,

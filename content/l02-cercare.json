@@ -422,8 +422,8 @@
     },
     {
       "id": "l02-filtri",
-      "comando": "wc, head, tail, sort, uniq",
-      "titolo": "contare, tagliare, ordinare",
+      "comando": "wc, head, tail",
+      "titolo": "contare e tagliare",
       "esercizi": [
         {
           "id": "l02-fi-1",
@@ -500,6 +500,119 @@
           ],
           "spiegazione": "`tail` e' quello che si usa sui log: le righe piu' recenti stanno in fondo, e sono quelle che interessano quando qualcosa e' appena andato storto."
         },
+        {
+          "id": "l02-co-9",
+          "tipo": "terminale",
+          "testo": "Chiedi a `wc` tutto quello che sa dire sul log, senza opzioni.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
+            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+            "/home/tu/volo/note.md": "campagna di agosto\n"
+          },
+          "soluzione": "wc volo/log.txt",
+          "verifica": {
+            "usa": [
+              "wc"
+            ],
+            "stampa": "6"
+          },
+          "hint": [
+            "wc senza opzioni da' tre numeri.",
+            "wc volo/log.txt"
+          ],
+          "spiegazione": "Tre numeri: righe, parole, caratteri. `-l` tiene solo il primo, ed e' quello che serve nel novantacinque per cento dei casi - ma gli altri due ci sono sempre stati."
+        },
+        {
+          "id": "l02-co-10",
+          "tipo": "predict",
+          "testo": "`head log.txt`, senza `-n`. Quante righe stampa?",
+          "difficolta": 2,
+          "opzioni": [
+            "le prime 10",
+            "tutte",
+            "la prima soltanto",
+            "chiede quante ne vuoi"
+          ],
+          "risposta": "le prime 10",
+          "spiegazione": "Dieci e' il valore storico di `head` e `tail`, e non e' scritto da nessuna parte nel comando: si sa e basta. Se il file ne ha meno, stampa quelle che ci sono senza lamentarsi."
+        },
+        {
+          "id": "l02-co-11",
+          "tipo": "terminale",
+          "testo": "Guarda solo l'intestazione di `volo/dati/prova1.csv` - la riga con i nomi delle colonne.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
+            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+            "/home/tu/volo/note.md": "campagna di agosto\n"
+          },
+          "soluzione": "head -n 1 volo/dati/prova1.csv",
+          "verifica": {
+            "usa": [
+              "head"
+            ],
+            "stampa": "quota,mach"
+          },
+          "hint": [
+            "Una riga sola.",
+            "head -n 1 volo/dati/prova1.csv"
+          ],
+          "spiegazione": "`head -n 1` su un CSV e' il modo piu' rapido di sapere che colonne ci sono, senza aprire un file che potrebbe pesare un giga. Su una macchina vera e' la prima cosa da fare con un file di dati che non conosci."
+        },
+        {
+          "id": "l02-co-12",
+          "tipo": "terminale",
+          "testo": "Il log e' cresciuto: guarda solo l'ultima riga scritta.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
+            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
+            "/home/tu/volo/note.md": "campagna di agosto\n"
+          },
+          "soluzione": "tail -n 1 volo/log.txt",
+          "verifica": {
+            "usa": [
+              "tail"
+            ],
+            "stampa": "10:09 ERROR"
+          },
+          "hint": [
+            "Una riga sola, dal fondo.",
+            "tail -n 1 volo/log.txt"
+          ],
+          "spiegazione": "Le righe nuove di un log si aggiungono in fondo: l'ultima e' quella appena successa. È il motivo per cui su un log si usa `tail` e quasi mai `head`."
+        },
+        {
+          "id": "l02-co-13",
+          "tipo": "predict",
+          "testo": "Un programma sta scrivendo su `log.txt` proprio adesso e vuoi vedere le righe mentre arrivano. Quale comando?",
+          "difficolta": 3,
+          "opzioni": [
+            "tail -f log.txt",
+            "head -f log.txt",
+            "cat -f log.txt",
+            "wc -f log.txt"
+          ],
+          "risposta": "tail -f log.txt",
+          "spiegazione": "`-f` sta per *follow*: `tail` resta aperto e stampa ogni riga nuova appena viene scritta. È il comando con cui si guarda un programma lungo mentre gira, e si chiude con Ctrl-C. Qui nel simulatore non c'e' niente che scriva in tempo reale, ma sulla tua macchina e' quello che userai di piu'."
+        }
+      ]
+    },
+    {
+      "id": "l02-ordina",
+      "comando": "sort e uniq",
+      "titolo": "ordinare e contare i doppioni",
+      "esercizi": [
         {
           "id": "l02-fi-4",
           "tipo": "terminale",
@@ -592,6 +705,65 @@
             "sort codici.txt | uniq > distinti.txt"
           ],
           "spiegazione": "Ordinare, togliere i duplicati, salvare: tre comandi in fila, ognuno che non sa degli altri. È la forma di quasi tutto quello che si fa in una shell."
+        },
+        {
+          "id": "l02-or-9",
+          "tipo": "terminale",
+          "testo": "`numeri.txt` contiene 10, 9, 100, 9. Ordinali **come numeri** e salva il risultato in `ordinati.txt`.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/numeri.txt": "10\n9\n100\n9\n"
+          },
+          "soluzione": "sort -n numeri.txt > ordinati.txt\ncat ordinati.txt",
+          "verifica": {
+            "contenuto": {
+              "ordinati.txt": "9\n9\n10\n100"
+            },
+            "usa": [
+              "sort"
+            ]
+          },
+          "hint": [
+            "Senza -n il confronto e' fra stringhe.",
+            "sort -n numeri.txt > ordinati.txt"
+          ],
+          "spiegazione": "Senza `-n` l'ordine sarebbe `10, 100, 9`: perfettamente alfabetico e completamente sbagliato. `sort` non protesta, perche' un ordinamento sbagliato e' pur sempre un ordinamento - lo scopri dal risultato, non da un errore."
+        },
+        {
+          "id": "l02-or-10",
+          "tipo": "terminale",
+          "testo": "Fai la classifica dei codici: dal piu' frequente al meno frequente.",
+          "difficolta": 3,
+          "filesystem": {
+            "/home/tu/codici.txt": "b\na\nc\na\nb\na\n"
+          },
+          "soluzione": "sort codici.txt | uniq -c | sort -n -r",
+          "verifica": {
+            "usa": [
+              "sort",
+              "uniq"
+            ],
+            "stampa": "3 a"
+          },
+          "hint": [
+            "Prima la coppia sort | uniq -c, poi si riordina il risultato.",
+            "sort codici.txt | uniq -c | sort -n -r"
+          ],
+          "spiegazione": "Tre comandi e una classifica. `sort` compare due volte con due mestieri diversi: la prima per mettere vicini i duplicati, la seconda per ordinare i conteggi. `-n -r` legge i numeri e va dal piu' grande al piu' piccolo."
+        },
+        {
+          "id": "l02-or-11",
+          "tipo": "predict",
+          "testo": "`sort -r` su `a`, `c`, `b`. Cosa esce?",
+          "difficolta": 2,
+          "opzioni": [
+            "c, b, a",
+            "a, b, c",
+            "l'ordine originale: a, c, b",
+            "un errore: -r vuole dei numeri"
+          ],
+          "risposta": "c, b, a",
+          "spiegazione": "`-r` inverte l'ordine, qualunque esso sia: alfabetico se sei senza `-n`, numerico con `-n`. Non ha niente a che vedere con il `-r` di `rm` e `cp`, che sta per ricorsivo: la stessa lettera vuole dire cose diverse a seconda del comando, e non c'e' regola."
         }
       ]
     },
