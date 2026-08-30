@@ -7,6 +7,7 @@ import * as SH from "./shell.js";
 import * as A from "./ambienti.js";
 import * as PS from "./powershell.js";
 import * as H from "./html.js";
+import { fraseSbagliato } from "./frasi.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -689,9 +690,36 @@ function montaEsercizio({
     });
   }
 
+  // Solo gli esercizi di codice hanno il tasto Prova: il terminale esegue gia' a
+  // ogni invio, e l'anteprima dell'HTML si aggiorna mentre scrivi.
+  const codicePython = !["predict", "terminale", "html"].includes(es.tipo);
+
   azioni.innerHTML = `<button class="primario" id="ver">Verifica</button>
+    ${codicePython ? `<button id="prova">Prova</button>` : ""}
     ${es.hint?.length ? `<button id="hint">Suggerimento</button>` : ""}
     ${conSoluzione && es.soluzione ? `<button id="sol">Soluzione</button>` : ""}`;
+
+  // Esegue il codice senza le asserzioni nascoste e senza registrare niente:
+  // serve a guardare cosa fa prima di consegnarlo. Un tentativo speso per
+  // scoprire un errore di battitura e' un tentativo che il ripasso conta come
+  // non sapere, e non e' quello che era successo.
+  const btnProva = azioni.querySelector("#prova");
+  if (btnProva)
+    btnProva.onclick = async () => {
+      if (chiuso) return;
+      btnProva.disabled = true;
+      btnProva.textContent = "Eseguo…";
+      const codice = (es.setup ? es.setup + "\n" : "") + zona.querySelector("#ed").value;
+      const r = await R.run(codice, "");
+      btnProva.textContent = "Prova";
+      btnProva.disabled = false;
+      esito.innerHTML = `<div class="esito prova">
+        <strong>Prova — non conta come risposta.</strong>
+        ${r.out ? `<pre><code>${escapeHtml(r.out)}</code></pre>` : ""}
+        ${r.err ? `<pre><code>${escapeHtml(r.err)}</code></pre>` : ""}
+        ${!r.out && !r.err ? `<p class="muto">Nessun errore, e niente da stampare. Usa print() per vedere un valore.</p>` : ""}
+      </div>`;
+    };
 
   const btnHint = azioni.querySelector("#hint");
   if (btnHint)
@@ -758,9 +786,8 @@ function montaEsercizio({
     esito.innerHTML = ok
       ? `<div class="esito ok"><strong>Corretto.</strong>${hint ? " (con suggerimento: torna in coda di ripasso)" : ""}
          ${dettaglio}</div>${md(es.spiegazione || "")}`
-      : `<div class="esito ko"><strong>Non ancora.</strong>${
-          unTentativo ? "" : " Questo esercizio torna in fondo alla coda."
-        }${dettaglio}</div>`;
+      : `<div class="esito ko"><strong>Non ancora.</strong>
+         <div class="frase">${escapeHtml(fraseSbagliato())}</div>${dettaglio}</div>`;
 
     if (ok) {
       chiuso = true;

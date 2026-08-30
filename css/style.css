@@ -121,6 +121,9 @@ textarea {
 .esito { border-left: 4px solid var(--bordo); padding: .7rem .9rem; border-radius: 6px; margin: .8rem 0; }
 .esito.ok { border-color: var(--ok); color: var(--ok); }
 .esito.ko { border-color: var(--ko); color: var(--ko); }
+/* La prova non e' un verdetto: resta del colore del testo, altrimenti il
+   verde o il rosso direbbero qualcosa che non e' stato deciso. */
+.esito.prova { border-color: var(--tx2); color: var(--tx); }
 .esito pre { margin: .5rem 0 0; }
 
 .pill {
@@ -200,4 +203,11 @@ button.minuscolo {
 .anteprima {
   width: 100%; min-height: 12rem; background: #fff;
   border: 1px solid var(--bordo); border-radius: var(--raggio);
+}
+
+/* La frase che accompagna una risposta sbagliata. Non e' un messaggio d'errore:
+   sta sotto il verdetto e usa il colore del testo normale, perche' rossa
+   sembrerebbe una seconda sgridata. */
+.esito.ko .frase {
+  color: var(--tx); font-size: .92rem; margin-top: .35rem;
 }
