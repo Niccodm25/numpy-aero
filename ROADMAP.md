@@ -144,21 +144,30 @@ Simulato, filesystem virtuale in stile Windows.
 8. **cmd.exe** — una lezione sola: riconoscerlo, i quattro comandi che servono, perché
    non impararlo
 
-### Ramo D — Linux
+### Ramo D — Linux  ← **fatto**
 
 Stesso motore, dizionario POSIX. Serve appena toccherai un cluster di calcolo, un
 Raspberry, un server, o WSL.
 
 1. **Muoversi e maneggiare file** — `pwd`, `ls`, `cd`, percorsi, `mkdir`, `touch`,
-   `cat`, redirezione, `cp`, `mv`, `rm`. **fatto** — stesso motore del ramo B,
-   zero righe di codice nuove
+   `cat`, redirezione, `cp`, `mv`, `rm`. **fatto** — cinque raccolte, una per gruppo
+   di comandi
 2. **Cercare, filtrare, comporre** — `grep`, `find`, `wc`, `head`, `tail`, `sort`,
    `uniq`, la pipe e la redirezione. **fatto**
-5. **Permessi** — `chmod`, `chown`, e perché `sudo` non è la risposta a tutto
-6. **Processi** — `ps`, `kill`, background, `nohup`, `top`
-7. **Bash scripting** — variabili, condizioni, cicli, argomenti
-8. **WSL** — Linux dentro Windows: come si installa, dove sono i file di Windows visti
-   da Linux e viceversa, quando conviene
+3. **Permessi e sudo** — `chmod`, `chown`, e perché `sudo` non è la risposta a tutto.
+   **fatto** — i permessi vivono nel filesystem simulato, `sudo` cambia davvero utente
+4. **Processi** — `ps`, `kill`, background, `nohup`, `top`. **fatto** — tabella dei
+   processi finta condivisa con PowerShell
+5. **Variabili e script** — variabili, argomenti, `set -eu`. **fatto** — niente
+   condizioni né cicli: quella è la parte di bash che assomiglia a un linguaggio, e
+   per quella c'è il ramo Python
+6. **WSL** — Linux dentro Windows: i due dischi, il confine, le fine riga. **fatto** —
+   `/mnt/c` è esercitabile davvero, `wsl` no: si impara per predizione
+7. **Cantiere Linux** — una campagna di prova da mettere in ordine in cinque fasi.
+   **fatto** — la verifica guarda cosa resta sul disco, non i comandi digitati
+
+Fuori: condizioni e cicli in bash (vedi sopra), `ssh` e `scp` (senza una rete da
+simulare sarebbero una lezione travestita da esercizio), `awk` e `sed`.
 
 **Nota sulla ridondanza fra C e D:** i concetti sono gli stessi, i comandi no. La
 struttura parallela è deliberata: fatto uno, l'altro diventa una tabella di traduzione.
