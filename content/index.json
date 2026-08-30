@@ -440,9 +440,9 @@
     },
     {
       "id": "l18",
-      "file": "",
+      "file": "l18-sicurezza.json",
       "titolo": "Sicurezza del sistema",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l19",
