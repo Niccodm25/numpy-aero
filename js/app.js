@@ -15,6 +15,8 @@ import * as N from "./rete.js";
 import * as RM from "./remoto.js";
 import * as SV from "./servizi.js";
 import * as HW from "./hardware.js";
+import * as PF from "./prestazioni.js";
+import * as ST from "./storage.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 
@@ -326,6 +328,8 @@ function montaTerminale(zona, es) {
     comandi = { ...(comandi ?? SH.POSIX), ...SV.SERVIZI };
   if (es.hardware)
     comandi = { ...(comandi ?? SH.POSIX), ...HW.HARDWARE };
+  if (es.prestazioni) comandi = { ...(comandi ?? SH.POSIX), ...PF.PRESTAZIONI };
+  if (es.storage) comandi = { ...(comandi ?? SH.POSIX), ...ST.STORAGE };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -335,6 +339,8 @@ function montaTerminale(zona, es) {
   if (es.remoto) RM.statoRemoto(sh, es.remoto === true ? undefined : es.remoto);
   if (es.servizi) SV.statoServizi(sh, es.servizi === true ? undefined : es.servizi);
   if (es.hardware) HW.statoHardware(sh, es.hardware === true ? undefined : es.hardware);
+  if (es.prestazioni) PF.statoPrestazioni(sh, es.prestazioni === true ? undefined : es.prestazioni);
+  if (es.storage) ST.statoStorage(sh, es.storage === true ? undefined : es.storage);
   const trascrizione = [];
 
   zona.innerHTML = `

@@ -1,44 +1,10 @@
-const KEY = "numpy-aero-v1";
-
-const vuoto = () => ({ esercizi: {}, percorsi: {} });
-
-export function load() {
-  let raw;
-  try {
-    raw = JSON.parse(localStorage.getItem(KEY));
-  } catch {
-    return vuoto(); // private browsing, storage pieno, JSON corrotto: riparti pulito
-  }
-  if (!raw || typeof raw !== "object") return vuoto();
-  // Il formato vecchio era la sola mappa degli stati per esercizio, senza
-  // contenitore: si riconosce dall'assenza delle due chiavi note.
-  if (!raw.esercizi && !raw.percorsi) return { esercizi: raw, percorsi: {} };
-  return { esercizi: raw.esercizi || {}, percorsi: raw.percorsi || {} };
-}
-
-export function save(dati) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(dati));
-  } catch {
-    /* ponytail: se localStorage non c'è, l'app funziona lo stesso, senza memoria */
-  }
-}
-
-export function esporta(dati) {
-  const blob = new Blob([JSON.stringify(dati, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `numpy-aero-progressi-${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-export function importa(file) {
-  return file.text().then((t) => {
-    const d = JSON.parse(t);
-    if (typeof d !== "object" || d === null) throw new Error("File non valido");
-    // Accetta anche gli export del formato vecchio.
-    if (!d.esercizi && !d.percorsi) return { esercizi: d, percorsi: {} };
-    return { esercizi: d.esercizi || {}, percorsi: d.percorsi || {} };
-  });
-}
+// Dischi, mount e volumi simulati: stato esplicito, nessuna modifica reale.
+import { ErroreFs } from "./vfs.js";
+export function statoStorage(sh, scenario = {}) { sh.storage={ montati:{"/dev/nvme0n1p1":"/"}, ...(scenario||{})}; return sh; }
+export const STORAGE={
+  lsblk(){return "NAME        SIZE TYPE MOUNTPOINTS\nnvme0n1     200G disk\n└─nvme0n1p1 200G part /\nsdb         1T   disk";},
+  mount(sh,args){if(!args.length)return Object.entries(sh.storage.montati).map(([d,p])=>`${d} on ${p} type ext4 (rw)`).join("\n"); if(args.length!==2)throw new ErroreFs("mount: servono dispositivo e punto di mount"); sh.storage.montati[args[0]]=args[1];return "";},
+  umount(sh,args){const p=args[0];const d=Object.keys(sh.storage.montati).find(d=>sh.storage.montati[d]===p||d===p);if(!d)throw new ErroreFs("umount: non montato");delete sh.storage.montati[d];return "";},
+  mdadm(){return "mdadm: /dev/md0 assemblato, stato clean";},
+  cryptsetup(){return "LUKS: volume simulato aperto";},
+};

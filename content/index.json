@@ -422,15 +422,15 @@
     },
     {
       "id": "l15",
-      "file": "",
+      "file": "l15-prestazioni.json",
       "titolo": "Prestazioni e diagnosi",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l16",
-      "file": "",
+      "file": "l16-storage.json",
       "titolo": "Dischi, filesystem e volumi",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l17",
