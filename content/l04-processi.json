@@ -337,7 +337,7 @@
     },
     {
       "id": "l04-sottofondo",
-      "comando": "nohup",
+      "comando": "& e nohup",
       "titolo": "sottofondo, e perche' il processo muore",
       "esercizi": [
         {

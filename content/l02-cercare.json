@@ -422,7 +422,7 @@
     },
     {
       "id": "l02-filtri",
-      "comando": "wc, head, sort, uniq",
+      "comando": "wc, head, tail, sort, uniq",
       "titolo": "contare, tagliare, ordinare",
       "esercizi": [
         {

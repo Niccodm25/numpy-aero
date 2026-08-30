@@ -18,7 +18,9 @@ IGNORA = {"wc -l'"}  # pezzo di uno script scritto fra apici
 
 problemi = 0
 visto = ""
-for f in sorted(glob.glob("content/l0*.json")) + sorted(glob.glob("content/w0*.json")):
+for f in sorted(glob.glob("content/l0*.json")) + sorted(glob.glob("content/w0*.json")) + sorted(
+    glob.glob("content/b0*.json")
+):
     d = json.load(io.open(f, encoding="utf8"))
     visto += " " + " ".join(l["md"] + " " + l["titolo"] for l in d.get("lezioni") or [])
     manca = {}

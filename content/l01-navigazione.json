@@ -404,7 +404,7 @@
     },
     {
       "id": "l01-file",
-      "comando": "mkdir, touch, rm",
+      "comando": "mkdir, touch, cat, echo, rm",
       "titolo": "creare, leggere, cancellare",
       "esercizi": [
         {
