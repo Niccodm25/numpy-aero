@@ -82,10 +82,10 @@
       "moduli": [
         "l01",
         "l02",
-        "l03"
+        "l03",
+        "l04"
       ],
       "prossimi": [
-        "Processi",
         "Bash scripting",
         "WSL"
       ]
@@ -202,6 +202,12 @@
       "id": "l03",
       "file": "l03-permessi.json",
       "titolo": "Permessi e sudo",
+      "disponibile": true
+    },
+    {
+      "id": "l04",
+      "file": "l04-processi.json",
+      "titolo": "Processi",
       "disponibile": true
     },
     {

@@ -8,10 +8,11 @@
 
 import assert from "node:assert";
 import * as V from "../js/vfs.js";
-import { creaShell, esegui, eseguiTutto, dividi, verifica } from "../js/shell.js";
+import { creaShell, esegui, eseguiTutto, dividi, verifica, POSIX } from "../js/shell.js";
 import { AMBIENTI, AMBIENTI_CONDA, statoAmbienti } from "../js/ambienti.js";
 import { comandiPowerShell } from "../js/powershell.js";
 import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
+import { PROCESSI, PROCESSI_PS, statoProcessi } from "../js/processi.js";
 
 let fatti = 0;
 const casi = [];
@@ -740,19 +741,22 @@ for (const meta of indice.moduli) {
       }
       if (es.tipo !== "terminale") continue;
       caso(`${es.id}: la soluzione passa la verifica`, () => {
-        const sh = creaShell(es.filesystem || {}, {
-          cwd: es.cwd,
-          env: es.env,
-          comandi:
-            es.shell === "powershell"
-              ? comandiPowerShell()
-              : es.shell === "conda"
-                ? AMBIENTI_CONDA
-                : es.interpreti
-                  ? AMBIENTI
-                  : undefined,
-        });
+        let comandi =
+          es.shell === "powershell"
+            ? comandiPowerShell()
+            : es.shell === "conda"
+              ? AMBIENTI_CONDA
+              : es.interpreti
+                ? AMBIENTI
+                : undefined;
+        if (es.processi)
+          comandi = {
+            ...(comandi ?? POSIX),
+            ...(es.shell === "powershell" ? PROCESSI_PS : PROCESSI),
+          };
+        const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
+        if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(

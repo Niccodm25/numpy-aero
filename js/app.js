@@ -7,6 +7,7 @@ import * as SH from "./shell.js";
 import * as A from "./ambienti.js";
 import * as PS from "./powershell.js";
 import * as H from "./html.js";
+import * as PR from "./processi.js";
 import { fraseSbagliato } from "./frasi.js";
 
 const app = document.getElementById("app");
@@ -270,15 +271,23 @@ function montaTerminale(zona, es) {
   // Tre dizionari di comandi, scelti dal contenuto e non dal codice: POSIX di
   // default, PowerShell quando l'esercizio lo chiede, e i comandi degli
   // ambienti quando dichiara degli interpreti.
-  const comandi = es.shell === "powershell"
+  let comandi = es.shell === "powershell"
     ? PS.comandiPowerShell()
     : es.shell === "conda"
       ? A.AMBIENTI_CONDA
       : es.interpreti
         ? A.AMBIENTI
         : undefined;
+  // I comandi sui processi si aggiungono quando l'esercizio dichiara "processi",
+  // in POSIX o in PowerShell secondo la shell che ha chiesto.
+  if (es.processi)
+    comandi = {
+      ...(comandi ?? SH.POSIX),
+      ...(es.shell === "powershell" ? PR.PROCESSI_PS : PR.PROCESSI),
+    };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
+  if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
   const trascrizione = [];
 
   zona.innerHTML = `

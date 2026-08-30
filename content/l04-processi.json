@@ -1,0 +1,481 @@
+{
+ "id": "l04",
+ "titolo": "Processi",
+ "perche": "Trovare il processo giusto fra centinaia di righe, e le due cose che tutti sbagliano: kill -9 usato per abitudine invece che come ultima risorsa, e un calcolo lanciato dal terminale che muore quando il terminale si chiude — scoperta che arriva sempre dopo sei ore di calcolo.",
+ "funzioni": [
+  "ps aux",
+  "top",
+  "kill",
+  "kill -9",
+  "pkill",
+  "jobs",
+  "&",
+  "nohup"
+ ],
+ "lezioni": [
+  {
+   "id": "l04-l1",
+   "titolo": "ps: trovare il processo giusto",
+   "md": "```\nps aux\n```\n\nElenca **tutti** i processi del sistema: le tre lettere sono opzioni storiche — `a` tutti gli utenti, `u` con il nome dell'utente, `x` anche quelli senza terminale. Si scrivono senza trattino per ragioni che risalgono agli anni Ottanta, e nessuno le ricorda: `ps aux` si impara come una parola sola.\n\n`ps` da solo mostra invece i processi **del tuo terminale**, che di solito sono due o tre.\n\n### Le colonne che servono\n\n```\nUTENTE      PID  %CPU  S  COMANDO\ntu         1204  98.4  R  python simula.py\n```\n\n- **PID** — il numero del processo. È l'unica cosa che serve per fermarlo\n- **%CPU** — quanto sta consumando. Un processo al 99% non e' necessariamente rotto: puo' star lavorando\n- **S** — lo stato: `R` in esecuzione, `S` in attesa, `Z` zombie\n- **COMANDO** — la riga con cui e' stato avviato, ed e' quella che ti dice **quale** dei tre python e'\n\n### Su un sistema vero sono trecento righe\n\nQui ce ne sono sei. Su una macchina reale `ps aux` ne stampa centinaia, e da solo non serve a niente: si usa sempre in coppia con `grep`.\n\n```\nps aux | grep python\n```\n\nÈ il motivo per cui la pipe del modulo precedente non era un esercizio accademico — senza, questo comando non esiste.\n\n### top, per guardare mentre succede\n\n`ps` e' una fotografia, `top` e' un video: i processi ordinati per consumo, aggiornati ogni pochi secondi. Si usa per rispondere alla domanda \"cosa sta mangiando la CPU adesso\", e si esce con `q`."
+  },
+  {
+   "id": "l04-l2",
+   "titolo": "kill: due segnali, non uno",
+   "md": "```\nkill 1204        # chiedi al processo di chiudersi\nkill -9 1204     # toglilo di mezzo\n```\n\nIl nome inganna: `kill` **manda un segnale**, non uccide per forza.\n\n### TERM, il default\n\n`kill 1204` manda `SIGTERM`, che significa \"per favore, chiuditi\". Il programma lo **riceve** e puo' reagire: salvare il file aperto, chiudere la connessione, cancellare i temporanei. È quello che vuoi quasi sempre.\n\n### KILL, l'ultima risorsa\n\n`kill -9` manda `SIGKILL`, che il programma **non riceve mai**: lo toglie di mezzo il kernel, all'istante. Nessun salvataggio, nessuna pulizia — file temporanei che restano, dati a metà, database da riparare.\n\n**Si usa solo dopo che `kill` normale ha fallito.** Un processo bloccato in modo grave ignora TERM, e allora `-9` e' l'unica strada; partire da li' per abitudine e' come spegnere il computer dalla presa perche' e' piu' rapido.\n\n### Cosa puoi fermare\n\nSolo i **tuoi** processi. Quelli di `root` richiedono `sudo`, ed e' la ragione per cui l'errore che vedi piu' spesso e' `operazione non permessa` e non `processo non esistente`.\n\n### Per nome invece che per numero\n\n```\npkill firefox\n```\n\nComodo e pericoloso: ferma **tutti** i processi con quel nome. Con `python` in esecuzione tre volte, ne ferma tre — compreso quello che stava scrivendo i risultati di sei ore di calcolo."
+  },
+  {
+   "id": "l04-l3",
+   "titolo": "Sottofondo: perche' il programma muore quando chiudi",
+   "md": "Un comando lanciato dal terminale lo tiene occupato finche' non finisce. Per riavere il prompt subito, lo si manda in **sottofondo**:\n\n```\npython simula.py &\n[1] 1523\n```\n\nLa `&` in fondo alla riga; il sistema risponde con il numero del lavoro e il PID.\n\n*(In questo simulatore la stessa cosa si scrive `avvia python simula.py`: interpretare la `&` avrebbe richiesto di toccare il parser per un solo comando.)*\n\n```\njobs      # cosa sta girando in sottofondo, in questa shell\n```\n\n### Il fatto che sorprende\n\n**Chiudendo il terminale, i processi che hai avviato muoiono con lui.** Sono suoi figli, e quando il padre se ne va il sistema li chiude.\n\nÈ la ragione per cui un calcolo lanciato via SSH su un cluster muore appena cade la connessione — e la scoperta arriva sempre dopo sei ore di calcolo.\n\n### nohup, per sopravvivere\n\n```\nnohup python simula.py &\n```\n\n`nohup` — *no hangup* — stacca il processo dal terminale: quando il terminale se ne va, lui resta. L'output, che non ha piu' dove andare, finisce in un file chiamato `nohup.out`.\n\nÈ la forma minima. Su un cluster vero si usa `screen` o `tmux`, che oltre a far sopravvivere il processo permettono di **tornare a guardarlo**; `nohup` lo lancia e lo lascia andare.\n\n### La regola\n\nSe il calcolo dura piu' di quanto sei disposto a tenere aperta la finestra, `nohup` o `tmux`. Deciderlo **prima** costa dieci caratteri; scoprirlo dopo costa il calcolo."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "l04-ps",
+   "comando": "ps",
+   "titolo": "trovare il processo giusto",
+   "esercizi": [
+    {
+     "id": "l04-ps-1",
+     "tipo": "terminale",
+     "testo": "Elenca tutti i processi del sistema.",
+     "processi": true,
+     "soluzione": "ps aux",
+     "verifica": {
+      "stampa": "/sbin/init",
+      "usa": [
+       "ps"
+      ]
+     },
+     "hint": [
+      "Tre lettere dopo ps, senza trattino.",
+      "ps aux"
+     ],
+     "spiegazione": "`ps aux`: `a` tutti gli utenti, `u` con il nome dell'utente, `x` anche quelli senza terminale. Si scrivono senza trattino per ragioni che risalgono agli anni Ottanta — si impara come una parola sola."
+    },
+    {
+     "id": "l04-ps-2",
+     "tipo": "predict",
+     "testo": "Quale colonna di `ps` serve per fermare un processo?",
+     "opzioni": [
+      "il PID, il numero del processo",
+      "il nome del comando",
+      "la percentuale di CPU",
+      "l'utente proprietario"
+     ],
+     "risposta": "il PID, il numero del processo",
+     "spiegazione": "Il **PID**, il numero. È l'unica cosa che `kill` accetta — il nome del comando non basta, perche' lo stesso programma puo' girare piu' volte. Le altre colonne servono a capire **quale** PID vuoi."
+    },
+    {
+     "id": "l04-ps-3",
+     "tipo": "terminale",
+     "testo": "Su un sistema vero sono centinaia di righe. Trova solo i processi python.",
+     "processi": true,
+     "soluzione": "ps aux | grep python",
+     "verifica": {
+      "stampa": "simula.py",
+      "usa": [
+       "ps",
+       "grep"
+      ]
+     },
+     "hint": [
+      "ps aux, poi la pipe, poi grep.",
+      "ps aux | grep python"
+     ],
+     "spiegazione": "`ps aux | grep python`. È il motivo per cui la pipe del modulo precedente non era un esercizio accademico: senza, questo comando non esiste, e `ps aux` da solo su una macchina reale e' illeggibile."
+    },
+    {
+     "id": "l04-ps-4",
+     "tipo": "terminale",
+     "testo": "Ci sono due python in esecuzione. Distingui quale sta consumando la CPU.",
+     "processi": true,
+     "soluzione": "ps aux | grep python",
+     "verifica": {
+      "stampa": "98.4",
+      "usa": [
+       "ps"
+      ]
+     },
+     "hint": [
+      "Guarda le colonne %CPU e COMANDO.",
+      "ps aux | grep python"
+     ],
+     "spiegazione": "La colonna `%CPU` e quella `COMANDO`: uno e' al 98%, l'altro al 2%, e la riga di comando dice **quale script** sta girando. Senza quella colonna, due processi chiamati `python` sono indistinguibili."
+    },
+    {
+     "id": "l04-ps-5",
+     "tipo": "terminale",
+     "testo": "Guarda i cinque processi che consumano di piu', ordinati.",
+     "processi": true,
+     "soluzione": "top",
+     "verifica": {
+      "stampa": "%CPU",
+      "usa": [
+       "top"
+      ]
+     },
+     "hint": [
+      "Tre lettere.",
+      "top"
+     ],
+     "spiegazione": "`top` e' la versione video di `ps`: i processi ordinati per consumo, aggiornati ogni pochi secondi. Risponde alla domanda \"cosa sta mangiando la CPU **adesso**\", e su un sistema vero si esce con `q`."
+    },
+    {
+     "id": "l04-ps-6",
+     "tipo": "predict",
+     "testo": "Un processo al 99% di CPU: e' rotto?",
+     "opzioni": [
+      "non necessariamente: potrebbe star lavorando",
+      "si': oltre il 90% e' sempre un errore",
+      "si', se dura piu' di un minuto",
+      "no: la percentuale non ha significato"
+     ],
+     "risposta": "non necessariamente: potrebbe star lavorando",
+     "spiegazione": "Non necessariamente — puo' star lavorando, ed e' quello che ci si aspetta da una simulazione. Il segnale d'allarme non e' il consumo alto in se', e' il consumo alto su qualcosa che **dovrebbe** aver finito, o che non stai usando."
+    },
+    {
+     "id": "l04-ps-7",
+     "tipo": "terminale",
+     "testo": "Conta quanti processi ci sono in tutto.",
+     "processi": true,
+     "soluzione": "ps aux | wc -l",
+     "verifica": {
+      "stampa": "7",
+      "usa": [
+       "ps",
+       "wc"
+      ]
+     },
+     "hint": [
+      "Il conteggio delle righe si fa con wc -l.",
+      "ps aux | wc -l"
+     ],
+     "spiegazione": "`ps aux | wc -l` conta le righe — con l'intestazione compresa, quindi il numero vero e' uno in meno. È il tipo di dettaglio che si scopre confrontando il conteggio con l'elenco, e che vale la pena controllare prima di riportare un numero."
+    },
+    {
+     "id": "l04-ps-8",
+     "tipo": "terminale",
+     "testo": "Trova il PID del processo che sta consumando piu' CPU e mettilo in un file.",
+     "difficolta": 2,
+     "processi": true,
+     "soluzione": "ps aux | grep simula > processo.txt\ncat processo.txt",
+     "verifica": {
+      "esiste": [
+       "processo.txt"
+      ],
+      "contiene": {
+       "processo.txt": "1204"
+      }
+     },
+     "hint": [
+      "Filtra la riga giusta e redirigila.",
+      "ps aux | grep simula > processo.txt"
+     ],
+     "spiegazione": "Il PID isolato in un file e' il primo passo di ogni script che sorveglia un calcolo: si trova, si salva, e poi si controlla se e' ancora vivo. Qui il filtro basta perche' i processi sono sei; su un sistema vero servirebbe `sort` sulla colonna della CPU."
+    }
+   ]
+  },
+  {
+   "id": "l04-kill",
+   "comando": "kill",
+   "titolo": "kill — due segnali, non uno",
+   "esercizi": [
+    {
+     "id": "l04-ki-1",
+     "tipo": "terminale",
+     "testo": "Ferma il processo `firefox`, che ha PID 1455.",
+     "processi": true,
+     "soluzione": "kill 1455\nps aux",
+     "verifica": {
+      "usa": [
+       "kill"
+      ]
+     },
+     "hint": [
+      "kill seguito dal numero.",
+      "kill 1455"
+     ],
+     "spiegazione": "`kill` senza opzioni manda `SIGTERM`, che significa \"per favore, chiuditi\". Il programma lo **riceve** e puo' reagire: salvare, chiudere le connessioni, cancellare i temporanei."
+    },
+    {
+     "id": "l04-ki-2",
+     "tipo": "predict",
+     "testo": "Che differenza c'e' fra `kill` e `kill -9` ?",
+     "opzioni": [
+      "kill chiede al programma di chiudersi, kill -9 lo toglie di mezzo senza avvisarlo",
+      "kill -9 e' semplicemente piu' veloce",
+      "kill funziona sui processi propri, kill -9 su tutti",
+      "sono equivalenti, -9 e' solo la forma esplicita"
+     ],
+     "risposta": "kill chiede al programma di chiudersi, kill -9 lo toglie di mezzo senza avvisarlo",
+     "spiegazione": "`kill` manda `SIGTERM`, che il programma **riceve** e puo' gestire: salva e chiude. `kill -9` manda `SIGKILL`, che il programma **non riceve mai** — lo toglie di mezzo il kernel, senza salvataggi ne' pulizia. Il primo chiede, il secondo stacca la spina."
+    },
+    {
+     "id": "l04-ki-3",
+     "tipo": "terminale",
+     "testo": "Prova a fermare un processo di **root** e leggi cosa risponde.",
+     "processi": true,
+     "soluzione": "kill 412",
+     "verifica": {
+      "errore": "non permessa",
+      "usa": [
+       "kill"
+      ]
+     },
+     "hint": [
+      "Provaci e basta: qui non si rompe niente.",
+      "kill 412"
+     ],
+     "spiegazione": "`operazione non permessa`. Puoi fermare solo i **tuoi** processi: quelli di sistema richiedono `sudo`, ed e' la ragione per cui questo errore si vede piu' spesso di `processo non esistente`."
+    },
+    {
+     "id": "l04-ki-4",
+     "tipo": "terminale",
+     "testo": "Fermalo davvero, come amministratore.",
+     "processi": true,
+     "soluzione": "sudo kill 412\nps aux",
+     "verifica": {
+      "usa": [
+       "sudo",
+       "kill"
+      ]
+     },
+     "hint": [
+      "Anteponi sudo.",
+      "sudo kill 412"
+     ],
+     "spiegazione": "`sudo kill` funziona. Vale la pena chiedersi **perche'** stai fermando un processo di sistema prima di farlo: quasi sempre la risposta giusta e' non farlo, e riavviare il servizio invece che ucciderlo."
+    },
+    {
+     "id": "l04-ki-5",
+     "tipo": "terminale",
+     "testo": "**Il processo che non muore.** Questo `python` e' bloccato e ignora la richiesta gentile. Provala, verifica che sia ancora li', e poi usa la maniera forte.",
+     "difficolta": 2,
+     "processi": [
+      {
+       "pid": 1,
+       "nome": "systemd",
+       "utente": "root",
+       "cpu": 0.0,
+       "comando": "/sbin/init"
+      },
+      {
+       "pid": 980,
+       "nome": "bash",
+       "utente": "tu",
+       "cpu": 0.0,
+       "comando": "-bash"
+      },
+      {
+       "pid": 1204,
+       "nome": "python",
+       "utente": "tu",
+       "cpu": 99.9,
+       "comando": "python simula.py",
+       "bloccato": true
+      }
+     ],
+     "soluzione": "kill 1204\nps aux\nkill -9 1204\nps aux",
+     "verifica": {
+      "usa": [
+       "kill"
+      ],
+      "stampa": "bash"
+     },
+     "hint": [
+      "Prima kill 1204, poi controlla, poi kill -9 1204.",
+      "Fra i due, ps aux per vedere che e' ancora li'."
+     ],
+     "spiegazione": "Il primo `kill` non fa niente — il processo e' bloccato e non riesce nemmeno a gestire il segnale — e `-9` lo toglie di mezzo.\n\n**Questo** e' il caso in cui `-9` si giustifica: dopo che quello normale ha fallito. Partire da li' per abitudine e' come spegnere il computer dalla presa perche' e' piu' rapido."
+    },
+    {
+     "id": "l04-ki-6",
+     "tipo": "predict",
+     "testo": "Perche' `kill -9` non va usato per abitudine?",
+     "opzioni": [
+      "il programma non puo' salvare ne' pulire: restano dati a meta' e file temporanei",
+      "e' piu' lento del kill normale",
+      "richiede sempre i permessi di root",
+      "puo' danneggiare il sistema operativo"
+     ],
+     "risposta": "il programma non puo' salvare ne' pulire: restano dati a meta' e file temporanei",
+     "spiegazione": "Perche' il programma non riceve niente e non puo' pulire: file temporanei che restano, dati scritti a meta', database da riparare al riavvio. Con `SIGTERM` il programma decide come chiudersi; con `SIGKILL` non lo sa nemmeno."
+    },
+    {
+     "id": "l04-ki-7",
+     "tipo": "terminale",
+     "testo": "Ferma tutti i processi chiamati `python`, per nome invece che per numero.",
+     "processi": true,
+     "soluzione": "ps aux | grep python\npkill python\nps aux",
+     "verifica": {
+      "usa": [
+       "pkill",
+       "ps"
+      ]
+     },
+     "hint": [
+      "Il comando e' pkill seguito dal nome.",
+      "pkill python"
+     ],
+     "spiegazione": "`pkill python` li ferma **tutti** — qui due. È comodo e pericoloso: con tre python in esecuzione ne ferma tre, compreso quello che stava scrivendo i risultati di sei ore di calcolo.\n\nPrima di `pkill`, `ps aux | grep` sullo stesso nome: se l'elenco mostra quello che ti aspetti, `pkill` fermera' quello."
+    },
+    {
+     "id": "l04-ki-8",
+     "tipo": "predict",
+     "testo": "Prima di `pkill nome`, cosa conviene fare?",
+     "opzioni": [
+      "ps aux | grep con lo stesso nome, per vedere cosa colpirai",
+      "salvare il lavoro aperto",
+      "eseguire pkill con sudo, per sicurezza",
+      "niente: pkill chiede conferma"
+     ],
+     "risposta": "ps aux | grep con lo stesso nome, per vedere cosa colpirai",
+     "spiegazione": "`ps aux | grep nome`, sullo stesso nome. Se l'elenco mostra quello che ti aspetti, `pkill` fermera' quello. È la stessa disciplina di `ls` prima di `rm`: guardare cosa colpirai, con lo stesso filtro che userai."
+    }
+   ]
+  },
+  {
+   "id": "l04-sottofondo",
+   "comando": "nohup",
+   "titolo": "sottofondo, e perche' il processo muore",
+   "esercizi": [
+    {
+     "id": "l04-so-1",
+     "tipo": "terminale",
+     "testo": "Avvia una simulazione in sottofondo e riprendi subito il prompt.",
+     "processi": true,
+     "soluzione": "avvia python lungo.py",
+     "verifica": {
+      "usa": [
+       "avvia"
+      ]
+     },
+     "hint": [
+      "Il comando e' avvia, seguito da quello da lanciare.",
+      "avvia python lungo.py"
+     ],
+     "spiegazione": "Il sistema risponde con il numero del lavoro e il PID. Su una shell vera si scrive `python simula.py &`, con la e commerciale in fondo; qui il comando e' `avvia`, perche' interpretare la `&` avrebbe richiesto di toccare il parser per un solo caso."
+    },
+    {
+     "id": "l04-so-2",
+     "tipo": "terminale",
+     "testo": "Guarda cosa sta girando in sottofondo in questa shell.",
+     "processi": true,
+     "soluzione": "avvia python lungo.py\njobs",
+     "verifica": {
+      "usa": [
+       "jobs",
+       "avvia"
+      ],
+      "stampa": "lungo.py"
+     },
+     "hint": [
+      "Prima avvialo, poi jobs.",
+      "jobs"
+     ],
+     "spiegazione": "`jobs` elenca i lavori **di questa shell**, non del sistema: sono due cose diverse, e un processo avviato in un altro terminale non compare qui anche se e' tuo."
+    },
+    {
+     "id": "l04-so-3",
+     "tipo": "predict",
+     "testo": "Chiudi il terminale mentre un tuo processo gira in sottofondo. Cosa gli succede?",
+     "opzioni": [
+      "muore insieme al terminale, di cui e' figlio",
+      "continua a girare: e' in sottofondo",
+      "viene messo in pausa e riprende alla riapertura",
+      "dipende da quanta CPU stava usando"
+     ],
+     "risposta": "muore insieme al terminale, di cui e' figlio",
+     "spiegazione": "Muore con lui. I processi che avvii sono **figli** del terminale, e quando il padre se ne va il sistema li chiude. È la ragione per cui un calcolo lanciato via SSH su un cluster muore appena cade la connessione — e la scoperta arriva sempre dopo sei ore."
+    },
+    {
+     "id": "l04-so-4",
+     "tipo": "terminale",
+     "testo": "Verificalo: avvia un processo in sottofondo, chiudi il terminale, e guarda cosa resta.",
+     "difficolta": 2,
+     "processi": true,
+     "soluzione": "avvia python lungo.py\nps aux\nesci\nps aux",
+     "verifica": {
+      "usa": [
+       "avvia",
+       "esci"
+      ],
+      "stampa": "terminati"
+     },
+     "hint": [
+      "avvia, poi esci per chiudere il terminale.",
+      "Alla fine ps aux per vedere cosa resta."
+     ],
+     "spiegazione": "Il processo e' sparito insieme al terminale. È il comportamento che coglie di sorpresa la prima volta, e la ragione per cui esiste il comando della prossima domanda."
+    },
+    {
+     "id": "l04-so-5",
+     "tipo": "terminale",
+     "testo": "Avvialo in modo che sopravviva alla chiusura del terminale, e verificalo.",
+     "difficolta": 2,
+     "processi": true,
+     "soluzione": "nohup python lungo.py\nesci\nps aux",
+     "verifica": {
+      "usa": [
+       "nohup",
+       "esci"
+      ],
+      "stampa": "lungo.py"
+     },
+     "hint": [
+      "Il comando e' nohup, davanti a quello da lanciare.",
+      "nohup python lungo.py, poi esci, poi ps aux"
+     ],
+     "spiegazione": "`nohup` — *no hangup* — stacca il processo dal terminale: quando il terminale se ne va, lui resta. L'output, che non ha piu' dove andare, finisce in un file chiamato `nohup.out`."
+    },
+    {
+     "id": "l04-so-6",
+     "tipo": "predict",
+     "testo": "Cosa vuol dire `nohup` e dove finisce l'output?",
+     "opzioni": [
+      "no hangup, e l'output finisce in nohup.out",
+      "no hang up, e l'output viene scartato",
+      "node hup, ed e' un comando di rete",
+      "no hangup, e l'output resta in memoria"
+     ],
+     "risposta": "no hangup, e l'output finisce in nohup.out",
+     "spiegazione": "*No hangup*: non chiudere quando il terminale se ne va. L'output non ha piu' un terminale dove andare, quindi finisce in un file chiamato `nohup.out` nella cartella corrente — che e' anche il primo posto dove guardare quando un calcolo lanciato cosi' sembra non aver prodotto niente."
+    },
+    {
+     "id": "l04-so-7",
+     "tipo": "predict",
+     "testo": "Su un cluster, per un calcolo di sei ore: `nohup` o `tmux` ?",
+     "opzioni": [
+      "tmux: fa sopravvivere il processo e permette di tornare a guardarlo",
+      "nohup: e' piu' semplice e fa la stessa cosa",
+      "nessuno dei due: basta la & in fondo",
+      "tmux, perche' nohup non funziona via SSH"
+     ],
+     "risposta": "tmux: fa sopravvivere il processo e permette di tornare a guardarlo",
+     "spiegazione": "`tmux` — o `screen` — perche' oltre a far sopravvivere il processo permettono di **tornare a guardarlo**: ci si riconnette alla sessione e si vede l'output dal vivo. `nohup` lancia e lascia andare, e per rivedere qualcosa bisogna leggere `nohup.out`."
+    },
+    {
+     "id": "l04-so-8",
+     "tipo": "terminale",
+     "testo": "**Il ciclo completo.** Avvia un calcolo che sopravviva, controlla che sia partito, e fermalo quando decidi tu.",
+     "difficolta": 3,
+     "processi": true,
+     "soluzione": "nohup python simula.py\nps aux | grep simula\npkill python",
+     "verifica": {
+      "usa": [
+       "nohup",
+       "ps",
+       "pkill"
+      ]
+     },
+     "hint": [
+      "nohup per avviarlo, ps aux | grep per controllarlo.",
+      "pkill python per fermarlo, oppure kill con il PID."
+     ],
+     "spiegazione": "Avviare, verificare, fermare: sono le tre cose che si fanno a un calcolo lungo, e la seconda e' quella che si dimentica. Un processo avviato con `nohup` e mai controllato puo' essere morto dopo dieci secondi senza che nessuno se ne accorga fino al giorno dopo.\n\nLa regola da portarsi via: se il calcolo dura piu' di quanto sei disposto a tenere aperta la finestra, `nohup` o `tmux`. Deciderlo **prima** costa dieci caratteri; scoprirlo dopo costa il calcolo."
+    }
+   ]
+  }
+ ]
+}

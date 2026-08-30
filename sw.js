@@ -27,6 +27,7 @@ const PRECACHE = [
   "js/powershell.js",
   "js/html.js",
   "js/frasi.js",
+  "js/processi.js",
   "content/index.json",
 ];
 
