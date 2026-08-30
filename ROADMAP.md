@@ -190,14 +190,16 @@ browser ne' la cartella del progetto quando gira il controllo dei contenuti.
 Le asserzioni sugli errori controllano il **tipo** dell'eccezione e mai il testo
 del messaggio, che cambia fra la versione di Python del venv e quella di Pyodide.
 
-### Ramo F — HTML, come e' fatta una pagina
+### Ramo F — HTML, come e' fatta una pagina  ← **iniziato**
 
-Ultimo perche' non e' prerequisito di niente. Non serve il terminale simulato:
-una pagina si verifica sul DOM prodotto, che il browser gia' espone.
+Ultimo perche' non e' prerequisito di niente. Non serve il terminale simulato,
+ma **non** basta nemmeno il DOM del browser: la verifica deve dare lo stesso
+verdetto anche nel controllo dei contenuti, che gira in node dove `DOMParser`
+non esiste. Da qui `js/html.js`, un analizzatore scritto una volta e usato
+nei due posti.
 
-1. **Un file .html minimo** — doctype, html, head, body, e perche' quell'ordine
-2. **Il testo** — h1..h6, p, liste, link, e cosa vuol dire markup semantico
-3. **Attributi** — id, class, href, src, alt
+1. **Com'e' fatta una pagina** — il documento minimo, il markup semantico,
+   href/src/alt/class/id. **fatto**
 4. **Tabelle e immagini** — table/thead/tbody, img e il testo alternativo
 5. **Form** — input, label, select, e cosa succede all'invio
 6. **CSS** — selettori, box model, flex e grid

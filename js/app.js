@@ -6,6 +6,7 @@ import * as P from "./percorso.js";
 import * as SH from "./shell.js";
 import * as A from "./ambienti.js";
 import * as PS from "./powershell.js";
+import * as H from "./html.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -341,6 +342,40 @@ function montaTerminale(zona, es) {
   return { sh, trascrizione };
 }
 
+/**
+ * Editor HTML con anteprima. L'anteprima e' un iframe in sandbox: la pagina che
+ * scrivi non puo' toccare l'app, ed e' la sola precauzione che serve visto che
+ * il codice e' tuo e non lascia mai il browser.
+ */
+function montaHtml(zona, es) {
+  zona.innerHTML = `
+    <textarea id="ed" spellcheck="false" autocapitalize="off" autocorrect="off"
+      autocomplete="off">${escapeHtml(es.starter || "")}</textarea>
+    <div class="simboli">${SIMBOLI_HTML.map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x.trim() || "tab")}</button>`).join("")}</div>
+    <p class="muto">Anteprima</p>
+    <iframe id="anteprima" class="anteprima" sandbox=""></iframe>`;
+
+  const ed = zona.querySelector("#ed");
+  const anteprima = zona.querySelector("#anteprima");
+  zona.querySelectorAll(".simboli button").forEach((b) => {
+    b.onclick = () => { inserisci(ed, b.dataset.s); aggiorna(); };
+  });
+
+  // srcdoc invece di scrivere nel documento: il contenuto resta inerte finche'
+  // l'iframe non lo carica, e la sandbox vuota gli toglie anche gli script.
+  const aggiorna = () => { anteprima.srcdoc = ed.value; };
+  let attesa = null;
+  ed.oninput = () => {
+    // Un ritardo breve: ridisegnare a ogni tasto fa sfarfallare l'anteprima
+    // mentre stai ancora scrivendo un tag.
+    clearTimeout(attesa);
+    attesa = setTimeout(aggiorna, 300);
+  };
+  aggiorna();
+}
+
+const SIMBOLI_HTML = ["<", ">", "/", '"', "=", "</", "    "];
+
 function cartaPercorso(id, m) {
   const p = dati.percorsi[id];
   const argomenti = m.raccolte.map((r) => r.id);
@@ -627,6 +662,8 @@ function montaEsercizio({
       .join("");
   } else if (es.tipo === "terminale") {
     term = montaTerminale(zona, es);
+  } else if (es.tipo === "html") {
+    montaHtml(zona, es);
   } else {
     zona.innerHTML = `
       ${es.setup ? `<p class="muto">Dati forniti, gia caricati:</p><pre><code>${escapeHtml(es.setup)}</code></pre>` : ""}
@@ -681,6 +718,11 @@ function montaEsercizio({
       ok = esitoT.ok;
       if (!ok)
         dettaglio += `<ul>${esitoT.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
+    } else if (es.tipo === "html") {
+      const esitoH = H.verificaHtml(zona.querySelector("#ed").value, es.verifica);
+      ok = esitoH.ok;
+      if (!ok)
+        dettaglio += `<ul>${esitoH.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
     } else {
       btn.textContent = "Eseguo…";
       const codice = (es.setup ? es.setup + "\n" : "") + zona.querySelector("#ed").value;

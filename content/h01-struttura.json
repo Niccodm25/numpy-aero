@@ -1,0 +1,655 @@
+{
+ "id": "h01",
+ "titolo": "Com'e' fatta una pagina",
+ "perche": "Il documento minimo e perche' ogni riga e' li', la differenza fra dire cosa e' un pezzo di contenuto e dire come deve apparire, e i quattro attributi che userai sempre. Il filo conduttore e' che in HTML sbagliare non fa rumore: un tag non chiuso, un doctype mancante o un alt dimenticato non danno nessun errore, e la pagina si vede lo stesso.",
+ "funzioni": [
+  "<!doctype>",
+  "html",
+  "head",
+  "body",
+  "meta charset",
+  "title",
+  "h1..h6",
+  "p",
+  "ul",
+  "ol",
+  "li",
+  "a href",
+  "img src alt",
+  "class",
+  "id"
+ ],
+ "lezioni": [
+  {
+   "id": "h01-l1",
+   "titolo": "Il file minimo, e perche' quell'ordine",
+   "md": "```html\n<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Campagna di agosto</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n  </body>\n</html>\n```\n\nSette righe, e ognuna e' li' per un motivo.\n\n**`<!doctype html>`** dice al browser di usare le regole moderne. Senza, entra in *quirks mode*, una modalita' di compatibilita' con i siti degli anni Novanta in cui i margini e le dimensioni si calcolano diversamente. Non da' nessun errore: la pagina si vede, semplicemente non come ti aspetti.\n\n**`<head>` e' quello che il browser deve sapere, `<body>` e' quello che l'utente vede.** Nel `head` non ci va niente di visibile — titolo della finestra, codifica, fogli di stile. La divisione non e' estetica: il browser legge il `head` per intero prima di disegnare qualsiasi cosa.\n\n**`<meta charset=\"utf-8\">`** va **per primo** dentro il `head`. Dichiara come sono codificati i caratteri, e se arriva dopo un titolo con gli accenti quel titolo e' gia' stato letto male. È il motivo per cui a volte si vede `perchÃ©` al posto di `perché`.\n\n**`lang=\"it\"`** dice in che lingua e' il testo. Serve ai lettori di schermo per pronunciarlo, ai correttori ortografici, e ai motori di ricerca.\n\n### L'indentazione non conta, e si usa lo stesso\n\nHTML ignora spazi e a capo: la pagina si vede identica scritta tutta su una riga. Si indenta per chi legge — cioe' per te fra tre mesi.\n\n### I tag si aprono e si chiudono\n\n```html\n<p>testo</p>\n```\n\nQuasi tutti. Fanno eccezione gli **elementi vuoti**, che non hanno contenuto e quindi non hanno chiusura:\n\n```html\n<br>  <hr>  <img>  <meta>  <link>  <input>\n```\n\nScrivere `</br>` non produce un errore visibile — il browser lo ignora — ed e' il tipo di cosa che rende HTML difficile da imparare: sbagliare non fa rumore."
+  },
+  {
+   "id": "h01-l2",
+   "titolo": "Il markup dice cosa e', non come appare",
+   "md": "```html\n<h1>Titolo principale</h1>\n<h2>Sezione</h2>\n<p>Un paragrafo di testo.</p>\n<ul>\n  <li>una voce</li>\n  <li>un'altra</li>\n</ul>\n```\n\nOgni tag dichiara **che cosa e'** quel pezzo di contenuto. Che poi `h1` si veda grande e in grassetto e' una conseguenza, non lo scopo — e si cambia con il CSS in una riga.\n\n### La differenza che conta\n\n```html\n<h2>Risultati</h2>            <!-- questa e' una sezione -->\n<p><b>Risultati</b></p>       <!-- questo e' testo in grassetto -->\n```\n\nA schermo possono sembrare uguali. Non lo sono:\n\n- un lettore di schermo annuncia il primo come intestazione e permette di saltare da una sezione all'altra; del secondo non dice niente\n- un motore di ricerca usa il primo per capire di cosa parla la pagina\n- il primo entra in un indice generato automaticamente, il secondo no\n\nScrivere markup semantico non e' formalismo: e' l'unico modo in cui l'informazione sulla **struttura** sopravvive.\n\n### I titoli hanno un ordine\n\n`<h1>` e' il titolo della pagina, e ce n'e' **uno solo**. Poi `<h2>` per le sezioni, `<h3>` per le sottosezioni. Non si salta un livello per avere il carattere della dimensione giusta: quella si decide col CSS.\n\n### Le liste\n\n```html\n<ul>  ordinamento non significativo, i pallini\n<ol>  ordinamento significativo, i numeri\n```\n\nDentro entrambe ci vanno solo `<li>`. Una lista di passi da eseguire in sequenza e' `<ol>`, un elenco di materiali e' `<ul>` — e la differenza si sente ascoltando la pagina, non guardandola."
+  },
+  {
+   "id": "h01-l3",
+   "titolo": "Attributi: le informazioni attaccate a un tag",
+   "md": "```html\n<a href=\"risultati.html\">Vedi i risultati</a>\n<img src=\"ala.png\" alt=\"Profilo alare NACA 2412\">\n<p class=\"nota\" id=\"avvertenza\">Attenzione</p>\n```\n\nUn attributo e' `nome=\"valore\"` dentro il tag di apertura. Le virgolette non sono obbligatorie in tutti i casi, e si mettono sempre lo stesso: senza, un valore che contiene uno spazio si spezza in silenzio.\n\n### I quattro che userai sempre\n\n| attributo | dove | a cosa serve |\n|---|---|---|\n| `href` | `<a>` | dove porta il collegamento |\n| `src` | `<img>` | da dove viene l'immagine |\n| `alt` | `<img>` | cosa mostra l'immagine, a parole |\n| `class` | ovunque | l'etichetta con cui il CSS la trova |\n\n### alt non e' opzionale\n\n```html\n<img src=\"grafico.png\" alt=\"Portanza in funzione dell'angolo d'attacco\">\n```\n\nÈ quello che viene letto da chi non vede l'immagine: perche' usa un lettore di schermo, perche' l'immagine non si e' caricata, perche' e' un motore di ricerca. Scriverlo bene significa descrivere **l'informazione**, non il file: `alt=\"grafico\"` non serve a nessuno.\n\nL'unico caso in cui `alt` va lasciato **vuoto** — `alt=\"\"` — e' l'immagine puramente decorativa: cosi' il lettore di schermo la salta invece di annunciare un nome di file.\n\n### id e class\n\n```html\nclass=\"nota\"      puo' ripetersi: e' una categoria\nid=\"avvertenza\"   unico in tutta la pagina: e' un nome proprio\n```\n\nDue `id` uguali nella stessa pagina non danno errore e rompono tutto quello che li usa — CSS, JavaScript, e i collegamenti interni `#avvertenza`."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "h01-struttura",
+   "comando": "il documento",
+   "titolo": "il file minimo, e perche' quell'ordine",
+   "esercizi": [
+    {
+     "id": "h01-st-1",
+     "tipo": "html",
+     "testo": "Scrivi il documento minimo: dichiarazione del tipo, `html`, `head` con `title`, e `body` con un `h1` che dice `Prove in galleria`.",
+     "starter": "<!doctype html>\n<html>\n  <head>\n    <title></title>\n  </head>\n  <body>\n\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Campagna</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n  </body>\n</html>\n",
+     "verifica": {
+      "elementi": {
+       "html": 1,
+       "head": 1,
+       "body": 1,
+       "h1": 1
+      },
+      "dentro": [
+       [
+        "body",
+        "h1"
+       ],
+       [
+        "head",
+        "title"
+       ]
+      ],
+      "contiene": [
+       {
+        "tag": "h1",
+        "testo": "Prove in galleria"
+       }
+      ]
+     },
+     "hint": [
+      "Il titolo della finestra va dentro head, l'intestazione dentro body.",
+      "<body>\n  <h1>Prove in galleria</h1>\n</body>"
+     ],
+     "spiegazione": "Sette righe, e ognuna per un motivo. `head` e' quello che il browser deve sapere, `body` quello che l'utente vede: la divisione non e' estetica, il browser legge il `head` per intero prima di disegnare qualcosa."
+    },
+    {
+     "id": "h01-st-2",
+     "tipo": "predict",
+     "testo": "Cosa succede se ometti `<!doctype html>` ?",
+     "opzioni": [
+      "il browser passa in modalita' compatibilita' e calcola le dimensioni diversamente",
+      "la pagina non viene visualizzata affatto",
+      "il browser mostra un avviso all'utente",
+      "niente: il doctype e' una formalita' senza effetti"
+     ],
+     "risposta": "il browser passa in modalita' compatibilita' e calcola le dimensioni diversamente",
+     "spiegazione": "Il browser entra in *quirks mode*, una modalita' di compatibilita' con i siti degli anni Novanta in cui margini e dimensioni si calcolano diversamente. Non da' nessun errore: la pagina si vede, semplicemente non come ti aspetti — ed e' il tipo di guasto che si insegue per ore nel CSS."
+    },
+    {
+     "id": "h01-st-3",
+     "tipo": "html",
+     "testo": "A questa pagina manca la dichiarazione della codifica. Aggiungila, e mettila nel posto giusto.",
+     "starter": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <title>Velocita' di stallo</title>\n  </head>\n  <body>\n    <h1>Prove</h1>\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Velocita' di stallo</title>\n  </head>\n  <body>\n    <h1>Prove</h1>\n  </body>\n</html>\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "meta",
+        "nome": "charset",
+        "valore": "utf-8"
+       }
+      ],
+      "dentro": [
+       [
+        "head",
+        "meta"
+       ]
+      ],
+      "ordine": [
+       "meta",
+       "title"
+      ]
+     },
+     "hint": [
+      "Il tag e' <meta>, con l'attributo charset.",
+      "<meta charset=\"utf-8\"> come prima riga dentro head"
+     ],
+     "spiegazione": "`<meta charset=\"utf-8\">` va **per primo** dentro il `head`. Se arriva dopo un titolo con gli accenti, quel titolo e' gia' stato letto con la codifica sbagliata: e' il motivo per cui a volte si vede `perchÃ©` al posto di `perché`."
+    },
+    {
+     "id": "h01-st-4",
+     "tipo": "html",
+     "testo": "Dichiara che il testo di questa pagina e' in italiano.",
+     "starter": "<!doctype html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Prove</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Prove</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n  </body>\n</html>\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "html",
+        "nome": "lang",
+        "valore": "it"
+       }
+      ]
+     },
+     "hint": [
+      "L'attributo va sul tag html.",
+      "<html lang=\"it\">"
+     ],
+     "spiegazione": "`lang=\"it\"` sul tag `<html>`. Serve ai lettori di schermo per pronunciare il testo con la fonetica giusta, ai correttori ortografici, e ai motori di ricerca per capire a chi mostrare la pagina."
+    },
+    {
+     "id": "h01-st-5",
+     "tipo": "predict",
+     "testo": "Cosa va dentro `<head>` e cosa dentro `<body>` ?",
+     "opzioni": [
+      "nel head quello che il browser deve sapere, nel body quello che l'utente vede",
+      "nel head l'intestazione visibile della pagina, nel body il resto",
+      "nel head i testi, nel body le immagini",
+      "sono intercambiabili: il browser li riordina"
+     ],
+     "risposta": "nel head quello che il browser deve sapere, nel body quello che l'utente vede",
+     "spiegazione": "Nel `head` quello che il **browser** deve sapere — titolo della finestra, codifica, fogli di stile — e niente di visibile. Nel `body` quello che l'**utente** vede. Il browser legge il `head` per intero prima di disegnare qualsiasi cosa, ed e' il motivo per cui un foglio di stile messo in fondo al body fa lampeggiare la pagina."
+    },
+    {
+     "id": "h01-st-6",
+     "tipo": "html",
+     "testo": "Il titolo della finestra e l'intestazione della pagina sono due cose diverse. Metti `Campagna 2026` nel titolo della finestra e `Prove in galleria` come intestazione visibile.",
+     "starter": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title></title>\n  </head>\n  <body>\n\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Campagna 2026</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n  </body>\n</html>\n",
+     "verifica": {
+      "contiene": [
+       {
+        "tag": "title",
+        "testo": "Campagna 2026"
+       },
+       {
+        "tag": "h1",
+        "testo": "Prove in galleria"
+       }
+      ],
+      "dentro": [
+       [
+        "head",
+        "title"
+       ],
+       [
+        "body",
+        "h1"
+       ]
+      ]
+     },
+     "hint": [
+      "Il title sta nel head, l'h1 nel body.",
+      "<title>Campagna 2026</title> e <h1>Prove in galleria</h1>"
+     ],
+     "spiegazione": "`<title>` non compare nella pagina: e' il nome della scheda del browser, quello che finisce nei preferiti e nei risultati di ricerca. `<h1>` e' l'intestazione visibile. Confonderli e' l'errore piu' comune del primo giorno."
+    },
+    {
+     "id": "h01-st-7",
+     "tipo": "predict",
+     "testo": "`<br>` va chiuso con `</br>` ?",
+     "opzioni": [
+      "no: e' un elemento vuoto e non ha chiusura",
+      "si': tutti i tag vanno chiusi",
+      "si', ma solo in XHTML",
+      "no, va scritto <br/> obbligatoriamente"
+     ],
+     "risposta": "no: e' un elemento vuoto e non ha chiusura",
+     "spiegazione": "No: e' un **elemento vuoto**, non ha contenuto e quindi non ha chiusura. Come `<hr>`, `<img>`, `<meta>`, `<link>` e `<input>`. Scrivere `</br>` non produce nessun errore visibile — il browser lo ignora — ed e' il tipo di cosa che rende HTML difficile da imparare: sbagliare non fa rumore."
+    },
+    {
+     "id": "h01-st-8",
+     "tipo": "html",
+     "testo": "Questa pagina ha un tag non chiuso: il paragrafo. Chiudilo.",
+     "starter": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Prove</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n    <p>Campagna di agosto\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Prove</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n    <p>Campagna di agosto</p>\n  </body>\n</html>\n",
+     "verifica": {
+      "elementi": {
+       "p": 1
+      },
+      "dentro": [
+       [
+        "body",
+        "p"
+       ]
+      ],
+      "contiene": [
+       {
+        "tag": "p",
+        "testo": "Campagna di agosto"
+       }
+      ]
+     },
+     "hint": [
+      "Manca una chiusura.",
+      "</p> dopo il testo del paragrafo"
+     ],
+     "spiegazione": "Un tag non chiuso non da' errore: il browser tira a indovinare dove finisce, e a volte indovina male — qui il paragrafo si sarebbe mangiato tutto quello che segue. È l'errore piu' frequente e il piu' difficile da vedere a occhio, perche' la pagina si visualizza comunque."
+    }
+   ]
+  },
+  {
+   "id": "h01-semantica",
+   "comando": "markup semantico",
+   "titolo": "dire cosa e', non come appare",
+   "esercizi": [
+    {
+     "id": "h01-se-1",
+     "tipo": "html",
+     "testo": "Struttura il testo: un titolo di pagina `Campagna 2026`, una sezione `Metodo` e un paragrafo che dice `Tre prove per configurazione.`",
+     "starter": "<h1></h1>\n\n<h2></h2>\n<p></p>\n",
+     "soluzione": "<h1>Campagna 2026</h1>\n\n<h2>Metodo</h2>\n<p>Tre prove per configurazione.</p>\n",
+     "verifica": {
+      "contiene": [
+       {
+        "tag": "h1",
+        "testo": "Campagna 2026"
+       },
+       {
+        "tag": "h2",
+        "testo": "Metodo"
+       },
+       {
+        "tag": "p",
+        "testo": "Tre prove per configurazione."
+       }
+      ]
+     },
+     "hint": [
+      "h1 per il titolo, h2 per la sezione, p per il paragrafo.",
+      "<h2>Metodo</h2>"
+     ],
+     "spiegazione": "`h1` per il titolo della pagina, `h2` per la sezione, `p` per il testo. Ogni tag dichiara **che cosa e'** quel pezzo di contenuto — che poi l'h1 si veda grande e' una conseguenza, non lo scopo."
+    },
+    {
+     "id": "h01-se-2",
+     "tipo": "predict",
+     "testo": "`<h2>Risultati</h2>` e `<p><b>Risultati</b></p>` si vedono quasi uguali. Che differenza fa?",
+     "opzioni": [
+      "il primo dichiara una sezione, il secondo solo del testo in grassetto",
+      "nessuna: il risultato a schermo e' lo stesso",
+      "il primo e' piu' veloce da disegnare",
+      "il secondo e' la forma moderna, h2 e' deprecato"
+     ],
+     "risposta": "il primo dichiara una sezione, il secondo solo del testo in grassetto",
+     "spiegazione": "Il primo dichiara una **sezione**, il secondo del testo in grassetto. Un lettore di schermo annuncia il primo come intestazione e permette di saltare da una sezione all'altra; del secondo non dice niente. Un motore di ricerca usa il primo per capire di cosa parla la pagina. Scrivere markup semantico e' l'unico modo in cui l'informazione sulla struttura sopravvive."
+    },
+    {
+     "id": "h01-se-3",
+     "tipo": "html",
+     "testo": "Sostituisci il grassetto con il tag giusto: `Risultati` e' una sezione, non del testo in grassetto.",
+     "starter": "<h1>Campagna 2026</h1>\n<p><b>Risultati</b></p>\n<p>Il coefficiente di portanza cresce fino a 12 gradi.</p>\n",
+     "soluzione": "<h1>Campagna 2026</h1>\n<h2>Risultati</h2>\n<p>Il coefficiente di portanza cresce fino a 12 gradi.</p>\n",
+     "verifica": {
+      "elementi": {
+       "h2": 1
+      },
+      "nonContiene": [
+       "b"
+      ],
+      "contiene": [
+       {
+        "tag": "h2",
+        "testo": "Risultati"
+       }
+      ]
+     },
+     "hint": [
+      "Serve un'intestazione di secondo livello.",
+      "<h2>Risultati</h2>"
+     ],
+     "spiegazione": "Il markup dice **cosa e'**, non come appare. Se poi vuoi che sia meno vistoso, quello si decide col CSS in una riga — mentre l'informazione che quella riga e' un'intestazione, una volta persa, non si recupera."
+    },
+    {
+     "id": "h01-se-4",
+     "tipo": "html",
+     "testo": "Scrivi una lista **non ordinata** con tre voci: `ala`, `fusoliera`, `impennaggio`.",
+     "starter": "<ul>\n\n</ul>\n",
+     "soluzione": "<ul>\n  <li>ala</li>\n  <li>fusoliera</li>\n  <li>impennaggio</li>\n</ul>\n",
+     "verifica": {
+      "elementi": {
+       "ul": 1,
+       "li": 3
+      },
+      "dentro": [
+       [
+        "ul",
+        "li"
+       ]
+      ],
+      "contiene": [
+       {
+        "tag": "li",
+        "testo": "ala"
+       }
+      ]
+     },
+     "hint": [
+      "Ogni voce e' un <li>.",
+      "<li>ala</li>"
+     ],
+     "spiegazione": "`<ul>` per un elenco in cui l'ordine non significa niente, e dentro solo `<li>`. Mettere altro dentro una `ul` — un `p`, del testo nudo — non da' errore e produce una pagina che i lettori di schermo leggono male."
+    },
+    {
+     "id": "h01-se-5",
+     "tipo": "predict",
+     "testo": "Quando si usa `<ol>` invece di `<ul>` ?",
+     "opzioni": [
+      "quando l'ordine delle voci ha un significato",
+      "quando le voci sono piu' di cinque",
+      "quando servono i numeri invece dei pallini, per ragioni estetiche",
+      "sono equivalenti, cambia solo l'aspetto"
+     ],
+     "risposta": "quando l'ordine delle voci ha un significato",
+     "spiegazione": "Quando **l'ordine significa qualcosa**: una sequenza di passi da eseguire, una classifica. `<ul>` quando e' un insieme e l'ordine e' arbitrario. La differenza si sente ascoltando la pagina, non guardandola — e i numeri li mette il browser, non li scrivi tu."
+    },
+    {
+     "id": "h01-se-6",
+     "tipo": "html",
+     "testo": "Questi sono passi da eseguire in sequenza. Usa la lista giusta, con le tre voci `Montare il modello`, `Tarare la bilancia`, `Avviare la galleria`.",
+     "starter": "<ol>\n\n</ol>\n",
+     "soluzione": "<ol>\n  <li>Montare il modello</li>\n  <li>Tarare la bilancia</li>\n  <li>Avviare la galleria</li>\n</ol>\n",
+     "verifica": {
+      "elementi": {
+       "ol": 1,
+       "li": 3
+      },
+      "nonContiene": [
+       "ul"
+      ],
+      "dentro": [
+       [
+        "ol",
+        "li"
+       ]
+      ],
+      "contiene": [
+       {
+        "tag": "li",
+        "testo": "Tarare la bilancia"
+       }
+      ]
+     },
+     "hint": [
+      "Ordine significativo: serve la lista ordinata.",
+      "<ol> con tre <li> dentro"
+     ],
+     "spiegazione": "`<ol>` perche' l'ordine e' il contenuto: eseguirli in sequenza diversa non ha senso. I numeri li mette il browser — scriverli a mano dentro le voci significa doverli rifare tutti quando ne inserisci uno in mezzo."
+    },
+    {
+     "id": "h01-se-7",
+     "tipo": "predict",
+     "testo": "Quanti `<h1>` ci vanno in una pagina?",
+     "opzioni": [
+      "uno: e' il titolo della pagina",
+      "uno per ogni sezione principale",
+      "quanti ne servono, non c'e' limite",
+      "almeno due, per i motori di ricerca"
+     ],
+     "risposta": "uno: e' il titolo della pagina",
+     "spiegazione": "Uno. È il titolo della pagina, e averne tre significa non aver deciso di cosa parla. Le sezioni sono `h2`, le sottosezioni `h3`, e non si salta un livello per ottenere il carattere della dimensione giusta — quella si decide col CSS."
+    },
+    {
+     "id": "h01-se-8",
+     "tipo": "html",
+     "testo": "**Struttura una pagina intera.** Titolo `Prove in galleria`, poi una sezione `Metodo` con un paragrafo, poi una sezione `Risultati` con una lista non ordinata di due voci: `portanza` e `resistenza`.",
+     "difficolta": 2,
+     "starter": "<h1></h1>\n\n<h2></h2>\n<p></p>\n\n<h2></h2>\n<ul>\n\n</ul>\n",
+     "soluzione": "<h1>Prove in galleria</h1>\n\n<h2>Metodo</h2>\n<p>Tre prove per configurazione.</p>\n\n<h2>Risultati</h2>\n<ul>\n  <li>portanza</li>\n  <li>resistenza</li>\n</ul>\n",
+     "verifica": {
+      "elementi": {
+       "h1": 1,
+       "h2": 2,
+       "p": 1,
+       "ul": 1,
+       "li": 2
+      },
+      "ordine": [
+       "h1",
+       "h2",
+       "p",
+       "ul"
+      ],
+      "contiene": [
+       {
+        "tag": "h1",
+        "testo": "Prove in galleria"
+       },
+       {
+        "tag": "li",
+        "testo": "portanza"
+       }
+      ]
+     },
+     "hint": [
+      "Un h1, due h2, un p e una ul con due li.",
+      "L'ordine conta: prima il titolo, poi le sezioni."
+     ],
+     "spiegazione": "Un `h1`, due `h2`, un `p`, una `ul` con due `li`. Letta senza CSS, questa pagina si capisce lo stesso — ed e' la prova che la struttura c'e' davvero, invece di essere un effetto della formattazione.\n\nÈ anche il modo in cui la sente chi usa un lettore di schermo: le intestazioni diventano un indice navigabile, e la lista viene annunciata come tale, con quante voci contiene."
+    }
+   ]
+  },
+  {
+   "id": "h01-attributi",
+   "comando": "attributi",
+   "titolo": "href, src, alt, class, id",
+   "esercizi": [
+    {
+     "id": "h01-at-1",
+     "tipo": "html",
+     "testo": "Aggiungi un collegamento alla pagina `risultati.html`, con testo `Vedi i risultati`.",
+     "starter": "<h1>Campagna 2026</h1>\n\n",
+     "soluzione": "<h1>Campagna 2026</h1>\n<a href=\"risultati.html\">Vedi i risultati</a>\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "a",
+        "nome": "href",
+        "valore": "risultati.html"
+       }
+      ],
+      "contiene": [
+       {
+        "tag": "a",
+        "testo": "Vedi i risultati"
+       }
+      ]
+     },
+     "hint": [
+      "Il tag e' <a>, l'attributo href.",
+      "<a href=\"risultati.html\">Vedi i risultati</a>"
+     ],
+     "spiegazione": "`href` dice dove porta il collegamento. Il testo fra i tag e' quello che si vede e si clicca — e va scritto in modo che si capisca **fuori contesto**, perche' chi naviga con un lettore di schermo puo' farsi leggere solo l'elenco dei collegamenti."
+    },
+    {
+     "id": "h01-at-2",
+     "tipo": "predict",
+     "testo": "Perche' `<a href=\"x.html\">clicca qui</a>` e' un collegamento scritto male?",
+     "opzioni": [
+      "perche' il testo non dice dove porta, e fuori contesto e' inutile",
+      "perche' href deve puntare a un indirizzo completo",
+      "perche' i collegamenti non vanno cliccati ma seguiti con la tastiera",
+      "non e' scritto male: e' la forma consigliata"
+     ],
+     "risposta": "perche' il testo non dice dove porta, e fuori contesto e' inutile",
+     "spiegazione": "Perche' \"clicca qui\" non dice dove porta. Chi naviga con un lettore di schermo puo' farsi leggere il solo elenco dei collegamenti della pagina, e un elenco di dieci \"clicca qui\" e' inutile. Il testo del collegamento deve descrivere la destinazione."
+    },
+    {
+     "id": "h01-at-3",
+     "tipo": "html",
+     "testo": "Inserisci l'immagine `ala.png` con una descrizione testuale adeguata.",
+     "starter": "<h1>Profilo alare</h1>\n\n",
+     "soluzione": "<h1>Profilo alare</h1>\n<img src=\"ala.png\" alt=\"Profilo alare NACA 2412\">\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "img",
+        "nome": "src",
+        "valore": "ala.png"
+       },
+       {
+        "tag": "img",
+        "nome": "alt"
+       }
+      ]
+     },
+     "hint": [
+      "Servono due attributi: src e alt.",
+      "<img src=\"ala.png\" alt=\"Profilo alare NACA 2412\">"
+     ],
+     "spiegazione": "`src` dice da dove viene l'immagine, `alt` cosa mostra. `alt` viene letto da chi non vede l'immagine — per un lettore di schermo, per una connessione che l'ha persa, per un motore di ricerca — e va scritto descrivendo **l'informazione**, non il file: `alt=\"immagine\"` non serve a nessuno."
+    },
+    {
+     "id": "h01-at-4",
+     "tipo": "predict",
+     "testo": "Quando `alt` va lasciato vuoto — `alt=\"\"` ?",
+     "opzioni": [
+      "quando l'immagine e' decorativa e non porta informazione",
+      "quando l'immagine e' gia' descritta dal testo intorno",
+      "mai: alt deve sempre contenere qualcosa",
+      "quando l'immagine e' piccola"
+     ],
+     "risposta": "quando l'immagine e' decorativa e non porta informazione",
+     "spiegazione": "Quando l'immagine e' puramente **decorativa** e non porta informazione: cosi' il lettore di schermo la salta invece di annunciare un nome di file. Ometterlo del tutto e' un'altra cosa e produce l'annuncio del nome del file, che e' il peggiore dei tre casi."
+    },
+    {
+     "id": "h01-at-5",
+     "tipo": "html",
+     "testo": "A questa immagine manca la descrizione testuale. Aggiungila: mostra il grafico della portanza in funzione dell'angolo d'attacco.",
+     "starter": "<h2>Risultati</h2>\n<img src=\"grafico.png\">\n",
+     "soluzione": "<h2>Risultati</h2>\n<img src=\"grafico.png\" alt=\"Portanza in funzione dell'angolo d'attacco\">\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "img",
+        "nome": "alt"
+       }
+      ]
+     },
+     "hint": [
+      "Manca l'attributo alt.",
+      "alt=\"Portanza in funzione dell'angolo d'attacco\""
+     ],
+     "spiegazione": "Un `alt` che descrive l'informazione, non il file. Per un grafico questo significa dire **cosa mostra**: chi non lo vede deve poter capire il punto senza guardarlo."
+    },
+    {
+     "id": "h01-at-6",
+     "tipo": "html",
+     "testo": "Dai a questo paragrafo la classe `nota` e l'identificativo `avvertenza`.",
+     "starter": "<p>Non superare i 40 m/s in configurazione pulita.</p>\n",
+     "soluzione": "<p class=\"nota\" id=\"avvertenza\">Non superare i 40 m/s in configurazione pulita.</p>\n",
+     "verifica": {
+      "attributo": [
+       {
+        "tag": "p",
+        "nome": "class",
+        "valore": "nota"
+       },
+       {
+        "tag": "p",
+        "nome": "id",
+        "valore": "avvertenza"
+       }
+      ]
+     },
+     "hint": [
+      "Due attributi sullo stesso tag di apertura.",
+      "<p class=\"nota\" id=\"avvertenza\">"
+     ],
+     "spiegazione": "`class` e' una categoria e puo' ripetersi; `id` e' un nome proprio, unico in tutta la pagina. Due `id` uguali non danno errore e rompono tutto quello che li usa — CSS, JavaScript, e i collegamenti interni `#avvertenza`."
+    },
+    {
+     "id": "h01-at-7",
+     "tipo": "predict",
+     "testo": "Che differenza c'e' fra `class` e `id` ?",
+     "opzioni": [
+      "class e' una categoria ripetibile, id e' un nome unico nella pagina",
+      "class serve al CSS, id serve solo a JavaScript",
+      "id e' la forma moderna, class e' deprecata",
+      "sono equivalenti: si scelgono per gusto"
+     ],
+     "risposta": "class e' una categoria ripetibile, id e' un nome unico nella pagina",
+     "spiegazione": "`class` e' una **categoria** e puo' ripetersi su quanti elementi vuoi; `id` e' un **nome proprio** e deve essere unico nella pagina. Due `id` uguali non producono nessun errore e rompono in silenzio il CSS, il JavaScript e i collegamenti interni che li cercano."
+    },
+    {
+     "id": "h01-at-8",
+     "tipo": "html",
+     "testo": "**Una pagina completa.** Documento minimo in italiano, titolo di finestra `Campagna 2026`, intestazione `Prove in galleria`, un'immagine `grafico.png` con descrizione, e un collegamento a `dati.csv` con testo `Scarica i dati`.",
+     "difficolta": 3,
+     "starter": "<!doctype html>\n<html>\n  <head>\n  </head>\n  <body>\n  </body>\n</html>\n",
+     "soluzione": "<!doctype html>\n<html lang=\"it\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Campagna 2026</title>\n  </head>\n  <body>\n    <h1>Prove in galleria</h1>\n    <img src=\"grafico.png\" alt=\"Portanza in funzione dell'angolo d'attacco\">\n    <a href=\"dati.csv\">Scarica i dati</a>\n  </body>\n</html>\n",
+     "verifica": {
+      "elementi": {
+       "html": 1,
+       "head": 1,
+       "body": 1,
+       "h1": 1,
+       "img": 1,
+       "a": 1
+      },
+      "attributo": [
+       {
+        "tag": "html",
+        "nome": "lang",
+        "valore": "it"
+       },
+       {
+        "tag": "meta",
+        "nome": "charset",
+        "valore": "utf-8"
+       },
+       {
+        "tag": "img",
+        "nome": "alt"
+       },
+       {
+        "tag": "a",
+        "nome": "href",
+        "valore": "dati.csv"
+       }
+      ],
+      "contiene": [
+       {
+        "tag": "title",
+        "testo": "Campagna 2026"
+       },
+       {
+        "tag": "h1",
+        "testo": "Prove in galleria"
+       },
+       {
+        "tag": "a",
+        "testo": "Scarica i dati"
+       }
+      ],
+      "dentro": [
+       [
+        "head",
+        "title"
+       ],
+       [
+        "body",
+        "h1"
+       ],
+       [
+        "body",
+        "img"
+       ]
+      ]
+     },
+     "hint": [
+      "Riprendi il documento minimo e riempilo.",
+      "Non dimenticare charset, lang, e alt sull'immagine."
+     ],
+     "spiegazione": "Tutto quello che serve per una pagina vera: struttura, codifica, lingua, contenuto semantico, un'immagine descritta e un collegamento che si capisce da solo.\n\nÈ anche una pagina che funziona **senza CSS**: si legge, si naviga e si capisce lo stesso. È il collaudo che vale la pena fare su qualunque pagina — se senza fogli di stile diventa incomprensibile, la struttura non c'era e a tenerla in piedi era solo l'aspetto."
+    }
+   ]
+  }
+ ]
+}

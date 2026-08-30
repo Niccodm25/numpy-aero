@@ -70,16 +70,16 @@ for meta in attivi:
             else:
                 print(f"  {e['id']}: ok (predict, risposta verificata a mano)")
             continue
-        if e["tipo"] == "terminale":
-            # Gli esercizi di terminale girano sul filesystem virtuale, che e'
-            # in JavaScript: qui si controlla solo che siano ben formati, e il
-            # motore ha il suo controllo in tools/test_shell.mjs.
+        if e["tipo"] in ("terminale", "html"):
+            # Terminale e HTML girano su motori scritti in JavaScript: qui si
+            # controlla solo che siano ben formati, e ogni soluzione viene
+            # eseguita davvero da tools/test_shell.mjs.
             mancanti = [c for c in ("soluzione", "verifica") if c not in e]
             if mancanti:
                 print(f"  {e['id']}: FALLITO — mancano {', '.join(mancanti)}")
                 errori += 1
             else:
-                print(f"  {e['id']}: ok (terminale, verificato da test_shell.mjs)")
+                print(f"  {e['id']}: ok ({e['tipo']}, verificato da test_shell.mjs)")
             continue
         ns = {"np": np}
         try:

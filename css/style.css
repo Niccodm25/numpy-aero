@@ -193,3 +193,11 @@ button.minuscolo {
   font-size: .9rem; padding: .5rem 0; min-height: 44px;
 }
 .riga-prompt input:focus { outline: none; }
+
+/* Anteprima della pagina HTML che stai scrivendo. Fondo bianco fisso: e' una
+   pagina a se', e mostrarla sul tema scuro dell'app direbbe una bugia su come
+   apparira' davvero. */
+.anteprima {
+  width: 100%; min-height: 12rem; background: #fff;
+  border: 1px solid var(--bordo); border-radius: var(--raggio);
+}

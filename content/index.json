@@ -94,12 +94,11 @@
       "id": "html",
       "titolo": "HTML — come e' fatta una pagina",
       "perche": "Come si struttura un file .html, cosa ci sta dentro e in che ordine il browser lo legge. Ultimo perche' non e' prerequisito di niente: e' un dominio a se'.",
-      "disponibile": false,
-      "moduli": [],
+      "disponibile": true,
+      "moduli": [
+        "h01"
+      ],
       "prossimi": [
-        "Un file .html minimo — doctype, html, head, body, e perche' quell'ordine",
-        "Il testo — h1..h6, p, liste, link, e cosa vuol dire markup semantico",
-        "Attributi — id, class, href, src, alt, e come si citano",
         "Tabelle e immagini — table/thead/tbody, img e il testo alternativo",
         "Form — input, label, select, e cosa succede all'invio",
         "CSS — selettori, il box model, flex e grid",
@@ -185,6 +184,12 @@
       "id": "w01",
       "file": "w01-pipeline.json",
       "titolo": "La pipeline a oggetti",
+      "disponibile": true
+    },
+    {
+      "id": "h01",
+      "file": "h01-struttura.json",
+      "titolo": "Com'e' fatta una pagina",
       "disponibile": true
     },
     {

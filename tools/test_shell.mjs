@@ -11,6 +11,7 @@ import * as V from "../js/vfs.js";
 import { creaShell, esegui, eseguiTutto, dividi, verifica } from "../js/shell.js";
 import { AMBIENTI, statoAmbienti } from "../js/ambienti.js";
 import { comandiPowerShell } from "../js/powershell.js";
+import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
 
 let fatti = 0;
 const casi = [];
@@ -486,6 +487,76 @@ caso("Remove-Item su una cartella vuole -Recurse", () => {
   assert.equal(V.esiste(sh.fs, "/home/tu/volo"), false);
 });
 
+// ---------- HTML: analizzatore e verifica ----------
+
+caso("analizza riconosce tag, attributi e annidamento", () => {
+  const a = analizza('<div class="box"><p>ciao</p></div>');
+  const div = conTag(a, "div")[0];
+  assert.equal(div.attributi.class, "box");
+  assert.equal(conTag(a, "p").length, 1);
+  assert.equal(testoDi(div).trim(), "ciao");
+});
+
+caso("gli elementi vuoti non aprono un livello", () => {
+  const a = analizza("<p>prima<br>dopo</p><img src=x.png>");
+  assert.equal(conTag(a, "br").length, 1);
+  assert.equal(conTag(a, "img")[0].attributi.src, "x.png");
+  assert.equal(testoDi(conTag(a, "p")[0]).replace(/\s+/g, ""), "primadopo");
+});
+
+caso("doctype e commenti non diventano elementi", () => {
+  const a = analizza("<!doctype html><!-- nota --><p>x</p>");
+  assert.equal(conTag(a, "!doctype").length, 1);
+  assert.equal(conTag(a, "p").length, 1);
+  assert.equal(testoDi(a).includes("nota"), false, "il commento non e' testo della pagina");
+});
+
+caso("una chiusura che non corrisponde a niente non fa crollare l'albero", () => {
+  const a = analizza("<p>uno</span><p>due</p>");
+  assert.equal(conTag(a, "p").length, 2);
+});
+
+caso("i nomi dei tag e degli attributi non distinguono le maiuscole", () => {
+  const a = analizza('<DIV CLASS="x"><P>y</P></DIV>');
+  assert.equal(conTag(a, "div").length, 1);
+  assert.equal(conTag(a, "div")[0].attributi.class, "x");
+});
+
+caso("verificaHtml conta gli elementi", () => {
+  const s = "<h1>t</h1><p>a</p><p>b</p>";
+  assert.equal(verificaHtml(s, { elementi: { h1: 1, p: 2 } }).ok, true);
+  assert.equal(verificaHtml(s, { elementi: { p: 3 } }).ok, false);
+  assert.equal(verificaHtml(s, { elementi: { p: true } }).ok, true);
+});
+
+caso("verificaHtml controlla il testo di un elemento", () => {
+  const s = "<h1>Campagna di agosto</h1>";
+  assert.equal(verificaHtml(s, { contiene: [{ tag: "h1", testo: "campagna di AGOSTO" }] }).ok, true);
+  assert.equal(verificaHtml(s, { contiene: [{ tag: "h1", testo: "altro" }] }).ok, false);
+});
+
+caso("verificaHtml controlla gli attributi", () => {
+  const s = '<img src="ala.png" alt="l ala">';
+  assert.equal(verificaHtml(s, { attributo: [{ tag: "img", nome: "alt" }] }).ok, true);
+  assert.equal(verificaHtml(s, { attributo: [{ tag: "img", nome: "alt", valore: "l ala" }] }).ok, true);
+  assert.equal(verificaHtml(s, { attributo: [{ tag: "img", nome: "title" }] }).ok, false);
+});
+
+caso("verificaHtml controlla l'annidamento e l'ordine", () => {
+  const s = "<html><head><title>t</title></head><body><h1>x</h1></body></html>";
+  assert.equal(verificaHtml(s, { dentro: [["head", "title"], ["body", "h1"]] }).ok, true);
+  assert.equal(verificaHtml(s, { dentro: [["head", "h1"]] }).ok, false);
+  assert.equal(verificaHtml(s, { ordine: ["head", "body"] }).ok, true);
+  assert.equal(verificaHtml(s, { ordine: ["body", "head"] }).ok, false);
+});
+
+caso("verificaHtml dice cosa manca, non solo che manca", () => {
+  const r = verificaHtml("<p>x</p>", { elementi: { h1: 1 }, dentro: [["body", "p"]] });
+  assert.equal(r.ok, false);
+  assert.equal(r.problemi.length, 2, JSON.stringify(r.problemi));
+  assert.match(r.problemi.join(" "), /h1/);
+});
+
 // ---------- contenuti: ogni soluzione deve passare la propria verifica ----------
 //
 // E' l'equivalente di check_content.py per gli esercizi di terminale: la
@@ -501,6 +572,13 @@ for (const meta of indice.moduli) {
   const gruppi = mod.raccolte || [{ esercizi: mod.esercizi || [] }];
   for (const g of gruppi) {
     for (const es of g.esercizi) {
+      if (es.tipo === "html") {
+        caso(`${es.id}: la soluzione passa la verifica`, () => {
+          const esito = verificaHtml(es.soluzione, es.verifica);
+          assert.equal(esito.ok, true, esito.problemi.join("; "));
+        });
+        continue;
+      }
       if (es.tipo !== "terminale") continue;
       caso(`${es.id}: la soluzione passa la verifica`, () => {
         const sh = creaShell(es.filesystem || {}, {
