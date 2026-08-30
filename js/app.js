@@ -146,7 +146,12 @@ async function home() {
         ${n} <strong>${r.titolo}</strong> <span class="pill">in arrivo</span>
         <div class="muto">${r.perche}</div>
       </div>`;
-    const mods = await Promise.all(r.moduli.map(modulo));
+    // Solo i moduli scritti: quelli pianificati stanno nell'indice come non
+    // disponibili, e non hanno un file da caricare.
+    const scritti = r.moduli.filter((id) =>
+      (indice.moduli || []).some((m) => m.id === id && m.disponibile)
+    );
+    const mods = await Promise.all(scritti.map(modulo));
     const ids = mods.flatMap((m) => m.esercizi.map((e) => e.id));
     const pr = L.progress(stati, ids);
     return `<a class="card" href="#/ramo/${r.id}">
@@ -221,7 +226,7 @@ async function vistaRamo(id) {
          ${r.prossimi.map((t) => `<div class="card muto">${t}</div>`).join("")}`
       : ""}`;
 
-  T.montaTendine(indice, stati, modulo, r.moduli);
+  T.togliTendine();
 }
 
 async function vistaModulo(id) {

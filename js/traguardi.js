@@ -102,21 +102,32 @@ function dettaglio(t, v, indice) {
     <ul class="lista-moduli">${righe}</ul>`;
 }
 
+function carta(t, v) {
+  // I moduli non ancora scritti si dicono qui: un traguardo fermo perche' il
+  // modulo non esiste e' una cosa diversa da uno fermo perche' non l'hai fatto.
+  const n = v.mancanti.length;
+  const manca = n ? ` <span class="pill">${n} ${n === 1 ? "modulo" : "moduli"} in arrivo</span>` : "";
+  return `<button class="card traguardo" data-id="${t.id}">
+    <strong>${t.titolo}</strong> <span class="pill ${CLASSE[v.stato]}">${t.livello}</span>${manca}
+    <div class="muto">${t.sottotitolo}</div>
+    <div class="barra"><i style="width:${Math.round(v.pct * 100)}%"></i></div>
+  </button>`;
+}
+
 function elencoHtml(dati, valutati) {
-  const carte = dati.traguardi
-    .map((t) => {
-      const v = valutati.get(t.id);
-      const cl = CLASSE[v.stato];
-      return `<button class="card traguardo" data-id="${t.id}">
-        <strong>${t.titolo}</strong> <span class="pill ${cl}">${t.livello}</span>
-        <div class="muto">${t.sottotitolo}</div>
-        <div class="barra"><i style="width:${Math.round(v.pct * 100)}%"></i></div>
-      </button>`;
+  const gruppi = [...new Set(dati.traguardi.map((t) => t.gruppo || "Traguardi"))];
+  const sezioni = gruppi
+    .map((g) => {
+      const carte = dati.traguardi
+        .filter((t) => (t.gruppo || "Traguardi") === g)
+        .map((t) => carta(t, valutati.get(t.id)))
+        .join("");
+      return `<h3>${g}</h3>${carte}`;
     })
     .join("");
   return `<h2>${dati.titolo}</h2>
     <p class="muto">${dati.sottotitolo}</p>
-    ${carte}`;
+    ${sezioni}`;
 }
 
 /**
@@ -126,9 +137,8 @@ function elencoHtml(dati, valutati) {
  * @param {object} indice          content/index.json gia' caricato
  * @param {object} stati           stato per esercizio
  * @param {(id:string)=>Promise}   caricaModulo  per contare gli esercizi
- * @param {string[]|null} soloModuli  se dato, mostra i traguardi che toccano questi moduli
  */
-export async function montaTendine(indice, stati, caricaModulo, soloModuli = null) {
+export async function montaTendine(indice, stati, caricaModulo) {
   let dati;
   try {
     dati = await carica();
@@ -136,13 +146,7 @@ export async function montaTendine(indice, stati, caricaModulo, soloModuli = nul
     return; // senza traguardi l'app funziona lo stesso
   }
 
-  const visibili = soloModuli
-    ? dati.traguardi.filter((t) => t.richiede.some((id) => soloModuli.includes(id)))
-    : dati.traguardi;
-  if (!visibili.length) {
-    document.getElementById("tendine")?.remove();
-    return;
-  }
+  const visibili = dati.traguardi;
 
   // I moduli servono solo per contare gli esercizi: quelli non ancora scritti
   // restano null, ed e' cosi' che un traguardo sa di essere fuori portata.
@@ -169,7 +173,7 @@ export async function montaTendine(indice, stati, caricaModulo, soloModuli = nul
     d.querySelector(".indietro-traguardi").onclick = () => apriElenco();
   };
   const apriElenco = () => {
-    const d = mostra(elencoHtml({ ...dati, traguardi: visibili }, valutati));
+    const d = mostra(elencoHtml(dati, valutati));
     d.querySelectorAll(".traguardo").forEach((b) => (b.onclick = () => apri(b.dataset.id)));
   };
 

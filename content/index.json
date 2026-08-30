@@ -87,24 +87,25 @@
         "l04",
         "l05",
         "l06",
-        "c04"
+        "l07",
+        "l08",
+        "l09",
+        "l10",
+        "l11",
+        "l12",
+        "l13",
+        "l14",
+        "l15",
+        "l16",
+        "l17",
+        "l18",
+        "l19",
+        "c04",
+        "c05",
+        "c06",
+        "c07"
       ],
-      "prossimi": [
-        "l07 — Archivi, pacchetti e spazio (tar, gzip, apt, df/du/free)",
-        "l08 — Editor nel terminale e link (nano, vim, ln -s)",
-        "l09 — Utenti, gruppi e permessi speciali (useradd, setuid, sticky)",
-        "l10 — Testo avanzato (sed, awk, xargs, cut, tee)",
-        "l11 — Rete (ip, ping, ss, dig, nmcli)",
-        "l12 — La macchina remota (ssh, chiavi, scp, rsync, tmux)",
-        "l13 — Servizi, log e lavori periodici (systemctl, journalctl, cron)",
-        "l14 — Hardware e kernel (lspci, modprobe, /proc, sysctl)",
-        "l15 — Prestazioni e diagnosi (strace, perf, cgroups)",
-        "l16 — Dischi, filesystem e volumi (mount, LVM, RAID, LUKS)",
-        "l17 — Container e virtualizzazione (Docker, Apptainer, KVM)",
-        "l18 — Sicurezza del sistema (firewall, SELinux, capabilities, PAM)",
-        "l19 — Automazione a scala (Ansible)",
-        "Cantieri c05, c06, c07 — il server, il cluster, la pipeline riproducibile"
-      ]
+      "prossimi": []
     },
     {
       "id": "html",
@@ -355,6 +356,105 @@
       "titolo": "Cantiere Linux - La campagna che nessuno ha ordinato",
       "cantiere": true,
       "disponibile": true
+    },
+    {
+      "id": "l07",
+      "file": "",
+      "titolo": "Archivi, pacchetti e spazio",
+      "disponibile": false
+    },
+    {
+      "id": "l08",
+      "file": "",
+      "titolo": "Editor nel terminale, e i link",
+      "disponibile": false
+    },
+    {
+      "id": "l09",
+      "file": "",
+      "titolo": "Utenti, gruppi e permessi speciali",
+      "disponibile": false
+    },
+    {
+      "id": "l10",
+      "file": "",
+      "titolo": "Testo avanzato: sed, awk, xargs",
+      "disponibile": false
+    },
+    {
+      "id": "l11",
+      "file": "",
+      "titolo": "Rete",
+      "disponibile": false
+    },
+    {
+      "id": "l12",
+      "file": "",
+      "titolo": "La macchina remota",
+      "disponibile": false
+    },
+    {
+      "id": "l13",
+      "file": "",
+      "titolo": "Servizi, log e lavori periodici",
+      "disponibile": false
+    },
+    {
+      "id": "l14",
+      "file": "",
+      "titolo": "Hardware e kernel",
+      "disponibile": false
+    },
+    {
+      "id": "l15",
+      "file": "",
+      "titolo": "Prestazioni e diagnosi",
+      "disponibile": false
+    },
+    {
+      "id": "l16",
+      "file": "",
+      "titolo": "Dischi, filesystem e volumi",
+      "disponibile": false
+    },
+    {
+      "id": "l17",
+      "file": "",
+      "titolo": "Container e virtualizzazione",
+      "disponibile": false
+    },
+    {
+      "id": "l18",
+      "file": "",
+      "titolo": "Sicurezza del sistema",
+      "disponibile": false
+    },
+    {
+      "id": "l19",
+      "file": "",
+      "titolo": "Automazione a scala",
+      "disponibile": false
+    },
+    {
+      "id": "c05",
+      "file": "",
+      "titolo": "Cantiere — Il server che regge",
+      "disponibile": false,
+      "cantiere": true
+    },
+    {
+      "id": "c06",
+      "file": "",
+      "titolo": "Cantiere — Il cluster in miniatura",
+      "disponibile": false,
+      "cantiere": true
+    },
+    {
+      "id": "c07",
+      "file": "",
+      "titolo": "Cantiere — La pipeline riproducibile",
+      "disponibile": false,
+      "cantiere": true
     }
   ]
 }
