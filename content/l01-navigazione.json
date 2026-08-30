@@ -1,766 +1,827 @@
 {
- "id": "l01",
- "titolo": "Muoversi e maneggiare file",
- "perche": "Un albero solo che parte da /, senza lettere di unita', dove maiuscole e minuscole contano e rm non ha un cestino. I dieci comandi con cui si passa il novanta per cento del tempo in una shell, e le tre differenze che fanno perdere piu' tempo a chi arriva da Windows.",
- "funzioni": [
-  "pwd",
-  "ls",
-  "cd",
-  "mkdir",
-  "touch",
-  "cat",
-  "echo",
-  ">",
-  ">>",
-  "cp",
-  "mv",
-  "rm"
- ],
- "lezioni": [
-  {
-   "id": "l01-l1",
-   "titolo": "Un albero solo, e nessuna lettera di unita'",
-   "md": "Su Linux non esistono `C:` e `D:`. C'e' **un solo albero**, che parte da `/` — la radice — e tutto ci sta dentro, dischi esterni compresi: vengono \"montati\" in una cartella, e da quel momento sono un ramo come gli altri.\n\n```\n/\n├── home/\n│   └── tu/          <- la tua roba\n├── usr/bin/         <- i programmi\n├── etc/             <- la configurazione\n└── tmp/             <- file temporanei\n```\n\n### Assoluto e relativo\n\n```\n/home/tu/volo/dati        percorso ASSOLUTO: parte da /, vale ovunque tu sia\ndati                      RELATIVO: parte da dove sei adesso\n./dati                    lo stesso, con il \"qui\" esplicito\n../archivio               sale di uno e poi scende\n~                         la tua cartella personale, /home/tu\n```\n\nLa barra iniziale e' tutta la differenza: `dati` e `/dati` sono due posti diversi, e il secondo quasi certamente non esiste.\n\n### Le tre scorciatoie\n\n| | |\n|---|---|\n| `.` | la cartella corrente |\n| `..` | quella sopra |\n| `~` | la tua cartella personale |\n\n`cd ..` sale di un livello. `cd ../..` di due. `cd ~` — o `cd` da solo — torna a casa da qualunque punto.\n\n### Dove sono?\n\n```\npwd\n/home/tu/volo\n```\n\nÈ la prima riga da digitare quando un comando non fa quello che ti aspetti: quasi sempre il problema e' che sei altrove.\n\n### Maiuscole e minuscole contano\n\n`Dati` e `dati` sono due cartelle **diverse**, e possono coesistere. È la differenza da Windows che fa perdere piu' tempo, perche' un progetto che funziona sul portatile fallisce sul cluster su un `import Dati` scritto male."
-  },
-  {
-   "id": "l01-l2",
-   "titolo": "ls: quello che non vedi",
-   "md": "```\nls          # i nomi, e basta\nls -a       # anche quelli che iniziano per punto\nls -l       # una riga per file, con dimensione e permessi\nls -la      # le due cose insieme\n```\n\n### Il punto davanti nasconde\n\nUn file che inizia per `.` non compare in `ls`. Non e' protezione, e' convenzione: serve a togliere dalla vista la configurazione, che altrimenti sommergerebbe i file veri.\n\nÈ il motivo per cui `.venv`, `.git` e `.gitignore` sembrano non esistere finche' non digiti `ls -a`, ed e' la prima cosa da provare quando un comando dice che una cartella c'e' gia' e tu non la vedi.\n\n### Le opzioni si accorpano\n\n```\nls -l -a\nls -la      # identico\n```\n\nVale per quasi tutti i comandi: `rm -r -f` e `rm -rf` sono la stessa cosa.\n\n### Guardare senza spostarsi\n\n```\nls dati            # il contenuto di dati, restando dove sei\nls ../archivio     # e anche di una cartella che sta sopra\n```\n\n`ls` accetta un percorso. Non serve entrare in una cartella per vedere cosa contiene, e non entrarci evita di dimenticarsi dove si era."
-  },
-  {
-   "id": "l01-l3",
-   "titolo": "Creare, copiare, spostare, cancellare",
-   "md": "```\nmkdir dati              # crea una cartella\nmkdir -p a/b/c          # crea anche i genitori mancanti\ntouch note.txt          # crea un file vuoto\ncp a.txt b.txt          # copia\ncp -r cartella dest     # copia una cartella: serve -r\nmv a.txt b.txt          # sposta\nrm a.txt                # cancella un file\nrm -r cartella          # cancella una cartella e tutto il contenuto\n```\n\n### mv fa due mestieri\n\nSpostare e **rinominare** sono la stessa operazione: `mv vecchio.txt nuovo.txt` rinomina, `mv nota.txt archivio/` sposta. Non esiste un comando `rename`, e non serve.\n\n### La destinazione decide\n\n```\ncp a.txt archivio/      # se archivio e' una cartella: dentro, con lo stesso nome\ncp a.txt archivio       # se archivio NON esiste: crea un FILE chiamato archivio\n```\n\nLa stessa riga fa due cose diverse a seconda che la destinazione esista o no. La barra finale non protegge da tutto, ma dichiara l'intenzione.\n\n### rm non chiede conferma e non ha un cestino\n\nQuesto e' il punto in cui Linux differisce di piu' dalle interfacce grafiche: `rm` cancella, subito, definitivamente. Non c'e' un cestino da cui recuperare.\n\n```\nrm -rf /                # non farlo mai da nessuna parte\n```\n\nLe regole che valgono la pena:\n\n- `ls` prima di `rm`, sempre, sullo stesso percorso. Se `ls dati/*` mostra quello che ti aspetti, `rm dati/*` cancellera' quello.\n- Attenzione allo spazio: `rm -r dati /` e `rm -r dati/` sono due comandi molto diversi.\n- Qui nel simulatore si puo' sbagliare quanto si vuole. È il senso di questo terminale."
-  }
- ],
- "raccolte": [
-  {
-   "id": "l01-pwd",
-   "comando": "pwd e ls",
-   "titolo": "dove sono, e cosa c'e'",
-   "esercizi": [
+  "id": "l01",
+  "titolo": "Muoversi e maneggiare file",
+  "perche": "Un albero solo che parte da /, senza lettere di unita', dove maiuscole e minuscole contano e rm non ha un cestino. I dieci comandi con cui si passa il novanta per cento del tempo in una shell, e le tre differenze che fanno perdere piu' tempo a chi arriva da Windows.",
+  "funzioni": [
+    "pwd",
+    "ls",
+    "cd",
+    "mkdir",
+    "touch",
+    "cat",
+    "echo",
+    ">",
+    ">>",
+    "cp",
+    "mv",
+    "rm"
+  ],
+  "lezioni": [
     {
-     "id": "l01-pw-1",
-     "tipo": "terminale",
-     "testo": "Prima domanda di sempre: dove sei?",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "pwd",
-     "verifica": {
-      "stampa": "/home/tu",
-      "usa": [
-       "pwd"
-      ]
-     },
-     "hint": [
-      "Tre lettere: print working directory.",
-      "pwd"
-     ],
-     "spiegazione": "`/home/tu`, la tua cartella personale. È la prima riga da digitare quando un comando non fa quello che ti aspetti: quasi sempre il problema e' che sei altrove."
+      "id": "l01-l1",
+      "titolo": "Un albero solo, e nessuna lettera di unita'",
+      "md": "Su Linux non esistono `C:` e `D:`. C'e' **un solo albero**, che parte da `/` — la radice — e tutto ci sta dentro, dischi esterni compresi: vengono \"montati\" in una cartella, e da quel momento sono un ramo come gli altri.\n\n```\n/\n├── home/\n│   └── tu/          <- la tua roba\n├── usr/bin/         <- i programmi\n├── etc/             <- la configurazione\n└── tmp/             <- file temporanei\n```\n\n### Assoluto e relativo\n\n```\n/home/tu/volo/dati        percorso ASSOLUTO: parte da /, vale ovunque tu sia\ndati                      RELATIVO: parte da dove sei adesso\n./dati                    lo stesso, con il \"qui\" esplicito\n../archivio               sale di uno e poi scende\n~                         la tua cartella personale, /home/tu\n```\n\nLa barra iniziale e' tutta la differenza: `dati` e `/dati` sono due posti diversi, e il secondo quasi certamente non esiste.\n\n### Le tre scorciatoie\n\n| | |\n|---|---|\n| `.` | la cartella corrente |\n| `..` | quella sopra |\n| `~` | la tua cartella personale |\n\n`cd ..` sale di un livello. `cd ../..` di due. `cd ~` — o `cd` da solo — torna a casa da qualunque punto.\n\n### Dove sono?\n\n```\npwd\n/home/tu/volo\n```\n\nÈ la prima riga da digitare quando un comando non fa quello che ti aspetti: quasi sempre il problema e' che sei altrove.\n\n### Maiuscole e minuscole contano\n\n`Dati` e `dati` sono due cartelle **diverse**, e possono coesistere. È la differenza da Windows che fa perdere piu' tempo, perche' un progetto che funziona sul portatile fallisce sul cluster su un `import Dati` scritto male."
     },
     {
-     "id": "l01-pw-2",
-     "tipo": "terminale",
-     "testo": "Guarda cosa c'e' nella cartella `volo`, **senza** entrarci.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "ls volo",
-     "verifica": {
-      "stampa": "note.txt",
-      "cwd": "/home/tu"
-     },
-     "hint": [
-      "ls accetta il nome di una cartella.",
-      "ls volo"
-     ],
-     "spiegazione": "`ls` accetta un percorso: non serve entrare in una cartella per vederne il contenuto, e non entrarci evita di dimenticarsi dove si era.\n\nNota che `.conf` non compare: il punto davanti lo nasconde."
+      "id": "l01-l2",
+      "titolo": "ls: quello che non vedi",
+      "md": "```\nls          # i nomi, e basta\nls -a       # anche quelli che iniziano per punto\nls -l       # una riga per file, con dimensione e permessi\nls -la      # le due cose insieme\n```\n\n### Il punto davanti nasconde\n\nUn file che inizia per `.` non compare in `ls`. Non e' protezione, e' convenzione: serve a togliere dalla vista la configurazione, che altrimenti sommergerebbe i file veri.\n\nÈ il motivo per cui `.venv`, `.git` e `.gitignore` sembrano non esistere finche' non digiti `ls -a`, ed e' la prima cosa da provare quando un comando dice che una cartella c'e' gia' e tu non la vedi.\n\n### Le opzioni si accorpano\n\n```\nls -l -a\nls -la      # identico\n```\n\nVale per quasi tutti i comandi: `rm -r -f` e `rm -rf` sono la stessa cosa.\n\n### Guardare senza spostarsi\n\n```\nls dati            # il contenuto di dati, restando dove sei\nls ../archivio     # e anche di una cartella che sta sopra\n```\n\n`ls` accetta un percorso. Non serve entrare in una cartella per vedere cosa contiene, e non entrarci evita di dimenticarsi dove si era."
     },
     {
-     "id": "l01-pw-3",
-     "tipo": "predict",
-     "testo": "Perche' `ls` non mostra il file `.conf` ?",
-     "opzioni": [
-      "i nomi che iniziano per punto sono nascosti per convenzione",
-      "e' un file di sistema protetto",
-      "ls mostra solo i file di testo",
-      "il file e' vuoto e ls salta i file vuoti"
-     ],
-     "risposta": "i nomi che iniziano per punto sono nascosti per convenzione",
-     "spiegazione": "Perche' un nome che inizia per punto e' nascosto per convenzione. Non e' protezione: serve a togliere dalla vista la configurazione, che altrimenti sommergerebbe i file veri. Si vede con `ls -a`."
-    },
-    {
-     "id": "l01-pw-4",
-     "tipo": "terminale",
-     "testo": "Mostra **tutto** quello che c'e' in `volo`, nascosti compresi.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "ls -a volo",
-     "verifica": {
-      "stampa": ".conf"
-     },
-     "hint": [
-      "L'opzione e' -a, come all.",
-      "ls -a volo"
-     ],
-     "spiegazione": "`-a` mostra anche i nomi che iniziano per punto. È la prima cosa da provare quando un comando dice che una cartella c'e' gia' e tu non la vedi — succede con `.venv` e con `.git` praticamente sempre."
-    },
-    {
-     "id": "l01-pw-5",
-     "tipo": "terminale",
-     "testo": "Mostra il contenuto di `volo/dati` in forma estesa, con le dimensioni.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "ls -l volo/dati",
-     "verifica": {
-      "stampa": "prova1.csv"
-     },
-     "hint": [
-      "L'opzione e' -l, come long.",
-      "ls -l volo/dati"
-     ],
-     "spiegazione": "`-l` da' una riga per file, con permessi e dimensione. Le opzioni si accorpano: `ls -l -a` e `ls -la` sono identici, e vale per quasi tutti i comandi."
-    },
-    {
-     "id": "l01-pw-6",
-     "tipo": "predict",
-     "testo": "`dati` e `/dati` puntano allo stesso posto?",
-     "opzioni": [
-      "no: la barra iniziale rende il percorso assoluto, dalla radice",
-      "si': la barra iniziale e' opzionale",
-      "si', se ti trovi nella radice",
-      "no: /dati e' un file, dati una cartella"
-     ],
-     "risposta": "no: la barra iniziale rende il percorso assoluto, dalla radice",
-     "spiegazione": "No. La barra iniziale rende il percorso **assoluto**: `/dati` parte dalla radice e quasi certamente non esiste, mentre `dati` parte da dove sei adesso. È un carattere, e cambia completamente il significato."
-    },
-    {
-     "id": "l01-pw-7",
-     "tipo": "predict",
-     "testo": "Su Linux, `Dati` e `dati` sono la stessa cartella?",
-     "opzioni": [
-      "no: maiuscole e minuscole contano, e le due possono coesistere",
-      "si': i nomi non distinguono maiuscole e minuscole",
-      "dipende dal filesystem in uso",
-      "si', ma solo dentro /home"
-     ],
-     "risposta": "no: maiuscole e minuscole contano, e le due possono coesistere",
-     "spiegazione": "No: maiuscole e minuscole contano, e le due possono coesistere. È la differenza da Windows che fa perdere piu' tempo, perche' un progetto che funziona sul portatile fallisce sul cluster su un nome scritto con la maiuscola sbagliata."
-    },
-    {
-     "id": "l01-pw-8",
-     "tipo": "terminale",
-     "testo": "Guarda cosa c'e' nella radice del sistema, senza spostarti.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "ls /",
-     "verifica": {
-      "stampa": "home",
-      "cwd": "/home/tu"
-     },
-     "hint": [
-      "La radice si scrive con una barra sola.",
-      "ls /"
-     ],
-     "spiegazione": "`/` e' la radice, e sotto ci sta **tutto**: non esistono lettere di unita'. Un disco esterno viene montato in una cartella e da quel momento e' un ramo come gli altri."
+      "id": "l01-l3",
+      "titolo": "Creare, copiare, spostare, cancellare",
+      "md": "```\nmkdir dati              # crea una cartella\nmkdir -p a/b/c          # crea anche i genitori mancanti\ntouch note.txt          # crea un file vuoto\ncp a.txt b.txt          # copia\ncp -r cartella dest     # copia una cartella: serve -r\nmv a.txt b.txt          # sposta\nrm a.txt                # cancella un file\nrm -r cartella          # cancella una cartella e tutto il contenuto\n```\n\n### mv fa due mestieri\n\nSpostare e **rinominare** sono la stessa operazione: `mv vecchio.txt nuovo.txt` rinomina, `mv nota.txt archivio/` sposta. Non esiste un comando `rename`, e non serve.\n\n### La destinazione decide\n\n```\ncp a.txt archivio/      # se archivio e' una cartella: dentro, con lo stesso nome\ncp a.txt archivio       # se archivio NON esiste: crea un FILE chiamato archivio\n```\n\nLa stessa riga fa due cose diverse a seconda che la destinazione esista o no. La barra finale non protegge da tutto, ma dichiara l'intenzione.\n\n### rm non chiede conferma e non ha un cestino\n\nQuesto e' il punto in cui Linux differisce di piu' dalle interfacce grafiche: `rm` cancella, subito, definitivamente. Non c'e' un cestino da cui recuperare.\n\n```\nrm -rf /                # non farlo mai da nessuna parte\n```\n\nLe regole che valgono la pena:\n\n- `ls` prima di `rm`, sempre, sullo stesso percorso. Se `ls dati/*` mostra quello che ti aspetti, `rm dati/*` cancellera' quello.\n- Attenzione allo spazio: `rm -r dati /` e `rm -r dati/` sono due comandi molto diversi.\n- Qui nel simulatore si puo' sbagliare quanto si vuole. È il senso di questo terminale."
     }
-   ]
-  },
-  {
-   "id": "l01-cd",
-   "comando": "cd",
-   "titolo": "cd — percorsi assoluti e relativi",
-   "esercizi": [
+  ],
+  "raccolte": [
     {
-     "id": "l01-cd-1",
-     "tipo": "terminale",
-     "testo": "Entra nella cartella `volo` e conferma di esserci.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "cd volo\npwd",
-     "verifica": {
-      "cwd": "/home/tu/volo",
-      "usa": [
-       "cd"
+      "id": "l01-pwd",
+      "comando": "pwd e ls",
+      "titolo": "dove sono, e cosa c'e'",
+      "esercizi": [
+        {
+          "id": "l01-pw-1",
+          "tipo": "terminale",
+          "testo": "Prima domanda di sempre: dove sei?",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "pwd",
+          "verifica": {
+            "stampa": "/home/tu",
+            "usa": [
+              "pwd"
+            ]
+          },
+          "hint": [
+            "Tre lettere: print working directory.",
+            "pwd"
+          ],
+          "spiegazione": "`/home/tu`, la tua cartella personale. È la prima riga da digitare quando un comando non fa quello che ti aspetti: quasi sempre il problema e' che sei altrove."
+        },
+        {
+          "id": "l01-pw-2",
+          "tipo": "terminale",
+          "testo": "Guarda cosa c'e' nella cartella `volo`, **senza** entrarci.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "ls volo",
+          "verifica": {
+            "stampa": "note.txt",
+            "cwd": "/home/tu",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "ls accetta il nome di una cartella.",
+            "ls volo"
+          ],
+          "spiegazione": "`ls` accetta un percorso: non serve entrare in una cartella per vederne il contenuto, e non entrarci evita di dimenticarsi dove si era.\n\nNota che `.conf` non compare: il punto davanti lo nasconde."
+        },
+        {
+          "id": "l01-pw-3",
+          "tipo": "predict",
+          "testo": "Perche' `ls` non mostra il file `.conf` ?",
+          "opzioni": [
+            "i nomi che iniziano per punto sono nascosti per convenzione",
+            "e' un file di sistema protetto",
+            "ls mostra solo i file di testo",
+            "il file e' vuoto e ls salta i file vuoti"
+          ],
+          "risposta": "i nomi che iniziano per punto sono nascosti per convenzione",
+          "spiegazione": "Perche' un nome che inizia per punto e' nascosto per convenzione. Non e' protezione: serve a togliere dalla vista la configurazione, che altrimenti sommergerebbe i file veri. Si vede con `ls -a`."
+        },
+        {
+          "id": "l01-pw-4",
+          "tipo": "terminale",
+          "testo": "Mostra **tutto** quello che c'e' in `volo`, nascosti compresi.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "ls -a volo",
+          "verifica": {
+            "stampa": ".conf",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "L'opzione e' -a, come all.",
+            "ls -a volo"
+          ],
+          "spiegazione": "`-a` mostra anche i nomi che iniziano per punto. È la prima cosa da provare quando un comando dice che una cartella c'e' gia' e tu non la vedi — succede con `.venv` e con `.git` praticamente sempre."
+        },
+        {
+          "id": "l01-pw-5",
+          "tipo": "terminale",
+          "testo": "Mostra il contenuto di `volo/dati` in forma estesa, con le dimensioni.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "ls -l volo/dati",
+          "verifica": {
+            "stampa": "prova1.csv",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "L'opzione e' -l, come long.",
+            "ls -l volo/dati"
+          ],
+          "spiegazione": "`-l` da' una riga per file, con permessi e dimensione. Le opzioni si accorpano: `ls -l -a` e `ls -la` sono identici, e vale per quasi tutti i comandi."
+        },
+        {
+          "id": "l01-pw-6",
+          "tipo": "predict",
+          "testo": "`dati` e `/dati` puntano allo stesso posto?",
+          "opzioni": [
+            "no: la barra iniziale rende il percorso assoluto, dalla radice",
+            "si': la barra iniziale e' opzionale",
+            "si', se ti trovi nella radice",
+            "no: /dati e' un file, dati una cartella"
+          ],
+          "risposta": "no: la barra iniziale rende il percorso assoluto, dalla radice",
+          "spiegazione": "No. La barra iniziale rende il percorso **assoluto**: `/dati` parte dalla radice e quasi certamente non esiste, mentre `dati` parte da dove sei adesso. È un carattere, e cambia completamente il significato."
+        },
+        {
+          "id": "l01-pw-7",
+          "tipo": "predict",
+          "testo": "Su Linux, `Dati` e `dati` sono la stessa cartella?",
+          "opzioni": [
+            "no: maiuscole e minuscole contano, e le due possono coesistere",
+            "si': i nomi non distinguono maiuscole e minuscole",
+            "dipende dal filesystem in uso",
+            "si', ma solo dentro /home"
+          ],
+          "risposta": "no: maiuscole e minuscole contano, e le due possono coesistere",
+          "spiegazione": "No: maiuscole e minuscole contano, e le due possono coesistere. È la differenza da Windows che fa perdere piu' tempo, perche' un progetto che funziona sul portatile fallisce sul cluster su un nome scritto con la maiuscola sbagliata."
+        },
+        {
+          "id": "l01-pw-8",
+          "tipo": "terminale",
+          "testo": "Guarda cosa c'e' nella radice del sistema, senza spostarti.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "ls /",
+          "verifica": {
+            "stampa": "home",
+            "cwd": "/home/tu",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "La radice si scrive con una barra sola.",
+            "ls /"
+          ],
+          "spiegazione": "`/` e' la radice, e sotto ci sta **tutto**: non esistono lettere di unita'. Un disco esterno viene montato in una cartella e da quel momento e' un ramo come gli altri."
+        }
       ]
-     },
-     "hint": [
-      "cd seguito dal nome della cartella.",
-      "cd volo"
-     ],
-     "spiegazione": "`cd` cambia cartella, `pwd` conferma. Prendere l'abitudine di verificare dopo uno spostamento costa un secondo e toglie la meta' degli errori successivi."
     },
     {
-     "id": "l01-cd-2",
-     "tipo": "terminale",
-     "testo": "Da `volo/dati`, torna su di un livello.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "cwd": "/home/tu/volo/dati",
-     "soluzione": "cd ..",
-     "verifica": {
-      "cwd": "/home/tu/volo"
-     },
-     "hint": [
-      "Due punti indicano la cartella superiore.",
-      "cd .."
-     ],
-     "spiegazione": "`..` e' la cartella sopra. È un percorso come gli altri: si puo' usare ovunque, non solo con `cd` — `ls ..` guarda sopra, `cp x ../y` copia sopra."
-    },
-    {
-     "id": "l01-cd-3",
-     "tipo": "terminale",
-     "testo": "Da `volo/dati`, sali di **due** livelli in un comando solo.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "cwd": "/home/tu/volo/dati",
-     "soluzione": "cd ../..",
-     "verifica": {
-      "cwd": "/home/tu"
-     },
-     "hint": [
-      "Due volte i due punti, separati da una barra.",
-      "cd ../.."
-     ],
-     "spiegazione": "`../..` sale due volte. Si concatenano quanti ne servono, ma oltre il secondo conviene un percorso assoluto: `cd ../../..` non dice a nessuno dove si finisce."
-    },
-    {
-     "id": "l01-cd-4",
-     "tipo": "terminale",
-     "testo": "Sei perso da qualche parte. Torna alla tua cartella personale in un comando.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "cwd": "/home/tu/volo/dati",
-     "soluzione": "cd",
-     "verifica": {
-      "cwd": "/home/tu",
-      "usa": [
-       "cd"
+      "id": "l01-cd",
+      "comando": "cd",
+      "titolo": "cd — percorsi assoluti e relativi",
+      "esercizi": [
+        {
+          "id": "l01-cd-1",
+          "tipo": "terminale",
+          "testo": "Entra nella cartella `volo` e conferma di esserci.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "cd volo\npwd",
+          "verifica": {
+            "cwd": "/home/tu/volo",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "cd seguito dal nome della cartella.",
+            "cd volo"
+          ],
+          "spiegazione": "`cd` cambia cartella, `pwd` conferma. Prendere l'abitudine di verificare dopo uno spostamento costa un secondo e toglie la meta' degli errori successivi."
+        },
+        {
+          "id": "l01-cd-2",
+          "tipo": "terminale",
+          "testo": "Da `volo/dati`, torna su di un livello.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "cwd": "/home/tu/volo/dati",
+          "soluzione": "cd ..",
+          "verifica": {
+            "cwd": "/home/tu/volo",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Due punti indicano la cartella superiore.",
+            "cd .."
+          ],
+          "spiegazione": "`..` e' la cartella sopra. È un percorso come gli altri: si puo' usare ovunque, non solo con `cd` — `ls ..` guarda sopra, `cp x ../y` copia sopra."
+        },
+        {
+          "id": "l01-cd-3",
+          "tipo": "terminale",
+          "testo": "Da `volo/dati`, sali di **due** livelli in un comando solo.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "cwd": "/home/tu/volo/dati",
+          "soluzione": "cd ../..",
+          "verifica": {
+            "cwd": "/home/tu",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Due volte i due punti, separati da una barra.",
+            "cd ../.."
+          ],
+          "spiegazione": "`../..` sale due volte. Si concatenano quanti ne servono, ma oltre il secondo conviene un percorso assoluto: `cd ../../..` non dice a nessuno dove si finisce."
+        },
+        {
+          "id": "l01-cd-4",
+          "tipo": "terminale",
+          "testo": "Sei perso da qualche parte. Torna alla tua cartella personale in un comando.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "cwd": "/home/tu/volo/dati",
+          "soluzione": "cd",
+          "verifica": {
+            "cwd": "/home/tu",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Senza argomenti, oppure con la tilde.",
+            "cd"
+          ],
+          "spiegazione": "`cd` da solo torna a casa, e `cd ~` fa lo stesso. Funziona da qualunque punto del filesystem, ed e' il modo di ripartire quando non si capisce piu' dove si e'."
+        },
+        {
+          "id": "l01-cd-5",
+          "tipo": "terminale",
+          "testo": "Da `volo/dati`, raggiungi `archivio` — che sta in `/home/tu` — usando un percorso **relativo**.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "cwd": "/home/tu/volo/dati",
+          "soluzione": "cd ../../archivio",
+          "verifica": {
+            "cwd": "/home/tu/archivio",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Prima si sale di due, poi si scende.",
+            "cd ../../archivio"
+          ],
+          "spiegazione": "`../../archivio`: si sale di due e si scende in archivio. Il percorso assoluto `/home/tu/archivio` porta allo stesso posto ed e' piu' chiaro da leggere; il relativo e' piu' corto e sopravvive se sposti l'intero progetto altrove."
+        },
+        {
+          "id": "l01-cd-6",
+          "tipo": "terminale",
+          "testo": "Ora raggiungi la stessa cartella con un percorso **assoluto**.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "cwd": "/home/tu/volo/dati",
+          "soluzione": "cd /home/tu/archivio",
+          "verifica": {
+            "cwd": "/home/tu/archivio",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Parte dalla radice: comincia con /.",
+            "cd /home/tu/archivio"
+          ],
+          "spiegazione": "`/home/tu/archivio` parte dalla radice e vale identico da qualunque punto tu sia. È la forma da usare negli script: un percorso relativo dentro uno script dipende da dove lo lanci, ed e' una fonte di guasti che si manifestano solo in produzione."
+        },
+        {
+          "id": "l01-cd-7",
+          "tipo": "predict",
+          "testo": "Uno script contiene `cd dati`. Perche' puo' funzionare per te e fallire per un collega?",
+          "opzioni": [
+            "e' relativo: dipende da dove lo script viene lanciato",
+            "il collega non ha i permessi sulla cartella",
+            "cd non funziona dentro gli script",
+            "il nome della cartella distingue maiuscole e minuscole"
+          ],
+          "risposta": "e' relativo: dipende da dove lo script viene lanciato",
+          "spiegazione": "Perche' e' un percorso **relativo**: dipende da dove lo script viene lanciato, non da dove si trova. Se il collega lo esegue da un'altra cartella, quella `dati` non c'e'. Negli script i percorsi vanno assoluti, o ricavati dalla posizione dello script stesso."
+        },
+        {
+          "id": "l01-cd-8",
+          "tipo": "terminale",
+          "testo": "Prova a entrare in una cartella che non esiste, e leggi cosa risponde.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "cd inesistente\npwd",
+          "verifica": {
+            "cwd": "/home/tu",
+            "usa": [
+              "cd",
+              "pwd"
+            ]
+          },
+          "hint": [
+            "Prova pure: qui non si rompe niente.",
+            "cd inesistente e poi pwd"
+          ],
+          "spiegazione": "Un errore esplicito, e **non ti sposta**: dopo un `cd` fallito sei ancora dov'eri. È importante saperlo perche' il comando successivo verra' eseguito li', non dove credevi di essere arrivato."
+        }
       ]
-     },
-     "hint": [
-      "Senza argomenti, oppure con la tilde.",
-      "cd"
-     ],
-     "spiegazione": "`cd` da solo torna a casa, e `cd ~` fa lo stesso. Funziona da qualunque punto del filesystem, ed e' il modo di ripartire quando non si capisce piu' dove si e'."
     },
     {
-     "id": "l01-cd-5",
-     "tipo": "terminale",
-     "testo": "Da `volo/dati`, raggiungi `archivio` — che sta in `/home/tu` — usando un percorso **relativo**.",
-     "difficolta": 2,
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "cwd": "/home/tu/volo/dati",
-     "soluzione": "cd ../../archivio",
-     "verifica": {
-      "cwd": "/home/tu/archivio"
-     },
-     "hint": [
-      "Prima si sale di due, poi si scende.",
-      "cd ../../archivio"
-     ],
-     "spiegazione": "`../../archivio`: si sale di due e si scende in archivio. Il percorso assoluto `/home/tu/archivio` porta allo stesso posto ed e' piu' chiaro da leggere; il relativo e' piu' corto e sopravvive se sposti l'intero progetto altrove."
-    },
-    {
-     "id": "l01-cd-6",
-     "tipo": "terminale",
-     "testo": "Ora raggiungi la stessa cartella con un percorso **assoluto**.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "cwd": "/home/tu/volo/dati",
-     "soluzione": "cd /home/tu/archivio",
-     "verifica": {
-      "cwd": "/home/tu/archivio"
-     },
-     "hint": [
-      "Parte dalla radice: comincia con /.",
-      "cd /home/tu/archivio"
-     ],
-     "spiegazione": "`/home/tu/archivio` parte dalla radice e vale identico da qualunque punto tu sia. È la forma da usare negli script: un percorso relativo dentro uno script dipende da dove lo lanci, ed e' una fonte di guasti che si manifestano solo in produzione."
-    },
-    {
-     "id": "l01-cd-7",
-     "tipo": "predict",
-     "testo": "Uno script contiene `cd dati`. Perche' puo' funzionare per te e fallire per un collega?",
-     "opzioni": [
-      "e' relativo: dipende da dove lo script viene lanciato",
-      "il collega non ha i permessi sulla cartella",
-      "cd non funziona dentro gli script",
-      "il nome della cartella distingue maiuscole e minuscole"
-     ],
-     "risposta": "e' relativo: dipende da dove lo script viene lanciato",
-     "spiegazione": "Perche' e' un percorso **relativo**: dipende da dove lo script viene lanciato, non da dove si trova. Se il collega lo esegue da un'altra cartella, quella `dati` non c'e'. Negli script i percorsi vanno assoluti, o ricavati dalla posizione dello script stesso."
-    },
-    {
-     "id": "l01-cd-8",
-     "tipo": "terminale",
-     "testo": "Prova a entrare in una cartella che non esiste, e leggi cosa risponde.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "cd inesistente\npwd",
-     "verifica": {
-      "cwd": "/home/tu",
-      "usa": [
-       "cd",
-       "pwd"
+      "id": "l01-file",
+      "comando": "mkdir, touch, rm",
+      "titolo": "creare, leggere, cancellare",
+      "esercizi": [
+        {
+          "id": "l01-fi-1",
+          "tipo": "terminale",
+          "testo": "Crea una cartella `risultati` dentro `volo`, restando dove sei.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mkdir volo/risultati",
+          "verifica": {
+            "dir": [
+              "volo/risultati"
+            ],
+            "cwd": "/home/tu",
+            "usa": [
+              "mkdir"
+            ]
+          },
+          "hint": [
+            "mkdir accetta un percorso.",
+            "mkdir volo/risultati"
+          ],
+          "spiegazione": "`mkdir` accetta un percorso, non solo un nome: non serve spostarsi per creare qualcosa altrove."
+        },
+        {
+          "id": "l01-fi-2",
+          "tipo": "terminale",
+          "testo": "Crea in un colpo solo l'albero `analisi/2026/agosto`, che non esiste in nessuna delle sue parti.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mkdir -p analisi/2026/agosto",
+          "verifica": {
+            "dir": [
+              "analisi",
+              "analisi/2026",
+              "analisi/2026/agosto"
+            ],
+            "usa": [
+              "mkdir"
+            ]
+          },
+          "hint": [
+            "Serve un'opzione per creare anche i genitori.",
+            "mkdir -p analisi/2026/agosto"
+          ],
+          "spiegazione": "Senza `-p` il comando fallisce, perche' `analisi` non esiste e `mkdir` crea una sola cartella per volta. Con `-p` crea tutti i genitori mancanti, e non protesta se esistono gia' — il che lo rende sicuro da rilanciare dentro uno script."
+        },
+        {
+          "id": "l01-fi-3",
+          "tipo": "terminale",
+          "testo": "Crea un file vuoto `volo/risultati.md` e verifica che ci sia.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "touch volo/risultati.md\nls volo",
+          "verifica": {
+            "esiste": [
+              "volo/risultati.md"
+            ],
+            "stampa": "risultati.md",
+            "usa": [
+              "touch"
+            ]
+          },
+          "hint": [
+            "Il comando e' touch.",
+            "touch volo/risultati.md"
+          ],
+          "spiegazione": "`touch` crea un file vuoto se non esiste. Su un file esistente non lo tocca: aggiorna solo la data di modifica, ed e' da li' che viene il nome."
+        },
+        {
+          "id": "l01-fi-4",
+          "tipo": "terminale",
+          "testo": "Leggi il contenuto di `volo/note.txt`.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "cat volo/note.txt",
+          "verifica": {
+            "stampa": "campagna di agosto",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Tre lettere.",
+            "cat volo/note.txt"
+          ],
+          "spiegazione": "`cat` stampa il contenuto e finisce. Su un file di mille righe non e' quello che vuoi — li' servono `head`, `tail` o un visualizzatore — ma su un file corto e' il modo piu' diretto."
+        },
+        {
+          "id": "l01-fi-5",
+          "tipo": "terminale",
+          "testo": "Scrivi la riga `analisi in corso` dentro un file nuovo `volo/stato.txt`.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "echo analisi in corso > volo/stato.txt\ncat volo/stato.txt",
+          "verifica": {
+            "contenuto": {
+              "volo/stato.txt": "analisi in corso"
+            },
+            "usa": [
+              "echo"
+            ]
+          },
+          "hint": [
+            "echo stampa, > manda in un file.",
+            "echo analisi in corso > volo/stato.txt"
+          ],
+          "spiegazione": "La redirezione `>` manda l'uscita di un comando in un file invece che a schermo. **Sovrascrive**: se il file esiste, il contenuto precedente sparisce senza avviso. Per aggiungere in fondo serve `>>`."
+        },
+        {
+          "id": "l01-fi-6",
+          "tipo": "terminale",
+          "testo": "Aggiungi una seconda riga `terminata` al file, **senza** cancellare la prima.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null,
+            "/home/tu/volo/stato.txt": "analisi in corso\n"
+          },
+          "soluzione": "echo terminata >> volo/stato.txt\ncat volo/stato.txt",
+          "verifica": {
+            "contenuto": {
+              "volo/stato.txt": "analisi in corso\nterminata"
+            },
+            "usa": [
+              "echo"
+            ]
+          },
+          "hint": [
+            "La redirezione che aggiunge ha due maggiore.",
+            "echo terminata >> volo/stato.txt"
+          ],
+          "spiegazione": "`>>` aggiunge in fondo, `>` sovrascrive. Un carattere di differenza, e il secondo distrugge il contenuto precedente senza chiedere niente: e' l'errore di battitura piu' costoso della shell."
+        },
+        {
+          "id": "l01-fi-7",
+          "tipo": "predict",
+          "testo": "Qual e' la differenza fra `>` e `>>` ?",
+          "opzioni": [
+            "> sovrascrive il file, >> aggiunge in fondo",
+            "> crea il file, >> lo modifica soltanto",
+            "sono equivalenti",
+            "> vale per il testo, >> per i dati binari"
+          ],
+          "risposta": "> sovrascrive il file, >> aggiunge in fondo",
+          "spiegazione": "`>` **sovrascrive** il file, `>>` aggiunge in fondo. Un carattere, e il primo cancella tutto quello che c'era senza chiedere conferma. Su un file di dati raccolti in settimane, e' un errore da cui non si torna."
+        },
+        {
+          "id": "l01-fi-8",
+          "tipo": "terminale",
+          "testo": "Cancella il file `volo/note.txt` e verifica che sia sparito.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "rm volo/note.txt\nls volo",
+          "verifica": {
+            "nonEsiste": [
+              "volo/note.txt"
+            ],
+            "usa": [
+              "rm"
+            ]
+          },
+          "hint": [
+            "Due lettere.",
+            "rm volo/note.txt"
+          ],
+          "spiegazione": "`rm` cancella subito e definitivamente: non c'e' nessun cestino da cui recuperare. Qui nel simulatore si puo' sbagliare quanto si vuole — ed e' il senso di questo terminale.\n\nLa regola che vale la pena: `ls` prima di `rm`, sullo stesso percorso. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello."
+        }
       ]
-     },
-     "hint": [
-      "Prova pure: qui non si rompe niente.",
-      "cd inesistente e poi pwd"
-     ],
-     "spiegazione": "Un errore esplicito, e **non ti sposta**: dopo un `cd` fallito sei ancora dov'eri. È importante saperlo perche' il comando successivo verra' eseguito li', non dove credevi di essere arrivato."
+    },
+    {
+      "id": "l01-cpmv",
+      "comando": "cp e mv",
+      "titolo": "cp e mv — e la destinazione che decide",
+      "esercizi": [
+        {
+          "id": "l01-cm-1",
+          "tipo": "terminale",
+          "testo": "Copia `volo/note.txt` dentro la cartella `archivio`.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "cp volo/note.txt archivio",
+          "verifica": {
+            "esiste": [
+              "archivio/note.txt",
+              "volo/note.txt"
+            ],
+            "usa": [
+              "cp"
+            ]
+          },
+          "hint": [
+            "cp sorgente destinazione.",
+            "cp volo/note.txt archivio"
+          ],
+          "spiegazione": "Quando la destinazione **e' una cartella esistente**, la copia ci finisce dentro conservando il nome. È la regola di `cp` e `mv`, e vale la pena conoscerla perche' il comportamento cambia se la cartella non esiste."
+        },
+        {
+          "id": "l01-cm-2",
+          "tipo": "predict",
+          "testo": "`cp a.txt archivio` con `archivio` che **non** esiste: cosa succede?",
+          "opzioni": [
+            "crea un file chiamato archivio, copia di a.txt",
+            "crea la cartella archivio e ci mette dentro a.txt",
+            "solleva un errore perche' la destinazione non esiste",
+            "non fa niente"
+          ],
+          "risposta": "crea un file chiamato archivio, copia di a.txt",
+          "spiegazione": "Crea un **file** chiamato `archivio`, copia di `a.txt`. La stessa riga fa due cose diverse a seconda che la destinazione esista o no, e nel secondo caso ti ritrovi un file senza estensione dove ti aspettavi una cartella."
+        },
+        {
+          "id": "l01-cm-3",
+          "tipo": "terminale",
+          "testo": "Copia l'intera cartella `volo/dati` dentro `archivio`.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "cp -r volo/dati archivio",
+          "verifica": {
+            "esiste": [
+              "archivio/dati/prova1.csv",
+              "archivio/dati/prova2.csv"
+            ],
+            "usa": [
+              "cp"
+            ]
+          },
+          "hint": [
+            "Su una cartella serve l'opzione ricorsiva.",
+            "cp -r volo/dati archivio"
+          ],
+          "spiegazione": "Su una cartella serve `-r`, ricorsivo: senza, `cp` rifiuta. È lo stesso `-r` di `rm`, e la ragione e' la stessa — copiare o cancellare un albero intero e' un'operazione abbastanza grossa da doversi chiedere esplicitamente."
+        },
+        {
+          "id": "l01-cm-4",
+          "tipo": "terminale",
+          "testo": "Rinomina `volo/note.txt` in `volo/appunti.txt`.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mv volo/note.txt volo/appunti.txt",
+          "verifica": {
+            "esiste": [
+              "volo/appunti.txt"
+            ],
+            "nonEsiste": [
+              "volo/note.txt"
+            ],
+            "usa": [
+              "mv"
+            ]
+          },
+          "hint": [
+            "Si usa mv, con il nuovo nome come destinazione.",
+            "mv volo/note.txt volo/appunti.txt"
+          ],
+          "spiegazione": "Rinominare e spostare sono la **stessa** operazione: non esiste un comando `rename`, e non serve. Cambia il percorso completo del file, e che cambi la cartella o solo il nome e' indifferente."
+        },
+        {
+          "id": "l01-cm-5",
+          "tipo": "terminale",
+          "testo": "Sposta `volo/note.txt` dentro `archivio`, senza lasciarne copia.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mv volo/note.txt archivio",
+          "verifica": {
+            "esiste": [
+              "archivio/note.txt"
+            ],
+            "nonEsiste": [
+              "volo/note.txt"
+            ],
+            "usa": [
+              "mv"
+            ]
+          },
+          "hint": [
+            "mv sorgente destinazione.",
+            "mv volo/note.txt archivio"
+          ],
+          "spiegazione": "`mv` sposta: il file sparisce dalla partenza. È la differenza da `cp`, che lo lascia dov'era — ed e' il motivo per cui su dati importanti conviene `cp` e poi `rm` dopo aver controllato, invece di `mv` alla cieca."
+        },
+        {
+          "id": "l01-cm-6",
+          "tipo": "terminale",
+          "testo": "Sposta l'intera cartella `volo/dati` dentro `archivio`. Nota che qui `-r` non serve.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mv volo/dati archivio",
+          "verifica": {
+            "esiste": [
+              "archivio/dati/prova1.csv"
+            ],
+            "nonEsiste": [
+              "volo/dati"
+            ],
+            "usa": [
+              "mv"
+            ]
+          },
+          "hint": [
+            "Come prima, senza opzioni.",
+            "mv volo/dati archivio"
+          ],
+          "spiegazione": "`mv` non ha bisogno di `-r` perche' non copia niente: cambia il percorso, e l'albero segue. `cp` invece deve duplicare ogni file, e per quello vuole il permesso esplicito."
+        },
+        {
+          "id": "l01-cm-7",
+          "tipo": "terminale",
+          "testo": "Cancella l'intera cartella `archivio` e tutto il suo contenuto.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null,
+            "/home/tu/archivio/vecchio.txt": "x\n"
+          },
+          "soluzione": "rm -r archivio",
+          "verifica": {
+            "nonEsiste": [
+              "archivio"
+            ],
+            "usa": [
+              "rm"
+            ]
+          },
+          "hint": [
+            "Serve l'opzione ricorsiva.",
+            "rm -r archivio"
+          ],
+          "spiegazione": "`rm -r` cancella l'albero intero, senza chiedere conferma e senza cestino. Su un sistema vero questa e' la riga da rileggere due volte prima di premere invio — e da far precedere sempre da un `ls` sullo stesso percorso."
+        },
+        {
+          "id": "l01-cm-8",
+          "tipo": "terminale",
+          "testo": "**Metti in ordine il progetto.** Crea `volo/risultati`, copiaci dentro i due CSV, e verifica che ci siano entrambi.",
+          "difficolta": 3,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mkdir volo/risultati\ncp volo/dati/prova1.csv volo/risultati\ncp volo/dati/prova2.csv volo/risultati\nls volo/risultati",
+          "verifica": {
+            "dir": [
+              "volo/risultati"
+            ],
+            "esiste": [
+              "volo/risultati/prova1.csv",
+              "volo/risultati/prova2.csv"
+            ],
+            "stampa": "prova1.csv",
+            "usa": [
+              "mkdir",
+              "cp"
+            ]
+          },
+          "hint": [
+            "Prima mkdir, poi due cp, poi ls per controllare.",
+            "cp volo/dati/prova1.csv volo/risultati"
+          ],
+          "spiegazione": "Tre comandi, e la verifica alla fine. L'abitudine che conta e' l'ultima riga: controllare che sia successo quello che credevi, invece di dare per scontato che un comando senza errori abbia fatto la cosa giusta.\n\nSu un sistema vero questo si scriverebbe con un asterisco — `cp volo/dati/*.csv volo/risultati` — ma questo terminale non espande gli asterischi nei comandi, quindi i file si nominano uno per uno."
+        }
+      ]
     }
-   ]
-  },
-  {
-   "id": "l01-file",
-   "comando": "mkdir, touch, rm",
-   "titolo": "creare, leggere, cancellare",
-   "esercizi": [
-    {
-     "id": "l01-fi-1",
-     "tipo": "terminale",
-     "testo": "Crea una cartella `risultati` dentro `volo`, restando dove sei.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mkdir volo/risultati",
-     "verifica": {
-      "dir": [
-       "volo/risultati"
-      ],
-      "cwd": "/home/tu"
-     },
-     "hint": [
-      "mkdir accetta un percorso.",
-      "mkdir volo/risultati"
-     ],
-     "spiegazione": "`mkdir` accetta un percorso, non solo un nome: non serve spostarsi per creare qualcosa altrove."
-    },
-    {
-     "id": "l01-fi-2",
-     "tipo": "terminale",
-     "testo": "Crea in un colpo solo l'albero `analisi/2026/agosto`, che non esiste in nessuna delle sue parti.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mkdir -p analisi/2026/agosto",
-     "verifica": {
-      "dir": [
-       "analisi",
-       "analisi/2026",
-       "analisi/2026/agosto"
-      ]
-     },
-     "hint": [
-      "Serve un'opzione per creare anche i genitori.",
-      "mkdir -p analisi/2026/agosto"
-     ],
-     "spiegazione": "Senza `-p` il comando fallisce, perche' `analisi` non esiste e `mkdir` crea una sola cartella per volta. Con `-p` crea tutti i genitori mancanti, e non protesta se esistono gia' — il che lo rende sicuro da rilanciare dentro uno script."
-    },
-    {
-     "id": "l01-fi-3",
-     "tipo": "terminale",
-     "testo": "Crea un file vuoto `volo/risultati.md` e verifica che ci sia.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "touch volo/risultati.md\nls volo",
-     "verifica": {
-      "esiste": [
-       "volo/risultati.md"
-      ],
-      "stampa": "risultati.md"
-     },
-     "hint": [
-      "Il comando e' touch.",
-      "touch volo/risultati.md"
-     ],
-     "spiegazione": "`touch` crea un file vuoto se non esiste. Su un file esistente non lo tocca: aggiorna solo la data di modifica, ed e' da li' che viene il nome."
-    },
-    {
-     "id": "l01-fi-4",
-     "tipo": "terminale",
-     "testo": "Leggi il contenuto di `volo/note.txt`.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "cat volo/note.txt",
-     "verifica": {
-      "stampa": "campagna di agosto"
-     },
-     "hint": [
-      "Tre lettere.",
-      "cat volo/note.txt"
-     ],
-     "spiegazione": "`cat` stampa il contenuto e finisce. Su un file di mille righe non e' quello che vuoi — li' servono `head`, `tail` o un visualizzatore — ma su un file corto e' il modo piu' diretto."
-    },
-    {
-     "id": "l01-fi-5",
-     "tipo": "terminale",
-     "testo": "Scrivi la riga `analisi in corso` dentro un file nuovo `volo/stato.txt`.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "echo analisi in corso > volo/stato.txt\ncat volo/stato.txt",
-     "verifica": {
-      "contenuto": {
-       "volo/stato.txt": "analisi in corso"
-      }
-     },
-     "hint": [
-      "echo stampa, > manda in un file.",
-      "echo analisi in corso > volo/stato.txt"
-     ],
-     "spiegazione": "La redirezione `>` manda l'uscita di un comando in un file invece che a schermo. **Sovrascrive**: se il file esiste, il contenuto precedente sparisce senza avviso. Per aggiungere in fondo serve `>>`."
-    },
-    {
-     "id": "l01-fi-6",
-     "tipo": "terminale",
-     "testo": "Aggiungi una seconda riga `terminata` al file, **senza** cancellare la prima.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null,
-      "/home/tu/volo/stato.txt": "analisi in corso\n"
-     },
-     "soluzione": "echo terminata >> volo/stato.txt\ncat volo/stato.txt",
-     "verifica": {
-      "contenuto": {
-       "volo/stato.txt": "analisi in corso\nterminata"
-      }
-     },
-     "hint": [
-      "La redirezione che aggiunge ha due maggiore.",
-      "echo terminata >> volo/stato.txt"
-     ],
-     "spiegazione": "`>>` aggiunge in fondo, `>` sovrascrive. Un carattere di differenza, e il secondo distrugge il contenuto precedente senza chiedere niente: e' l'errore di battitura piu' costoso della shell."
-    },
-    {
-     "id": "l01-fi-7",
-     "tipo": "predict",
-     "testo": "Qual e' la differenza fra `>` e `>>` ?",
-     "opzioni": [
-      "> sovrascrive il file, >> aggiunge in fondo",
-      "> crea il file, >> lo modifica soltanto",
-      "sono equivalenti",
-      "> vale per il testo, >> per i dati binari"
-     ],
-     "risposta": "> sovrascrive il file, >> aggiunge in fondo",
-     "spiegazione": "`>` **sovrascrive** il file, `>>` aggiunge in fondo. Un carattere, e il primo cancella tutto quello che c'era senza chiedere conferma. Su un file di dati raccolti in settimane, e' un errore da cui non si torna."
-    },
-    {
-     "id": "l01-fi-8",
-     "tipo": "terminale",
-     "testo": "Cancella il file `volo/note.txt` e verifica che sia sparito.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "rm volo/note.txt\nls volo",
-     "verifica": {
-      "nonEsiste": [
-       "volo/note.txt"
-      ],
-      "usa": [
-       "rm"
-      ]
-     },
-     "hint": [
-      "Due lettere.",
-      "rm volo/note.txt"
-     ],
-     "spiegazione": "`rm` cancella subito e definitivamente: non c'e' nessun cestino da cui recuperare. Qui nel simulatore si puo' sbagliare quanto si vuole — ed e' il senso di questo terminale.\n\nLa regola che vale la pena: `ls` prima di `rm`, sullo stesso percorso. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello."
-    }
-   ]
-  },
-  {
-   "id": "l01-cpmv",
-   "comando": "cp e mv",
-   "titolo": "cp e mv — e la destinazione che decide",
-   "esercizi": [
-    {
-     "id": "l01-cm-1",
-     "tipo": "terminale",
-     "testo": "Copia `volo/note.txt` dentro la cartella `archivio`.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "cp volo/note.txt archivio",
-     "verifica": {
-      "esiste": [
-       "archivio/note.txt",
-       "volo/note.txt"
-      ]
-     },
-     "hint": [
-      "cp sorgente destinazione.",
-      "cp volo/note.txt archivio"
-     ],
-     "spiegazione": "Quando la destinazione **e' una cartella esistente**, la copia ci finisce dentro conservando il nome. È la regola di `cp` e `mv`, e vale la pena conoscerla perche' il comportamento cambia se la cartella non esiste."
-    },
-    {
-     "id": "l01-cm-2",
-     "tipo": "predict",
-     "testo": "`cp a.txt archivio` con `archivio` che **non** esiste: cosa succede?",
-     "opzioni": [
-      "crea un file chiamato archivio, copia di a.txt",
-      "crea la cartella archivio e ci mette dentro a.txt",
-      "solleva un errore perche' la destinazione non esiste",
-      "non fa niente"
-     ],
-     "risposta": "crea un file chiamato archivio, copia di a.txt",
-     "spiegazione": "Crea un **file** chiamato `archivio`, copia di `a.txt`. La stessa riga fa due cose diverse a seconda che la destinazione esista o no, e nel secondo caso ti ritrovi un file senza estensione dove ti aspettavi una cartella."
-    },
-    {
-     "id": "l01-cm-3",
-     "tipo": "terminale",
-     "testo": "Copia l'intera cartella `volo/dati` dentro `archivio`.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "cp -r volo/dati archivio",
-     "verifica": {
-      "esiste": [
-       "archivio/dati/prova1.csv",
-       "archivio/dati/prova2.csv"
-      ]
-     },
-     "hint": [
-      "Su una cartella serve l'opzione ricorsiva.",
-      "cp -r volo/dati archivio"
-     ],
-     "spiegazione": "Su una cartella serve `-r`, ricorsivo: senza, `cp` rifiuta. È lo stesso `-r` di `rm`, e la ragione e' la stessa — copiare o cancellare un albero intero e' un'operazione abbastanza grossa da doversi chiedere esplicitamente."
-    },
-    {
-     "id": "l01-cm-4",
-     "tipo": "terminale",
-     "testo": "Rinomina `volo/note.txt` in `volo/appunti.txt`.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mv volo/note.txt volo/appunti.txt",
-     "verifica": {
-      "esiste": [
-       "volo/appunti.txt"
-      ],
-      "nonEsiste": [
-       "volo/note.txt"
-      ]
-     },
-     "hint": [
-      "Si usa mv, con il nuovo nome come destinazione.",
-      "mv volo/note.txt volo/appunti.txt"
-     ],
-     "spiegazione": "Rinominare e spostare sono la **stessa** operazione: non esiste un comando `rename`, e non serve. Cambia il percorso completo del file, e che cambi la cartella o solo il nome e' indifferente."
-    },
-    {
-     "id": "l01-cm-5",
-     "tipo": "terminale",
-     "testo": "Sposta `volo/note.txt` dentro `archivio`, senza lasciarne copia.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mv volo/note.txt archivio",
-     "verifica": {
-      "esiste": [
-       "archivio/note.txt"
-      ],
-      "nonEsiste": [
-       "volo/note.txt"
-      ]
-     },
-     "hint": [
-      "mv sorgente destinazione.",
-      "mv volo/note.txt archivio"
-     ],
-     "spiegazione": "`mv` sposta: il file sparisce dalla partenza. È la differenza da `cp`, che lo lascia dov'era — ed e' il motivo per cui su dati importanti conviene `cp` e poi `rm` dopo aver controllato, invece di `mv` alla cieca."
-    },
-    {
-     "id": "l01-cm-6",
-     "tipo": "terminale",
-     "testo": "Sposta l'intera cartella `volo/dati` dentro `archivio`. Nota che qui `-r` non serve.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mv volo/dati archivio",
-     "verifica": {
-      "esiste": [
-       "archivio/dati/prova1.csv"
-      ],
-      "nonEsiste": [
-       "volo/dati"
-      ]
-     },
-     "hint": [
-      "Come prima, senza opzioni.",
-      "mv volo/dati archivio"
-     ],
-     "spiegazione": "`mv` non ha bisogno di `-r` perche' non copia niente: cambia il percorso, e l'albero segue. `cp` invece deve duplicare ogni file, e per quello vuole il permesso esplicito."
-    },
-    {
-     "id": "l01-cm-7",
-     "tipo": "terminale",
-     "testo": "Cancella l'intera cartella `archivio` e tutto il suo contenuto.",
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null,
-      "/home/tu/archivio/vecchio.txt": "x\n"
-     },
-     "soluzione": "rm -r archivio",
-     "verifica": {
-      "nonEsiste": [
-       "archivio"
-      ],
-      "usa": [
-       "rm"
-      ]
-     },
-     "hint": [
-      "Serve l'opzione ricorsiva.",
-      "rm -r archivio"
-     ],
-     "spiegazione": "`rm -r` cancella l'albero intero, senza chiedere conferma e senza cestino. Su un sistema vero questa e' la riga da rileggere due volte prima di premere invio — e da far precedere sempre da un `ls` sullo stesso percorso."
-    },
-    {
-     "id": "l01-cm-8",
-     "tipo": "terminale",
-     "testo": "**Metti in ordine il progetto.** Crea `volo/risultati`, copiaci dentro i due CSV, e verifica che ci siano entrambi.",
-     "difficolta": 3,
-     "filesystem": {
-      "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-      "/home/tu/volo/note.txt": "campagna di agosto\n",
-      "/home/tu/volo/.conf": "sep=,\n",
-      "/home/tu/archivio": null
-     },
-     "soluzione": "mkdir volo/risultati\ncp volo/dati/prova1.csv volo/risultati\ncp volo/dati/prova2.csv volo/risultati\nls volo/risultati",
-     "verifica": {
-      "dir": [
-       "volo/risultati"
-      ],
-      "esiste": [
-       "volo/risultati/prova1.csv",
-       "volo/risultati/prova2.csv"
-      ],
-      "stampa": "prova1.csv"
-     },
-     "hint": [
-      "Prima mkdir, poi due cp, poi ls per controllare.",
-      "cp volo/dati/prova1.csv volo/risultati"
-     ],
-     "spiegazione": "Tre comandi, e la verifica alla fine. L'abitudine che conta e' l'ultima riga: controllare che sia successo quello che credevi, invece di dare per scontato che un comando senza errori abbia fatto la cosa giusta.\n\nSu un sistema vero questo si scriverebbe con un asterisco — `cp volo/dati/*.csv volo/risultati` — ma questo terminale non espande gli asterischi nei comandi, quindi i file si nominano uno per uno."
-    }
-   ]
-  }
- ]
+  ]
 }

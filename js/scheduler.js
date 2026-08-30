@@ -24,9 +24,10 @@ export function grade(s, ok, hint = 0) {
   } else {
     n.box = Math.min(MASTERED, s.box + 1);
   }
-  // "fatto" non si perde piu: nella lista degli esercizi conta se l'hai
-  // completato almeno una volta, non quanto sei stato bravo di recente.
-  if (n.box >= MASTERED) n.fatto = true;
+  // "fatto" = risolto almeno una volta, punto. Le scatole servono solo alla
+  // coda di ripasso: un esercizio gia' risolto puo' tornare in coda, ma
+  // nell'elenco resta fatto.
+  if (ok) n.fatto = true;
   return n;
 }
 

@@ -759,7 +759,7 @@ function montaEsercizio({
     const btn = azioni.querySelector("#ver");
     btn.disabled = true;
 
-    let ok, dettaglio = "";
+    let ok, fuoriConsegna = false, dettaglio = "";
     if (es.tipo === "predict") {
       const sel = zona.querySelector("input[name=op]:checked");
       if (!sel) { btn.disabled = false; return; }
@@ -769,6 +769,7 @@ function montaEsercizio({
     } else if (es.tipo === "terminale") {
       const esitoT = SH.verifica(term.sh, es.verifica, term.trascrizione);
       ok = esitoT.ok;
+      fuoriConsegna = esitoT.fuoriConsegna;
       if (!ok)
         dettaglio += `<ul>${esitoT.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
     } else if (es.tipo === "html") {
@@ -795,6 +796,9 @@ function montaEsercizio({
     esito.innerHTML = ok
       ? `<div class="esito ok"><strong>Corretto.</strong>${hint ? " (con suggerimento: torna in coda di ripasso)" : ""}
          ${dettaglio}</div>${md(es.spiegazione || "")}`
+      : fuoriConsegna
+      ? `<div class="esito ko"><strong>Giusto, ma non era la consegna.</strong>
+         <div class="frase">Lo stato finale e' quello richiesto, ma l'esercizio serve a farti usare un comando preciso.</div>${dettaglio}</div>`
       : `<div class="esito ko"><strong>Non ancora.</strong>
          <div class="frase">${escapeHtml(fraseSbagliato())}</div>${dettaglio}</div>`;
 

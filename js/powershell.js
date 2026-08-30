@@ -90,7 +90,13 @@ export const POWERSHELL = {
 
   "Get-ChildItem"(sh, args) {
     const p = param(args);
-    return elencoOggetti(sh, arg(p, "Path"), Boolean(p.nominati.Recurse));
+    const dove = arg(p, "Path");
+    // Env: non e' una cartella: e' un "drive" che espone le variabili
+    // d'ambiente con gli stessi cmdlet dei file. E' una delle idee piu' strane
+    // di PowerShell e una delle piu' utili.
+    if (/^env:/i.test(String(dove ?? "")))
+      return Object.entries(sh.env).map(([Name, Value]) => ({ Name, Value }));
+    return elencoOggetti(sh, dove, Boolean(p.nominati.Recurse));
   },
 
   "Get-Content"(sh, args) {
@@ -242,6 +248,62 @@ export const POWERSHELL = {
     return dati.filter((o) => re.test(typeof o === "object" ? JSON.stringify(o) : String(o)));
   },
 
+  /**
+   * Import-Csv legge un CSV e restituisce **oggetti**, con i nomi di colonna
+   * come campi. E' il punto in cui la pipeline a oggetti si guadagna il posto:
+   * da qui in poi si filtra e si ordina per nome di colonna, senza ritagliare.
+   */
+  "Import-Csv"(sh, args) {
+    const p = param(args);
+    const file = perc(arg(p, "Path"));
+    if (!file) throw new V.ErroreFs("manca il percorso");
+    const sep = p.nominati.Delimiter ?? ",";
+    const righe = righeDi(V.leggi(sh.fs, file));
+    if (!righe.length) return [];
+    const intestazione = righe[0].split(sep).map((s) => s.trim());
+    return righe.slice(1).map((r) => {
+      const valori = r.split(sep).map((s) => s.trim());
+      // I valori restano stringhe, come in PowerShell vero: e' la ragione per cui
+      // un confronto numerico su una colonna importata da CSV va convertito.
+      return Object.fromEntries(intestazione.map((c, i) => [c, valori[i] ?? ""]));
+    });
+  },
+
+  "Export-Csv"(sh, args) {
+    const p = param(args);
+    const file = perc(arg(p, "Path"));
+    if (!file) throw new V.ErroreFs("manca il percorso");
+    const dati = inPipe(sh);
+    if (!dati || !dati.length) throw new V.ErroreFs("non c'e' niente da esportare");
+    const colonne = [...new Set(dati.flatMap((o) => (typeof o === "object" ? Object.keys(o) : [])))];
+    const righe = [
+      colonne.join(","),
+      ...dati.map((o) => colonne.map((c) => o[c] ?? "").join(",")),
+    ];
+    V.scrivi(sh.fs, file, righe.join("\n") + "\n");
+    return "";
+  },
+
+  "ConvertTo-Json"(sh, args) {
+    const dati = inPipe(sh);
+    if (dati === null) throw new V.ErroreFs("ConvertTo-Json lavora su quello che arriva dalla pipeline");
+    // Un oggetto solo non diventa un array di uno: e' il comportamento di
+    // PowerShell, e la ragione per cui a volte il JSON prodotto sorprende.
+    return JSON.stringify(dati.length === 1 ? dati[0] : dati, null, 2);
+  },
+
+  "ConvertFrom-Json"(sh, args) {
+    const dati = inPipe(sh);
+    if (dati === null) throw new V.ErroreFs("serve del testo dalla pipeline");
+    const testo = Array.isArray(dati) ? dati.join("\n") : String(dati);
+    try {
+      const oggetto = JSON.parse(testo);
+      return Array.isArray(oggetto) ? oggetto : [oggetto];
+    } catch {
+      throw new V.ErroreFs("il testo non e' JSON valido");
+    }
+  },
+
   "Get-Command"(sh, args) {
     const p = param(args);
     const nome = arg(p, "Name");
@@ -253,7 +315,68 @@ export const POWERSHELL = {
   },
 
   "Write-Output": (sh, args) => args.join(" "),
+
+  /**
+   * I servizi: processi che il sistema avvia da solo e sorveglia. Su Windows
+   * sono la cosa che su Linux fa systemd, e il motivo per cui esiste un cmdlet
+   * dedicato invece di Get-Process — un servizio fermo non ha un processo.
+   */
+  "Get-Service"(sh, args) {
+    const p = param(args);
+    const nome = arg(p, "Name");
+    const servizi = sh.servizi ?? SERVIZI_BASE;
+    return servizi
+      .filter((s) => !nome || s.Name.toLowerCase() === String(nome).toLowerCase())
+      .map((s) => ({ Status: s.Status, Name: s.Name, DisplayName: s.DisplayName }));
+  },
+
+  "Start-Service": (sh, args) => cambiaServizio(sh, args, "Running"),
+  "Stop-Service": (sh, args) => cambiaServizio(sh, args, "Stopped"),
+
+  /**
+   * Le variabili d'ambiente sono un "drive" come il disco: si leggono e si
+   * scrivono con i cmdlet dei file, sotto Env:. E' una delle idee piu' strane
+   * di PowerShell e una delle piu' utili — registro, certificati e variabili si
+   * esplorano tutti con gli stessi quattro comandi.
+   */
+  "Get-Item"(sh, args) {
+    const p = param(args);
+    const dove = String(perc(arg(p, "Path")) ?? "");
+    const m = dove.match(/^env:\/?(.+)$/i);
+    if (m) return [{ Name: m[1], Value: sh.env[m[1]] ?? "" }];
+    const abs = V.normalizza(sh.fs, dove);
+    const nodo = sh.fs.nodi.get(abs);
+    if (!nodo) throw new V.ErroreFs(`${dove}: percorso non esistente`);
+    return [{ Mode: nodo.tipo === "dir" ? "d----" : "-a---", Name: V.foglia(abs), FullName: abs }];
+  },
+
+  "Set-Item"(sh, args) {
+    const p = param(args);
+    const dove = String(perc(arg(p, "Path")) ?? "");
+    const m = dove.match(/^env:\/?(.+)$/i);
+    if (!m) throw new V.ErroreFs("qui Set-Item vale solo per Env:");
+    sh.env[m[1]] = String(arg(p, "Value", 1) ?? "");
+    return "";
+  },
 };
+
+const SERVIZI_BASE = [
+  { Status: "Running", Name: "Spooler", DisplayName: "Coda di stampa" },
+  { Status: "Running", Name: "W32Time", DisplayName: "Ora di Windows" },
+  { Status: "Stopped", Name: "WSearch", DisplayName: "Ricerca di Windows" },
+];
+
+function cambiaServizio(sh, args, stato) {
+  const p = param(args);
+  const nome = arg(p, "Name");
+  if (!nome) throw new V.ErroreFs("manca il nome del servizio");
+  sh.servizi = (sh.servizi ?? SERVIZI_BASE).map((s) =>
+    s.Name.toLowerCase() === String(nome).toLowerCase() ? { ...s, Status: stato } : s
+  );
+  if (!sh.servizi.some((s) => s.Name.toLowerCase() === String(nome).toLowerCase()))
+    throw new V.ErroreFs(`servizio non trovato: ${nome}`);
+  return "";
+}
 
 /**
  * Gli alias di PowerShell. Esistono perche' chi arriva da bash trovi i comandi
@@ -277,11 +400,18 @@ export const ALIAS_PS = {
   sls: "Select-String",
   gcm: "Get-Command",
   echo: "Write-Output", write: "Write-Output",
+  ipcsv: "Import-Csv", epcsv: "Export-Csv",
+  gsv: "Get-Service",
+  gps: "Get-Process", ps: "Get-Process",
+  spps: "Stop-Process", kill: "Stop-Process",
 };
 
 /** Il dizionario completo: cmdlet piu' alias, pronto per creaShell. */
-export function comandiPowerShell() {
-  const comandi = { ...POWERSHELL };
-  for (const [alias, vero] of Object.entries(ALIAS_PS)) comandi[alias] = POWERSHELL[vero];
+export function comandiPowerShell(extra = {}) {
+  const comandi = { ...POWERSHELL, ...extra };
+  // Un alias che punta a un cmdlet non presente non va registrato: meglio
+  // "comando non trovato" che una funzione indefinita al primo uso.
+  for (const [alias, vero] of Object.entries(ALIAS_PS))
+    if (comandi[vero]) comandi[alias] = comandi[vero];
   return comandi;
 }

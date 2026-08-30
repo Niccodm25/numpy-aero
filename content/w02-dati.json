@@ -1,0 +1,585 @@
+{
+ "id": "w02",
+ "titolo": "CSV, JSON e testo",
+ "perche": "Il punto in cui la pipeline a oggetti si ripaga: Import-Csv da' alle colonne un nome, e da li' filtrare e ordinare non richiede piu' di contare le colonne a mano. Con il tranello che nessuno dice: i valori importati da un CSV sono stringhe, quindi Sort-Object mette 11000 prima di 3000.",
+ "funzioni": [
+  "Import-Csv",
+  "Export-Csv",
+  "ConvertTo-Json",
+  "ConvertFrom-Json",
+  "Select-String",
+  "Measure-Object"
+ ],
+ "lezioni": [
+  {
+   "id": "w02-l1",
+   "titolo": "Import-Csv: dove la pipeline a oggetti si guadagna il posto",
+   "md": "```powershell\nImport-Csv prove.csv\n\ncodice  quota  mach\n------  -----  ----\n101     9000   0.82\n102     3000   0.40\n```\n\n`Import-Csv` legge il file e restituisce **oggetti**, usando l'intestazione come nomi dei campi. Da quel momento la colonna si chiama `quota`, non \"la seconda\".\n\n```powershell\nImport-Csv prove.csv | Where-Object quota -gt 8000\n```\n\nÈ il punto in cui il modulo precedente si ripaga. In bash lo stesso risultato richiede `awk -F, '$2 > 8000'`, dove `$2` va contato a mano e si rompe il giorno in cui qualcuno inserisce una colonna in mezzo.\n\n### La cosa che sorprende: sono tutte stringhe\n\n```powershell\nImport-Csv prove.csv | Where-Object quota -gt 8000    # funziona\nImport-Csv prove.csv | Sort-Object quota              # ordina come TESTO\n```\n\nUn CSV non ha tipi: `Import-Csv` non puo' sapere che `quota` e' un numero, e mette dentro delle **stringhe**. `-gt` converte da solo e funziona; `Sort-Object` no, e ordina `11000` prima di `3000` come farebbe `sort` in bash.\n\nSi risolve dicendo il tipo:\n\n```powershell\nImport-Csv prove.csv | Sort-Object { [int]$_.quota }\n```\n\n*(In questo simulatore quella forma non c'e': l'esercizio ti fa vedere il problema, e la soluzione vera resta questa riga.)*\n\n### Export-Csv, e il giro completo\n\n```powershell\nImport-Csv prove.csv | Where-Object quota -gt 8000 | Export-Csv alte.csv\n```\n\nLeggere, filtrare, riscrivere: tre cmdlet e un file nuovo. È l'operazione piu' comune che si fa su dati tabellari, e qui non richiede nessuna libreria."
+  },
+  {
+   "id": "w02-l2",
+   "titolo": "JSON: il formato in cui parlano le API",
+   "md": "```powershell\nGet-Content conf.json | ConvertFrom-Json     # da testo a oggetti\n$dati | ConvertTo-Json                        # da oggetti a testo\n```\n\nDue cmdlet e un formato. `ConvertFrom-Json` restituisce oggetti veri, quindi da li' in poi valgono `Where-Object`, `Select-Object` e tutto il resto — senza librerie e senza analizzare il testo a mano.\n\n### La differenza da Python\n\nIn Python servono `import json` e due funzioni; qui sono cmdlet come gli altri e si mettono in pipeline. È il vantaggio di avere gli oggetti nel linguaggio della shell invece che in una libreria.\n\n### Il tranello di ConvertTo-Json\n\nUn oggetto **solo** non diventa un array di uno: diventa un oggetto. Passandone tre esce un array, passandone uno esce `{...}` e non `[{...}]`.\n\nÈ il comportamento di PowerShell vero, e rompe chi si aspetta sempre un array dall'altra parte — tipicamente un'API che riceve il JSON e trova un oggetto dove voleva una lista.\n\n### Da CSV a JSON in una riga\n\n```powershell\nImport-Csv prove.csv | ConvertTo-Json > prove.json\n```\n\nDue formati diversi, nessuna conversione scritta a mano: gli oggetti stanno in mezzo, e ognuno dei due cmdlet parla solo con loro.\n\nÈ la ragione per cui vale la pena capire la pipeline a oggetti invece di imparare i comandi a memoria: **ogni formato nuovo costa un cmdlet, non un programma.**"
+  },
+  {
+   "id": "w02-l3",
+   "titolo": "Select-String: il grep di PowerShell",
+   "md": "```powershell\nSelect-String -Pattern error -Path log.txt\n\nFilename  LineNumber  Line\n--------  ----------  --------------------\nlog.txt   2           ERROR sensore quota\nlog.txt   4           error timeout\n```\n\nDue differenze da `grep`, e sono tutte e due a favore.\n\n**Ignora le maiuscole di suo.** Trova `ERROR` e `error` senza opzioni: e' l'opposto di `grep`, dove distinguerle e' il default e `-i` va chiesto. Per distinguerle qui serve `-CaseSensitive`.\n\n**Restituisce oggetti**, non righe. `Filename`, `LineNumber` e `Line` sono campi: il numero di riga arriva gratis, mentre in bash serve `grep -n` e poi ritagliare il numero dal testo.\n\n```powershell\nSelect-String -Pattern error -Path log.txt | Select-Object LineNumber\n```\n\n### Su piu' file\n\n```powershell\nSelect-String -Pattern quota -Path *.csv\n```\n\nIl campo `Filename` dice **dove**, senza doverlo leggere da un testo con i due punti in mezzo.\n\n### Quando basta grep\n\nSe stai solo guardando, `sls` — l'alias — e `grep` si equivalgono. La differenza conta quando il risultato deve andare da qualche parte: contare le righe per file, ordinarle per numero, esportarle. Li' gli oggetti fanno la differenza fra una riga e uno script."
+  }
+ ],
+ "raccolte": [
+  {
+   "id": "w02-csv",
+   "comando": "Import-Csv",
+   "titolo": "dare un nome alle colonne",
+   "esercizi": [
+    {
+     "id": "w02-cs-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Leggi il file `prove.csv` come dati strutturati, non come testo.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv",
+     "verifica": {
+      "stampa": "codice",
+      "usa": [
+       "Import-Csv"
+      ]
+     },
+     "hint": [
+      "Il cmdlet e' Import-Csv.",
+      "Import-Csv prove.csv"
+     ],
+     "spiegazione": "`Import-Csv` usa l'intestazione come nomi dei campi: da quel momento la colonna si chiama `quota`, non \"la seconda\". `Get-Content` sullo stesso file darebbe cinque righe di testo e niente altro."
+    },
+    {
+     "id": "w02-cs-2",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Tieni solo le prove con quota sopra 8000.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Where-Object quota -gt 8000",
+     "verifica": {
+      "stampa": "11000",
+      "usa": [
+       "Import-Csv",
+       "Where-Object"
+      ]
+     },
+     "hint": [
+      "Where-Object col nome della colonna.",
+      "Import-Csv prove.csv | Where-Object quota -gt 8000"
+     ],
+     "spiegazione": "`Where-Object quota -gt 8000`, dove `quota` e' il nome della colonna. In bash lo stesso risultato e' `awk -F, '$2 > 8000'`, dove il `2` va contato a mano e si rompe il giorno in cui qualcuno inserisce una colonna in mezzo."
+    },
+    {
+     "id": "w02-cs-3",
+     "tipo": "predict",
+     "testo": "`Import-Csv` legge una colonna di numeri. Di che tipo sono i valori?",
+     "opzioni": [
+      "stringhe: un CSV non ha tipi",
+      "numeri, riconosciuti automaticamente",
+      "dipende dalla colonna",
+      "oggetti generici senza tipo"
+     ],
+     "risposta": "stringhe: un CSV non ha tipi",
+     "spiegazione": "**Stringhe**. Un CSV non ha tipi, e `Import-Csv` non puo' sapere che `quota` e' un numero. `-gt` converte da solo e funziona lo stesso, ma `Sort-Object` ordina come testo — e mette `11000` prima di `3000`."
+    },
+    {
+     "id": "w02-cs-4",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Ordina le prove per quota e guarda **l'ordine che esce**.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Sort-Object quota | Select-Object codice, quota",
+     "verifica": {
+      "stampa": "11000",
+      "usa": [
+       "Sort-Object"
+      ]
+     },
+     "hint": [
+      "Sort-Object seguito dal nome della colonna.",
+      "Import-Csv prove.csv | Sort-Object quota"
+     ],
+     "spiegazione": "`11000` prima di `3000`: l'ordinamento e' fra stringhe, perche' i valori importati da un CSV sono stringhe. È lo stesso errore di `sort` senza `-n` in bash, e qui non c'e' un `-n` da aggiungere.\n\nSi risolve dicendo il tipo: `Sort-Object { [int]$_.quota }`. In questo simulatore quella forma non c'e' — l'esercizio serve a farti vedere il problema, e la soluzione vera resta quella riga."
+    },
+    {
+     "id": "w02-cs-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Somma le quote di tutte le prove.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Measure-Object quota -Sum",
+     "verifica": {
+      "stampa": "Sum",
+      "usa": [
+       "Measure-Object"
+      ]
+     },
+     "hint": [
+      "Measure-Object col nome della colonna e -Sum.",
+      "Import-Csv prove.csv | Measure-Object quota -Sum"
+     ],
+     "spiegazione": "`Measure-Object quota -Sum` misura una colonna per nome. Nota che qui la conversione avviene da sola: `Measure-Object` sa che deve trattare quei valori come numeri, mentre `Sort-Object` no — sono incoerenze di PowerShell vero, non di questo simulatore."
+    },
+    {
+     "id": "w02-cs-6",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Scrivi in `alte.csv` le sole prove sopra 8000, e rileggile per controllare.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Where-Object quota -gt 8000 | Export-Csv alte.csv\nImport-Csv alte.csv",
+     "verifica": {
+      "esiste": [
+       "alte.csv"
+      ],
+      "contiene": {
+       "alte.csv": "codice,quota,mach"
+      },
+      "usa": [
+       "Export-Csv"
+      ]
+     },
+     "hint": [
+      "Il filtro di prima, poi Export-Csv con il nome del file.",
+      "... | Export-Csv alte.csv"
+     ],
+     "spiegazione": "Leggere, filtrare, riscrivere: tre cmdlet e un file nuovo. È l'operazione piu' comune sui dati tabellari, e qui non richiede nessuna libreria — in Python servirebbero `csv` o `pandas`."
+    },
+    {
+     "id": "w02-cs-7",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Tieni solo due colonne e salvale in `sintesi.csv`.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Select-Object codice, quota | Export-Csv sintesi.csv\nGet-Content sintesi.csv",
+     "verifica": {
+      "esiste": [
+       "sintesi.csv"
+      ],
+      "contiene": {
+       "sintesi.csv": "codice,quota"
+      }
+     },
+     "hint": [
+      "Select-Object con i due nomi, poi Export-Csv.",
+      "Import-Csv prove.csv | Select-Object codice, quota | Export-Csv sintesi.csv"
+     ],
+     "spiegazione": "`Select-Object` sceglie le colonne **per nome**, e `Export-Csv` scrive solo quelle. In bash sarebbe `cut -d, -f1,2`, dove di nuovo i numeri delle colonne vanno contati a mano."
+    },
+    {
+     "id": "w02-cs-8",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "**Il giro completo.** Dalle prove, ricava un file `crociera.csv` con codice e mach delle sole prove sopra 8000 di quota, ordinate per codice.",
+     "difficolta": 3,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Where-Object quota -gt 8000 | Sort-Object codice | Select-Object codice, mach | Export-Csv crociera.csv\nImport-Csv crociera.csv",
+     "verifica": {
+      "esiste": [
+       "crociera.csv"
+      ],
+      "contiene": {
+       "crociera.csv": "codice,mach"
+      },
+      "usa": [
+       "Import-Csv",
+       "Where-Object",
+       "Export-Csv"
+      ]
+     },
+     "hint": [
+      "Import-Csv, Where-Object, Sort-Object, Select-Object, Export-Csv.",
+      "L'ordine e' quello: si filtra prima di scegliere le colonne."
+     ],
+     "spiegazione": "Quattro cmdlet in fila e un file nuovo: leggere, filtrare, scegliere le colonne, scrivere. Nessuno dei quattro sa degli altri, e nessuno ha dovuto interpretare del testo.\n\nÈ il punto di tutto il ramo: **ogni formato nuovo costa un cmdlet, non un programma.**"
+    }
+   ]
+  },
+  {
+   "id": "w02-json",
+   "comando": "ConvertTo-Json",
+   "titolo": "JSON senza librerie",
+   "esercizi": [
+    {
+     "id": "w02-js-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Leggi il file di configurazione JSON e trasformalo in oggetti.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Get-Content conf.json | ConvertFrom-Json",
+     "verifica": {
+      "stampa": "soglia",
+      "usa": [
+       "ConvertFrom-Json"
+      ]
+     },
+     "hint": [
+      "Prima Get-Content, poi ConvertFrom-Json.",
+      "Get-Content conf.json | ConvertFrom-Json"
+     ],
+     "spiegazione": "`ConvertFrom-Json` restituisce oggetti veri: da li' in poi valgono `Where-Object`, `Select-Object` e tutto il resto. In Python servirebbero `import json` e due funzioni; qui sono cmdlet come gli altri, e si mettono in pipeline."
+    },
+    {
+     "id": "w02-js-2",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Estrai il solo valore della soglia.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Get-Content conf.json | ConvertFrom-Json | Select-Object soglia",
+     "verifica": {
+      "stampa": "8000",
+      "usa": [
+       "Select-Object"
+      ]
+     },
+     "hint": [
+      "Aggiungi Select-Object col nome del campo.",
+      "... | ConvertFrom-Json | Select-Object soglia"
+     ],
+     "spiegazione": "`Select-Object soglia` sceglie il campo. È la stessa operazione che faresti su un CSV o su un elenco di file: una volta che sono oggetti, la provenienza non conta piu'."
+    },
+    {
+     "id": "w02-js-3",
+     "tipo": "predict",
+     "testo": "`ConvertTo-Json` su **un solo** oggetto: cosa produce?",
+     "opzioni": [
+      "un oggetto: {...}, non un array di uno",
+      "sempre un array, anche con un elemento solo",
+      "una stringa vuota",
+      "solleva un errore: serve almeno un array"
+     ],
+     "risposta": "un oggetto: {...}, non un array di uno",
+     "spiegazione": "Un oggetto, non un array di uno: `{...}` invece di `[{...}]`. È il comportamento di PowerShell vero, e rompe chi si aspetta sempre un array dall'altra parte — tipicamente un'API che riceve il JSON e trova un oggetto dove voleva una lista."
+    },
+    {
+     "id": "w02-js-4",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Converti la prima prova del CSV in JSON e guarda cosa esce.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Select-Object -First 1 | ConvertTo-Json",
+     "verifica": {
+      "stampa": "\"codice\"",
+      "usa": [
+       "ConvertTo-Json"
+      ]
+     },
+     "hint": [
+      "Select-Object -First 1, poi ConvertTo-Json.",
+      "Import-Csv prove.csv | Select-Object -First 1 | ConvertTo-Json"
+     ],
+     "spiegazione": "Un oggetto solo, `{...}`, non un array. Se il destinatario si aspetta una lista, questa e' la riga che gliela nega — e non c'e' nessun errore a segnalarlo."
+    },
+    {
+     "id": "w02-js-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Converti **tutte** le prove in JSON e confronta con il caso di prima.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | ConvertTo-Json",
+     "verifica": {
+      "stampa": "[",
+      "usa": [
+       "ConvertTo-Json"
+      ]
+     },
+     "hint": [
+      "Come prima, senza Select-Object -First.",
+      "Import-Csv prove.csv | ConvertTo-Json"
+     ],
+     "spiegazione": "Con piu' oggetti esce un array. La differenza fra le due uscite non e' scelta da te ma da quanti oggetti sono arrivati — ed e' la ragione per cui uno script che funziona su venti righe puo' rompersi il giorno in cui il file ne ha una sola."
+    },
+    {
+     "id": "w02-js-6",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "**Da CSV a JSON in una riga.** Converti l'intero file e salvalo in `prove.json`.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | ConvertTo-Json > prove.json\nGet-Content prove.json",
+     "verifica": {
+      "esiste": [
+       "prove.json"
+      ],
+      "contiene": {
+       "prove.json": "codice"
+      }
+     },
+     "hint": [
+      "Import-Csv, ConvertTo-Json, e la redirezione.",
+      "Import-Csv prove.csv | ConvertTo-Json > prove.json"
+     ],
+     "spiegazione": "Due formati diversi, nessuna conversione scritta a mano: gli oggetti stanno in mezzo, e ognuno dei due cmdlet parla solo con loro.\n\nÈ la ragione per cui vale la pena capire la pipeline a oggetti invece di imparare i comandi a memoria: ogni formato nuovo costa **un cmdlet**, non un programma."
+    },
+    {
+     "id": "w02-js-7",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Fai il giro inverso: rileggi il JSON appena scritto e filtra le prove sopra 8000.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n",
+      "/home/tu/prove.json": "[\n  {\n    \"codice\": \"101\",\n    \"quota\": \"9000\",\n    \"mach\": \"0.82\"\n  },\n  {\n    \"codice\": \"102\",\n    \"quota\": \"3000\",\n    \"mach\": \"0.40\"\n  },\n  {\n    \"codice\": \"103\",\n    \"quota\": \"11000\",\n    \"mach\": \"0.78\"\n  },\n  {\n    \"codice\": \"104\",\n    \"quota\": \"9500\",\n    \"mach\": \"0.85\"\n  }\n]\n"
+     },
+     "soluzione": "Get-Content prove.json | ConvertFrom-Json | Where-Object quota -gt 8000",
+     "verifica": {
+      "stampa": "11000",
+      "usa": [
+       "ConvertFrom-Json",
+       "Where-Object"
+      ]
+     },
+     "hint": [
+      "Get-Content, ConvertFrom-Json, Where-Object.",
+      "Get-Content prove.json | ConvertFrom-Json | Where-Object quota -gt 8000"
+     ],
+     "spiegazione": "Il giro completo — CSV, oggetti, JSON, testo, oggetti di nuovo — e a ogni passaggio i dati restano interrogabili per nome di campo. È il collaudo che vale la pena fare su qualunque conversione: riportarla indietro e controllare che si possa ancora lavorare."
+    },
+    {
+     "id": "w02-js-8",
+     "tipo": "predict",
+     "testo": "Perche' in PowerShell JSON e CSV non richiedono una libreria, mentre in Python si?",
+     "opzioni": [
+      "perche' gli oggetti sono nel linguaggio della shell, non in una libreria",
+      "perche' PowerShell include Python al suo interno",
+      "perche' JSON e CSV sono formati di Microsoft",
+      "non e' vero: servono moduli anche in PowerShell"
+     ],
+     "risposta": "perche' gli oggetti sono nel linguaggio della shell, non in una libreria",
+     "spiegazione": "Perche' gli oggetti sono **nel linguaggio della shell**, non in una libreria: un cmdlet che converte parla direttamente con quello che scorre nella pipeline. In Python la shell passa testo, quindi ogni formato ha bisogno di un programma che lo interpreti."
+    }
+   ]
+  },
+  {
+   "id": "w02-string",
+   "comando": "Select-String",
+   "titolo": "Select-String — il grep che restituisce oggetti",
+   "esercizi": [
+    {
+     "id": "w02-ss-1",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Trova nel log le righe che parlano di errori.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Select-String -Pattern error -Path log.txt",
+     "verifica": {
+      "stampa": "timeout",
+      "usa": [
+       "Select-String"
+      ]
+     },
+     "hint": [
+      "Il cmdlet e' Select-String, con -Pattern e -Path.",
+      "Select-String -Pattern error -Path log.txt"
+     ],
+     "spiegazione": "`Select-String` **ignora le maiuscole di suo**: trova sia `ERROR` sia `error` senza opzioni. È l'opposto di `grep`, dove distinguerle e' il default e `-i` va chiesto — e per distinguerle qui serve `-CaseSensitive`."
+    },
+    {
+     "id": "w02-ss-2",
+     "tipo": "predict",
+     "testo": "Che differenza c'e' fra `Select-String` e `grep` sulle maiuscole?",
+     "opzioni": [
+      "Select-String le ignora di default, grep le distingue",
+      "sono identiche: entrambe le ignorano",
+      "sono identiche: entrambe le distinguono",
+      "grep le ignora, Select-String le distingue"
+     ],
+     "risposta": "Select-String le ignora di default, grep le distingue",
+     "spiegazione": "`Select-String` le ignora di default, `grep` le distingue. Sono due scelte opposte, e chi passa dall'una all'altra ottiene o troppi risultati o troppo pochi senza capire perche'."
+    },
+    {
+     "id": "w02-ss-3",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Estrai i soli **numeri di riga** degli errori.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Select-String -Pattern error -Path log.txt | Select-Object LineNumber",
+     "verifica": {
+      "stampa": "LineNumber",
+      "usa": [
+       "Select-String",
+       "Select-Object"
+      ]
+     },
+     "hint": [
+      "Aggiungi Select-Object LineNumber.",
+      "Select-String -Pattern error -Path log.txt | Select-Object LineNumber"
+     ],
+     "spiegazione": "Il numero di riga arriva gratis, perche' `Select-String` restituisce oggetti con `Filename`, `LineNumber` e `Line`. In bash servirebbe `grep -n` e poi ritagliare il numero dal testo con `cut`."
+    },
+    {
+     "id": "w02-ss-4",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Conta quante righe di errore ci sono.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Select-String -Pattern error -Path log.txt | Measure-Object",
+     "verifica": {
+      "stampa": "Count",
+      "usa": [
+       "Select-String",
+       "Measure-Object"
+      ]
+     },
+     "hint": [
+      "Aggiungi Measure-Object in fondo.",
+      "Select-String -Pattern error -Path log.txt | Measure-Object"
+     ],
+     "spiegazione": "Due. `Measure-Object` conta gli oggetti che gli arrivano, senza sapere che sono righe di un file: e' la stessa cosa che faceva sui file e sui processi."
+    },
+    {
+     "id": "w02-ss-5",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Salva le righe di errore, con il loro numero, in un file di diagnosi.",
+     "difficolta": 2,
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Select-String -Pattern error -Path log.txt | Select-Object LineNumber, Line > diagnosi.txt\nGet-Content diagnosi.txt",
+     "verifica": {
+      "esiste": [
+       "diagnosi.txt"
+      ],
+      "contiene": {
+       "diagnosi.txt": "LineNumber"
+      }
+     },
+     "hint": [
+      "Select-Object con due campi, poi la redirezione.",
+      "... | Select-Object LineNumber, Line > diagnosi.txt"
+     ],
+     "spiegazione": "Numero di riga e testo, in un file. È l'informazione che serve a chi deve andare a guardare il log originale — e senza il numero di riga quel file di diagnosi vale molto meno."
+    },
+    {
+     "id": "w02-ss-6",
+     "tipo": "predict",
+     "testo": "Quando la differenza fra `Select-String` e `grep` conta davvero?",
+     "opzioni": [
+      "quando il risultato deve proseguire nella pipeline invece di essere solo guardato",
+      "quando il file e' molto grande",
+      "quando si cercano espressioni regolari",
+      "mai: sono equivalenti in tutto"
+     ],
+     "risposta": "quando il risultato deve proseguire nella pipeline invece di essere solo guardato",
+     "spiegazione": "Quando il risultato deve **andare da qualche parte**: contare le righe per file, ordinarle per numero, esportarle. Se stai solo guardando a schermo si equivalgono; e' quando il risultato prosegue nella pipeline che gli oggetti fanno la differenza fra una riga e uno script."
+    },
+    {
+     "id": "w02-ss-7",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "Cerca dentro il CSV usando `Select-String` invece di `Import-Csv`, e nota cosa perdi.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Select-String -Pattern 9000 -Path prove.csv",
+     "verifica": {
+      "stampa": "LineNumber",
+      "usa": [
+       "Select-String"
+      ]
+     },
+     "hint": [
+      "Come prima, cambiando file e motivo.",
+      "Select-String -Pattern 9000 -Path prove.csv"
+     ],
+     "spiegazione": "Righe di testo con il numero, invece di oggetti con le colonne. `Select-String` non sa che quel file e' una tabella: per quello serve `Import-Csv`.\n\nLa regola: `Select-String` per cercare **in un testo**, `Import-Csv` per interrogare **una tabella**. Usare il primo su un CSV funziona e ti lascia con del testo da ritagliare — cioe' esattamente il problema che PowerShell voleva togliere."
+    },
+    {
+     "id": "w02-ss-8",
+     "tipo": "terminale",
+     "shell": "powershell",
+     "testo": "**Il confronto finale.** Ottieni lo stesso risultato nel modo giusto: le prove con quota 9000, come oggetti.",
+     "filesystem": {
+      "/home/tu/prove.csv": "codice,quota,mach\n101,9000,0.82\n102,3000,0.40\n103,11000,0.78\n104,9500,0.85\n",
+      "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristinato\nerror timeout\n",
+      "/home/tu/conf.json": "{\"soglia\": 8000, \"unita\": \"m\"}\n"
+     },
+     "soluzione": "Import-Csv prove.csv | Where-Object quota -eq 9000",
+     "verifica": {
+      "stampa": "0.82",
+      "usa": [
+       "Import-Csv",
+       "Where-Object"
+      ]
+     },
+     "hint": [
+      "Import-Csv e Where-Object con -eq.",
+      "Import-Csv prove.csv | Where-Object quota -eq 9000"
+     ],
+     "spiegazione": "`Import-Csv` piu' `Where-Object` restituisce **la riga come oggetto**, con le colonne interrogabili. `Select-String` avrebbe restituito la riga come testo, da ritagliare.\n\nDue strade per la stessa domanda, e la differenza non si vede a schermo: si vede al comando successivo."
+    }
+   ]
+  }
+ ]
+}

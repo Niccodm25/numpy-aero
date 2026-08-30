@@ -73,12 +73,23 @@ export function esegui(sh, riga) {
   // La pipe si risolve qui: ogni pezzo riceve come ingresso l'uscita del
   // precedente. I comandi non ne sanno niente — leggono da sh.stdin quando non
   // ricevono un nome di file, ed e' l'unica cosa che devono sapere.
+  // Assegnazione di variabile: NOME=valore, senza spazi attorno all'uguale.
+  // E' una riga a se' e non un comando, ed e' il motivo per cui in bash
+  // "NOME = valore" con gli spazi non funziona — diventa il comando NOME.
+  const assegnazione = testo.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+  if (assegnazione) {
+    sh.env[assegnazione[1]] = espandi(sh, assegnazione[2].replace(/^["']|["']$/g, ""));
+    return { out: "", errore: null };
+  }
+
   const pezzi = spezzaSuPipe(testo);
   let ingresso = null;
   let ultimo = { out: "", errore: null };
 
   for (let i = 0; i < pezzi.length; i++) {
-    const { parole, redirezione } = dividi(pezzi[i]);
+    const { parole: grezze, redirezione: redGrezza } = dividi(pezzi[i]);
+    const parole = grezze.map((p) => espandi(sh, p));
+    const redirezione = redGrezza && { ...redGrezza, file: espandi(sh, redGrezza.file ?? "") };
     const nome = parole[0];
     if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };
     const fn = sh.comandi[nome];
@@ -134,6 +145,21 @@ export function formatta(valore) {
     riga(colonne.map((c) => "-".repeat(larghezza[c]))),
     ...valore.map((v) => riga(colonne.map((c) => v[c] ?? ""))),
   ].join("\n");
+}
+
+/**
+ * Sostituisce $NOME e ${NOME} con il valore della variabile. Una variabile che
+ * non esiste diventa la stringa vuota — senza errore, ed e' il comportamento di
+ * bash: e' la ragione per cui `rm -rf $CARTELLA/` con la variabile vuota
+ * cancella la radice.
+ */
+function espandi(sh, testo) {
+  if (typeof testo !== "string" || !testo.includes("$")) return testo;
+  // $# e' il numero di argomenti dello script, e non e' un nome come gli altri:
+  // va riconosciuto a parte, altrimenti il cancelletto verrebbe letto come
+  // l'inizio di un commento.
+  return testo.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$(#|[A-Za-z_0-9][A-Za-z0-9_]*)/g,
+    (_, a, b) => sh.env[a ?? b] ?? "");
 }
 
 /** Spezza sulle pipe di primo livello, lasciando stare quelle fra virgolette. */
@@ -365,6 +391,37 @@ export const POSIX = {
   whoami: (sh) => sh.fs.utente ?? "tu",
 
   /**
+   * Esegue le righe di un file, una per una, in **questa** shell.
+   *
+   * Una shell vera avvia un processo figlio, e per questo le variabili
+   * assegnate dentro uno script non sopravvivono — a meno di lanciarlo con
+   * `source`. Qui la distinzione non c'e', ed e' dichiarata nel modulo invece
+   * che simulata: sarebbe l'unica differenza fra `bash` e `source`, e costerebbe
+   * un secondo interprete per insegnare una riga di teoria.
+   */
+  bash(sh, args) {
+    const { flag, resto } = opzioni(args);
+    const file = resto[0];
+    if (!file) throw new V.ErroreFs("manca il nome dello script");
+    if (!V.esiste(sh.fs, file)) throw new V.ErroreFs(`${file}: file non esistente`);
+    // Gli argomenti dello script diventano $1, $2, ... e $# il loro numero.
+    const argomenti = resto.slice(1);
+    argomenti.forEach((a, i) => (sh.env[String(i + 1)] = a));
+    sh.env["#"] = String(argomenti.length);
+    sh.env["0"] = file;
+
+    const uscite = [];
+    for (const riga of V.leggi(sh.fs, file).split("\n")) {
+      const pulita = riga.trim();
+      if (!pulita || pulita.startsWith("#")) continue;
+      const r = esegui(sh, pulita);
+      if (r.errore) throw new V.ErroreFs(`${file}: ${r.errore}`);
+      if (r.out) uscite.push(r.out);
+    }
+    return uscite.join("\n");
+  },
+
+  /**
    * chmod accetta la forma numerica (755) e quella simbolica (+x, u+w, go-r).
    * Solo il proprietario puo' cambiare i permessi — o root, ed e' il motivo per
    * cui su un file di sistema serve sudo.
@@ -495,7 +552,11 @@ export function verifica(sh, attesa, trascrizione = []) {
       })
     )
   );
-  for (const c of attesa.usa || []) if (!usati.has(c)) p(`non hai usato ${c}`);
+  // Tenuti separati dagli altri problemi: se lo stato finale e' giusto ma il
+  // comando dell'esercizio non e' stato usato, la risposta e' corretta ma
+  // fuori consegna, e va detto in modo diverso da uno sbaglio.
+  const fuori = [];
+  for (const c of attesa.usa || []) if (!usati.has(c)) fuori.push(`non hai usato ${c}`);
 
   if (attesa.stampa !== undefined) {
     const uscite = trascrizione.map((t) => t.out).filter(Boolean).join("\n");
@@ -509,5 +570,9 @@ export function verifica(sh, attesa, trascrizione = []) {
     if (!errori.includes(attesa.errore)) p(`non hai riprodotto l'errore "${attesa.errore}"`);
   }
 
-  return { ok: problemi.length === 0, problemi };
+  return {
+    ok: problemi.length === 0 && fuori.length === 0,
+    fuoriConsegna: problemi.length === 0 && fuori.length > 0,
+    problemi: [...problemi, ...fuori],
+  };
 }

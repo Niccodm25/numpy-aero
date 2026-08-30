@@ -66,7 +66,8 @@
       "perche": "La shell vera di Windows: oggetti invece di testo. cmd.exe resta una lezione sola.",
       "disponibile": true,
       "moduli": [
-        "w01"
+        "w01",
+        "w02"
       ],
       "prossimi": [
         "Testo, CSV, JSON",
@@ -214,6 +215,12 @@
       "id": "w01",
       "file": "w01-pipeline.json",
       "titolo": "La pipeline a oggetti",
+      "disponibile": true
+    },
+    {
+      "id": "w02",
+      "file": "w02-dati.json",
+      "titolo": "CSV, JSON e testo",
       "disponibile": true
     },
     {

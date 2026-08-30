@@ -151,6 +151,77 @@ caso("un comando sconosciuto lo dice, invece di rompere", () => {
   assert.match(esegui(sh, "ls | ").errore, /attorno alla pipe/);
 });
 
+caso("stato giusto ma comando sbagliato: fuori consegna, non errore", () => {
+  const sh = shell({ "/home/tu/a.txt": "x" });
+  esegui(sh, "cp a.txt b.txt");
+  const r = verifica(sh, { esiste: ["/home/tu/b.txt"], usa: ["mv"] }, []);
+  assert.equal(r.ok, false);
+  assert.equal(r.fuoriConsegna, true, "lo stato e' quello atteso, manca solo il comando");
+  const r2 = verifica(sh, { esiste: ["/home/tu/c.txt"], usa: ["mv"] }, []);
+  assert.equal(r2.fuoriConsegna, false, "se manca anche lo stato non e' fuori consegna");
+});
+
+// ---------- variabili e script ----------
+
+caso("una variabile si assegna senza spazi e si legge col dollaro", () => {
+  const sh = shell();
+  esegui(sh, "NOME=galleria");
+  assert.equal(esegui(sh, "echo $NOME").out, "galleria");
+  assert.equal(esegui(sh, "echo ${NOME}").out, "galleria");
+});
+
+caso("gli spazi attorno all'uguale rompono l'assegnazione", () => {
+  const sh = shell();
+  const r = esegui(sh, "NOME = galleria");
+  assert.match(r.errore, /comando non trovato/, "NOME diventa un comando");
+  assert.equal(sh.env.NOME, undefined);
+});
+
+caso("una variabile che non esiste diventa la stringa vuota, senza errore", () => {
+  const sh = shell();
+  assert.equal(esegui(sh, "echo [$MANCA]").out, "[]");
+  assert.equal(esegui(sh, "echo $MANCA").errore, null);
+});
+
+caso("la variabile si espande anche nella redirezione e negli argomenti", () => {
+  const sh = shell();
+  esegui(sh, "FILE=note.txt");
+  esegui(sh, "echo ciao > $FILE");
+  assert.equal(V.leggi(sh.fs, "/home/tu/note.txt"), "ciao\n");
+  assert.equal(esegui(sh, "cat $FILE").out, "ciao");
+});
+
+caso("bash esegue le righe di un file e salta i commenti", () => {
+  const sh = shell({
+    "/home/tu/prova.sh": "# un commento\nmkdir dati\necho fatto\n",
+  });
+  const r = esegui(sh, "bash prova.sh");
+  assert.equal(r.out, "fatto");
+  assert.equal(V.eDir(sh.fs, "/home/tu/dati"), true);
+});
+
+caso("gli argomenti dello script diventano $1 e $#", () => {
+  const sh = shell({ "/home/tu/saluta.sh": "echo ciao $1\necho argomenti: $#\n" });
+  const r = esegui(sh, "bash saluta.sh mondo");
+  assert.match(r.out, /ciao mondo/);
+  assert.match(r.out, /argomenti: 1/);
+});
+
+caso("uno script che fallisce si ferma e dice dove", () => {
+  const sh = shell({ "/home/tu/rotto.sh": "echo prima\ncat manca.txt\necho dopo\n" });
+  const r = esegui(sh, "bash rotto.sh");
+  assert.match(r.errore, /rotto\.sh/);
+  assert.match(r.errore, /non esistente/);
+});
+
+caso("il caso classico: la variabile vuota nel percorso", () => {
+  const sh = shell({ "/home/tu/dati/a.txt": "x" });
+  // CARTELLA non e' mai stata assegnata: "$CARTELLA/dati" diventa "/dati"
+  assert.equal(esegui(sh, "ls $CARTELLA/dati").errore !== null, true);
+  esegui(sh, "CARTELLA=/home/tu");
+  assert.equal(esegui(sh, "ls $CARTELLA/dati").out, "a.txt");
+});
+
 // ---------- permessi ----------
 
 caso("ls -l mostra permessi e proprietario veri", () => {
