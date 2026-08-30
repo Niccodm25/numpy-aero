@@ -10,6 +10,7 @@ import * as H from "./html.js";
 import * as PR from "./processi.js";
 import * as SI from "./sistema.js";
 import * as U from "./utenti.js";
+import * as TX from "./testo.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 
@@ -311,6 +312,8 @@ function montaTerminale(zona, es) {
       ...(comandi ?? SH.POSIX),
       ...U.UTENTI,
     };
+  if (es.testoAvanzato)
+    comandi = { ...(comandi ?? SH.POSIX), ...TX.TESTO };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);

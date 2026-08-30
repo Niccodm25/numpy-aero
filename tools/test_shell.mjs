@@ -15,6 +15,7 @@ import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
 import { PROCESSI, PROCESSI_PS, statoProcessi } from "../js/processi.js";
 import { SISTEMA, statoSistema } from "../js/sistema.js";
 import { UTENTI, statoUtenti } from "../js/utenti.js";
+import { TESTO } from "../js/testo.js";
 
 let fatti = 0;
 const casi = [];
@@ -532,6 +533,19 @@ caso("chmod a quattro cifre mostra setuid, setgid e sticky bit", () => {
   assert.match(esegui(sh, "ls -l").out, /drwxrwxrwt/);
 });
 
+caso("cut, sed, tr e tee trasformano una pipeline", () => {
+  const sh = creaShell({ "/home/tu/misure.csv": "t,quota\n0,1000\n" }, { comandi: { ...POSIX, ...TESTO } });
+  assert.equal(esegui(sh, "cut -d , -f 2 misure.csv | sed 's/quota/ALT/g' | tr a-z A-Z | tee colonne.txt").out, "ALT\n1000");
+  assert.equal(V.leggi(sh.fs, "colonne.txt"), "ALT\n1000\n");
+});
+
+caso("awk estrae campi e xargs applica un comando ai nomi", () => {
+  const sh = creaShell({ "/home/tu/a.tmp": "x", "/home/tu/b.tmp": "y", "/home/tu/dati.txt": "uno due\n" }, { comandi: { ...POSIX, ...TESTO } });
+  assert.equal(esegui(sh, "awk '{print $2, $1}' dati.txt").out, "due uno");
+  esegui(sh, "echo a.tmp b.tmp | xargs rm");
+  assert.equal(V.esiste(sh.fs, "a.tmp"), false);
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -997,6 +1011,8 @@ for (const meta of indice.moduli) {
             ...(comandi ?? POSIX),
             ...UTENTI,
           };
+        if (es.testoAvanzato)
+          comandi = { ...(comandi ?? POSIX), ...TESTO };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
