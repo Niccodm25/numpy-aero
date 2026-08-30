@@ -8,6 +8,7 @@ Serve a non far trovare in un esercizio un comando mai spiegato.
 import glob
 import io
 import json
+import re
 import sys
 
 sys.stdout.reconfigure(encoding="utf8")
@@ -27,6 +28,9 @@ for f in sorted(glob.glob("content/l0*.json")) + sorted(glob.glob("content/w0*.j
     for r in d["raccolte"]:
         for e in r["esercizi"]:
             for riga in (e.get("soluzione") or "").splitlines():
+                # Quello che sta fra apici e' testo scritto in un file, non
+                # comandi eseguiti: "echo 'set -e' > s.sh" non usa l'opzione -e.
+                riga = re.sub(r"'[^']*'|\"[^\"]*\"", "", riga)
                 for pezzo in riga.split("|"):
                     parole = pezzo.strip().split()
                     if not parole:
