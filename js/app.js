@@ -16,7 +16,7 @@ import * as RM from "./remoto.js";
 import * as SV from "./servizi.js";
 import * as HW from "./hardware.js";
 import * as PF from "./prestazioni.js";
-import * as ST from "./storage.js";
+import * as ST from "./dischi.js";
 import * as CT from "./container.js";
 import * as SC from "./sicurezza.js";
 import * as AU from "./automazione.js";

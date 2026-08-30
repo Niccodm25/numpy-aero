@@ -21,7 +21,7 @@ import { REMOTO, statoRemoto } from "../js/remoto.js";
 import { SERVIZI, statoServizi } from "../js/servizi.js";
 import { HARDWARE, statoHardware } from "../js/hardware.js";
 import { PRESTAZIONI, statoPrestazioni } from "../js/prestazioni.js";
-import { STORAGE, statoStorage } from "../js/storage.js";
+import { STORAGE, statoStorage } from "../js/dischi.js";
 import { CONTAINER, statoContainer } from "../js/container.js";
 import { SICUREZZA, statoSicurezza } from "../js/sicurezza.js";
 import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
