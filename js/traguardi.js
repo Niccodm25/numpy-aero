@@ -137,8 +137,9 @@ function elencoHtml(dati, valutati) {
  * @param {object} indice          content/index.json gia' caricato
  * @param {object} stati           stato per esercizio
  * @param {(id:string)=>Promise}   caricaModulo  per contare gli esercizi
+ * @param {string[]} moduliDelRamo  si mostrano solo i traguardi che li toccano
  */
-export async function montaTendine(indice, stati, caricaModulo) {
+export async function montaTendine(indice, stati, caricaModulo, moduliDelRamo) {
   let dati;
   try {
     dati = await carica();
@@ -146,7 +147,15 @@ export async function montaTendine(indice, stati, caricaModulo) {
     return; // senza traguardi l'app funziona lo stesso
   }
 
-  const visibili = dati.traguardi;
+  // Un traguardo si vede nel ramo che lo porta: in home sarebbero venticinque
+  // linguette senza contesto, dentro il ramo sono la mappa di quel ramo.
+  const visibili = dati.traguardi.filter((t) =>
+    t.richiede.some((id) => moduliDelRamo.includes(id))
+  );
+  if (!visibili.length) {
+    document.getElementById("tendine")?.remove();
+    return;
+  }
 
   // I moduli servono solo per contare gli esercizi: quelli non ancora scritti
   // restano null, ed e' cosi' che un traguardo sa di essere fuori portata.
@@ -173,16 +182,24 @@ export async function montaTendine(indice, stati, caricaModulo) {
     d.querySelector(".indietro-traguardi").onclick = () => apriElenco();
   };
   const apriElenco = () => {
-    const d = mostra(elencoHtml(dati, valutati));
+    const d = mostra(elencoHtml({ ...dati, traguardi: visibili }, valutati));
     d.querySelectorAll(".traguardo").forEach((b) => (b.onclick = () => apri(b.dataset.id)));
   };
 
   // Sul bordo ci stanno cinque linguette leggibili, non dodici: si mostrano
   // quelle a cui sei piu' vicino - prima quelle avviate, poi le raggiunte -
   // e l'elenco completo resta dietro la linguetta "Traguardi".
-  const ordine = { avviato: 0, raggiunto: 1, chiuso: 2 };
+  const ordine = { avviato: 0, chiuso: 1, raggiunto: 2 };
+  const livelli = { Utente: 0, Autonomo: 1, Tecnico: 2, Specialista: 3 };
+  const chiave = (t) => {
+    const v = valutati.get(t.id);
+    return [ordine[v.stato], v.mancanti.length, livelli[t.livello] ?? 9];
+  };
   const inEvidenza = [...visibili]
-    .sort((a, b) => ordine[valutati.get(a.id).stato] - ordine[valutati.get(b.id).stato])
+    .sort((a, b) => {
+      const [x, y] = [chiave(a), chiave(b)];
+      return x[0] - y[0] || x[1] - y[1] || x[2] - y[2];
+    })
     .slice(0, 5);
 
   document.getElementById("tendine")?.remove();

@@ -187,7 +187,7 @@ async function home() {
     </div>`;
 
   mostraSw();
-  T.montaTendine(indice, stati, modulo);
+  T.togliTendine();
   app.querySelector("#exp").onclick = () => S.esporta(dati);
   app.querySelector("#imp").onclick = () => app.querySelector("#file").click();
   app.querySelector("#file").onchange = (ev) => {
@@ -226,7 +226,7 @@ async function vistaRamo(id) {
          ${r.prossimi.map((t) => `<div class="card muto">${t}</div>`).join("")}`
       : ""}`;
 
-  T.togliTendine();
+  T.montaTendine(indice, stati, modulo, r.moduli);
 }
 
 async function vistaModulo(id) {
