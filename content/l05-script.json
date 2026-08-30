@@ -316,35 +316,37 @@
           "spiegazione": "No: lo script gira in una shell **figlia**, e le sue variabili muoiono con lei. Per cambiare l'ambiente della shell corrente si usa `source script.sh` — ed e' esattamente il motivo per cui gli ambienti virtuali si attivano con `source` e non con `./`."
         },
         {
-          "id": "l05-sc-8",
+          "id": "l05-sc-9",
           "tipo": "terminale",
-          "testo": "Uno script che fallisce a meta': eseguilo e guarda dove si ferma.",
           "difficolta": 2,
+          "testo": "Uno script puo' contenere commenti: scrivi `pulito.sh` con una riga di commento in cima e un `echo via` sotto, poi lancialo.",
           "filesystem": {
             "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
-            "/home/tu/rotto.sh": "echo comincio\ncat manca.txt\necho finito\n"
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
           },
-          "soluzione": "bash rotto.sh",
+          "soluzione": "echo '# raccolta dei risultati' > pulito.sh\necho 'echo via' >> pulito.sh\nbash pulito.sh",
           "verifica": {
-            "errore": "non esistente",
+            "esiste": [
+              "pulito.sh"
+            ],
             "usa": [
               "bash"
-            ]
+            ],
+            "stampa": "via"
           },
           "hint": [
-            "Eseguilo e leggi il messaggio.",
-            "bash rotto.sh"
+            "Il cancelletto apre un commento.",
+            "echo '# raccolta dei risultati' > pulito.sh"
           ],
-          "spiegazione": "L'errore nomina lo script e la riga che ha fallito. Su un sistema vero, **senza `set -e`** lo script proseguirebbe: il `cat` fallisce, e il comando dopo viene eseguito lo stesso — cosi' l'errore che vedi alla fine non e' quello vero.\n\n`set -eu` in cima e' la prima riga dopo lo shebang di ogni script scritto da qualcuno che ci e' gia' passato."
+          "spiegazione": "Le righe che iniziano con `#` e le righe vuote vengono saltate. Un commento in cima che dice **cosa fa** lo script e **come si lancia** vale piu' di qualunque altra riga: fra due mesi sara' l'unica documentazione che esiste."
         }
       ]
     },
     {
       "id": "l05-argomenti",
-      "comando": "$1 e set -eu",
-      "titolo": "argomenti, e le due righe che salvano",
+      "comando": "$1 e $#",
+      "titolo": "argomenti - quello che lo script riceve",
       "esercizi": [
         {
           "id": "l05-ar-1",
@@ -431,6 +433,129 @@
           "spiegazione": "Lo stesso script crea cartelle diverse a seconda di come lo lanci. È il passaggio da \"comandi scritti a mano\" a \"strumento\", e costa un `$1`."
         },
         {
+          "id": "l05-ar-7",
+          "tipo": "terminale",
+          "testo": "**Uno script utile.** Scrivi `riassumi.sh` che riceve il nome di un log e ne conta le righe di errore, e lanciamolo.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'grep -i error $1 | wc -l' > riassumi.sh\nbash riassumi.sh log.txt",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Nello script: grep -i error $1 | wc -l",
+            "Apici singoli: servono anche per la pipe, che altrimenti verrebbe eseguita subito invece di finire nel file",
+            "bash riassumi.sh log.txt"
+          ],
+          "spiegazione": "Un argomento, una pipe, un numero. Questo script funziona su qualunque log, non su quello per cui l'hai scritto — ed e' tutta la differenza fra un comando e uno strumento. Gli apici qui fanno due lavori: tengono `$1` intatto e impediscono che la pipe venga eseguita mentre scrivi il file."
+        },
+        {
+          "id": "l05-ag-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Scrivi `copia.sh` che riceve **due** argomenti - sorgente e destinazione - e copia il primo nel secondo. Lancialo su `dati/prova1.csv` verso `copia.csv`.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'cp $1 $2' > copia.sh\nbash copia.sh dati/prova1.csv copia.csv\nls",
+          "verifica": {
+            "esiste": [
+              "copia.csv"
+            ],
+            "usa": [
+              "bash"
+            ],
+            "contiene": {
+              "copia.csv": "9000,0.82"
+            }
+          },
+          "hint": [
+            "Gli argomenti sono $1 e $2, in ordine.",
+            "echo 'cp $1 $2' > copia.sh"
+          ],
+          "spiegazione": "`$1`, `$2`, `$3`: nell'ordine in cui li scrivi dopo il nome dello script. Non hanno nome, e questo e' il limite vero degli script bash - dopo tre o quattro argomenti nessuno ricorda piu' qual e' quale, ed e' il punto in cui conviene passare a Python."
+        },
+        {
+          "id": "l05-ag-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi `crea.sh` che crea la cartella passata come argomento, poi **lancialo senza argomenti** e guarda cosa succede.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'mkdir -p $1' > crea.sh\nbash crea.sh",
+          "verifica": {
+            "esiste": [
+              "crea.sh"
+            ],
+            "usa": [
+              "bash"
+            ],
+            "stampa": "manca il nome"
+          },
+          "hint": [
+            "Prima scrivi lo script, poi lancialo con bash crea.sh e basta.",
+            "bash crea.sh, senza niente dopo"
+          ],
+          "spiegazione": "`$1` non esiste, quindi diventa la stringa vuota, quindi `mkdir -p` si ritrova senza argomenti. L'errore parla di `mkdir` e non dice niente sull'argomento che mancava: e' il tipico messaggio che manda fuori strada per mezz'ora."
+        },
+        {
+          "id": "l05-ag-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Come si difende uno script dal caso \"lanciato senza argomenti\"?",
+          "opzioni": [
+            "controllando `$#` in cima, e uscendo con un messaggio se non e' quello atteso",
+            "non serve: bash rifiuta di eseguire uno script senza argomenti",
+            "mettendo i valori di default dentro `$1` prima di usarlo",
+            "usando `set -e`, che intercetta anche questo"
+          ],
+          "risposta": "controllando `$#` in cima, e uscendo con un messaggio se non e' quello atteso",
+          "spiegazione": "Il controllo di `$#` e' la prima cosa dentro ogni script serio: se il numero non e' quello atteso, si stampa come si usa lo script e si esce, invece di proseguire su argomenti che non ci sono. `set -e` non aiuta qui, perche' con l'argomento vuoto il comando magari non fallisce nemmeno - fa la cosa sbagliata in silenzio."
+        }
+      ]
+    },
+    {
+      "id": "l05-robusto",
+      "comando": "set -eu",
+      "titolo": "gli errori che non ti fermano",
+      "esercizi": [
+        {
+          "id": "l05-sc-8",
+          "tipo": "terminale",
+          "testo": "`rotto.sh` fallisce a meta': la riga `cat manca.txt` non puo' funzionare. Eseguilo e guarda se lo script si ferma li'.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/home/tu/rotto.sh": "echo comincio\ncat manca.txt\necho finito\n"
+          },
+          "soluzione": "bash rotto.sh",
+          "verifica": {
+            "usa": [
+              "bash"
+            ],
+            "stampa": "finito"
+          },
+          "hint": [
+            "Eseguilo e leggi tutto quello che stampa.",
+            "bash rotto.sh"
+          ],
+          "spiegazione": "Non si e' fermato. Il `cat` ha fallito, l'errore e' stato stampato, e la riga dopo e' stata eseguita lo stesso: `finito` compare in fondo come se fosse andato tutto bene.\n\nQuesto e' il comportamento **normale** di uno script: ogni riga viene provata, qualunque cosa sia successa prima. Su uno script che crea una cartella e poi ci copia dentro dei dati, vuol dire copiare in un posto che non esiste - e accorgersene dopo.\n\nLa riga che lo cambia e' `set -e`, ed e' la prossima raccolta."
+        },
+        {
           "id": "l05-ar-5",
           "tipo": "predict",
           "testo": "A cosa serve `set -e` in cima a uno script?",
@@ -457,28 +582,97 @@
           "spiegazione": "Fa fallire lo script quando usa una **variabile non definita**, invece di sostituirla con la stringa vuota. È la difesa diretta contro `rm -rf $CARTELLA/` con la variabile vuota, e costa tre caratteri."
         },
         {
-          "id": "l05-ar-7",
+          "id": "l05-ro-1",
           "tipo": "terminale",
-          "testo": "**Uno script utile.** Scrivi `riassumi.sh` che riceve il nome di un log e ne conta le righe di errore, e lanciamolo.",
-          "difficolta": 2,
+          "difficolta": 3,
+          "testo": "Riscrivi lo stesso script con `set -e` come prima riga, chiamalo `sicuro.sh`, e lancialo. Deve fermarsi dove fallisce.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/home/tu/rotto.sh": "echo comincio\ncat manca.txt\necho finito\n"
+          },
+          "soluzione": "echo 'set -e' > sicuro.sh\necho 'echo comincio' >> sicuro.sh\necho 'cat manca.txt' >> sicuro.sh\necho 'echo finito' >> sicuro.sh\nbash sicuro.sh",
+          "verifica": {
+            "esiste": [
+              "sicuro.sh"
+            ],
+            "usa": [
+              "bash"
+            ],
+            "errore": "non esistente"
+          },
+          "hint": [
+            "Prima riga set -e, poi le tre righe di rotto.sh con >>.",
+            "echo 'set -e' > sicuro.sh, poi le altre con >>"
+          ],
+          "spiegazione": "`finito` non compare piu': lo script si e' fermato sulla riga che ha fallito, ed e' quello che vuoi. Tre caratteri di differenza fra uno script che si ferma e uno che prosegue sui cocci.\n\nNota che la prima riga usa `>` e le altre `>>`: la prima crea il file, le altre aggiungono. Invertirle vuol dire ritrovarsi uno script di una riga."
+        },
+        {
+          "id": "l05-ro-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi `salva.sh` con `set -eu` in cima, che copia `dati/prova1.csv` dentro `$DEST`. Lancialo **senza** aver mai definito `DEST`.",
           "filesystem": {
             "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
             "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
           },
-          "soluzione": "echo 'grep -i error $1 | wc -l' > riassumi.sh\nbash riassumi.sh log.txt",
+          "soluzione": "echo 'set -eu' > salva.sh\necho 'cp dati/prova1.csv $DEST' >> salva.sh\nbash salva.sh",
           "verifica": {
-            "stampa": "1",
+            "esiste": [
+              "salva.sh"
+            ],
             "usa": [
               "bash"
-            ]
+            ],
+            "errore": "variabile non definita"
           },
           "hint": [
-            "Nello script: grep -i error $1 | wc -l",
-            "Apici singoli: servono anche per la pipe, che altrimenti verrebbe eseguita subito invece di finire nel file",
-            "bash riassumi.sh log.txt"
+            "set -eu sulla prima riga, la copia sulla seconda.",
+            "echo 'set -eu' > salva.sh"
           ],
-          "spiegazione": "Un argomento, una pipe, un numero. Questo script funziona su qualunque log, non su quello per cui l'hai scritto — ed e' tutta la differenza fra un comando e uno strumento. Gli apici qui fanno due lavori: tengono `$1` intatto e impediscono che la pipe venga eseguita mentre scrivi il file."
+          "spiegazione": "L'errore dice esattamente cosa e' successo: `DEST: variabile non definita`. Lo script si e' fermato prima di fare qualunque cosa, ed e' il caso migliore possibile."
+        },
+        {
+          "id": "l05-ro-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Ora la stessa cosa **senza** `set -eu`: scrivi `muto.sh` con la sola riga della copia verso `$DEST`, e lancialo.",
+          "filesystem": {
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n"
+          },
+          "soluzione": "echo 'cp dati/prova1.csv $DEST' > muto.sh\nbash muto.sh",
+          "verifica": {
+            "esiste": [
+              "muto.sh"
+            ],
+            "usa": [
+              "bash"
+            ],
+            "stampa": "sorgente e destinazione"
+          },
+          "hint": [
+            "Una riga sola nello script, niente set.",
+            "echo 'cp dati/prova1.csv $DEST' > muto.sh"
+          ],
+          "spiegazione": "`$DEST` e' diventato la stringa vuota, quindi `cp` ha ricevuto un argomento solo, e l'errore parla di `cp`: della variabile non c'e' traccia. Con `rm -rf $CARTELLA/` al posto della copia, non ci sarebbe stato nemmeno un errore - solo la radice al posto della cartella.\n\nÈ la differenza pratica fra i due script: lo stesso guasto, un messaggio che lo dice e uno che lo nasconde."
+        },
+        {
+          "id": "l05-ro-4",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Dove va messo `set -eu` dentro uno script?",
+          "opzioni": [
+            "subito dopo lo shebang, prima di qualunque comando",
+            "in fondo, cosi' vale su tutto quello che precede",
+            "prima di ogni comando che puo' fallire",
+            "fuori dallo script, sulla riga che lo lancia"
+          ],
+          "risposta": "subito dopo lo shebang, prima di qualunque comando",
+          "spiegazione": "Vale da dove lo scrivi in avanti, quindi in fondo non protegge niente. Lo schema fisso e' tre righe: `#!/bin/bash`, `set -eu`, poi il lavoro. Chi legge lo script dopo di te lo cerca li'."
         },
         {
           "id": "l05-ar-8",

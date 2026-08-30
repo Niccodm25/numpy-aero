@@ -102,8 +102,19 @@ export function esegui(sh, riga) {
 
   for (let i = 0; i < pezzi.length; i++) {
     const { parole: grezze, redirezione: redGrezza, letterali } = dividi(pezzi[i]);
-    const parole = grezze.map((p, k) => (letterali[k] ? p : espandi(sh, p)));
-    const redirezione = redGrezza && { ...redGrezza, file: espandi(sh, redGrezza.file ?? "") };
+    let parole, redirezione;
+    try {
+      // Una variabile vuota SPARISCE: "mkdir -p $1" senza argomenti diventa
+      // "mkdir -p", non "mkdir -p ''". E' il motivo per cui l'errore che leggi
+      // parla del comando e non della variabile che mancava.
+      parole = grezze
+        .map((p, k) => (letterali[k] ? p : espandi(sh, p)))
+        .filter((p, k) => p !== "" || grezze[k] === "");
+      redirezione = redGrezza && { ...redGrezza, file: espandi(sh, redGrezza.file ?? "") };
+    } catch (e) {
+      if (e instanceof V.ErroreFs) return { out: "", errore: e.message };
+      throw e;
+    }
     const nome = parole[0];
     if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };
     const fn = sh.comandi[nome];
@@ -173,7 +184,14 @@ function espandi(sh, testo) {
   // va riconosciuto a parte, altrimenti il cancelletto verrebbe letto come
   // l'inizio di un commento.
   return testo.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$(#|[A-Za-z_0-9][A-Za-z0-9_]*)/g,
-    (_, a, b) => sh.env[a ?? b] ?? "");
+    (_, a, b) => {
+      const nome = a ?? b;
+      // Con "set -u" una variabile non definita e' un errore invece della
+      // stringa vuota: e' l'unica difesa contro "rm -rf $CARTELLA/".
+      if (sh.env[nome] === undefined && sh.severo)
+        throw new V.ErroreFs(`${nome}: variabile non definita`);
+      return sh.env[nome] ?? "";
+    });
 }
 
 /** Spezza sulle pipe di primo livello, lasciando stare quelle fra virgolette. */
@@ -424,13 +442,31 @@ export const POSIX = {
     sh.env["#"] = String(argomenti.length);
     sh.env["0"] = file;
 
+    // Senza "set -e" uno script che fallisce a meta' PROSEGUE: l'errore si
+    // stampa e la riga dopo viene eseguita lo stesso. E' il comportamento che
+    // rovina i dati, ed e' la ragione per cui quelle due righe stanno in cima.
+    const severoPrima = sh.severo;
+    let fermaSuErrore = false;
     const uscite = [];
-    for (const riga of V.leggi(sh.fs, file).split("\n")) {
-      const pulita = riga.trim();
-      if (!pulita || pulita.startsWith("#")) continue;
-      const r = esegui(sh, pulita);
-      if (r.errore) throw new V.ErroreFs(`${file}: ${r.errore}`);
-      if (r.out) uscite.push(r.out);
+    try {
+      for (const riga of V.leggi(sh.fs, file).split("\n")) {
+        const pulita = riga.trim();
+        if (!pulita || pulita.startsWith("#")) continue;
+        if (pulita.startsWith("set ")) {
+          const opz = pulita.slice(4).replace(/-/g, "");
+          if (opz.includes("e")) fermaSuErrore = true;
+          if (opz.includes("u")) sh.severo = true;
+          continue;
+        }
+        const r = esegui(sh, pulita);
+        if (r.errore) {
+          if (fermaSuErrore) throw new V.ErroreFs(`${file}: ${r.errore}`);
+          uscite.push(`${file}: ${r.errore}`);
+        }
+        if (r.out) uscite.push(r.out);
+      }
+    } finally {
+      sh.severo = severoPrima;
     }
     return uscite.join("\n");
   },

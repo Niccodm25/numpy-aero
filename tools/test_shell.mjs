@@ -216,11 +216,36 @@ caso("gli argomenti dello script diventano $1 e $#", () => {
   assert.match(r.out, /argomenti: 1/);
 });
 
-caso("uno script che fallisce si ferma e dice dove", () => {
+caso("senza set -e uno script che fallisce prosegue, con set -e si ferma", () => {
   const sh = shell({ "/home/tu/rotto.sh": "echo prima\ncat manca.txt\necho dopo\n" });
   const r = esegui(sh, "bash rotto.sh");
-  assert.match(r.errore, /rotto\.sh/);
-  assert.match(r.errore, /non esistente/);
+  assert.equal(r.errore, null, "l'errore di una riga non ferma lo script");
+  assert.match(r.out, /rotto\.sh: cat: .*non esistente/, "ma viene stampato");
+  assert.match(r.out, /dopo/, "e la riga successiva viene eseguita lo stesso");
+
+  const sh2 = shell({ "/home/tu/fermo.sh": "set -e\necho prima\ncat manca.txt\necho dopo\n" });
+  const r2 = esegui(sh2, "bash fermo.sh");
+  assert.match(r2.errore, /fermo\.sh/);
+  assert.equal(/dopo/.test(r2.out || ""), false, "con set -e la riga dopo non parte");
+});
+
+caso("set -u fa fallire la variabile non definita, senza resta muta", () => {
+  const sh = shell({ "/home/tu/a.txt": "x" });
+  esegui(sh, "echo 'cp a.txt $DEST' > muto.sh");
+  assert.match(esegui(sh, "bash muto.sh").out, /sorgente e destinazione/, "l'errore parla di cp");
+
+  const severo = shell({ "/home/tu/a.txt": "x" });
+  esegui(severo, "echo 'set -eu' > severo.sh");
+  esegui(severo, "echo 'cp a.txt $DEST' >> severo.sh");
+  assert.match(esegui(severo, "bash severo.sh").errore, /DEST: variabile non definita/);
+  assert.equal(severo.severo, undefined, "il set dello script non resta acceso fuori");
+});
+
+caso("una variabile vuota sparisce, non diventa un argomento vuoto", () => {
+  const sh = shell();
+  esegui(sh, "echo 'mkdir -p $1' > crea.sh");
+  assert.match(esegui(sh, "bash crea.sh").out, /manca il nome della directory/);
+  assert.match(esegui(sh, 'echo [""]').out, /\[\]/, "ma le virgolette vuote restano un argomento");
 });
 
 caso("il caso classico: la variabile vuota nel percorso", () => {

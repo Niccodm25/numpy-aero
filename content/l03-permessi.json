@@ -1,532 +1,532 @@
 {
- "id": "l03",
- "titolo": "Permessi e sudo",
- "perche": "Le nove lettere di ls -l, cosa significano su un file e cosa su una directory — dove vogliono dire tutt'altro — e i tre numeri da riconoscere a vista: 755, 644, 600. Piu' sudo: quando serve davvero, e perche' averne bisogno sui propri file e' un sintomo invece che una soluzione.",
- "funzioni": [
-  "ls -l",
-  "whoami",
-  "chmod",
-  "chmod 755",
-  "chown",
-  "sudo"
- ],
- "lezioni": [
-  {
-   "id": "l03-l1",
-   "titolo": "Le nove lettere di ls -l",
-   "md": "```\n-rw-r--r--  tu     123  dati.csv\ndrwxr-xr-x  tu       0  progetti\n-rwxr-xr-x  tu      42  analisi.sh\n```\n\nIl primo carattere dice **cosa e'**: `-` un file, `d` una directory.\n\nI nove che seguono sono **tre gruppi da tre**:\n\n```\nrwx  r-x  r-x\n |    |    |\n |    |    +-- gli altri\n |    +------- il gruppo\n +------------ il proprietario\n```\n\nOgni terna e' sempre nell'ordine `r`, `w`, `x` — leggere, scrivere, eseguire — e un trattino significa che quel permesso non c'e'.\n\n### Cosa vogliono dire davvero\n\n| | su un file | su una directory |\n|---|---|---|\n| `r` | leggere il contenuto | elencare i nomi che contiene |\n| `w` | modificare il contenuto | creare e cancellare file dentro |\n| `x` | eseguirlo come programma | attraversarla, entrarci con `cd` |\n\nLa colonna di destra e' quella che sorprende. **Cancellare un file non dipende dai permessi del file**, ma da quelli della directory che lo contiene: e' li' che il nome viene tolto. Puoi cancellare un file che non hai il permesso di leggere, e non puoi cancellarne uno tuo se la cartella e' in sola lettura.\n\n### Chi sei\n\n```\nwhoami\ntu\n```\n\nIl sistema guarda la prima terna se il file e' **tuo**, l'ultima se non lo e'. Il proprietario compare in `ls -l`, seconda colonna."
-  },
-  {
-   "id": "l03-l2",
-   "titolo": "chmod: due modi di dire la stessa cosa",
-   "md": "### La forma simbolica\n\n```\nchmod +x analisi.sh        # rendilo eseguibile\nchmod u+w note.txt         # scrivibile dal proprietario\nchmod go-r segreto.txt     # toglilo a gruppo e altri\n```\n\nSi legge come una frase: **chi** (`u` proprietario, `g` gruppo, `o` altri, `a` tutti), **cosa fare** (`+` aggiungi, `-` togli, `=` imposta esattamente), **quale permesso** (`r`, `w`, `x`).\n\nSenza specificare chi, `chmod +x` vale per tutti e tre.\n\n### La forma numerica\n\nOgni terna e' un numero da 0 a 7, sommando `r=4`, `w=2`, `x=1`:\n\n```\n7 = rwx      5 = r-x      4 = r--\n6 = rw-      3 = -wx      0 = ---\n```\n\n```\nchmod 755 analisi.sh    # rwx per te, r-x per tutti gli altri\nchmod 644 dati.csv      # rw- per te, r-- per gli altri\nchmod 600 segreto.txt   # rw- per te, niente per nessun altro\n```\n\nQuesti tre numeri coprono il novanta per cento dei casi reali, e vale la pena riconoscerli a vista: **755** per programmi e cartelle, **644** per i file normali, **600** per quelli che non deve leggere nessun altro — le chiavi private rifiutano di funzionare se non sono 600.\n\n### Quale usare\n\nLa numerica **imposta** tutto, la simbolica **modifica** quello che c'e'. `chmod 755` su un file che era 640 cambia anche i permessi che non volevi toccare; `chmod +x` aggiunge l'esecuzione e lascia stare il resto.\n\nIn dubbio, simbolica: fa una cosa sola."
-  },
-  {
-   "id": "l03-l3",
-   "titolo": "sudo: perche' esiste, e perche' non e' la risposta",
-   "md": "```\nsudo comando\n```\n\nEsegue **quel comando** come amministratore, e solo quello. Non apre una sessione: la riga dopo sei di nuovo te stesso.\n\n### Quando serve davvero\n\n- Toccare file fuori dalla tua cartella: `/etc`, `/usr`, `/opt`\n- Installare programmi a livello di sistema\n- Cambiare il proprietario di un file: `chown` richiede **sempre** root, anche sui tuoi file. Se bastasse essere proprietari, si potrebbe regalare un file a qualcun altro per sfuggire a una quota disco\n\n### Quando non serve, ed e' un sintomo\n\n```\nsudo pip install numpy\n```\n\nQuesto e' quasi sempre il modo sbagliato di risolvere un problema che era un altro: pacchetto installato nel Python sbagliato. Installa nel Python **di sistema**, che appartiene al sistema operativo, e prima o poi ne rompe le dipendenze. La risposta giusta e' un ambiente virtuale.\n\nLa regola: **se serve `sudo` per lavorare sui tuoi file, qualcosa e' storto** — di solito il proprietario, che si e' rotto usando `sudo` una volta di troppo.\n\n### Il comando da non digitare mai\n\n```\nsudo rm -rf /\n```\n\nCancella tutto, senza chiedere. Non e' una leggenda: e' un comando valido che fa esattamente quello che dice.\n\nLe versioni che capitano davvero sono piu' insidiose — uno spazio di troppo, `sudo rm -rf $CARTELLA/` con la variabile vuota — e la difesa e' sempre la stessa: **`ls` prima di `rm`, sullo stesso percorso**. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello.\n\nQui nel simulatore si puo' provare: e' il senso di questo terminale."
-  }
- ],
- "raccolte": [
-  {
-   "id": "l03-leggere",
-   "comando": "ls -l",
-   "titolo": "leggere i permessi",
-   "esercizi": [
+  "id": "l03",
+  "titolo": "Permessi e sudo",
+  "perche": "Le nove lettere di ls -l, cosa significano su un file e cosa su una directory — dove vogliono dire tutt'altro — e i tre numeri da riconoscere a vista: 755, 644, 600. Piu' sudo: quando serve davvero, e perche' averne bisogno sui propri file e' un sintomo invece che una soluzione.",
+  "funzioni": [
+    "ls -l",
+    "whoami",
+    "chmod",
+    "chmod 755",
+    "chown",
+    "sudo"
+  ],
+  "lezioni": [
     {
-     "id": "l03-le-1",
-     "tipo": "terminale",
-     "testo": "Guarda i permessi dei file in forma estesa.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "ls -l",
-     "verifica": {
-      "stampa": "rw-r--r--",
-      "usa": [
-       "ls"
-      ]
-     },
-     "hint": [
-      "L'opzione e' -l.",
-      "ls -l"
-     ],
-     "spiegazione": "Nove lettere dopo il primo carattere: tre terne — proprietario, gruppo, altri — sempre nell'ordine `r`, `w`, `x`. Un trattino significa che quel permesso non c'e'."
+      "id": "l03-l1",
+      "titolo": "Le nove lettere di ls -l",
+      "md": "```\n-rw-r--r--  tu     123  dati.csv\ndrwxr-xr-x  tu       0  progetti\n-rwxr-xr-x  tu      42  analisi.sh\n```\n\nIl primo carattere dice **cosa e'**: `-` un file, `d` una directory.\n\nI nove che seguono sono **tre gruppi da tre**:\n\n```\nrwx  r-x  r-x\n |    |    |\n |    |    +-- gli altri\n |    +------- il gruppo\n +------------ il proprietario\n```\n\nOgni terna e' sempre nell'ordine `r`, `w`, `x` — leggere, scrivere, eseguire — e un trattino significa che quel permesso non c'e'.\n\n### Cosa vogliono dire davvero\n\n| | su un file | su una directory |\n|---|---|---|\n| `r` | leggere il contenuto | elencare i nomi che contiene |\n| `w` | modificare il contenuto | creare e cancellare file dentro |\n| `x` | eseguirlo come programma | attraversarla, entrarci con `cd` |\n\nLa colonna di destra e' quella che sorprende. **Cancellare un file non dipende dai permessi del file**, ma da quelli della directory che lo contiene: e' li' che il nome viene tolto. Puoi cancellare un file che non hai il permesso di leggere, e non puoi cancellarne uno tuo se la cartella e' in sola lettura.\n\n### Chi sei\n\n```\nwhoami\ntu\n```\n\nIl sistema guarda la prima terna se il file e' **tuo**, l'ultima se non lo e'. Il proprietario compare in `ls -l`, seconda colonna."
     },
     {
-     "id": "l03-le-2",
-     "tipo": "predict",
-     "testo": "In `-rw-r--r--`, cosa dicono le prime tre lettere dopo il trattino iniziale?",
-     "opzioni": [
-      "i permessi del proprietario del file",
-      "i permessi di tutti gli utenti",
-      "il tipo di file e la sua dimensione",
-      "i permessi dell'amministratore"
-     ],
-     "risposta": "i permessi del proprietario del file",
-     "spiegazione": "I permessi del **proprietario**: `rw-` significa che puo' leggere e scrivere, ma non eseguire. Le tre successive valgono per il gruppo, le ultime tre per tutti gli altri."
+      "id": "l03-l2",
+      "titolo": "chmod: due modi di dire la stessa cosa",
+      "md": "### La forma simbolica\n\n```\nchmod +x analisi.sh        # rendilo eseguibile\nchmod u+w note.txt         # scrivibile dal proprietario\nchmod go-r segreto.txt     # toglilo a gruppo e altri\n```\n\nSi legge come una frase: **chi** (`u` proprietario, `g` gruppo, `o` altri, `a` tutti), **cosa fare** (`+` aggiungi, `-` togli, `=` imposta esattamente), **quale permesso** (`r`, `w`, `x`).\n\nSenza specificare chi, `chmod +x` vale per tutti e tre.\n\n### La forma numerica\n\nOgni terna e' un numero da 0 a 7, sommando `r=4`, `w=2`, `x=1`:\n\n```\n7 = rwx      5 = r-x      4 = r--\n6 = rw-      3 = -wx      0 = ---\n```\n\n```\nchmod 755 analisi.sh    # rwx per te, r-x per tutti gli altri\nchmod 644 dati.csv      # rw- per te, r-- per gli altri\nchmod 600 segreto.txt   # rw- per te, niente per nessun altro\n```\n\nQuesti tre numeri coprono il novanta per cento dei casi reali, e vale la pena riconoscerli a vista: **755** per programmi e cartelle, **644** per i file normali, **600** per quelli che non deve leggere nessun altro — le chiavi private rifiutano di funzionare se non sono 600.\n\n### Quale usare\n\nLa numerica **imposta** tutto, la simbolica **modifica** quello che c'e'. `chmod 755` su un file che era 640 cambia anche i permessi che non volevi toccare; `chmod +x` aggiunge l'esecuzione e lascia stare il resto.\n\nIn dubbio, simbolica: fa una cosa sola."
     },
     {
-     "id": "l03-le-3",
-     "tipo": "predict",
-     "testo": "Su una **directory**, cosa permette il bit `x` ?",
-     "opzioni": [
-      "di entrarci e di attraversarla",
-      "di eseguire i programmi che contiene",
-      "di cancellarla",
-      "niente: su una directory x e' ignorato"
-     ],
-     "risposta": "di entrarci e di attraversarla",
-     "spiegazione": "Di attraversarla, cioe' di entrarci con `cd` e di raggiungere quello che contiene. Su una directory i tre bit significano cose diverse che su un file: `r` elenca i nomi, `w` permette di creare e cancellare dentro, `x` permette di entrare."
-    },
-    {
-     "id": "l03-le-4",
-     "tipo": "predict",
-     "testo": "Da cosa dipende il permesso di **cancellare** un file?",
-     "opzioni": [
-      "dai permessi della directory che lo contiene",
-      "dai permessi del file stesso",
-      "dal fatto di esserne proprietario",
-      "solo root puo' cancellare file"
-     ],
-     "risposta": "dai permessi della directory che lo contiene",
-     "spiegazione": "Dai permessi della **directory** che lo contiene, non del file: cancellare significa togliere un nome dall'elenco della cartella. Puoi cancellare un file che non hai il permesso di leggere, e non puoi cancellarne uno tuo se la cartella e' in sola lettura."
-    },
-    {
-     "id": "l03-le-5",
-     "tipo": "terminale",
-     "testo": "Scopri chi sei per il sistema.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "whoami\nls -l",
-     "verifica": {
-      "stampa": "tu",
-      "usa": [
-       "whoami"
-      ]
-     },
-     "hint": [
-      "Una parola sola.",
-      "whoami"
-     ],
-     "spiegazione": "`tu`. Il sistema guarda la **prima** terna di permessi se il file e' tuo, l'**ultima** se non lo e'. Il proprietario compare in `ls -l`, nella seconda colonna."
-    },
-    {
-     "id": "l03-le-6",
-     "tipo": "predict",
-     "testo": "Cosa vuol dire il primo carattere di `drwxr-xr-x` ?",
-     "opzioni": [
-      "che e' una directory",
-      "che il proprietario puo' cancellarla",
-      "che e' un file di sistema",
-      "che appartiene a root"
-     ],
-     "risposta": "che e' una directory",
-     "spiegazione": "Che e' una **directory**. Il primo carattere non e' un permesso: dice il tipo — `-` per un file normale, `d` per una directory, `l` per un collegamento."
-    },
-    {
-     "id": "l03-le-7",
-     "tipo": "terminale",
-     "testo": "Prova a leggere un file su cui non hai permessi.",
-     "difficolta": 2,
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n",
-      "/home/tu/segreto.txt": {
-       "contenuto": "riservato\n",
-       "modo": 128
-      }
-     },
-     "soluzione": "ls -l\ncat segreto.txt",
-     "verifica": {
-      "errore": "permesso negato",
-      "usa": [
-       "cat"
-      ]
-     },
-     "hint": [
-      "Prova a leggerlo e basta.",
-      "cat segreto.txt"
-     ],
-     "spiegazione": "`permesso negato`. Il file c'e', `ls` lo mostra, e `cat` non lo apre: sono due permessi diversi — elencare una cartella e leggere un file che ci sta dentro."
-    },
-    {
-     "id": "l03-le-8",
-     "tipo": "terminale",
-     "testo": "Rendi leggibile quel file e verificalo.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n",
-      "/home/tu/segreto.txt": {
-       "contenuto": "riservato\n",
-       "modo": 128
-      }
-     },
-     "soluzione": "chmod +r segreto.txt\ncat segreto.txt",
-     "verifica": {
-      "stampa": "riservato",
-      "usa": [
-       "chmod"
-      ]
-     },
-     "hint": [
-      "Il comando e' chmod, e il permesso e' r.",
-      "chmod +r segreto.txt"
-     ],
-     "spiegazione": "`chmod +r` aggiunge il permesso di lettura. Una volta concesso, `cat` funziona — e nota che il file non e' cambiato: e' cambiato quello che ti e' permesso farci."
+      "id": "l03-l3",
+      "titolo": "sudo: perche' esiste, e perche' non e' la risposta",
+      "md": "```\nsudo comando\n```\n\nEsegue **quel comando** come amministratore, e solo quello. Non apre una sessione: la riga dopo sei di nuovo te stesso.\n\n### Quando serve davvero\n\n- Toccare file fuori dalla tua cartella: `/etc`, `/usr`, `/opt`\n- Installare programmi a livello di sistema\n- Cambiare il proprietario di un file: `chown` richiede **sempre** root, anche sui tuoi file. Se bastasse essere proprietari, si potrebbe regalare un file a qualcun altro per sfuggire a una quota disco\n\n### Quando non serve, ed e' un sintomo\n\n```\nsudo pip install numpy\n```\n\nQuesto e' quasi sempre il modo sbagliato di risolvere un problema che era un altro: pacchetto installato nel Python sbagliato. Installa nel Python **di sistema**, che appartiene al sistema operativo, e prima o poi ne rompe le dipendenze. La risposta giusta e' un ambiente virtuale.\n\nLa regola: **se serve `sudo` per lavorare sui tuoi file, qualcosa e' storto** — di solito il proprietario, che si e' rotto usando `sudo` una volta di troppo.\n\n### Il comando da non digitare mai\n\n```\nsudo rm -rf /\n```\n\nCancella tutto, senza chiedere. Non e' una leggenda: e' un comando valido che fa esattamente quello che dice.\n\nLe versioni che capitano davvero sono piu' insidiose — uno spazio di troppo, `sudo rm -rf $CARTELLA/` con la variabile vuota — e la difesa e' sempre la stessa: **`ls` prima di `rm`, sullo stesso percorso**. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello.\n\nQui nel simulatore si puo' provare: e' il senso di questo terminale."
     }
-   ]
-  },
-  {
-   "id": "l03-chmod",
-   "comando": "chmod",
-   "titolo": "chmod — simbolico e numerico",
-   "esercizi": [
+  ],
+  "raccolte": [
     {
-     "id": "l03-ch-1",
-     "tipo": "terminale",
-     "testo": "Rendi `analisi.sh` eseguibile, e controlla il risultato.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod +x analisi.sh\nls -l",
-     "verifica": {
-      "stampa": "rwxr-xr-x",
-      "usa": [
-       "chmod"
+      "id": "l03-leggere",
+      "comando": "ls -l",
+      "titolo": "leggere i permessi",
+      "esercizi": [
+        {
+          "id": "l03-le-1",
+          "tipo": "terminale",
+          "testo": "Guarda i permessi dei file in forma estesa.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "ls -l",
+          "verifica": {
+            "stampa": "rw-r--r--",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "L'opzione e' -l.",
+            "ls -l"
+          ],
+          "spiegazione": "Nove lettere dopo il primo carattere: tre terne — proprietario, gruppo, altri — sempre nell'ordine `r`, `w`, `x`. Un trattino significa che quel permesso non c'e'."
+        },
+        {
+          "id": "l03-le-2",
+          "tipo": "predict",
+          "testo": "In `-rw-r--r--`, cosa dicono le prime tre lettere dopo il trattino iniziale?",
+          "opzioni": [
+            "i permessi del proprietario del file",
+            "i permessi di tutti gli utenti",
+            "il tipo di file e la sua dimensione",
+            "i permessi dell'amministratore"
+          ],
+          "risposta": "i permessi del proprietario del file",
+          "spiegazione": "I permessi del **proprietario**: `rw-` significa che puo' leggere e scrivere, ma non eseguire. Le tre successive valgono per il gruppo, le ultime tre per tutti gli altri."
+        },
+        {
+          "id": "l03-le-3",
+          "tipo": "predict",
+          "testo": "Su una **directory**, cosa permette il bit `x` ?",
+          "opzioni": [
+            "di entrarci e di attraversarla",
+            "di eseguire i programmi che contiene",
+            "di cancellarla",
+            "niente: su una directory x e' ignorato"
+          ],
+          "risposta": "di entrarci e di attraversarla",
+          "spiegazione": "Di attraversarla, cioe' di entrarci con `cd` e di raggiungere quello che contiene. Su una directory i tre bit significano cose diverse che su un file: `r` elenca i nomi, `w` permette di creare e cancellare dentro, `x` permette di entrare."
+        },
+        {
+          "id": "l03-le-4",
+          "tipo": "predict",
+          "testo": "Da cosa dipende il permesso di **cancellare** un file?",
+          "opzioni": [
+            "dai permessi della directory che lo contiene",
+            "dai permessi del file stesso",
+            "dal fatto di esserne proprietario",
+            "solo root puo' cancellare file"
+          ],
+          "risposta": "dai permessi della directory che lo contiene",
+          "spiegazione": "Dai permessi della **directory** che lo contiene, non del file: cancellare significa togliere un nome dall'elenco della cartella. Puoi cancellare un file che non hai il permesso di leggere, e non puoi cancellarne uno tuo se la cartella e' in sola lettura."
+        },
+        {
+          "id": "l03-le-5",
+          "tipo": "terminale",
+          "testo": "Scopri chi sei per il sistema.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "whoami\nls -l",
+          "verifica": {
+            "stampa": "tu",
+            "usa": [
+              "whoami"
+            ]
+          },
+          "hint": [
+            "Una parola sola.",
+            "whoami"
+          ],
+          "spiegazione": "`tu`. Il sistema guarda la **prima** terna di permessi se il file e' tuo, l'**ultima** se non lo e'. Il proprietario compare in `ls -l`, nella seconda colonna."
+        },
+        {
+          "id": "l03-le-6",
+          "tipo": "predict",
+          "testo": "Cosa vuol dire il primo carattere di `drwxr-xr-x` ?",
+          "opzioni": [
+            "che e' una directory",
+            "che il proprietario puo' cancellarla",
+            "che e' un file di sistema",
+            "che appartiene a root"
+          ],
+          "risposta": "che e' una directory",
+          "spiegazione": "Che e' una **directory**. Il primo carattere non e' un permesso: dice il tipo — `-` per un file normale, `d` per una directory, `l` per un collegamento."
+        },
+        {
+          "id": "l03-le-7",
+          "tipo": "terminale",
+          "testo": "Prova a leggere un file su cui non hai permessi.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/segreto.txt": {
+              "contenuto": "riservato\n",
+              "modo": 128
+            }
+          },
+          "soluzione": "ls -l\ncat segreto.txt",
+          "verifica": {
+            "errore": "permesso negato",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prova a leggerlo e basta.",
+            "cat segreto.txt"
+          ],
+          "spiegazione": "`permesso negato`. Il file c'e', `ls` lo mostra, e `cat` non lo apre: sono due permessi diversi — elencare una cartella e leggere un file che ci sta dentro."
+        },
+        {
+          "id": "l03-le-8",
+          "tipo": "terminale",
+          "testo": "Rendi leggibile quel file e verificalo.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/segreto.txt": {
+              "contenuto": "riservato\n",
+              "modo": 128
+            }
+          },
+          "soluzione": "chmod +r segreto.txt\ncat segreto.txt",
+          "verifica": {
+            "stampa": "riservato",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Il comando e' chmod, e il permesso e' r.",
+            "chmod +r segreto.txt"
+          ],
+          "spiegazione": "`chmod +r` aggiunge il permesso di lettura. Una volta concesso, `cat` funziona — e nota che il file non e' cambiato: e' cambiato quello che ti e' permesso farci."
+        }
       ]
-     },
-     "hint": [
-      "La forma simbolica: chmod +x file.",
-      "chmod +x analisi.sh"
-     ],
-     "spiegazione": "`chmod +x` aggiunge il bit di esecuzione a tutte e tre le terne. È il comando piu' digitato di questo modulo: uno script appena scritto non e' eseguibile, e il primo tentativo di lanciarlo fallisce sempre."
     },
     {
-     "id": "l03-ch-2",
-     "tipo": "terminale",
-     "testo": "Rendi `analisi.sh` eseguibile **solo per te**: prima dallo a tutti, poi toglilo a gruppo e altri.",
-     "difficolta": 2,
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod +x analisi.sh\nchmod go-x analisi.sh\nls -l",
-     "verifica": {
-      "stampa": "rwxr--r--",
-      "usa": [
-       "chmod"
+      "id": "l03-chmod",
+      "comando": "chmod",
+      "titolo": "chmod — simbolico e numerico",
+      "esercizi": [
+        {
+          "id": "l03-ch-1",
+          "tipo": "terminale",
+          "testo": "Rendi `analisi.sh` eseguibile, e controlla il risultato.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod +x analisi.sh\nls -l",
+          "verifica": {
+            "stampa": "rwxr-xr-x",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "La forma simbolica: chmod +x file.",
+            "chmod +x analisi.sh"
+          ],
+          "spiegazione": "`chmod +x` aggiunge il bit di esecuzione a tutte e tre le terne. È il comando piu' digitato di questo modulo: uno script appena scritto non e' eseguibile, e il primo tentativo di lanciarlo fallisce sempre."
+        },
+        {
+          "id": "l03-ch-2",
+          "tipo": "terminale",
+          "testo": "Rendi `analisi.sh` eseguibile **solo per te**: prima dallo a tutti, poi toglilo a gruppo e altri.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod +x analisi.sh\nchmod go-x analisi.sh\nls -l",
+          "verifica": {
+            "stampa": "rwxr--r--",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Prima chmod +x, poi togli a g e o.",
+            "chmod go-x analisi.sh"
+          ],
+          "spiegazione": "`go-x`: `g` gruppo, `o` altri, `-` togli, `x` esecuzione. Si legge come una frase, ed e' il vantaggio della forma simbolica — dice **cosa cambia**, non com'e' il risultato.\n\nServono due comandi perche' `+x` da' l'esecuzione a tutte e tre le terne: la forma simbolica non sa fare \"solo a me\" in un colpo. Con la forma numerica sarebbe `chmod 744`, che pero' riscrive anche il resto."
+        },
+        {
+          "id": "l03-ch-3",
+          "tipo": "predict",
+          "testo": "Nella forma numerica, quanto vale `rwx` ?",
+          "opzioni": [
+            "7",
+            "9",
+            "3",
+            "1"
+          ],
+          "risposta": "7",
+          "spiegazione": "7, sommando `r=4`, `w=2`, `x=1`. Ogni terna e' un numero da 0 a 7, e i tre numeri di `chmod 755` sono le tre terne in ordine: proprietario, gruppo, altri."
+        },
+        {
+          "id": "l03-ch-4",
+          "tipo": "terminale",
+          "testo": "Imposta i permessi tipici di uno script: eseguibile da tutti, scrivibile solo da te.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod 755 analisi.sh\nls -l",
+          "verifica": {
+            "stampa": "rwxr-xr-x",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Tre cifre: 7 per te, 5 per gli altri due.",
+            "chmod 755 analisi.sh"
+          ],
+          "spiegazione": "`755`. È uno dei tre numeri da riconoscere a vista: **755** per programmi e cartelle, **644** per i file normali, **600** per quelli che non deve leggere nessun altro."
+        },
+        {
+          "id": "l03-ch-5",
+          "tipo": "terminale",
+          "testo": "Imposta su `note.txt` i permessi di un file che non deve leggere nessun altro.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod 600 note.txt\nls -l",
+          "verifica": {
+            "stampa": "rw-------",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "6 per te, 0 per gli altri due.",
+            "chmod 600 note.txt"
+          ],
+          "spiegazione": "`600`: leggere e scrivere per te, niente per nessun altro. Le chiavi private SSH **rifiutano di funzionare** se non sono 600, ed e' il caso in cui questo numero si incontra per la prima volta."
+        },
+        {
+          "id": "l03-ch-6",
+          "tipo": "predict",
+          "testo": "`chmod 755` su un file che era `640`: cosa succede ai permessi che non volevi toccare?",
+          "opzioni": [
+            "vengono sovrascritti: la forma numerica imposta tutto",
+            "restano invariati, cambia solo il bit di esecuzione",
+            "solleva un errore perche' i permessi sono in conflitto",
+            "vengono uniti ai nuovi"
+          ],
+          "risposta": "vengono sovrascritti: la forma numerica imposta tutto",
+          "spiegazione": "Vengono **sovrascritti**: la forma numerica imposta tutte e tre le terne, non ne modifica una. La simbolica invece cambia solo quello che nomini. In dubbio si usa la simbolica, che fa una cosa sola."
+        },
+        {
+          "id": "l03-ch-7",
+          "tipo": "terminale",
+          "testo": "Metti un file in sola lettura e prova a scriverci sopra.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod 444 dati.csv\necho rovinato > dati.csv\ncat dati.csv",
+          "verifica": {
+            "errore": "permesso negato",
+            "contiene": {
+              "dati.csv": "9000,0.82"
+            }
+          },
+          "hint": [
+            "chmod 444 lo rende leggibile e basta.",
+            "Poi prova echo rovinato > dati.csv"
+          ],
+          "spiegazione": "`permesso negato`, e il contenuto non cambia. È il modo di proteggere un file di dati da una redirezione distratta — `>` su un file in sola lettura fallisce invece di svuotarlo."
+        },
+        {
+          "id": "l03-ch-8",
+          "tipo": "terminale",
+          "testo": "Ridai il permesso di scrittura al solo proprietario e verifica che ora funzioni.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "chmod u+w dati.csv\necho aggiunta >> dati.csv\ncat dati.csv",
+          "verifica": {
+            "contiene": {
+              "dati.csv": "aggiunta"
+            },
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Chi: u. Cosa: aggiungere. Quale: w.",
+            "chmod u+w dati.csv"
+          ],
+          "spiegazione": "`u+w` rimette la scrittura a te e lascia gli altri come stanno. È la coppia che si usa davvero: si toglie la scrittura per proteggere, e si rimette quando serve modificare."
+        }
       ]
-     },
-     "hint": [
-      "Prima chmod +x, poi togli a g e o.",
-      "chmod go-x analisi.sh"
-     ],
-     "spiegazione": "`go-x`: `g` gruppo, `o` altri, `-` togli, `x` esecuzione. Si legge come una frase, ed e' il vantaggio della forma simbolica — dice **cosa cambia**, non com'e' il risultato.\n\nServono due comandi perche' `+x` da' l'esecuzione a tutte e tre le terne: la forma simbolica non sa fare \"solo a me\" in un colpo. Con la forma numerica sarebbe `chmod 744`, che pero' riscrive anche il resto."
     },
     {
-     "id": "l03-ch-3",
-     "tipo": "predict",
-     "testo": "Nella forma numerica, quanto vale `rwx` ?",
-     "opzioni": [
-      "7",
-      "9",
-      "3",
-      "1"
-     ],
-     "risposta": "7",
-     "spiegazione": "7, sommando `r=4`, `w=2`, `x=1`. Ogni terna e' un numero da 0 a 7, e i tre numeri di `chmod 755` sono le tre terne in ordine: proprietario, gruppo, altri."
-    },
-    {
-     "id": "l03-ch-4",
-     "tipo": "terminale",
-     "testo": "Imposta i permessi tipici di uno script: eseguibile da tutti, scrivibile solo da te.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod 755 analisi.sh\nls -l",
-     "verifica": {
-      "stampa": "rwxr-xr-x",
-      "usa": [
-       "chmod"
+      "id": "l03-sudo",
+      "comando": "sudo e chown",
+      "titolo": "sudo — e quando e' un sintomo",
+      "esercizi": [
+        {
+          "id": "l03-su-1",
+          "tipo": "terminale",
+          "testo": "C'e' un file di configurazione di sistema che non riesci a leggere. Provaci.",
+          "filesystem": {
+            "/etc/conf": {
+              "contenuto": "soglia=42\n",
+              "modo": 384,
+              "proprietario": "root"
+            }
+          },
+          "soluzione": "ls -l /etc\ncat /etc/conf",
+          "verifica": {
+            "errore": "permesso negato",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prova a leggerlo.",
+            "cat /etc/conf"
+          ],
+          "spiegazione": "`permesso negato`: il file appartiene a `root` ed e' leggibile solo da lui. `ls -l` lo mostra — seconda colonna, il proprietario — e quella e' l'informazione che spiega l'errore."
+        },
+        {
+          "id": "l03-su-2",
+          "tipo": "terminale",
+          "testo": "Leggilo come amministratore.",
+          "filesystem": {
+            "/etc/conf": {
+              "contenuto": "soglia=42\n",
+              "modo": 384,
+              "proprietario": "root"
+            }
+          },
+          "soluzione": "sudo cat /etc/conf",
+          "verifica": {
+            "stampa": "soglia=42",
+            "usa": [
+              "sudo"
+            ]
+          },
+          "hint": [
+            "Basta anteporre una parola.",
+            "sudo cat /etc/conf"
+          ],
+          "spiegazione": "`sudo` esegue **quel comando** come amministratore, e solo quello. Non apre una sessione: la riga dopo sei di nuovo te stesso."
+        },
+        {
+          "id": "l03-su-3",
+          "tipo": "terminale",
+          "testo": "Verifica che `sudo` valga per una riga sola: dopo averlo usato, riprova a leggere senza.",
+          "difficolta": 2,
+          "filesystem": {
+            "/etc/conf": {
+              "contenuto": "soglia=42\n",
+              "modo": 384,
+              "proprietario": "root"
+            }
+          },
+          "soluzione": "sudo cat /etc/conf\nwhoami\ncat /etc/conf",
+          "verifica": {
+            "errore": "permesso negato",
+            "stampa": "tu",
+            "usa": [
+              "sudo",
+              "whoami"
+            ]
+          },
+          "hint": [
+            "Prima con sudo, poi whoami, poi senza sudo.",
+            "sudo cat /etc/conf / whoami / cat /etc/conf"
+          ],
+          "spiegazione": "Di nuovo `permesso negato`. È voluto: un `sudo` che restasse attivo trasformerebbe ogni comando successivo — compreso quello scritto male — in un comando da amministratore."
+        },
+        {
+          "id": "l03-su-4",
+          "tipo": "predict",
+          "testo": "Perche' `chown` richiede sempre root, anche su un file tuo?",
+          "opzioni": [
+            "perche' altrimenti si potrebbe regalare un file per sfuggire a una quota disco",
+            "perche' chown modifica il filesystem a basso livello",
+            "e' un limite storico senza piu' motivo",
+            "non e' vero: sui propri file funziona"
+          ],
+          "risposta": "perche' altrimenti si potrebbe regalare un file per sfuggire a una quota disco",
+          "spiegazione": "Perche' altrimenti si potrebbe **regalare** un file a qualcun altro — per sfuggire a una quota disco, o per attribuirgli qualcosa. Cambiare proprietario e' una decisione di sistema, non del proprietario."
+        },
+        {
+          "id": "l03-su-5",
+          "tipo": "terminale",
+          "testo": "Cambia il proprietario di `dati.csv` a `root`, e verifica in `ls -l`.",
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "sudo chown root dati.csv\nls -l",
+          "verifica": {
+            "stampa": "root",
+            "usa": [
+              "sudo",
+              "chown"
+            ]
+          },
+          "hint": [
+            "chown vuole il nuovo proprietario e il file, e serve sudo.",
+            "sudo chown root dati.csv"
+          ],
+          "spiegazione": "Serve `sudo`, e dopo il cambio il file **non e' piu' tuo**: da quel momento per modificarlo servira' di nuovo `sudo`. È il modo piu' comune di rendersi la vita difficile con un comando solo."
+        },
+        {
+          "id": "l03-su-6",
+          "tipo": "predict",
+          "testo": "`sudo pip install numpy`: perche' e' quasi sempre sbagliato?",
+          "opzioni": [
+            "installa nel Python di sistema e ne rompe le dipendenze: serviva un ambiente virtuale",
+            "pip non funziona con sudo",
+            "e' piu' lento",
+            "installa in una cartella temporanea che viene cancellata"
+          ],
+          "risposta": "installa nel Python di sistema e ne rompe le dipendenze: serviva un ambiente virtuale",
+          "spiegazione": "Perche' installa nel Python **di sistema**, che appartiene al sistema operativo, e prima o poi ne rompe le dipendenze. È il modo sbagliato di risolvere un problema che era un altro — pacchetto finito nel Python sbagliato — e la risposta giusta e' un ambiente virtuale."
+        },
+        {
+          "id": "l03-su-7",
+          "tipo": "predict",
+          "testo": "Ti accorgi che servirebbe `sudo` per modificare un file **nella tua cartella**. Cosa significa?",
+          "opzioni": [
+            "che il proprietario e' sbagliato, probabilmente per un sudo precedente",
+            "che il disco e' pieno",
+            "e' normale: la propria cartella e' protetta",
+            "che il file e' aperto da un altro programma"
+          ],
+          "risposta": "che il proprietario e' sbagliato, probabilmente per un sudo precedente",
+          "spiegazione": "Che qualcosa e' storto — di solito il proprietario, che si e' rotto usando `sudo` una volta di troppo: un comando eseguito come root ha creato un file che appartiene a root dentro casa tua. La riparazione e' `sudo chown tu`, non continuare con `sudo`."
+        },
+        {
+          "id": "l03-su-8",
+          "tipo": "terminale",
+          "testo": "**Ripara il guasto.** Un `sudo` di troppo ha lasciato un file di root dentro casa tua, e non riesci a modificarlo. Riprendine la proprieta' e verifica di poterci scrivere.",
+          "difficolta": 3,
+          "filesystem": {
+            "/home/tu/analisi.sh": "echo analisi in corso\n",
+            "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/risultati.txt": {
+              "contenuto": "vecchio\n",
+              "modo": 420,
+              "proprietario": "root"
+            }
+          },
+          "soluzione": "ls -l\nsudo chown tu risultati.txt\necho nuova riga >> risultati.txt\ncat risultati.txt",
+          "verifica": {
+            "contiene": {
+              "risultati.txt": "nuova riga"
+            },
+            "usa": [
+              "sudo",
+              "chown"
+            ]
+          },
+          "hint": [
+            "Guarda chi e' il proprietario con ls -l.",
+            "sudo chown tu risultati.txt"
+          ],
+          "spiegazione": "`sudo chown tu` rimette le cose a posto, e da quel momento non serve piu' `sudo`. È il ciclo completo del modulo: si diagnostica con `ls -l`, si ripara con `chown`, e non si continua a usare `sudo` per aggirare un problema che ha una causa.\n\nLa regola da portarsi via: se serve `sudo` per lavorare sui tuoi file, la domanda non e' \"come faccio\", e' \"perche' non sono piu' mio\"."
+        }
       ]
-     },
-     "hint": [
-      "Tre cifre: 7 per te, 5 per gli altri due.",
-      "chmod 755 analisi.sh"
-     ],
-     "spiegazione": "`755`. È uno dei tre numeri da riconoscere a vista: **755** per programmi e cartelle, **644** per i file normali, **600** per quelli che non deve leggere nessun altro."
-    },
-    {
-     "id": "l03-ch-5",
-     "tipo": "terminale",
-     "testo": "Imposta su `note.txt` i permessi di un file che non deve leggere nessun altro.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod 600 note.txt\nls -l",
-     "verifica": {
-      "stampa": "rw-------",
-      "usa": [
-       "chmod"
-      ]
-     },
-     "hint": [
-      "6 per te, 0 per gli altri due.",
-      "chmod 600 note.txt"
-     ],
-     "spiegazione": "`600`: leggere e scrivere per te, niente per nessun altro. Le chiavi private SSH **rifiutano di funzionare** se non sono 600, ed e' il caso in cui questo numero si incontra per la prima volta."
-    },
-    {
-     "id": "l03-ch-6",
-     "tipo": "predict",
-     "testo": "`chmod 755` su un file che era `640`: cosa succede ai permessi che non volevi toccare?",
-     "opzioni": [
-      "vengono sovrascritti: la forma numerica imposta tutto",
-      "restano invariati, cambia solo il bit di esecuzione",
-      "solleva un errore perche' i permessi sono in conflitto",
-      "vengono uniti ai nuovi"
-     ],
-     "risposta": "vengono sovrascritti: la forma numerica imposta tutto",
-     "spiegazione": "Vengono **sovrascritti**: la forma numerica imposta tutte e tre le terne, non ne modifica una. La simbolica invece cambia solo quello che nomini. In dubbio si usa la simbolica, che fa una cosa sola."
-    },
-    {
-     "id": "l03-ch-7",
-     "tipo": "terminale",
-     "testo": "Metti un file in sola lettura e prova a scriverci sopra.",
-     "difficolta": 2,
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod 444 dati.csv\necho rovinato > dati.csv\ncat dati.csv",
-     "verifica": {
-      "errore": "permesso negato",
-      "contiene": {
-       "dati.csv": "9000,0.82"
-      }
-     },
-     "hint": [
-      "chmod 444 lo rende leggibile e basta.",
-      "Poi prova echo rovinato > dati.csv"
-     ],
-     "spiegazione": "`permesso negato`, e il contenuto non cambia. È il modo di proteggere un file di dati da una redirezione distratta — `>` su un file in sola lettura fallisce invece di svuotarlo."
-    },
-    {
-     "id": "l03-ch-8",
-     "tipo": "terminale",
-     "testo": "Ridai il permesso di scrittura al solo proprietario e verifica che ora funzioni.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "chmod u+w dati.csv\necho aggiunta >> dati.csv\ncat dati.csv",
-     "verifica": {
-      "contiene": {
-       "dati.csv": "aggiunta"
-      },
-      "usa": [
-       "chmod"
-      ]
-     },
-     "hint": [
-      "Chi: u. Cosa: aggiungere. Quale: w.",
-      "chmod u+w dati.csv"
-     ],
-     "spiegazione": "`u+w` rimette la scrittura a te e lascia gli altri come stanno. È la coppia che si usa davvero: si toglie la scrittura per proteggere, e si rimette quando serve modificare."
     }
-   ]
-  },
-  {
-   "id": "l03-sudo",
-   "comando": "sudo",
-   "titolo": "sudo — e quando e' un sintomo",
-   "esercizi": [
-    {
-     "id": "l03-su-1",
-     "tipo": "terminale",
-     "testo": "C'e' un file di configurazione di sistema che non riesci a leggere. Provaci.",
-     "filesystem": {
-      "/etc/conf": {
-       "contenuto": "soglia=42\n",
-       "modo": 384,
-       "proprietario": "root"
-      }
-     },
-     "soluzione": "ls -l /etc\ncat /etc/conf",
-     "verifica": {
-      "errore": "permesso negato",
-      "usa": [
-       "cat"
-      ]
-     },
-     "hint": [
-      "Prova a leggerlo.",
-      "cat /etc/conf"
-     ],
-     "spiegazione": "`permesso negato`: il file appartiene a `root` ed e' leggibile solo da lui. `ls -l` lo mostra — seconda colonna, il proprietario — e quella e' l'informazione che spiega l'errore."
-    },
-    {
-     "id": "l03-su-2",
-     "tipo": "terminale",
-     "testo": "Leggilo come amministratore.",
-     "filesystem": {
-      "/etc/conf": {
-       "contenuto": "soglia=42\n",
-       "modo": 384,
-       "proprietario": "root"
-      }
-     },
-     "soluzione": "sudo cat /etc/conf",
-     "verifica": {
-      "stampa": "soglia=42",
-      "usa": [
-       "sudo"
-      ]
-     },
-     "hint": [
-      "Basta anteporre una parola.",
-      "sudo cat /etc/conf"
-     ],
-     "spiegazione": "`sudo` esegue **quel comando** come amministratore, e solo quello. Non apre una sessione: la riga dopo sei di nuovo te stesso."
-    },
-    {
-     "id": "l03-su-3",
-     "tipo": "terminale",
-     "testo": "Verifica che `sudo` valga per una riga sola: dopo averlo usato, riprova a leggere senza.",
-     "difficolta": 2,
-     "filesystem": {
-      "/etc/conf": {
-       "contenuto": "soglia=42\n",
-       "modo": 384,
-       "proprietario": "root"
-      }
-     },
-     "soluzione": "sudo cat /etc/conf\nwhoami\ncat /etc/conf",
-     "verifica": {
-      "errore": "permesso negato",
-      "stampa": "tu",
-      "usa": [
-       "sudo",
-       "whoami"
-      ]
-     },
-     "hint": [
-      "Prima con sudo, poi whoami, poi senza sudo.",
-      "sudo cat /etc/conf / whoami / cat /etc/conf"
-     ],
-     "spiegazione": "Di nuovo `permesso negato`. È voluto: un `sudo` che restasse attivo trasformerebbe ogni comando successivo — compreso quello scritto male — in un comando da amministratore."
-    },
-    {
-     "id": "l03-su-4",
-     "tipo": "predict",
-     "testo": "Perche' `chown` richiede sempre root, anche su un file tuo?",
-     "opzioni": [
-      "perche' altrimenti si potrebbe regalare un file per sfuggire a una quota disco",
-      "perche' chown modifica il filesystem a basso livello",
-      "e' un limite storico senza piu' motivo",
-      "non e' vero: sui propri file funziona"
-     ],
-     "risposta": "perche' altrimenti si potrebbe regalare un file per sfuggire a una quota disco",
-     "spiegazione": "Perche' altrimenti si potrebbe **regalare** un file a qualcun altro — per sfuggire a una quota disco, o per attribuirgli qualcosa. Cambiare proprietario e' una decisione di sistema, non del proprietario."
-    },
-    {
-     "id": "l03-su-5",
-     "tipo": "terminale",
-     "testo": "Cambia il proprietario di `dati.csv` a `root`, e verifica in `ls -l`.",
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n"
-     },
-     "soluzione": "sudo chown root dati.csv\nls -l",
-     "verifica": {
-      "stampa": "root",
-      "usa": [
-       "sudo",
-       "chown"
-      ]
-     },
-     "hint": [
-      "chown vuole il nuovo proprietario e il file, e serve sudo.",
-      "sudo chown root dati.csv"
-     ],
-     "spiegazione": "Serve `sudo`, e dopo il cambio il file **non e' piu' tuo**: da quel momento per modificarlo servira' di nuovo `sudo`. È il modo piu' comune di rendersi la vita difficile con un comando solo."
-    },
-    {
-     "id": "l03-su-6",
-     "tipo": "predict",
-     "testo": "`sudo pip install numpy`: perche' e' quasi sempre sbagliato?",
-     "opzioni": [
-      "installa nel Python di sistema e ne rompe le dipendenze: serviva un ambiente virtuale",
-      "pip non funziona con sudo",
-      "e' piu' lento",
-      "installa in una cartella temporanea che viene cancellata"
-     ],
-     "risposta": "installa nel Python di sistema e ne rompe le dipendenze: serviva un ambiente virtuale",
-     "spiegazione": "Perche' installa nel Python **di sistema**, che appartiene al sistema operativo, e prima o poi ne rompe le dipendenze. È il modo sbagliato di risolvere un problema che era un altro — pacchetto finito nel Python sbagliato — e la risposta giusta e' un ambiente virtuale."
-    },
-    {
-     "id": "l03-su-7",
-     "tipo": "predict",
-     "testo": "Ti accorgi che servirebbe `sudo` per modificare un file **nella tua cartella**. Cosa significa?",
-     "opzioni": [
-      "che il proprietario e' sbagliato, probabilmente per un sudo precedente",
-      "che il disco e' pieno",
-      "e' normale: la propria cartella e' protetta",
-      "che il file e' aperto da un altro programma"
-     ],
-     "risposta": "che il proprietario e' sbagliato, probabilmente per un sudo precedente",
-     "spiegazione": "Che qualcosa e' storto — di solito il proprietario, che si e' rotto usando `sudo` una volta di troppo: un comando eseguito come root ha creato un file che appartiene a root dentro casa tua. La riparazione e' `sudo chown tu`, non continuare con `sudo`."
-    },
-    {
-     "id": "l03-su-8",
-     "tipo": "terminale",
-     "testo": "**Ripara il guasto.** Un `sudo` di troppo ha lasciato un file di root dentro casa tua, e non riesci a modificarlo. Riprendine la proprieta' e verifica di poterci scrivere.",
-     "difficolta": 3,
-     "filesystem": {
-      "/home/tu/analisi.sh": "echo analisi in corso\n",
-      "/home/tu/dati.csv": "quota,mach\n9000,0.82\n",
-      "/home/tu/note.txt": "campagna di agosto\n",
-      "/home/tu/risultati.txt": {
-       "contenuto": "vecchio\n",
-       "modo": 420,
-       "proprietario": "root"
-      }
-     },
-     "soluzione": "ls -l\nsudo chown tu risultati.txt\necho nuova riga >> risultati.txt\ncat risultati.txt",
-     "verifica": {
-      "contiene": {
-       "risultati.txt": "nuova riga"
-      },
-      "usa": [
-       "sudo",
-       "chown"
-      ]
-     },
-     "hint": [
-      "Guarda chi e' il proprietario con ls -l.",
-      "sudo chown tu risultati.txt"
-     ],
-     "spiegazione": "`sudo chown tu` rimette le cose a posto, e da quel momento non serve piu' `sudo`. È il ciclo completo del modulo: si diagnostica con `ls -l`, si ripara con `chown`, e non si continua a usare `sudo` per aggirare un problema che ha una causa.\n\nLa regola da portarsi via: se serve `sudo` per lavorare sui tuoi file, la domanda non e' \"come faccio\", e' \"perche' non sono piu' mio\"."
-    }
-   ]
-  }
- ]
+  ]
 }
