@@ -268,7 +268,85 @@ Il problema: `localStorage` è per-browser. Studi sul PC, il telefono non lo sa.
 
 - **React / Vue / build step** — nessun `npm`, nessun `node_modules` dentro OneDrive. Riconsidera solo se la UI diventa davvero complessa.
 - **Backend con esecuzione Python** — Pyodide lo rende inutile e sarebbe l'unica parte con rischi di sicurezza.
-- **Login e account** — sei l'unico utente.
+- ~~**Login e account** — sei l'unico utente.~~ **Deciso il contrario**, vedi §12.
 - **Anki/SM-2 con intervalli in giorni** — tu vuoi padronanza, non ritenzione a 6 mesi. Leitner basta.
 - **Matplotlib** — funziona in Pyodide ma pesa e complica. Modulo separato dopo che NumPy è solido.
 - **Database di contenuti** — 12 file JSON si editano a mano meglio di qualsiasi CMS.
+
+---
+
+## 12. Da cambiare
+
+Due cose emerse usando l'app, in ordine di urgenza.
+
+### 12.1 La risposta giusta è sempre la prima — **difetto, da correggere**
+
+Su **393 domande a scelta multipla, la risposta corretta è la prima opzione 393 volte.**
+Il cento per cento, in tutti e 29 i moduli, senza una sola eccezione.
+
+Non è una svista in qualche esercizio: è il modo in cui sono stati scritti tutti. Chi
+scrive un esercizio mette naturalmente la risposta giusta per prima e poi inventa le
+alternative, e nessuno se n'è accorto perché il difetto non si vede guardando un
+esercizio alla volta — si vede solo contandoli.
+
+**Perché conta più di quanto sembri.** Il sistema di ripasso si regge sul fatto che una
+risposta corretta significhi sapere. Qui basta premere sempre la prima riga per chiudere
+ogni `predict` al primo colpo, e quegli esercizi escono dalla coda senza aver insegnato
+niente. Peggio: il Leitner li marca come padroneggiati, quindi non tornano più.
+
+**Due modi di correggerlo.**
+
+*Mescolare al momento di mostrarli.* Tre righe in `montaEsercizio`: si mescola una copia
+di `opzioni` prima di renderla, e il confronto avviene per valore — `es.opzioni[i] ===
+es.risposta` funziona già così. Non tocca nessuno dei 32 file di contenuto.
+Effetto collaterale voluto: l'ordine cambia anche fra un ripasso e l'altro, quindi non si
+può memorizzare la posizione al posto della risposta.
+
+*Riordinare i JSON una volta sola.* Uno script che permuta le opzioni di ogni `predict`.
+Più definitivo, e sbagliato: reintroduce esattamente lo stesso rischio la prossima volta
+che si scrive un modulo a mano.
+
+**Scelta: mescolare a video.** È l'unica delle due che resta corretta anche per i moduli
+che verranno.
+
+**Da aggiungere al controllo dei contenuti**: se un giorno si decidesse di riordinare i
+file, `check_content.py` dovrebbe segnalare uno squilibrio — ad esempio più del 40% delle
+risposte nella stessa posizione. Con il mescolamento a video non serve, ed è un'altra
+ragione per preferirlo.
+
+### 12.2 Login utente
+
+La §11 diceva "sei l'unico utente". Non è più il piano: serve un accesso per chi voglia
+entrare, e quindi progressi legati a una persona invece che a un browser.
+
+**Cosa cambia davvero.** Non è l'interfaccia di accesso, sono i progressi: oggi stanno in
+`localStorage`, che è per-browser e per-dispositivo. Un login senza sincronizzazione non
+serve a niente, e la sincronizzazione è la parte vera del lavoro — quella già abbozzata
+nella §10.
+
+**Il vincolo che resta.** Il sito è statico e non ha un backend, ed è la ragione per cui
+non costa e non si rompe. Un login non deve annullare quella proprietà.
+
+**Tre strade, dalla più leggera.**
+
+| | Come | Costo | Limite |
+|---|---|---|---|
+| **Chiave segreta** | Un endpoint su Cloudflare Workers + KV: `GET`/`PUT` di un blob JSON, la chiave è la password | ~30 righe, piano gratuito | Non è un login vero: chi ha la chiave ha i dati. Va bene per te, non per altri |
+| **Servizio di autenticazione** | Auth0, Clerk, Supabase Auth: l'accesso lo gestiscono loro, l'app riceve un token | Nessun backend, ma una dipendenza esterna e un account da mantenere | Il piano gratuito ha limiti, e i dati degli utenti stanno da qualcun altro |
+| **Backend proprio** | Un servizio minimo con utenti e progressi | Controllo completo | Contraddice la scelta architetturale di partenza: qualcosa da mantenere, aggiornare e proteggere |
+
+**Da decidere prima di scrivere codice**, perché cambia tutto il resto:
+
+- **Per quante persone?** Se sei tu su due dispositivi, la prima riga basta e costa un
+  pomeriggio. Se sono altri studenti, serve la seconda.
+- **Cosa succede a chi non entra?** L'app deve continuare a funzionare senza accesso, con
+  i progressi in `localStorage` come adesso. Un accesso obbligatorio trasforma un sito che
+  si apre e funziona in uno che chiede le credenziali prima di mostrare qualcosa.
+- **Cosa succede ai progressi già salvati?** Al primo accesso vanno caricati sul profilo,
+  non buttati via.
+- **E se due dispositivi divergono?** Servirà una regola: vince l'ultimo che scrive, oppure
+  si fondono gli esercizi presi uno per uno. La seconda è più giusta e più lavoro.
+
+**Ordine consigliato**: prima la sincronizzazione con chiave segreta della §10, che risolve
+il problema concreto — studiare sul PC e ritrovare i progressi sul telefono. Il login vero
+solo se e quando l'app la userà qualcun altro.
