@@ -1,1 +1,620 @@
-{"id":"l11","titolo":"Rete: interfacce, DNS e porte","perche":"Un server irraggiungibile puo' avere un cavo, un indirizzo, una rotta, un DNS o una porta sbagliati. Questi comandi separano i cinque casi invece di provare soluzioni a caso.","funzioni":["ip addr","ip route","ping","ss -tulpn","netstat","dig","nslookup","resolvectl status","nmcli device status","ethtool"],"lezioni":[{"id":"l11-l1","titolo":"Dall'interfaccia al gateway","md":"`ip addr` mostra l'indirizzo dell'interfaccia; `ip route` mostra dove vanno i pacchetti, soprattutto la rotta `default via GATEWAY`. `nmcli device status` dice se NetworkManager vede il collegamento; `ethtool enp0s3` controlla velocita' e link fisico. `ifconfig` e `netstat` sono comandi storici: vale la pena saperli leggere, ma oggi si preferiscono `ip` e `ss`."},{"id":"l11-l2","titolo":"Nome, raggiungibilita', porta","md":"```bash\ndig cluster.univ.it       # DNS: nome -> indirizzo\nping cluster.univ.it      # raggiunge quell'indirizzo?\nss -tulpn                 # quali porte locali ascoltano?\n```\nDNS, ping e porta sono domande diverse. Un ping riuscito non dimostra che SSH o un servizio web rispondano; una porta in ascolto non dimostra che il firewall la lasci passare. `resolvectl status` mostra quale DNS sta usando il sistema."}],"raccolte":[{"id":"l11-diagnosi","comando":"ip, ping, ss, dig","titolo":"seguire il percorso di un guasto","esercizi":[{"id":"l11-di-1","tipo":"terminale","testo":"Mostra indirizzo e interfaccia locali.","rete":true,"soluzione":"ip addr","verifica":{"stampa":"192.168.1.42/24","usa":["ip"]},"hint":["ip addr"],"spiegazione":"Prima di diagnosticare Internet, controlla di avere un indirizzo."},{"id":"l11-di-2","tipo":"terminale","testo":"Mostra il gateway predefinito.","rete":true,"soluzione":"ip route","verifica":{"stampa":"default via 192.168.1.1","usa":["ip"]},"hint":["ip route"],"spiegazione":"Senza route predefinita, esci solo dalla rete locale."},{"id":"l11-di-3","tipo":"terminale","testo":"Risolvi il nome del cluster con DNS.","rete":true,"soluzione":"dig cluster.univ.it","verifica":{"stampa":"10.20.0.15","usa":["dig"]},"hint":["dig seguito dal nome."],"spiegazione":"Dig separa il problema del nome da quello della connessione."},{"id":"l11-di-4","tipo":"terminale","testo":"Verifica che il cluster risponda al ping.","rete":true,"soluzione":"ping cluster.univ.it","verifica":{"stampa":"0% packet loss","usa":["ping"]},"hint":["ping cluster.univ.it"],"spiegazione":"Ping prova ICMP, non un servizio applicativo."},{"id":"l11-di-5","tipo":"terminale","testo":"Elenca i servizi locali in ascolto.","rete":true,"soluzione":"ss -tulpn","verifica":{"stampa":"sshd","usa":["ss"]},"hint":["ss -tulpn"],"spiegazione":"Una porta in LISTEN identifica un servizio locale pronto ad accettare connessioni."},{"id":"l11-di-6","tipo":"terminale","testo":"Controlla DNS e stato dell'interfaccia.","rete":true,"soluzione":"resolvectl status\nnmcli device status","verifica":{"stampa":"connected","usa":["resolvectl","nmcli"]},"hint":["Due comandi, una riga ciascuno."],"spiegazione":"DNS corretto e collegamento attivo sono due livelli distinti."},{"id":"l11-di-7","tipo":"predict","testo":"Ping riesce ma SSH non si connette. Cosa controlli dopo?","opzioni":["la porta e il servizio SSH, non di nuovo il DNS","il comando gzip","i permessi del CSV","il setuid"],"risposta":"la porta e il servizio SSH, non di nuovo il DNS","spiegazione":"Ping dimostra solo raggiungibilita' IP."},{"id":"l11-di-8","tipo":"predict","testo":"Qual e' l'ordine diagnostico piu' utile?","opzioni":["link/interfaccia, indirizzo/rotta, DNS, raggiungibilita', porta","porta, chmod, tar, DNS","apt, ping, rm","DNS soltanto"],"risposta":"link/interfaccia, indirizzo/rotta, DNS, raggiungibilita', porta","spiegazione":"Ogni controllo restringe il guasto senza saltare a conclusioni."}]}]}
+{
+  "id": "l11",
+  "titolo": "Rete: interfacce, nomi e porte",
+  "perche": "«Il server non risponde» ha cinque cause diverse: interfaccia giu', indirizzo mancante, rotta assente, nome non risolto, porta chiusa. Qui impari a separarle in due minuti invece di provare soluzioni a caso — ed e' il prerequisito per arrivare a un cluster o mettere in rete un banco.",
+  "funzioni": [
+    "ip addr",
+    "ip link",
+    "ip route",
+    "ifconfig",
+    "ping",
+    "traceroute",
+    "dig",
+    "nslookup",
+    "resolvectl",
+    "nmcli",
+    "ethtool",
+    "ss -tulpn",
+    "nc -z",
+    "/etc/resolv.conf",
+    "/etc/hosts"
+  ],
+  "lezioni": [
+    {
+      "id": "l11-l1",
+      "titolo": "Cinque cose possono essere rotte, in quest'ordine",
+      "md": "Quando una macchina «non va in rete», le cause sono cinque e si escludono **in ordine**. Provare a caso costa ore; questa scaletta costa due minuti.\n\n```\n1. ip link show      il cavo e l'interfaccia:  state UP ?\n2. ip addr           l'indirizzo:              inet c'e' ?\n3. ip route          la strada:                default via ... ?\n4. dig nome          il nome:                  risponde un IP ?\n5. nc -z host porta  il servizio:              la porta risponde ?\n```\n\nOgni riga presuppone quella sopra: senza indirizzo la rotta non serve, senza rotta il DNS non risponde, e un nome che non si risolve rende inutile provare la porta.\n\n### Le due cose che sembrano uguali e non lo sono\n\n```\nip link show enp0s3      # state DOWN  -> l'interfaccia e' spenta, la alzi tu\nethtool enp0s3           # Link detected: no -> il cavo non c'e', o lo switch e' morto\n```\n\nLa prima si risolve con un comando, la seconda alzandosi dalla sedia. `nmcli device status` le riassume: `disconnected` non dice quale delle due.\n\n### Alzare e configurare\n\n```\nsudo ip link set enp0s3 up\nsudo ip addr add 192.168.1.42/24 dev enp0s3\nsudo ip route add default via 192.168.1.1\n```\n\nSono comandi **temporanei**: al riavvio non restano. La configurazione permanente sta altrove (NetworkManager, netplan, i file della distribuzione), ed e' il motivo per cui una macchina «sistemata» a mano torna rotta dopo il riavvio."
+    },
+    {
+      "id": "l11-l2",
+      "titolo": "Il nome non e' l'indirizzo",
+      "md": "```\ndig cluster.univ.it        # cosa risponde il DNS\nnslookup cluster.univ.it   # lo stesso, formato piu' vecchio\ncat /etc/resolv.conf       # quale nameserver stiamo usando\ncat /etc/hosts             # le eccezioni scritte a mano\n```\n\n**`/etc/hosts` vince sul DNS.** È la prima cosa che il sistema guarda, e una riga vecchia lasciata li' manda in confusione per ore: `dig` dice un indirizzo, `ping` ne usa un altro, e sembra impossibile.\n\n### La prova che separa il nome dalla rete\n\n```\nping -c1 cluster.univ.it     # non funziona\nping -c1 10.20.0.15          # funziona\n```\n\nSe l'indirizzo risponde e il nome no, la rete e' a posto: il problema e' il DNS. Se non risponde nemmeno l'indirizzo, il DNS non c'entra niente.\n\n### Dove si ferma\n\n```\ntraceroute cluster.univ.it\n1  192.168.1.1  0.4 ms\n2  * * *\n```\n\nGli asterischi dicono fin dove sei arrivato: se il primo salto risponde, il gateway c'e' e il problema e' piu' lontano. In questo simulatore `ping` senza `-c` risponde subito; su una macchina vera continua finche' non lo fermi con Ctrl-C."
+    },
+    {
+      "id": "l11-l3",
+      "titolo": "Chi ascolta, e da dove si vede",
+      "md": "```\nss -tulpn\nNetid State  Local Address:Port  Process\ntcp    LISTEN 0.0.0.0:22         users:((\"sshd\"))\ntcp    LISTEN 127.0.0.1:8000     users:((\"acquisizione\"))\n```\n\nLe lettere: `-t` TCP, `-u` UDP, `-l` solo in ascolto, `-p` il processo, `-n` numeri invece di nomi. Si impara come una parola sola, `ss -tulpn`.\n\n### La colonna che conta e' la prima meta'\n\n`0.0.0.0:22` vuol dire **su tutte le interfacce**: raggiungibile da un'altra macchina. `127.0.0.1:8000` vuol dire **solo da qui**: da fuori quel servizio non esiste, e non c'e' firewall che tenga.\n\nÈ il malinteso piu' comune con i programmi di acquisizione e i server di sviluppo: partono in ascolto su localhost, funzionano perfettamente sulla macchina, e sono invisibili a tutti gli altri. Si corregge nella configurazione del programma, non nella rete.\n\n### Provare una porta\n\n```\nnc -z cluster.univ.it 22     # riuscito: il servizio risponde\nnc -z cluster.univ.it 80     # connessione rifiutata: nessuno ascolta li'\nnc -z 10.9.9.9 22            # host irraggiungibile: non arrivi proprio\n```\n\nI tre esiti sono tre diagnosi diverse: **rifiutata** vuol dire che la macchina c'e' e ha risposto di no; **irraggiungibile** che non ci sei nemmeno arrivato; **riuscita** che la strada e il servizio ci sono, e il problema e' dentro l'applicazione."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l11-ip",
+      "comando": "ip addr, ip link, ip route",
+      "titolo": "l'interfaccia, l'indirizzo, la strada",
+      "esercizi": [
+        {
+          "id": "l11-ip-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei appena arrivato davanti al PC di acquisizione del banco. Prima domanda: che indirizzo ha, e su quale interfaccia.",
+          "rete": true,
+          "soluzione": "ip addr",
+          "verifica": {
+            "stampa": "192.168.1.42/24",
+            "usa": [
+              "ip"
+            ]
+          },
+          "hint": [
+            "Il comando ha due parole.",
+            "ip addr"
+          ],
+          "spiegazione": "`enp0s3` e' l'interfaccia fisica, `lo` e' il loopback — quello che esiste sempre e non porta da nessuna parte. `/24` dice quanto e' larga la rete locale: da `192.168.1.1` a `192.168.1.254`.\n\nDa qui in poi sai due cose che servono a tutto il resto: in che rete sei, e come si chiama la scheda."
+        },
+        {
+          "id": "l11-ip-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il banco non risponde piu'. `nmcli` dice `disconnected`. Guarda perche', rialza l'interfaccia e verifica che sia tornata su.",
+          "rete": {
+            "interfacce": {
+              "lo": {
+                "stato": "up",
+                "indirizzo": "127.0.0.1/8",
+                "link": null
+              },
+              "enp0s3": {
+                "stato": "down",
+                "indirizzo": "192.168.1.42/24",
+                "link": "1000Mb/s"
+              }
+            }
+          },
+          "soluzione": "nmcli device status\nip link show\nsudo ip link set enp0s3 up\nip addr",
+          "verifica": {
+            "stampa": "state UP",
+            "usa": [
+              "ip",
+              "sudo"
+            ]
+          },
+          "hint": [
+            "nmcli dice che e' giu' ma non perche': guarda ip link show.",
+            "sudo ip link set enp0s3 up"
+          ],
+          "spiegazione": "`state DOWN` e' l'interfaccia **spenta**: un comando la rialza. Se invece `ethtool` avesse detto `Link detected: no`, nessun comando avrebbe risolto niente — quello e' il cavo.\n\nNota che serve `sudo`: cambiare la configurazione di rete e' un'operazione di sistema, come lo era `chown` nel modulo sui permessi."
+        },
+        {
+          "id": "l11-ip-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "L'interfaccia e' su, ma non esce niente. Manca l'indirizzo: assegna `192.168.1.42/24` a `enp0s3` e dimostra che ora il gateway risponde.",
+          "rete": {
+            "interfacce": {
+              "lo": {
+                "stato": "up",
+                "indirizzo": "127.0.0.1/8",
+                "link": null
+              },
+              "enp0s3": {
+                "stato": "up",
+                "indirizzo": null,
+                "link": "1000Mb/s"
+              }
+            }
+          },
+          "soluzione": "ip addr\nsudo ip addr add 192.168.1.42/24 dev enp0s3\nping -c1 192.168.1.1",
+          "verifica": {
+            "stampa": "0% packet loss",
+            "usa": [
+              "ip",
+              "ping"
+            ]
+          },
+          "hint": [
+            "ip addr add INDIRIZZO/24 dev INTERFACCIA",
+            "sudo ip addr add 192.168.1.42/24 dev enp0s3"
+          ],
+          "spiegazione": "Senza `inet` sotto l'interfaccia la macchina non ha un posto da cui parlare, e ogni `ping` muore con `rete non raggiungibile` prima ancora di uscire.\n\nIl `/24` non e' un dettaglio: dice al sistema chi e' «vicino». Con `/24` sbagliato in `/16` la macchina crederebbe di poter raggiungere direttamente mezza rete, e passerebbe dal gateway solo per il resto."
+        },
+        {
+          "id": "l11-ip-4",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda dove vanno i pacchetti che non sono per la rete locale.",
+          "rete": true,
+          "soluzione": "ip route",
+          "verifica": {
+            "stampa": "default via 192.168.1.1",
+            "usa": [
+              "ip"
+            ]
+          },
+          "hint": [
+            "Due parole, la seconda e' route.",
+            "ip route"
+          ],
+          "spiegazione": "Due righe, due significati: la rotta `192.168.1.0/24` dice «questi li raggiungo da solo», la `default` dice «tutto il resto lo do al gateway».\n\nSenza la riga `default` la macchina parla solo con i vicini di casa — ed e' il guasto del prossimo esercizio."
+        },
+        {
+          "id": "l11-ip-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Dal banco il gateway risponde, ma il cluster no. Dimostra che il problema e' la rotta e non il cavo, poi sistemala e verifica.",
+          "rete": {
+            "gateway": null
+          },
+          "soluzione": "ping -c1 192.168.1.1\nip route\nsudo ip route add default via 192.168.1.1\nping -c1 cluster.univ.it",
+          "verifica": {
+            "stampa": "0% packet loss",
+            "usa": [
+              "ping",
+              "ip",
+              "sudo"
+            ]
+          },
+          "hint": [
+            "Prima dimostra che il vicino risponde, poi guarda ip route.",
+            "sudo ip route add default via 192.168.1.1"
+          ],
+          "spiegazione": "Il vicino di casa risponde perche' sta nella stessa `/24` e non serve nessuna rotta. Il cluster sta in `10.20.0.0`, che e' un altro mondo: senza la rotta `default` il sistema non sa nemmeno da che parte mandare il pacchetto, e infatti l'errore e' `rete non raggiungibile` — non «nessuna risposta».\n\nLa differenza fra i due messaggi e' tutta la diagnosi: uno vuol dire che non sei partito, l'altro che non ti hanno risposto."
+        },
+        {
+          "id": "l11-ip-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "L'interfaccia risulta `UP` ma non passa niente. Controlla il collegamento fisico e salva la prova in `guasto.txt` per chi verra' a guardare il cablaggio.",
+          "rete": {
+            "interfacce": {
+              "lo": {
+                "stato": "up",
+                "indirizzo": "127.0.0.1/8",
+                "link": null
+              },
+              "enp0s3": {
+                "stato": "up",
+                "indirizzo": "192.168.1.42/24",
+                "link": null
+              }
+            }
+          },
+          "soluzione": "ip link show\nethtool enp0s3 > guasto.txt\ncat guasto.txt",
+          "verifica": {
+            "contiene": {
+              "guasto.txt": "Link detected: no"
+            },
+            "usa": [
+              "ethtool"
+            ]
+          },
+          "hint": [
+            "ethtool guarda il livello fisico, non la configurazione.",
+            "ethtool enp0s3 > guasto.txt"
+          ],
+          "spiegazione": "`state UP` e `Link detected: no` insieme vogliono dire una cosa sola: **il sistema e' pronto, il cavo no**. Da qui in avanti nessun comando serve — serve controllare il connettore, la presa a muro o la porta dello switch.\n\nSalvare l'uscita in un file e' quello che si fa davvero: chi ripara il cablaggio non era li' quando l'hai visto."
+        },
+        {
+          "id": "l11-ip-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Prepara una diagnosi completa da allegare alla segnalazione: indirizzo e rotte in un file solo, `rete.txt`, in quest'ordine.",
+          "rete": true,
+          "soluzione": "ip addr > rete.txt\nip route >> rete.txt\ncat rete.txt",
+          "verifica": {
+            "contiene": {
+              "rete.txt": "default via 192.168.1.1"
+            },
+            "esiste": [
+              "rete.txt"
+            ],
+            "usa": [
+              "ip"
+            ]
+          },
+          "hint": [
+            "Due comandi, due frecce diverse.",
+            "ip addr > rete.txt, poi ip route >> rete.txt"
+          ],
+          "spiegazione": "La freccia doppia sulla seconda riga e' obbligatoria: con `>` avresti riscritto il file e sarebbe rimasta solo la rotta.\n\nÈ lo stesso schema del modulo sui log — un comando che stampa, una redirezione che conserva — applicato alla diagnosi di rete."
+        },
+        {
+          "id": "l11-ip-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`ip link show` dice `state UP`, ma `ethtool` dice `Link detected: no`. Cosa e' rotto?",
+          "opzioni": [
+            "il collegamento fisico: cavo, presa o porta dello switch",
+            "l'indirizzo IP, che va riassegnato",
+            "la rotta di default",
+            "il DNS"
+          ],
+          "risposta": "il collegamento fisico: cavo, presa o porta dello switch",
+          "spiegazione": "`state UP` e' una decisione del sistema operativo; `Link detected` e' quello che la scheda vede sul rame. Il primo puo' essere `UP` su una scheda a cui non e' collegato niente.\n\nÈ la distinzione che ti fa smettere di digitare comandi e andare a guardare il cavo."
+        }
+      ]
+    },
+    {
+      "id": "l11-dns",
+      "comando": "ping, dig, traceroute",
+      "titolo": "il nome e la risposta",
+      "esercizi": [
+        {
+          "id": "l11-dn-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Devi collegarti a `cluster.univ.it` ma non ne conosci l'indirizzo. Chiedilo al DNS.",
+          "rete": true,
+          "soluzione": "dig cluster.univ.it",
+          "verifica": {
+            "stampa": "10.20.0.15",
+            "usa": [
+              "dig"
+            ]
+          },
+          "hint": [
+            "Tre lettere.",
+            "dig cluster.univ.it"
+          ],
+          "spiegazione": "`;; ANSWER SECTION:` e' la parte che conta, il resto e' contorno. La riga `;; SERVER:` dice **chi** ha risposto: serve quando il sospetto e' che stia rispondendo il nameserver sbagliato.\n\n`nslookup` fa la stessa cosa con un'uscita piu' povera: si trova ovunque, anche su Windows."
+        },
+        {
+          "id": "l11-dn-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Da stamattina `ssh cluster.univ.it` non funziona. Dimostra in due comandi che la rete e' a posto e che il problema e' la risoluzione dei nomi.",
+          "rete": {
+            "dnsRaggiungibile": false
+          },
+          "soluzione": "ping -c1 cluster.univ.it\nping -c1 10.20.0.15",
+          "verifica": {
+            "stampa": "0% packet loss",
+            "errore": "nome o servizio non noto",
+            "usa": [
+              "ping"
+            ]
+          },
+          "hint": [
+            "Prova prima col nome, poi con l'indirizzo che gia' conosci.",
+            "ping -c1 cluster.univ.it, poi ping -c1 10.20.0.15"
+          ],
+          "spiegazione": "Nome no, indirizzo si': **la rete funziona, il DNS no**. È la prova in due righe che separa meta' dei guasti dall'altra meta', e si fa prima di qualunque altra cosa.\n\nDa qui la ricerca continua in due posti soli: `/etc/resolv.conf` e `/etc/hosts`."
+        },
+        {
+          "id": "l11-dn-7",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "`ping 10.20.0.15` funziona, `ping cluster.univ.it` dice «nome o servizio non noto». Dove cerchi?",
+          "opzioni": [
+            "in /etc/resolv.conf e /etc/hosts: e' la risoluzione dei nomi",
+            "nella rotta di default, che manca",
+            "nel cavo di rete",
+            "nel firewall del cluster"
+          ],
+          "risposta": "in /etc/resolv.conf e /etc/hosts: e' la risoluzione dei nomi",
+          "spiegazione": "L'indirizzo risponde, quindi interfaccia, indirizzo e rotta sono tutti a posto: gli unici sospetti restano il nameserver configurato e le eccezioni scritte a mano.\n\nQuesta e' la ragione per cui nella scaletta il DNS viene **dopo** la rotta: se controlli il DNS per primo, meta' delle volte stai guardando il posto sbagliato."
+        },
+        {
+          "id": "l11-dn-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il DNS non risponde. Guarda quale nameserver sta usando la macchina, sostituiscilo con `1.1.1.1` e verifica che i nomi tornino a risolversi.",
+          "rete": true,
+          "soluzione": "cat /etc/resolv.conf\necho nameserver 1.1.1.1 > /etc/resolv.conf\ndig cluster.univ.it",
+          "verifica": {
+            "contiene": {
+              "/etc/resolv.conf": "1.1.1.1"
+            },
+            "stampa": "10.20.0.15",
+            "usa": [
+              "cat",
+              "dig"
+            ]
+          },
+          "hint": [
+            "Il nameserver e' scritto in un file, e i file si cambiano con una redirezione.",
+            "echo nameserver 1.1.1.1 > /etc/resolv.conf"
+          ],
+          "spiegazione": "`10.0.0.53` era il nameserver del vecchio laboratorio: e' rimasto nel file e nessuno ci ha piu' pensato finche' quella macchina non e' stata spenta.\n\nAttenzione a una cosa che qui non si vede: su una macchina vera `/etc/resolv.conf` e' spesso **rigenerato** da NetworkManager o da systemd-resolved, e la tua modifica sparisce al riavvio. La correzione duratura si fa nella configurazione della connessione.",
+          "filesystem": {
+            "/etc/resolv.conf": "nameserver 10.0.0.53\n"
+          }
+        },
+        {
+          "id": "l11-dn-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Qual e' l'ordine giusto per diagnosticare «non riesco a raggiungere il server»?",
+          "opzioni": [
+            "interfaccia → indirizzo → rotta → nome → porta",
+            "porta → nome → rotta → indirizzo → interfaccia",
+            "nome → porta → interfaccia → indirizzo → rotta",
+            "l'ordine non conta, basta provare tutto"
+          ],
+          "risposta": "interfaccia → indirizzo → rotta → nome → porta",
+          "spiegazione": "Ogni passo presuppone il precedente: senza indirizzo la rotta non ha senso, senza rotta il DNS non risponde, senza nome non puoi provare la porta. Partire dalla fine — «sara' il firewall» — e' il modo piu' comune di perdere un pomeriggio.\n\nCinque comandi in ordine, due minuti: `ip link`, `ip addr`, `ip route`, `dig`, `nc -z`."
+        },
+        {
+          "id": "l11-dn-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il collega dice «l'API meteo e' giu'». Prima di crederci, dimostra che il nome si risolve ma l'host non risponde, e guarda fin dove arrivi.",
+          "rete": {
+            "esterni": {
+              "10.20.0.15": {
+                "nome": "cluster",
+                "porte": [
+                  22
+                ]
+              },
+              "192.168.1.1": {
+                "nome": "gateway",
+                "porte": [
+                  80
+                ]
+              }
+            }
+          },
+          "soluzione": "dig api.meteo.it\nping -c1 api.meteo.it\ntraceroute api.meteo.it",
+          "verifica": {
+            "stampa": "100% packet loss",
+            "usa": [
+              "dig",
+              "ping",
+              "traceroute"
+            ]
+          },
+          "hint": [
+            "Tre comandi, in ordine: nome, risposta, percorso.",
+            "dig, poi ping -c1, poi traceroute"
+          ],
+          "spiegazione": "Il DNS risponde `203.0.113.8`, quindi il nome e' giusto e la configurazione locale e' a posto. Il ping non torna: l'host non risponde. `traceroute` mostra il gateway al primo salto e poi asterischi — sei uscito dalla tua rete, il problema e' dall'altra parte.\n\nQuesta e' la differenza fra «e' rotto qualcosa da noi» e «e' rotto da loro», ed e' la risposta che serve prima di aprire una segnalazione."
+        },
+        {
+          "id": "l11-dn-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "`dig` dice che il cluster e' `10.20.0.15`, ma `ping` prova un altro indirizzo e non riceve risposta. Trova la riga colpevole, lasciala fuori dal file e verifica che il ping torni a funzionare.",
+          "rete": true,
+          "soluzione": "dig cluster.univ.it\nping -c1 cluster.univ.it\ncat /etc/hosts\ngrep -v cluster /etc/hosts > hosts.nuovo\ncat hosts.nuovo > /etc/hosts\nping -c1 cluster.univ.it",
+          "verifica": {
+            "contenuto": {
+              "/etc/hosts": "127.0.0.1 localhost"
+            },
+            "stampa": "0% packet loss",
+            "usa": [
+              "grep",
+              "ping"
+            ]
+          },
+          "hint": [
+            "Guarda /etc/hosts: viene consultato prima del DNS.",
+            "grep -v cluster /etc/hosts > hosts.nuovo, poi rimettilo al suo posto"
+          ],
+          "spiegazione": "`/etc/hosts` **vince sul DNS**, sempre. La riga con il vecchio indirizzo era stata messa mesi fa per aggirare un guasto, e nessuno l'ha tolta: da allora la macchina ignora quello che il DNS le dice.\n\nÈ un guasto cattivo perche' `dig` continua a rispondere giusto — e `dig` e' il comando che tutti usano per «controllare il DNS». L'unico modo per accorgersene e' notare che `ping` usa un indirizzo diverso da quello che `dig` ha appena stampato.\n\nNota anche la tecnica: `grep -v` per scrivere un file senza una riga e' il modo standard di togliere qualcosa da un file di configurazione dalla riga di comando.",
+          "filesystem": {
+            "/etc/hosts": "127.0.0.1 localhost\n10.20.0.99 cluster.univ.it\n"
+          }
+        },
+        {
+          "id": "l11-dn-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Salva l'indirizzo del cluster in `cluster.txt`, tenendo solo la riga di risposta del DNS.",
+          "rete": true,
+          "soluzione": "dig cluster.univ.it | grep \"IN A\" > cluster.txt\ncat cluster.txt",
+          "verifica": {
+            "contiene": {
+              "cluster.txt": "10.20.0.15"
+            },
+            "usa": [
+              "dig",
+              "grep"
+            ]
+          },
+          "hint": [
+            "dig stampa molto: filtra con grep prima di salvare.",
+            "dig cluster.univ.it | grep \"IN A\" > cluster.txt"
+          ],
+          "spiegazione": "`dig` e' verboso di proposito, perche' i suoi commenti servono a diagnosticare. Quando invece ti serve **il dato**, si filtra: `grep` sulla sezione di risposta e' il modo piu' rapido.\n\nÈ lo stesso gesto del modulo sui log: un comando che stampa tanto, una pipe che tiene solo la riga utile, una redirezione che la conserva."
+        }
+      ]
+    },
+    {
+      "id": "l11-porte",
+      "comando": "ss e nc",
+      "titolo": "chi ascolta, e da dove si vede",
+      "esercizi": [
+        {
+          "id": "l11-po-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sul PC del banco: quali servizi stanno ascoltando, e con quale processo.",
+          "rete": true,
+          "soluzione": "ss -tulpn",
+          "verifica": {
+            "stampa": "sshd",
+            "usa": [
+              "ss"
+            ]
+          },
+          "hint": [
+            "Cinque lettere dopo il comando.",
+            "ss -tulpn"
+          ],
+          "spiegazione": "`-t` TCP, `-u` UDP, `-l` solo chi ascolta, `-p` il processo, `-n` numeri invece di nomi. Si impara come una parola sola.\n\nDue servizi: `sshd` sulla 22 e l'acquisizione sulla 8000. Guarda bene gli indirizzi a sinistra della porta: non sono uguali, e nel prossimo esercizio la differenza si vede."
+        },
+        {
+          "id": "l11-po-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il collega non riesce a raggiungere l'acquisizione sulla porta 8000, ma dal banco funziona. Dimostra tutte e due le cose: che da qui risponde, e su quale indirizzo sta ascoltando.",
+          "rete": true,
+          "soluzione": "nc -z 127.0.0.1 8000\nss -tulpn | grep 8000",
+          "verifica": {
+            "stampa": "127.0.0.1:8000",
+            "usa": [
+              "nc",
+              "ss",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Prima prova la porta da qui, poi guarda la colonna Local Address.",
+            "nc -z 127.0.0.1 8000, poi ss -tulpn | grep 8000"
+          ],
+          "spiegazione": "`127.0.0.1:8000` vuol dire **solo da questa macchina**. Da fuori quel servizio non esiste: nessun firewall lo sta bloccando, semplicemente non ascolta su un indirizzo raggiungibile.\n\nÈ il malinteso piu' comune con i programmi di acquisizione e i server di sviluppo, e la correzione non e' nella rete: e' nella configurazione del programma, che va messo in ascolto su `0.0.0.0`.\n\nConfronta con `sshd`, che sta su `0.0.0.0:22` — quello si' che si raggiunge da fuori."
+        },
+        {
+          "id": "l11-po-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prima di lanciare la copia dei dati sul cluster, verifica che la porta di ssh risponda davvero — e confronta con quella che ascolta qui sul banco.",
+          "rete": true,
+          "soluzione": "nc -z cluster.univ.it 22\nss -tulpn | grep 22",
+          "verifica": {
+            "stampa": "succeeded",
+            "usa": [
+              "nc",
+              "ss",
+              "grep"
+            ]
+          },
+          "hint": [
+            "nc -z HOST PORTA prova la porta di un'altra macchina.",
+            "nc -z cluster.univ.it 22, poi ss -tulpn | grep 22"
+          ],
+          "spiegazione": "`-z` vuol dire «bussa e vattene»: nessun dato, solo la domanda se qualcuno risponde. È il modo di sapere se ha senso lanciare `ssh` o `rsync`, prima di aspettare un timeout.\n\nI due comandi guardano due cose diverse e vale la pena non confonderle: `ss` dice chi ascolta **su questa macchina**, `nc -z` dice se una porta risponde **su un'altra**. Qui la 22 c'e' da tutte e due le parti, ma sono due fatti indipendenti."
+        },
+        {
+          "id": "l11-po-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Qualcuno sostiene che sul cluster giri un server web. Verifica la porta 80 sul cluster e confrontala con quella dell'API meteo, poi giudica.",
+          "rete": true,
+          "soluzione": "nc -z cluster.univ.it 80\nnc -z api.meteo.it 80",
+          "verifica": {
+            "stampa": "succeeded",
+            "errore": "connessione rifiutata",
+            "usa": [
+              "nc"
+            ]
+          },
+          "hint": [
+            "Prova la stessa porta sui due host e confronta le risposte.",
+            "nc -z cluster.univ.it 80, poi nc -z api.meteo.it 80"
+          ],
+          "spiegazione": "**Connessione rifiutata** e' una risposta, non un silenzio: la macchina c'e', ha ricevuto la richiesta e ha detto di no perche' su quella porta non ascolta nessuno. L'API invece risponde, quindi li' un server web c'e' davvero.\n\nRifiutata e irraggiungibile sono due diagnosi diverse, ed e' la distinzione dell'esercizio che segue."
+        },
+        {
+          "id": "l11-po-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il cluster non risponde piu' da un'ora. Distingui i due casi possibili: porta chiusa oppure host irraggiungibile — e dimostra quale dei due e'.",
+          "rete": {
+            "esterni": {
+              "203.0.113.8": {
+                "nome": "api",
+                "porte": [
+                  80,
+                  443
+                ]
+              },
+              "192.168.1.1": {
+                "nome": "gateway",
+                "porte": [
+                  80
+                ]
+              }
+            }
+          },
+          "soluzione": "ping -c1 cluster.univ.it\nnc -z cluster.univ.it 22",
+          "verifica": {
+            "stampa": "100% packet loss",
+            "errore": "irraggiungibile",
+            "usa": [
+              "ping",
+              "nc"
+            ]
+          },
+          "hint": [
+            "Un ping e una prova sulla porta bastano a separare i due casi.",
+            "ping -c1 cluster.univ.it, poi nc -z cluster.univ.it 22"
+          ],
+          "spiegazione": "Nessuna risposta al ping **e** host irraggiungibile sulla porta: la macchina non c'e'. Se avessi letto `connessione rifiutata`, il cluster sarebbe stato vivo con ssh spento — un guasto completamente diverso, e molto meno grave.\n\nDue comandi, e sai se scrivere a chi gestisce il cluster o a chi gestisce la rete."
+        },
+        {
+          "id": "l11-po-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Prepara l'inventario dei servizi in ascolto per la scheda del banco: solo le righe TCP, salvate in `servizi.txt`, e conta quante sono.",
+          "rete": true,
+          "soluzione": "ss -tulpn | grep tcp > servizi.txt\nwc -l servizi.txt\ncat servizi.txt",
+          "verifica": {
+            "contiene": {
+              "servizi.txt": "sshd"
+            },
+            "stampa": "2 servizi.txt",
+            "usa": [
+              "ss",
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Filtra l'uscita di ss e salvala, poi contala.",
+            "ss -tulpn | grep tcp > servizi.txt, poi wc -l servizi.txt"
+          ],
+          "spiegazione": "Due righe, due servizi: e' l'inventario che serve quando qualcuno chiede «cosa gira su quella macchina» — domanda che arriva sempre insieme a un controllo di sicurezza.\n\nQui `ss`, `grep` e `wc` lavorano insieme come nel modulo sui log: cambia il comando che genera i dati, non lo schema."
+        },
+        {
+          "id": "l11-po-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`ss` mostra `0.0.0.0:22` e `127.0.0.1:8000`. Da un'altra macchina della stessa rete, cosa raggiungi?",
+          "opzioni": [
+            "solo la 22",
+            "tutte e due",
+            "solo la 8000",
+            "nessuna delle due, serve aprire il firewall"
+          ],
+          "risposta": "solo la 22",
+          "spiegazione": "`0.0.0.0` vuol dire «su qualunque interfaccia», quindi da fuori si arriva. `127.0.0.1` e' il loopback: esiste solo dentro quella macchina, e nessuna configurazione di rete lo rende raggiungibile.\n\nQuando un servizio «non si vede da fuori», questa e' la prima colonna da guardare — prima del firewall, prima della rete."
+        },
+        {
+          "id": "l11-po-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il guasto completo.** Dal banco non si riesce piu' a raggiungere il cluster in ssh. Segui la scaletta, trova dove si rompe, sistemalo e dimostra che la porta 22 risponde.",
+          "rete": {
+            "gateway": null
+          },
+          "soluzione": "ping -c1 cluster.univ.it\nip addr\nip route\nsudo ip route add default via 192.168.1.1\nnc -z cluster.univ.it 22",
+          "verifica": {
+            "stampa": "succeeded",
+            "usa": [
+              "ping",
+              "ip",
+              "nc",
+              "sudo"
+            ]
+          },
+          "hint": [
+            "Interfaccia, indirizzo, rotta, nome, porta: fermati dove si rompe.",
+            "Manca la rotta: sudo ip route add default via 192.168.1.1"
+          ],
+          "spiegazione": "Il messaggio `rete non raggiungibile` del primo `ping` era gia' la diagnosi: non e' «nessuna risposta», e' «non so nemmeno da che parte mandarlo». Interfaccia e indirizzo erano a posto, la rotta no.\n\nLa prova finale non e' un altro `ping`: e' `nc` sulla porta che ti serve davvero. Il ping dice che la macchina c'e', `nc -z` dice che il servizio risponde — ed e' quest'ultima la domanda a cui volevi rispondere.\n\nSulla macchina vera resta un ultimo passo: questa rotta sparisce al riavvio. Va scritta nella configurazione della connessione, o domani sei di nuovo qui."
+        }
+      ]
+    }
+  ]
+}
