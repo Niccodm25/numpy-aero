@@ -1,0 +1,284 @@
+{
+  "id": "l07",
+  "titolo": "Archivi, pacchetti e spazio",
+  "perche": "I dati di una campagna viaggiano compressi, il software si installa da un gestore e un calcolo che si ferma spesso non e' rotto: ha solo finito disco o memoria. Sono tre aspetti dello stesso mestiere: sapere cosa entra, cosa occupa spazio e da dove arriva un programma.",
+  "funzioni": [
+    "tar -czf",
+    "tar -tzf",
+    "tar -xzf",
+    "gzip e gunzip",
+    "apt update",
+    "apt install",
+    "apt remove",
+    "apt list --installed",
+    "df -h",
+    "du -sh",
+    "free -h",
+    "uname -a"
+  ],
+  "lezioni": [
+    {
+      "id": "l07-l1",
+      "titolo": "tar raccoglie, gzip stringe",
+      "md": "Un archivio non e' necessariamente compresso. `tar` nasce per mettere molti file e le loro cartelle in un unico flusso; `gzip` comprime un singolo flusso. Insieme producono il normale `.tar.gz` o `.tgz`.\n\n```bash\ntar -czf campagna.tar.gz dati/       # c crea, z gzip, f nome-file\ntar -tzf campagna.tar.gz             # t elenca: guarda prima di estrarre\ntar -xzf campagna.tar.gz             # x estrae qui\n```\n\nLe lettere possono stare insieme per convenzione. La `f` e' importante: la parola dopo e' il nome dell'archivio; tutto quello che segue e' cio' da archiviare. `tar` conserva i percorsi relativi: estrarre un archivio scaricato senza guardarlo prima puo' scrivere decine di file nella cartella sbagliata.\n\nPer un file solo basta spesso:\n\n```bash\ngzip log.txt       # lascia log.txt.gz e rimuove log.txt\ngunzip log.txt.gz  # ripristina log.txt\n```\n\nNon usare un archivio come backup solo perche' ha un'estensione rassicurante: backup significa anche una seconda copia, un luogo diverso e una prova di ripristino."
+    },
+    {
+      "id": "l07-l2",
+      "titolo": "Pacchetti: repository, non siti casuali",
+      "md": "Su Debian, Ubuntu e WSL il gestore e' `apt`. Un repository firma pacchetti, dipendenze e aggiornamenti: installare un `.deb` scaricato da un sito a caso salta proprio quella catena di fiducia.\n\n```bash\nsudo apt update                 # aggiorna l'elenco disponibile\nsudo apt install ripgrep        # installa il pacchetto e cio' che gli serve\napt list --installed            # controlla cosa c'e' davvero\nsudo apt remove ripgrep         # rimuove il programma, non sempre la configurazione\n```\n\n`apt update` **non aggiorna i programmi**: aggiorna la lista da cui `apt` sa quali versioni esistono. L'installazione richiede `sudo` perche' modifica il sistema.\n\n| Famiglia | Pacchetto | Gestore tipico |\n|---|---|---|\n| Debian/Ubuntu | `.deb` | `apt` |\n| Fedora/RHEL | `.rpm` | `dnf` |\n| Arch | pacchetto | `pacman` |\n| Applicazioni isolate | snap o Flatpak | `snap`, `flatpak` |\n\nSnap e Flatpak isolano piu' dipendenze e sono utili soprattutto per applicazioni desktop; per strumenti di sistema e librerie di sviluppo, il gestore della distribuzione e' di solito la scelta piu' semplice."
+    },
+    {
+      "id": "l07-l3",
+      "titolo": "Prima di dare la colpa al programma, misura",
+      "md": "Tre comandi rispondono a tre domande diverse:\n\n```bash\ndf -h          # quanto spazio libero resta su ogni filesystem\ndu -sh dati/   # quanto occupa proprio questa cartella\nfree -h        # memoria RAM e swap disponibili\nuname -a       # kernel, architettura e macchina\n```\n\n`df` guarda il **disco montato**: e' la domanda giusta quando un programma dice `No space left on device`. `du` somma i file sotto una cartella: e' la domanda giusta per scoprire *chi* ha riempito il disco. Non confonderli: una cartella piccola puo' stare su un filesystem pieno, e un filesystem capiente puo' contenere una cartella enorme.\n\nLa RAM non e' disco. Se `free -h` mostra poca memoria libera ma swap in uso, il computer puo' essere lento senza essere bloccato. Se manca RAM, riduci il problema o chiedi piu' memoria allo scheduler; cancellare file non cambia nulla.\n\n`uname -a` non e' diagnostica quotidiana: serve quando un pacchetto binario, un driver o un'istruzione dipendono da kernel e architettura. Copia l'output nel ticket, non trascriverlo a mano."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l07-archivi",
+      "comando": "tar, gzip, gunzip",
+      "titolo": "consegnare dati senza perderne pezzi",
+      "esercizi": [
+        {
+          "id": "l07-ar-1",
+          "tipo": "terminale",
+          "testo": "Crea un archivio compresso `dati.tar.gz` con tutta la cartella `dati`.",
+          "sistema": true,
+          "filesystem": { "/home/tu/dati/volo.csv": "t,quota\n0,1000\n", "/home/tu/dati/note.txt": "sensore A\n" },
+          "soluzione": "tar -czf dati.tar.gz dati",
+          "verifica": { "esiste": ["dati.tar.gz"], "usa": ["tar"] },
+          "hint": ["c crea, z comprime, f introduce il nome.", "tar -czf dati.tar.gz dati"],
+          "spiegazione": "L'archivio contiene sia i file sia la struttura della cartella. E' il formato giusto per spostare insieme una piccola campagna."
+        },
+        {
+          "id": "l07-ar-2",
+          "tipo": "terminale",
+          "testo": "Prima di estrarre `dati.tar.gz`, elenca cosa contiene.",
+          "sistema": true,
+          "filesystem": { "/home/tu/dati/a.csv": "a\n", "/home/tu/dati/b.csv": "b\n" },
+          "soluzione": "tar -czf dati.tar.gz dati\ntar -tzf dati.tar.gz",
+          "verifica": { "stampa": "dati/a.csv", "usa": ["tar"] },
+          "hint": ["Con t tar mostra l'elenco, con z legge gzip.", "tar -tzf dati.tar.gz"],
+          "spiegazione": "`tar -tzf` non scrive nulla sul disco. Guardare l'elenco prima dell'estrazione evita di spargere file inattesi nella cartella corrente."
+        },
+        {
+          "id": "l07-ar-3",
+          "tipo": "terminale",
+          "testo": "Crea l'archivio, elimina la cartella di origine e ripristinala dall'archivio.",
+          "difficolta": 2,
+          "sistema": true,
+          "filesystem": { "/home/tu/dati/volo.csv": "quota\n1000\n" },
+          "soluzione": "tar -czf dati.tar.gz dati\nrm -r dati\ntar -xzf dati.tar.gz",
+          "verifica": { "contenuto": { "dati/volo.csv": "quota\n1000\n" }, "usa": ["tar", "rm"] },
+          "hint": ["x estrae; non serve indicare di nuovo dati.", "tar -xzf dati.tar.gz"],
+          "spiegazione": "Un archivio e' utile solo se il ripristino funziona. Qui lo provi davvero, non ti fidi della sola creazione del file `.tar.gz`."
+        },
+        {
+          "id": "l07-ar-4",
+          "tipo": "predict",
+          "testo": "In `tar -czf campagna.tar.gz dati/`, a cosa serve la `f`?",
+          "opzioni": ["dice che la parola dopo e' il nome dell'archivio", "elimina i file originali", "filtra solo i file di testo", "forza la compressione gzip"],
+          "risposta": "dice che la parola dopo e' il nome dell'archivio",
+          "spiegazione": "`c` crea, `z` usa gzip, `f` introduce il file archivio. Per questo `campagna.tar.gz` deve arrivare subito dopo le opzioni."
+        },
+        {
+          "id": "l07-ar-5",
+          "tipo": "terminale",
+          "testo": "Comprimi il singolo file `misure.log` e verifica che esista la versione `.gz`.",
+          "sistema": true,
+          "filesystem": { "/home/tu/misure.log": "INFO avvio\nINFO fine\n" },
+          "soluzione": "gzip misure.log\nls",
+          "verifica": { "esiste": ["misure.log.gz"], "nonEsiste": ["misure.log"], "usa": ["gzip"] },
+          "hint": ["gzip aggiunge .gz e sostituisce il file di partenza.", "gzip misure.log"],
+          "spiegazione": "Diversamente da tar, gzip lavora su un file alla volta e di norma rimuove l'originale. Non scambiarlo con una seconda copia."
+        },
+        {
+          "id": "l07-ar-6",
+          "tipo": "terminale",
+          "testo": "Comprimi `misure.log`, poi ripristinalo con `gunzip` e leggine il contenuto.",
+          "sistema": true,
+          "filesystem": { "/home/tu/misure.log": "ok\n" },
+          "soluzione": "gzip misure.log\ngunzip misure.log.gz\ncat misure.log",
+          "verifica": { "contenuto": { "misure.log": "ok" }, "stampa": "ok", "usa": ["gunzip"] },
+          "hint": ["gunzip riceve il nome che termina in .gz.", "gunzip misure.log.gz"],
+          "spiegazione": "La decompressione ricrea il nome senza `.gz`. Verificare anche il contenuto e' piu' utile che guardare soltanto il nome del file."
+        },
+        {
+          "id": "l07-ar-7",
+          "tipo": "predict",
+          "testo": "Perche' `tar -tzf archivio.tar.gz` e' una buona abitudine prima di `tar -xzf`?",
+          "opzioni": ["perche' controlla percorsi e contenuti senza scrivere file", "perche' ripara automaticamente l'archivio", "perche' comprime ancora di piu' i dati", "perche' cancella i duplicati"],
+          "risposta": "perche' controlla percorsi e contenuti senza scrivere file",
+          "spiegazione": "L'opzione `t` elenca. Estrarre e' una modifica del filesystem; prima di modificare, guardare cosa accadra' e' la stessa disciplina di `ls` prima di `rm`."
+        },
+        {
+          "id": "l07-ar-8",
+          "tipo": "predict",
+          "testo": "Un unico `.tar.gz` sulla stessa chiavetta dei dati originali e' un backup sufficiente?",
+          "opzioni": ["no: serve almeno una copia separata e una prova di ripristino", "si': tar garantisce tre copie interne", "si', se contiene gzip", "no, perche' tar non puo' archiviare cartelle"],
+          "risposta": "no: serve almeno una copia separata e una prova di ripristino",
+          "spiegazione": "Un archivio semplifica il trasporto, non crea ridondanza. Se si rompe il supporto, si perdono originale e archivio insieme."
+        }
+      ]
+    },
+    {
+      "id": "l07-pacchetti",
+      "comando": "apt",
+      "titolo": "installare in modo tracciabile",
+      "esercizi": [
+        {
+          "id": "l07-pa-1",
+          "tipo": "terminale",
+          "testo": "Aggiorna l'elenco dei pacchetti disponibili.",
+          "sistema": true,
+          "soluzione": "sudo apt update",
+          "verifica": { "stampa": "Elenco pacchetti aggiornato", "usa": ["sudo", "apt"] },
+          "hint": ["Prima sudo, poi apt update.", "sudo apt update"],
+          "spiegazione": "`update` aggiorna il catalogo locale dei repository. Non installa e non aggiorna ancora nessun programma."
+        },
+        {
+          "id": "l07-pa-2",
+          "tipo": "terminale",
+          "testo": "Installa `ripgrep` dal repository, poi controlla che sia nella lista degli installati.",
+          "sistema": true,
+          "soluzione": "sudo apt install ripgrep\napt list --installed",
+          "verifica": { "stampa": "ripgrep/simulato", "usa": ["apt"] },
+          "hint": ["install richiede sudo; list no.", "sudo apt install ripgrep"],
+          "spiegazione": "La lista e' la verifica: un comando che non ha dato errore non dimostra da solo quale versione sia realmente installata."
+        },
+        {
+          "id": "l07-pa-3",
+          "tipo": "terminale",
+          "testo": "Installa `tmux`, poi rimuovilo senza toccare gli altri pacchetti.",
+          "sistema": true,
+          "soluzione": "sudo apt install tmux\nsudo apt remove tmux\napt list --installed",
+          "verifica": { "usa": ["apt", "sudo"] },
+          "hint": ["remove e' l'opposto di install.", "sudo apt remove tmux"],
+          "spiegazione": "Rimuovere un pacchetto e' un'operazione del gestore, non un `rm` su un eseguibile: cosi' il sistema sa anche quali file gli appartengono."
+        },
+        {
+          "id": "l07-pa-4",
+          "tipo": "predict",
+          "testo": "Cosa fa davvero `apt update`?",
+          "opzioni": ["aggiorna l'elenco di versioni disponibili nei repository", "installa tutte le versioni nuove", "aggiorna il kernel senza chiedere", "cancella la cache dei pacchetti"],
+          "risposta": "aggiorna l'elenco di versioni disponibili nei repository",
+          "spiegazione": "La distinzione e' importante: `update` aggiorna le informazioni; l'installazione o l'aggiornamento dei programmi e' un'azione successiva."
+        },
+        {
+          "id": "l07-pa-5",
+          "tipo": "predict",
+          "testo": "Su Ubuntu devi installare uno strumento da riga di comando. Da dove parti?",
+          "opzioni": ["dal repository con apt, cercando prima il nome del pacchetto", "da un installer casuale trovato con un motore di ricerca", "copiando /usr/bin da un altro computer", "creando un alias bash"],
+          "risposta": "dal repository con apt, cercando prima il nome del pacchetto",
+          "spiegazione": "Il repository conserva dipendenze, aggiornamenti e provenienza. Un download casuale puo' funzionare oggi e lasciare un sistema non aggiornabile domani."
+        },
+        {
+          "id": "l07-pa-6",
+          "tipo": "predict",
+          "testo": "Quale abbinamento distribuzione-formato e' corretto?",
+          "opzioni": ["Debian e Ubuntu usano .deb; Fedora e RHEL usano .rpm", "Ubuntu usa .rpm; Fedora usa .deb", "tutte usano soltanto snap", "un formato di pacchetto e' un archivio tar senza metadati"],
+          "risposta": "Debian e Ubuntu usano .deb; Fedora e RHEL usano .rpm",
+          "spiegazione": "Il formato cambia insieme al gestore: `apt` nel mondo Debian/Ubuntu, `dnf` nel mondo Fedora/RHEL. I concetti di repository e dipendenza restano gli stessi."
+        },
+        {
+          "id": "l07-pa-7",
+          "tipo": "predict",
+          "testo": "Quando Snap o Flatpak sono spesso una scelta ragionevole?",
+          "opzioni": ["per applicazioni desktop con dipendenze isolate", "per sostituire sempre il kernel", "per installare librerie Python dentro un venv", "per comprimere file CSV"],
+          "risposta": "per applicazioni desktop con dipendenze isolate",
+          "spiegazione": "Snap e Flatpak privilegiano isolamento e portabilita' delle app. Per un tool di sistema o una libreria di sviluppo il pacchetto nativo e' spesso piu' integrato."
+        },
+        {
+          "id": "l07-pa-8",
+          "tipo": "terminale",
+          "testo": "Prova a installare un pacchetto inesistente e leggi l'errore, invece di inventare un nome di file da scaricare.",
+          "sistema": true,
+          "soluzione": "sudo apt install non-esiste",
+          "verifica": { "errore": "impossibile trovare il pacchetto", "usa": ["apt"] },
+          "hint": ["Prova il comando: l'errore e' la risposta richiesta.", "sudo apt install non-esiste"],
+          "spiegazione": "Un nome mancante e' un'informazione: si cerca il pacchetto corretto nel repository, non si aggira il gestore scaricando il primo file che sembra adatto."
+        }
+      ]
+    },
+    {
+      "id": "l07-risorse",
+      "comando": "df, du, free, uname",
+      "titolo": "misurare disco e memoria",
+      "esercizi": [
+        {
+          "id": "l07-ri-1",
+          "tipo": "terminale",
+          "testo": "Guarda lo spazio libero del filesystem in formato leggibile.",
+          "sistema": true,
+          "soluzione": "df -h",
+          "verifica": { "stampa": "Mounted on", "usa": ["df"] },
+          "hint": ["df con l'opzione h.", "df -h"],
+          "spiegazione": "`df -h` parte dal filesystem montato e mostra quanto resta disponibile. E' il primo comando davanti a `No space left on device`."
+        },
+        {
+          "id": "l07-ri-2",
+          "tipo": "terminale",
+          "testo": "Misura in formato leggibile quanto occupa la cartella `dati`.",
+          "sistema": true,
+          "filesystem": { "/home/tu/dati/a.csv": "quota,velocita\n1000,42\n", "/home/tu/dati/b.csv": "quota,velocita\n2000,51\n" },
+          "soluzione": "du -sh dati",
+          "verifica": { "stampa": "dati", "usa": ["du"] },
+          "hint": ["s riassume, h rende leggibile.", "du -sh dati"],
+          "spiegazione": "`du` somma i file sotto il percorso indicato. Qui la cartella e' piccola, ma lo stesso gesto individua una directory di output che cresce per giorni."
+        },
+        {
+          "id": "l07-ri-3",
+          "tipo": "terminale",
+          "testo": "Controlla RAM e swap in formato leggibile.",
+          "sistema": true,
+          "soluzione": "free -h",
+          "verifica": { "stampa": "Swap:", "usa": ["free"] },
+          "hint": ["Il comando e' free con -h.", "free -h"],
+          "spiegazione": "Disco e RAM sono risorse diverse. `free` mostra anche lo swap, cioe' disco usato come memoria quando la RAM non basta."
+        },
+        {
+          "id": "l07-ri-4",
+          "tipo": "terminale",
+          "testo": "Raccogli le informazioni complete su kernel e architettura, utili per un ticket tecnico.",
+          "sistema": true,
+          "soluzione": "uname -a",
+          "verifica": { "stampa": "x86_64", "usa": ["uname"] },
+          "hint": ["L'opzione a mostra tutto.", "uname -a"],
+          "spiegazione": "Un bug che dipende da kernel o architettura non si diagnostica a memoria: `uname -a` produce esattamente il contesto da allegare."
+        },
+        {
+          "id": "l07-ri-5",
+          "tipo": "predict",
+          "testo": "Un programma risponde `No space left on device`. Qual e' il primo comando?",
+          "opzioni": ["df -h", "free -h", "kill -9", "uname -a"],
+          "risposta": "df -h",
+          "spiegazione": "L'errore parla di un dispositivo, cioe' del filesystem. `df -h` dice subito quale filesystem e' pieno e quanto spazio resta."
+        },
+        {
+          "id": "l07-ri-6",
+          "tipo": "predict",
+          "testo": "`df -h` dice che il disco e' pieno. Quale comando aiuta a trovare quale cartella sta occupando spazio?",
+          "opzioni": ["du -sh CARTELLA", "ps aux", "apt update", "gunzip"],
+          "risposta": "du -sh CARTELLA",
+          "spiegazione": "`df` localizza il filesystem pieno; `du` misura una directory. Di solito si parte dalla propria cartella di output, non si cancella alla cieca."
+        },
+        {
+          "id": "l07-ri-7",
+          "tipo": "predict",
+          "testo": "Il computer e' lentissimo e `free -h` mostra swap usato. Cosa suggerisce prima di tutto?",
+          "opzioni": ["che la pressione di memoria puo' aver spostato dati su disco", "che il filesystem e' certamente pieno", "che tar ha corrotto i file", "che apt deve aggiornare i repository"],
+          "risposta": "che la pressione di memoria puo' aver spostato dati su disco",
+          "spiegazione": "Lo swap e' molto piu' lento della RAM. Cancellare file non libera RAM: occorre ridurre il carico, chiudere processi inutili o chiedere piu' memoria."
+        },
+        {
+          "id": "l07-ri-8",
+          "tipo": "predict",
+          "testo": "Perche' `du -sh dati` e `df -h` possono raccontare numeri apparentemente diversi?",
+          "opzioni": ["du misura una cartella; df misura l'intero filesystem che la contiene", "uno misura RAM e l'altro CPU", "df mostra solo file compressi", "du funziona solo su archivi tar"],
+          "risposta": "du misura una cartella; df misura l'intero filesystem che la contiene",
+          "spiegazione": "Le domande sono diverse e complementari: `df` dice quanto resta sul volume, `du` chi sta consumando spazio dentro una porzione dell'albero."
+        }
+      ]
+    }
+  ]
+}

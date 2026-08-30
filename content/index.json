@@ -368,9 +368,9 @@
     },
     {
       "id": "l07",
-      "file": "",
+      "file": "l07-archivi-pacchetti-spazio.json",
       "titolo": "Archivi, pacchetti e spazio",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l08",

@@ -13,6 +13,7 @@ import { AMBIENTI, AMBIENTI_CONDA, statoAmbienti } from "../js/ambienti.js";
 import { comandiPowerShell } from "../js/powershell.js";
 import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
 import { PROCESSI, PROCESSI_PS, statoProcessi } from "../js/processi.js";
+import { SISTEMA, statoSistema } from "../js/sistema.js";
 
 let fatti = 0;
 const casi = [];
@@ -443,6 +444,40 @@ caso("pkill rimuove anche i job che ha terminato", () => {
   esegui(sh, "python lungo.py &");
   esegui(sh, "pkill python");
   assert.equal(esegui(sh, "jobs").out, "");
+});
+
+// ---------- archivi, pacchetti e risorse ----------
+
+const shellSistema = (iniziale = {}, scenario) => {
+  const sh = creaShell(iniziale, { comandi: { ...POSIX, ...SISTEMA } });
+  statoSistema(sh, scenario);
+  return sh;
+};
+
+caso("tar crea, elenca ed estrae un archivio senza perdere i file", () => {
+  const sh = shellSistema({ "/home/tu/dati/a.csv": "quota,1000\n", "/home/tu/dati/b.csv": "quota,2000\n" });
+  assert.equal(esegui(sh, "tar -czf dati.tar.gz dati").errore, null);
+  assert.match(esegui(sh, "tar -tzf dati.tar.gz").out, /dati\/a\.csv/);
+  esegui(sh, "rm -r dati");
+  assert.equal(esegui(sh, "tar -xzf dati.tar.gz").errore, null);
+  assert.equal(V.leggi(sh.fs, "dati/a.csv"), "quota,1000\n");
+});
+
+caso("gzip sostituisce il file e gunzip lo ripristina", () => {
+  const sh = shellSistema({ "/home/tu/log.txt": "misura\n" });
+  esegui(sh, "gzip log.txt");
+  assert.equal(V.esiste(sh.fs, "log.txt"), false);
+  assert.equal(V.esiste(sh.fs, "log.txt.gz"), true);
+  esegui(sh, "gunzip log.txt.gz");
+  assert.equal(V.leggi(sh.fs, "log.txt"), "misura\n");
+});
+
+caso("apt install e remove cambiano la lista dei pacchetti", () => {
+  const sh = shellSistema();
+  assert.match(esegui(sh, "apt install ripgrep").out, /Installato ripgrep/);
+  assert.match(esegui(sh, "apt list --installed").out, /ripgrep/);
+  assert.match(esegui(sh, "apt remove ripgrep").out, /Rimosso ripgrep/);
+  assert.doesNotMatch(esegui(sh, "apt list --installed").out, /ripgrep/);
 });
 
 // ---------- verifica degli esercizi ----------
@@ -900,9 +935,15 @@ for (const meta of indice.moduli) {
             ...(comandi ?? POSIX),
             ...(es.shell === "powershell" ? PROCESSI_PS : PROCESSI),
           };
+        if (es.sistema)
+          comandi = {
+            ...(comandi ?? POSIX),
+            ...SISTEMA,
+          };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
+        if (es.sistema) statoSistema(sh, es.sistema === true ? undefined : es.sistema);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(

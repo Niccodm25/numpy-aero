@@ -8,6 +8,7 @@ import * as A from "./ambienti.js";
 import * as PS from "./powershell.js";
 import * as H from "./html.js";
 import * as PR from "./processi.js";
+import * as SI from "./sistema.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 
@@ -299,9 +300,15 @@ function montaTerminale(zona, es) {
       ...(comandi ?? SH.POSIX),
       ...(es.shell === "powershell" ? PR.PROCESSI_PS : PR.PROCESSI),
     };
+  if (es.sistema)
+    comandi = {
+      ...(comandi ?? SH.POSIX),
+      ...SI.SISTEMA,
+    };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
+  if (es.sistema) SI.statoSistema(sh, es.sistema === true ? undefined : es.sistema);
   const trascrizione = [];
 
   zona.innerHTML = `
