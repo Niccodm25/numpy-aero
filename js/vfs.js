@@ -34,6 +34,7 @@ export function crea(iniziale = {}) {
       const n = fs.nodi.get(normalizza(fs, percorso));
       if (contenuto.modo !== undefined) n.modo = contenuto.modo;
       if (contenuto.proprietario !== undefined) n.proprietario = contenuto.proprietario;
+      if (contenuto.gruppo !== undefined) n.gruppo = contenuto.gruppo;
     } else {
       scrivi(fs, percorso, contenuto);
     }
@@ -137,20 +138,22 @@ export function scrivi(fs, p, contenuto) {
     // ed e' il motivo per cui un file reso eseguibile resta tale.
     modo: vecchio?.modo ?? MODO_FILE,
     proprietario: vecchio?.proprietario ?? fs.utente ?? UTENTE,
+    gruppo: vecchio?.gruppo ?? vecchio?.proprietario ?? fs.utente ?? UTENTE,
   });
 }
 
 /**
- * Il permesso richiesto e' concesso? Si guarda la terna del proprietario se il
- * file e' tuo, altrimenti quella degli altri. Niente gruppi: sarebbero una terza
- * terna e nessuna domanda in piu' a cui rispondere.
+ * Il permesso richiesto e' concesso? Si guarda la terna del proprietario, poi
+ * quella del gruppo se l'utente ne fa parte, altrimenti quella degli altri.
  */
 export function puoi(fs, percorso, quale, utente = fs.utente ?? UTENTE) {
   const n = fs.nodi.get(normalizza(fs, percorso));
   if (!n) return false;
   if (utente === "root") return true; // root passa sempre, ed e' tutto il senso di sudo
   const modo = n.modo ?? (n.tipo === "dir" ? MODO_DIR : MODO_FILE);
-  const terna = (n.proprietario ?? UTENTE) === utente ? (modo >> 6) & 7 : modo & 7;
+  const gruppo = n.gruppo ?? n.proprietario ?? UTENTE;
+  const nelGruppo = fs.gruppiUtente?.[utente]?.includes(gruppo) ?? false;
+  const terna = (n.proprietario ?? UTENTE) === utente ? (modo >> 6) & 7 : nelGruppo ? (modo >> 3) & 7 : modo & 7;
   const bit = { r: 4, w: 2, x: 1 }[quale];
   return (terna & bit) !== 0;
 }
@@ -159,7 +162,11 @@ export function puoi(fs, percorso, quale, utente = fs.utente ?? UTENTE) {
 export function permessiTesto(n) {
   const modo = n.modo ?? (n.tipo === "dir" ? MODO_DIR : MODO_FILE);
   const terna = (t) => (t & 4 ? "r" : "-") + (t & 2 ? "w" : "-") + (t & 1 ? "x" : "-");
-  return terna((modo >> 6) & 7) + terna((modo >> 3) & 7) + terna(modo & 7);
+  const lettere = (terna((modo >> 6) & 7) + terna((modo >> 3) & 7) + terna(modo & 7)).split("");
+  if (modo & 0o4000) lettere[2] = lettere[2] === "x" ? "s" : "S";
+  if (modo & 0o2000) lettere[5] = lettere[5] === "x" ? "s" : "S";
+  if (modo & 0o1000) lettere[8] = lettere[8] === "x" ? "t" : "T";
+  return lettere.join("");
 }
 
 export function aggiungi(fs, p, contenuto) {
@@ -181,7 +188,7 @@ export function creaDir(fs, p, ricorsivo = false) {
     if (!ricorsivo) throw new ErroreFs(`${dir}: directory non esistente`);
     creaDir(fs, dir, true);
   }
-  fs.nodi.set(abs, { tipo: "dir", modo: MODO_DIR, proprietario: fs.utente ?? UTENTE });
+  fs.nodi.set(abs, { tipo: "dir", modo: MODO_DIR, proprietario: fs.utente ?? UTENTE, gruppo: fs.utente ?? UTENTE });
 }
 
 /** I figli diretti di una cartella, ordinati. Solo i nomi, non i percorsi. */

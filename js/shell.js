@@ -549,6 +549,25 @@ export const POSIX = {
     return "";
   },
 
+  chgrp(sh, args) {
+    const { resto } = opzioni(args);
+    const [gruppo, ...file] = resto;
+    if (!gruppo || !file.length) throw new V.ErroreFs("servono il gruppo e un file");
+    if (sh.gruppi && !sh.gruppi[gruppo]) throw new V.ErroreFs(`gruppo non esistente: ${gruppo}`);
+    const utente = sh.fs.utente ?? "tu";
+    const appartiene = sh.fs.gruppiUtente?.[utente]?.includes(gruppo) ?? false;
+    if (utente !== "root" && !appartiene)
+      throw new V.ErroreFs("operazione non permessa: non fai parte di quel gruppo");
+    for (const f of file) {
+      const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, f));
+      if (!nodo) throw new V.ErroreFs(`${f}: file o directory non esistente`);
+      if (utente !== "root" && (nodo.proprietario ?? "tu") !== utente)
+        throw new V.ErroreFs(`${f}: operazione non permessa`);
+      nodo.gruppo = gruppo;
+    }
+    return "";
+  },
+
   /** sudo esegue il resto della riga come root, e solo quella riga. */
   sudo(sh, args) {
     if (!args.length) throw new V.ErroreFs("manca il comando da eseguire");
@@ -582,7 +601,7 @@ const fuggi = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Da un modo esistente e una specifica (755, +x, u+w, go-r) al modo nuovo. */
 function nuovoModo(modo, spec) {
-  if (/^[0-7]{3}$/.test(spec)) return parseInt(spec, 8);
+  if (/^[0-7]{3,4}$/.test(spec)) return parseInt(spec, 8);
   const m = spec.match(/^([ugoa]*)([+-=])([rwx]+)$/);
   if (!m) throw new V.ErroreFs(`permessi non validi: ${spec}`);
   const [, chi, segno, quali] = m;

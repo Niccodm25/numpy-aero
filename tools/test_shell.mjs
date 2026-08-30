@@ -14,6 +14,7 @@ import { comandiPowerShell } from "../js/powershell.js";
 import { analizza, conTag, testoDi, verificaHtml } from "../js/html.js";
 import { PROCESSI, PROCESSI_PS, statoProcessi } from "../js/processi.js";
 import { SISTEMA, statoSistema } from "../js/sistema.js";
+import { UTENTI, statoUtenti } from "../js/utenti.js";
 
 let fatti = 0;
 const casi = [];
@@ -497,6 +498,40 @@ caso("apt install e remove cambiano la lista dei pacchetti", () => {
   assert.doesNotMatch(esegui(sh, "apt list --installed").out, /ripgrep/);
 });
 
+// ---------- utenti, gruppi e permessi speciali ----------
+
+const shellUtenti = (iniziale = {}, scenario) => {
+  const sh = creaShell(iniziale, { comandi: { ...POSIX, ...UTENTI } });
+  statoUtenti(sh, scenario);
+  return sh;
+};
+
+caso("useradd, usermod e groups aggiornano il modello degli account", () => {
+  const sh = shellUtenti({}, { gruppi: { ricerca: [] } });
+  assert.equal(esegui(sh, "sudo useradd -m anna").errore, null);
+  assert.equal(V.eDir(sh.fs, "/home/anna"), true);
+  assert.equal(esegui(sh, "sudo usermod -aG ricerca anna").errore, null);
+  assert.match(esegui(sh, "groups anna").out, /anna ricerca/);
+});
+
+caso("chgrp e la terna di gruppo concedono lettura al gruppo giusto", () => {
+  const sh = shellUtenti({ "/home/tu/dati.txt": { contenuto: "misura\n", modo: 0o640 } }, {
+    utenti: { anna: { uid: 1001, gruppo: "ricerca" } },
+    gruppi: { ricerca: ["anna", "tu"] },
+  });
+  assert.equal(esegui(sh, "chgrp ricerca dati.txt").errore, null);
+  sh.fs.utente = "anna";
+  assert.equal(esegui(sh, "cat /home/tu/dati.txt").out, "misura");
+});
+
+caso("chmod a quattro cifre mostra setuid, setgid e sticky bit", () => {
+  const sh = shellUtenti({ "/home/tu/strumento": "x", "/home/tu/condivisa": null });
+  esegui(sh, "chmod 4755 strumento");
+  esegui(sh, "chmod 1777 condivisa");
+  assert.match(esegui(sh, "ls -l").out, /-rwsr-xr-x/);
+  assert.match(esegui(sh, "ls -l").out, /drwxrwxrwt/);
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -957,10 +992,16 @@ for (const meta of indice.moduli) {
             ...(comandi ?? POSIX),
             ...SISTEMA,
           };
+        if (es.utenti)
+          comandi = {
+            ...(comandi ?? POSIX),
+            ...UTENTI,
+          };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
         if (es.sistema) statoSistema(sh, es.sistema === true ? undefined : es.sistema);
+        if (es.utenti) statoUtenti(sh, es.utenti === true ? undefined : es.utenti);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(

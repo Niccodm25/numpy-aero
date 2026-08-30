@@ -380,9 +380,9 @@
     },
     {
       "id": "l09",
-      "file": "",
+      "file": "l09-utenti-gruppi.json",
       "titolo": "Utenti, gruppi e permessi speciali",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l10",
