@@ -404,8 +404,8 @@
     },
     {
       "id": "l01-file",
-      "comando": "mkdir, touch, cat, echo, rm",
-      "titolo": "creare, leggere, cancellare",
+      "comando": "mkdir, touch, rm",
+      "titolo": "creare e cancellare",
       "esercizi": [
         {
           "id": "l01-fi-1",
@@ -489,6 +489,140 @@
           ],
           "spiegazione": "`touch` crea un file vuoto se non esiste. Su un file esistente non lo tocca: aggiorna solo la data di modifica, ed e' da li' che viene il nome."
         },
+        {
+          "id": "l01-fi-8",
+          "tipo": "terminale",
+          "testo": "Cancella il file `volo/note.txt` e verifica che sia sparito.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "rm volo/note.txt\nls volo",
+          "verifica": {
+            "nonEsiste": [
+              "volo/note.txt"
+            ],
+            "usa": [
+              "rm"
+            ]
+          },
+          "hint": [
+            "Due lettere.",
+            "rm volo/note.txt"
+          ],
+          "spiegazione": "`rm` cancella subito e definitivamente: non c'e' nessun cestino da cui recuperare. Qui nel simulatore si puo' sbagliare quanto si vuole — ed e' il senso di questo terminale.\n\nLa regola che vale la pena: `ls` prima di `rm`, sullo stesso percorso. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello."
+        },
+        {
+          "id": "l01-fi-9",
+          "tipo": "terminale",
+          "testo": "`volo` esiste gia'. Prova a ricrearla con `mkdir -p` e guarda cosa succede ai file che ci sono dentro.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "mkdir -p volo\nls volo",
+          "verifica": {
+            "dir": [
+              "volo"
+            ],
+            "esiste": [
+              "volo/note.txt"
+            ],
+            "usa": [
+              "mkdir"
+            ],
+            "stampa": "note.txt"
+          },
+          "hint": [
+            "mkdir -p non protesta se la cartella c'e' gia'.",
+            "mkdir -p volo, poi ls volo"
+          ],
+          "spiegazione": "`mkdir volo` da solo darebbe errore; con `-p` non protesta e **non tocca niente** di quello che c'e' dentro. E' la ragione per cui negli script si scrive sempre `mkdir -p`: la riga funziona sia la prima volta che tutte le altre."
+        },
+        {
+          "id": "l01-fi-10",
+          "tipo": "terminale",
+          "testo": "Crea due file vuoti in un colpo solo: `volo/a.txt` e `volo/b.txt`.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "touch volo/a.txt volo/b.txt\nls volo",
+          "verifica": {
+            "esiste": [
+              "volo/a.txt",
+              "volo/b.txt"
+            ],
+            "usa": [
+              "touch"
+            ]
+          },
+          "hint": [
+            "touch accetta piu' nomi di seguito.",
+            "touch volo/a.txt volo/b.txt"
+          ],
+          "spiegazione": "Quasi tutti i comandi che agiscono su un file ne accettano molti: si elencano separati da uno spazio. Vale per `touch`, `rm`, `cat`, `cp` - ed e' il motivo per cui gli spazi nei nomi dei file danno tanti problemi su Linux."
+        },
+        {
+          "id": "l01-fi-11",
+          "tipo": "terminale",
+          "testo": "Cancella l'intera cartella `volo/dati`, con dentro tutto quello che contiene.",
+          "difficolta": 3,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "rm -r volo/dati\nls volo",
+          "verifica": {
+            "nonEsiste": [
+              "volo/dati",
+              "volo/dati/prova1.csv"
+            ],
+            "usa": [
+              "rm"
+            ]
+          },
+          "hint": [
+            "Su una cartella rm da solo non basta.",
+            "rm -r volo/dati"
+          ],
+          "spiegazione": "`-r` sta per *ricorsivo*: scende e cancella tutto. Non c'e' conferma e non c'e' cestino, e i due file dentro sono spariti insieme alla cartella."
+        },
+        {
+          "id": "l01-fi-12",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "`volo/dati` e' una cartella. Cosa risponde `rm volo/dati`, senza opzioni?",
+          "opzioni": [
+            "un errore: e' una directory",
+            "la cancella, come farebbe su un file",
+            "la cancella solo se e' vuota",
+            "chiede conferma prima di procedere"
+          ],
+          "risposta": "un errore: e' una directory",
+          "spiegazione": "`rm` da solo lavora sui file. Su una cartella si ferma e dice `e' una directory`: serve `-r`. E' una protezione minima, e l'unica che `rm` ti offre - con `-r` non chiede piu' niente a nessuno."
+        }
+      ]
+    },
+    {
+      "id": "l01-scrivi",
+      "comando": "cat, echo, > e >>",
+      "titolo": "leggere e scrivere",
+      "esercizi": [
         {
           "id": "l01-fi-4",
           "tipo": "terminale",
@@ -580,9 +714,10 @@
           "spiegazione": "`>` **sovrascrive** il file, `>>` aggiunge in fondo. Un carattere, e il primo cancella tutto quello che c'era senza chiedere conferma. Su un file di dati raccolti in settimane, e' un errore da cui non si torna."
         },
         {
-          "id": "l01-fi-8",
+          "id": "l01-ec-5",
           "tipo": "terminale",
-          "testo": "Cancella il file `volo/note.txt` e verifica che sia sparito.",
+          "testo": "Leggi i due CSV in `volo/dati` con un comando solo, uno dietro l'altro.",
+          "difficolta": 2,
           "filesystem": {
             "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
@@ -590,20 +725,90 @@
             "/home/tu/volo/.conf": "sep=,\n",
             "/home/tu/archivio": null
           },
-          "soluzione": "rm volo/note.txt\nls volo",
+          "soluzione": "cat volo/dati/prova1.csv volo/dati/prova2.csv",
           "verifica": {
-            "nonEsiste": [
-              "volo/note.txt"
-            ],
             "usa": [
-              "rm"
+              "cat"
+            ],
+            "stampa": "3000,0.40"
+          },
+          "hint": [
+            "cat accetta piu' file.",
+            "cat volo/dati/prova1.csv volo/dati/prova2.csv"
+          ],
+          "spiegazione": "Il nome viene da *concatenate*: attaccare. Stampa i file uno dietro l'altro senza separarli in alcun modo - le intestazioni dei due CSV finiscono in mezzo ai dati, ed e' esattamente il problema di unire due CSV con `cat`."
+        },
+        {
+          "id": "l01-ec-6",
+          "tipo": "terminale",
+          "testo": "Salva l'elenco di `volo` in un file `elenco.txt` nella tua home, poi rileggilo.",
+          "difficolta": 2,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "ls volo > elenco.txt\ncat elenco.txt",
+          "verifica": {
+            "esiste": [
+              "elenco.txt"
+            ],
+            "contiene": {
+              "elenco.txt": "note.txt"
+            },
+            "usa": [
+              "ls"
             ]
           },
           "hint": [
-            "Due lettere.",
-            "rm volo/note.txt"
+            "La freccia funziona con qualunque comando che stampa.",
+            "ls volo > elenco.txt"
           ],
-          "spiegazione": "`rm` cancella subito e definitivamente: non c'e' nessun cestino da cui recuperare. Qui nel simulatore si puo' sbagliare quanto si vuole — ed e' il senso di questo terminale.\n\nLa regola che vale la pena: `ls` prima di `rm`, sullo stesso percorso. Se `ls` mostra quello che ti aspetti, `rm` cancellera' quello."
+          "spiegazione": "`>` non appartiene a `echo`: e' della shell, e funziona con qualunque comando. `ls` non sa nemmeno di stare scrivendo su un file - crede di stampare a schermo, ed e' la stessa idea che rende possibile la pipe."
+        },
+        {
+          "id": "l01-ec-7",
+          "tipo": "terminale",
+          "testo": "Scrivi `prima` in `stato.txt`, poi scrivi `dopo` nello stesso file usando di nuovo `>`. Guarda cosa e' rimasto.",
+          "difficolta": 3,
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          },
+          "soluzione": "echo prima > stato.txt\necho dopo > stato.txt\ncat stato.txt",
+          "verifica": {
+            "contenuto": {
+              "stato.txt": "dopo"
+            },
+            "usa": [
+              "echo"
+            ],
+            "stampa": "dopo"
+          },
+          "hint": [
+            "Usa > tutte e due le volte.",
+            "echo prima > stato.txt, poi echo dopo > stato.txt"
+          ],
+          "spiegazione": "`prima` non c'e' piu'. `>` **sostituisce** il file: non ci scrive dentro, lo riscrive da zero, senza chiedere e senza avvisare che esisteva. Con `>>` avresti avuto due righe."
+        },
+        {
+          "id": "l01-ec-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`log.txt` contiene tre mesi di misure. Digiti `echo prova > log.txt`. Cosa resta nel file?",
+          "opzioni": [
+            "solo la riga `prova`",
+            "le misure, con `prova` aggiunta in fondo",
+            "le misure, con `prova` aggiunta in cima",
+            "un errore: il file esiste gia'"
+          ],
+          "risposta": "solo la riga `prova`",
+          "spiegazione": "Tre mesi di misure cancellati da un carattere sbagliato. Non c'e' conferma, non c'e' errore, non c'e' modo di tornare indietro: `>` azzera il file prima ancora che il comando a sinistra venga eseguito. Quando il file conta, `>>`."
         }
       ]
     },
