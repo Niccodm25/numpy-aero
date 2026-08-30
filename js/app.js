@@ -226,7 +226,7 @@ async function vistaRamo(id) {
          ${r.prossimi.map((t) => `<div class="card muto">${t}</div>`).join("")}`
       : ""}`;
 
-  T.montaTendine(indice, stati, modulo, r.moduli);
+  T.montaTendine(indice, stati, modulo, r.id);
 }
 
 async function vistaModulo(id) {

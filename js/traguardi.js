@@ -137,9 +137,9 @@ function elencoHtml(dati, valutati) {
  * @param {object} indice          content/index.json gia' caricato
  * @param {object} stati           stato per esercizio
  * @param {(id:string)=>Promise}   caricaModulo  per contare gli esercizi
- * @param {string[]} moduliDelRamo  si mostrano solo i traguardi che li toccano
+ * @param {string} ramo  id del ramo: si mostrano solo i suoi traguardi
  */
-export async function montaTendine(indice, stati, caricaModulo, moduliDelRamo) {
+export async function montaTendine(indice, stati, caricaModulo, ramo) {
   let dati;
   try {
     dati = await carica();
@@ -147,11 +147,9 @@ export async function montaTendine(indice, stati, caricaModulo, moduliDelRamo) {
     return; // senza traguardi l'app funziona lo stesso
   }
 
-  // Un traguardo si vede nel ramo che lo porta: in home sarebbero venticinque
-  // linguette senza contesto, dentro il ramo sono la mappa di quel ramo.
-  const visibili = dati.traguardi.filter((t) =>
-    t.richiede.some((id) => moduliDelRamo.includes(id))
-  );
+  // Il ramo e' dichiarato dal traguardo, non dedotto dai moduli che richiede:
+  // "scrivere uno strumento" tocca anche l05, ma resta un traguardo di Python.
+  const visibili = dati.traguardi.filter((t) => t.ramo === ramo);
   if (!visibili.length) {
     document.getElementById("tendine")?.remove();
     return;

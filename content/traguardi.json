@@ -9,14 +9,22 @@
       "titolo": "Leggere il codice degli altri",
       "livello": "Utente",
       "sottotitolo": "Capire uno script che trovi in un repository o in un articolo, invece di eseguirlo e sperare.",
-      "richiede": ["p01", "p02", "p03", "p04", "p05", "p06"],
+      "richiede": [
+        "p01",
+        "p02",
+        "p03",
+        "p04",
+        "p05",
+        "p06"
+      ],
       "puoi": [
         "seguire uno script di analisi riga per riga e dire cosa fa",
         "leggere un messaggio di errore fino in fondo e capire quale riga lo ha causato",
         "modificare un parametro o un percorso senza rompere il resto",
         "riconoscere quando un risultato strano viene dai tipi e non dalla fisica"
       ],
-      "md": "È il primo gradino, e il più sottovalutato: la maggior parte del codice che userai in tesi non l'hai scritto tu.\n\n**Fermarti qui ha senso se** ti serve solo far girare quello che ti passano."
+      "md": "È il primo gradino, e il più sottovalutato: la maggior parte del codice che userai in tesi non l'hai scritto tu.\n\n**Fermarti qui ha senso se** ti serve solo far girare quello che ti passano.",
+      "ramo": "python"
     },
     {
       "id": "t-ambiente",
@@ -25,14 +33,21 @@
       "titolo": "Far girare il codice di chiunque",
       "livello": "Utente",
       "sottotitolo": "Le istruzioni di installazione di un pacchetto scientifico smettono di essere una lotteria.",
-      "richiede": ["b01", "b02", "b03", "b04", "b05"],
+      "richiede": [
+        "b01",
+        "b02",
+        "b03",
+        "b04",
+        "b05"
+      ],
       "puoi": [
         "creare un ambiente isolato per ogni progetto, e sapere perché serve",
         "ricostruire l'ambiente di un collega da un requirements.txt",
         "capire un ModuleNotFoundError su un pacchetto che 'avevi installato'",
         "decidere fra pip e conda con un criterio invece che per abitudine"
       ],
-      "md": "Il novanta per cento dei blocchi che sembrano problemi di programmazione sono problemi di ambiente: il PATH, l'interprete sbagliato, un pacchetto installato altrove.\n\nÈ il traguardo che fa risparmiare più ore in assoluto, e costa cinque moduli."
+      "md": "Il novanta per cento dei blocchi che sembrano problemi di programmazione sono problemi di ambiente: il PATH, l'interprete sbagliato, un pacchetto installato altrove.\n\nÈ il traguardo che fa risparmiare più ore in assoluto, e costa cinque moduli.",
+      "ramo": "ambienti"
     },
     {
       "id": "t-campagna",
@@ -41,14 +56,25 @@
       "titolo": "Ridurre una campagna di misure",
       "livello": "Autonomo",
       "sottotitolo": "Dai file grezzi del banco o del volo ai numeri che finiscono nella relazione.",
-      "richiede": ["m01", "m02", "m03", "m04", "m05", "m06", "m09", "m11", "c03"],
+      "richiede": [
+        "m01",
+        "m02",
+        "m03",
+        "m04",
+        "m05",
+        "m06",
+        "m09",
+        "m11",
+        "c03"
+      ],
       "puoi": [
         "ripulire migliaia di righe di acquisizione dai valori sentinella",
         "calcolare medie, deviazioni, percentili e inviluppi su matrici di dati",
         "riconoscere quando un risultato è rumore numerico e non un fenomeno",
         "rifare la stessa riduzione su una campagna nuova in un minuto"
       ],
-      "md": "**Manca ancora**, per una relazione completa: i grafici. Matplotlib non è nel percorso — è il primo modulo del ramo *Librerie* che andrà aggiunto."
+      "md": "**Manca ancora**, per una relazione completa: i grafici. Matplotlib non è nel percorso — è il primo modulo del ramo *Librerie* che andrà aggiunto.",
+      "ramo": "libpy"
     },
     {
       "id": "t-traiettoria",
@@ -57,14 +83,21 @@
       "titolo": "Simulare una traiettoria",
       "livello": "Autonomo",
       "sottotitolo": "Lancio, rientro, stabilità: il modello lo scrivi tu, non lo compili in un foglio.",
-      "richiede": ["m07", "m08", "m10", "c01", "c02"],
+      "richiede": [
+        "m07",
+        "m08",
+        "m10",
+        "c01",
+        "c02"
+      ],
       "puoi": [
         "integrare un moto a più gradi di libertà passo per passo",
         "gestire matrici, autovalori e modi di un velivolo linearizzato",
         "fare una campagna Monte Carlo su dispersioni di lancio",
         "verificare da solo se un risultato è credibile, con controlli di coerenza"
       ],
-      "md": "Qui la macchina smette di essere una calcolatrice e diventa un banco di prova numerico: cambi una condizione iniziale e vedi cosa succede a mille traiettorie."
+      "md": "Qui la macchina smette di essere una calcolatrice e diventa un banco di prova numerico: cambi una condizione iniziale e vedi cosa succede a mille traiettorie.",
+      "ramo": "libpy"
     },
     {
       "id": "t-strumento",
@@ -73,16 +106,21 @@
       "titolo": "Scrivere uno strumento riutilizzabile",
       "livello": "Autonomo",
       "sottotitolo": "Non più uno script per una volta sola: qualcosa che usi anche il mese prossimo, e che può usare un altro.",
-      "richiede": ["p05", "p07", "p08", "l05"],
+      "richiede": [
+        "p05",
+        "p07",
+        "p08",
+        "l05"
+      ],
       "puoi": [
         "organizzare il codice in funzioni e moduli invece che in un blocco unico",
         "leggere e scrivere file di dati e di configurazione",
         "prendere parametri dalla riga di comando invece di modificare il sorgente",
         "incatenare i pezzi con uno script bash che si ferma quando qualcosa fallisce"
       ],
-      "md": "**Manca ancora**: il versionamento. Senza git, uno strumento vive in una cartella che nessun altro vede — è la lacuna più urgente di tutto il percorso."
+      "md": "**Manca ancora**: il versionamento. Senza git, uno strumento vive in una cartella che nessun altro vede — è la lacuna più urgente di tutto il percorso.",
+      "ramo": "python"
     },
-
     {
       "id": "lx-terminale",
       "gruppo": "Linux",
@@ -90,7 +128,9 @@
       "titolo": "Muoverti su una macchina senza schermo",
       "livello": "Utente",
       "sottotitolo": "Il computer del banco prova, del drone o del Raspberry non ha desktop: c'è un prompt, e devi sapere dove sei.",
-      "richiede": ["l01"],
+      "richiede": [
+        "l01"
+      ],
       "puoi": [
         "sapere sempre in che cartella sei e cosa contiene (`pwd`, `ls -l`, `ls -a`)",
         "raggiungere qualunque punto del disco con percorsi assoluti e relativi",
@@ -98,7 +138,8 @@
         "leggere un file e scrivercene uno nuovo con `cat`, `echo` e le due frecce",
         "riconoscere prima di premere Invio la differenza fra `>` e `>>`, e fra `rm x` e `rm -r x`"
       ],
-      "md": "È il minimo per non essere bloccato davanti a una macchina che non ha altro che un terminale — cioè quasi tutto l'hardware che tocca dati in un laboratorio.\n\nÈ anche il traguardo in cui si prendono le abitudini che dopo non si perdono: `ls` prima di `rm`, sullo stesso percorso.\n\n**Fermarti qui ha senso se** ti collegherai a una macchina solo per copiare via dei file."
+      "md": "È il minimo per non essere bloccato davanti a una macchina che non ha altro che un terminale — cioè quasi tutto l'hardware che tocca dati in un laboratorio.\n\nÈ anche il traguardo in cui si prendono le abitudini che dopo non si perdono: `ls` prima di `rm`, sullo stesso percorso.\n\n**Fermarti qui ha senso se** ti collegherai a una macchina solo per copiare via dei file.",
+      "ramo": "linux"
     },
     {
       "id": "lx-log",
@@ -107,7 +148,9 @@
       "titolo": "Trovare l'errore in un log di acquisizione",
       "livello": "Utente",
       "sottotitolo": "Diecimila righe, e la riga che spiega perché la prova è andata storta è una sola.",
-      "richiede": ["l02"],
+      "richiede": [
+        "l02"
+      ],
       "puoi": [
         "isolare le righe che contano con `grep`, anche ignorando maiuscole o invertendo il criterio",
         "ritrovare un file che sai di avere, ovunque sia finito, con `find`",
@@ -115,7 +158,8 @@
         "fare la classifica dei codici di errore di una campagna con `sort | uniq -c | sort -n -r`",
         "comporre più comandi in una pipe e salvare il risultato in un file"
       ],
-      "md": "È il traguardo che cambia il rapporto con i dati grezzi: smetti di aprire i file e cominci a interrogarli.\n\nLo stesso schema vale su qualunque log — acquisizione, sistema, simulazione — e non richiede di scrivere una riga di Python."
+      "md": "È il traguardo che cambia il rapporto con i dati grezzi: smetti di aprire i file e cominci a interrogarli.\n\nLo stesso schema vale su qualunque log — acquisizione, sistema, simulazione — e non richiede di scrivere una riga di Python.",
+      "ramo": "linux"
     },
     {
       "id": "lx-wsl",
@@ -124,7 +168,9 @@
       "titolo": "Avere Linux sul portatile che usi per gli esami",
       "livello": "Utente",
       "sottotitolo": "Senza doppio avvio, senza partizioni, senza rinunciare a Office e al CAD.",
-      "richiede": ["l06"],
+      "richiede": [
+        "l06"
+      ],
       "puoi": [
         "installare e avviare una distribuzione con `wsl --install`, e ripartire pulito con `wsl --shutdown`",
         "passare i file fra i due mondi sapendo dove stanno (`/mnt/c`, `\\\\wsl$`)",
@@ -132,7 +178,8 @@
         "riconoscere l'errore `bad interpreter: /bin/bash^M` e sapere che sono le fine riga",
         "tenere separati il Python di Windows e quello di Linux senza confonderli"
       ],
-      "md": "È il modo di seguire tutto il resto del ramo Linux senza cambiare computer.\n\nLa regola che risolve metà dei problemi: **i file stanno dove gira il codice**. Progetto Linux, file in `/home`; progetto Windows, file in `C:`."
+      "md": "È il modo di seguire tutto il resto del ramo Linux senza cambiare computer.\n\nLa regola che risolve metà dei problemi: **i file stanno dove gira il codice**. Progetto Linux, file in `/home`; progetto Windows, file in `C:`.",
+      "ramo": "linux"
     },
     {
       "id": "lx-permessi",
@@ -141,7 +188,9 @@
       "titolo": "Far partire un programma che non parte",
       "livello": "Autonomo",
       "sottotitolo": "«Permission denied» smette di essere un muro e diventa una diagnosi.",
-      "richiede": ["l03"],
+      "richiede": [
+        "l03"
+      ],
       "puoi": [
         "leggere le nove lettere di `ls -l` e dire chi può fare cosa",
         "rendere eseguibile uno script, e capire perché non lo era",
@@ -149,7 +198,8 @@
         "proteggere dati grezzi da riscritture accidentali mettendoli in sola lettura",
         "sapere quando serve `sudo` — e quando invece è il sintomo di un file nel posto sbagliato"
       ],
-      "md": "Su una macchina condivisa di laboratorio, metà dei blocchi sono permessi: un file scritto da un altro utente, uno script arrivato senza il bit di esecuzione, una cartella di sistema.\n\n**Attenzione a una cosa che imparerai qui:** i permessi fermano gli sbagli, non le decisioni. `sudo chmod` rimette tutto com'era in un secondo."
+      "md": "Su una macchina condivisa di laboratorio, metà dei blocchi sono permessi: un file scritto da un altro utente, uno script arrivato senza il bit di esecuzione, una cartella di sistema.\n\n**Attenzione a una cosa che imparerai qui:** i permessi fermano gli sbagli, non le decisioni. `sudo chmod` rimette tutto com'era in un secondo.",
+      "ramo": "linux"
     },
     {
       "id": "lx-processi",
@@ -158,7 +208,9 @@
       "titolo": "Tenere sotto controllo cosa sta girando",
       "livello": "Autonomo",
       "sottotitolo": "Una simulazione impallata, un'acquisizione che mangia la macchina, un processo da lasciare andare tutta la notte.",
-      "richiede": ["l04"],
+      "richiede": [
+        "l04"
+      ],
       "puoi": [
         "vedere cosa gira e quanto consuma (`ps aux`, `top`), e trovare il tuo processo fra tutti",
         "terminare un programma bloccato, e capire la differenza fra `kill` e `kill -9`",
@@ -166,7 +218,8 @@
         "far sopravvivere un job alla chiusura del terminale con `nohup`",
         "capire perché un processo lanciato via terminale muore quando cade la connessione"
       ],
-      "md": "È il traguardo che serve la prima volta che una simulazione dura più della tua sessione al computer.\n\nDa qui in poi «l'ho lasciato girare e stamattina non c'era più» diventa un fenomeno che sai spiegare e prevenire."
+      "md": "È il traguardo che serve la prima volta che una simulazione dura più della tua sessione al computer.\n\nDa qui in poi «l'ho lasciato girare e stamattina non c'era più» diventa un fenomeno che sai spiegare e prevenire.",
+      "ramo": "linux"
     },
     {
       "id": "lx-automazione",
@@ -175,7 +228,10 @@
       "titolo": "Automatizzare la riduzione di una campagna",
       "livello": "Autonomo",
       "sottotitolo": "La stessa sequenza di comandi, su una campagna nuova, con un comando solo.",
-      "richiede": ["l05", "c04"],
+      "richiede": [
+        "l05",
+        "c04"
+      ],
       "puoi": [
         "raccogliere in uno script i comandi che oggi ridigiti a mano",
         "farlo funzionare su file diversi passandoli come argomenti (`$1`, `$#`)",
@@ -183,7 +239,8 @@
         "riconoscere il guasto silenzioso della variabile vuota — quello che con `rm -rf` cancella la radice",
         "mettere in ordine una campagna intera: conteggi, triage del log, archiviazione, protezione dei grezzi"
       ],
-      "md": "È il punto in cui il lavoro diventa **ripetibile**: la riduzione della campagna di ottobre è lo stesso script di quella di marzo, con un argomento diverso.\n\n**Fermarti qui ha senso se** usi macchine tue e non ne amministri di altri: con i primi cinque moduli sei già autonomo su qualunque banco prova o Raspberry.\n\n**Manca ancora** in bash: condizioni e cicli. Sono la parte che assomiglia a un linguaggio, e per quella conviene Python."
+      "md": "È il punto in cui il lavoro diventa **ripetibile**: la riduzione della campagna di ottobre è lo stesso script di quella di marzo, con un argomento diverso.\n\n**Fermarti qui ha senso se** usi macchine tue e non ne amministri di altri: con i primi cinque moduli sei già autonomo su qualunque banco prova o Raspberry.\n\n**Manca ancora** in bash: condizioni e cicli. Sono la parte che assomiglia a un linguaggio, e per quella conviene Python.",
+      "ramo": "linux"
     },
     {
       "id": "lx-consegna",
@@ -192,14 +249,17 @@
       "titolo": "Ricevere, installare, spedire",
       "livello": "Tecnico",
       "sottotitolo": "I dati arrivano compressi, il software si installa da un gestore, e il disco si riempie sempre di venerdì.",
-      "richiede": ["l07"],
+      "richiede": [
+        "l07"
+      ],
       "puoi": [
         "aprire e creare archivi `.tar.gz` senza cercare la sintassi ogni volta",
         "installare software con `apt` (e leggere le istruzioni scritte per `dnf` o `pacman`)",
         "capire da dove arriva un pacchetto e perché una versione è vecchia",
         "rispondere a «il job è morto» guardando `df -h` e `free -h` prima del codice"
       ],
-      "md": "Nove volte su dieci un calcolo lungo che muore di notte non ha un bug: ha finito il disco o la memoria. Questo traguardo è la differenza fra saperlo in trenta secondi e passarci un pomeriggio."
+      "md": "Nove volte su dieci un calcolo lungo che muore di notte non ha un bug: ha finito il disco o la memoria. Questo traguardo è la differenza fra saperlo in trenta secondi e passarci un pomeriggio.",
+      "ramo": "linux"
     },
     {
       "id": "lx-editor",
@@ -208,14 +268,17 @@
       "titolo": "Modificare un file su una macchina che non ha VS Code",
       "livello": "Tecnico",
       "sottotitolo": "Sul Raspberry in cima al banco non installi un editor grafico: apri quello che c'è.",
-      "richiede": ["l08"],
+      "richiede": [
+        "l08"
+      ],
       "puoi": [
         "modificare un file di configurazione con `nano` e salvarlo",
         "uscire da `vim` — e, già che ci sei, muoverti e salvare",
         "capire cos'è un link simbolico e perché mezzo sistema è tenuto insieme così",
         "sistemare un percorso sbagliato senza scaricare il file, modificarlo e ricaricarlo"
       ],
-      "md": "Sembra un traguardo minore finché non ti serve, e serve sempre: una riga di configurazione da correggere su una macchina remota, alle undici di sera, prima di una prova.\n\n`vim` si trova ovunque, anche dove non c'è altro. Bastano dieci comandi per non restarci intrappolato."
+      "md": "Sembra un traguardo minore finché non ti serve, e serve sempre: una riga di configurazione da correggere su una macchina remota, alle undici di sera, prima di una prova.\n\n`vim` si trova ovunque, anche dove non c'è altro. Bastano dieci comandi per non restarci intrappolato.",
+      "ramo": "linux"
     },
     {
       "id": "lx-condivisa",
@@ -224,14 +287,17 @@
       "titolo": "Condividere la macchina del laboratorio",
       "livello": "Tecnico",
       "sottotitolo": "Quattro persone sullo stesso computer di acquisizione, senza pestarsi i piedi né i dati.",
-      "richiede": ["l09"],
+      "richiede": [
+        "l09"
+      ],
       "puoi": [
         "creare utenti e gruppi, e dare a un gruppo l'accesso a una cartella di progetto",
         "capire perché un collega non riesce a scrivere in una cartella tua",
         "leggere `/etc/passwd` e `/etc/group` invece di indovinare",
         "spiegare cosa fanno setuid, setgid e lo sticky bit — e perché `/tmp` è fatto così"
       ],
-      "md": "È il primo traguardo davvero da amministratore: non stai più usando una macchina, la stai gestendo per altri.\n\nServe in ogni laboratorio dove il computer di acquisizione è di tutti e di nessuno."
+      "md": "È il primo traguardo davvero da amministratore: non stai più usando una macchina, la stai gestendo per altri.\n\nServe in ogni laboratorio dove il computer di acquisizione è di tutti e di nessuno.",
+      "ramo": "linux"
     },
     {
       "id": "lx-testo",
@@ -240,7 +306,9 @@
       "titolo": "Estrarre una colonna da mille file",
       "livello": "Tecnico",
       "sottotitolo": "Trasformare i dati, non solo cercarli: la seconda metà del lavoro sul testo.",
-      "richiede": ["l10"],
+      "richiede": [
+        "l10"
+      ],
       "puoi": [
         "tirare fuori una colonna da un CSV con `cut` o `awk`, senza aprire Python",
         "sostituire in massa un separatore, un'unità, un percorso sbagliato con `sed`",
@@ -248,7 +316,8 @@
         "vedere il risultato e salvarlo allo stesso tempo con `tee`",
         "preparare in tre righe di shell un file che Python poi legge senza fatica"
       ],
-      "md": "Il confine pratico è questo: se la trasformazione sta in una riga, la shell è più veloce di qualunque script; se richiede una struttura, si passa a Python.\n\nSapere dove sta il confine è metà del traguardo."
+      "md": "Il confine pratico è questo: se la trasformazione sta in una riga, la shell è più veloce di qualunque script; se richiede una struttura, si passa a Python.\n\nSapere dove sta il confine è metà del traguardo.",
+      "ramo": "linux"
     },
     {
       "id": "lx-rete",
@@ -257,7 +326,9 @@
       "titolo": "Mettere in rete un banco di misura",
       "livello": "Tecnico",
       "sottotitolo": "La macchina c'è, il cavo è attaccato, e non risponde. Da dove si comincia.",
-      "richiede": ["l11"],
+      "richiede": [
+        "l11"
+      ],
       "puoi": [
         "leggere la configurazione di rete di una macchina (`ip a`, `ip route`) e capire se è coerente",
         "distinguere «l'host non risponde» da «il nome non si risolve» da «la porta è chiusa»",
@@ -265,7 +336,8 @@
         "diagnosticare un problema DNS con `dig` invece di riavviare il router",
         "configurare un indirizzo fisso su una macchina di laboratorio che deve restare raggiungibile"
       ],
-      "md": "È il **buco strutturale** del percorso: senza rete non si arriva a un cluster, non si mette in piedi una stazione, non si comincia niente di sicurezza.\n\nUn banco di misura che pubblica i dati, un Raspberry che manda telemetria, un ricevitore che va interrogato da un altro computer: tutto passa da qui."
+      "md": "È il **buco strutturale** del percorso: senza rete non si arriva a un cluster, non si mette in piedi una stazione, non si comincia niente di sicurezza.\n\nUn banco di misura che pubblica i dati, un Raspberry che manda telemetria, un ricevitore che va interrogato da un altro computer: tutto passa da qui.",
+      "ramo": "linux"
     },
     {
       "id": "lx-cluster",
@@ -274,7 +346,11 @@
       "titolo": "Usare un cluster di calcolo",
       "livello": "Tecnico",
       "sottotitolo": "La simulazione che sul portatile impiega due settimane, altrove impiega una notte.",
-      "richiede": ["l05", "l10", "l12"],
+      "richiede": [
+        "l05",
+        "l10",
+        "l12"
+      ],
       "puoi": [
         "collegarti a una macchina remota con le chiavi, senza digitare password",
         "sistemare `~/.ssh/config` così che «il cluster» sia una parola sola",
@@ -282,7 +358,8 @@
         "lasciare un calcolo lungo dentro `tmux`, chiudere il portatile e ritrovarlo vivo",
         "diagnosticare dai log se un job è morto per il tuo codice o per la macchina"
       ],
-      "md": "È il traguardo che ti apre il calcolo pesante di una tesi: ogni cluster universitario e ogni nodo cloud si tocca esattamente così.\n\n**Per te vale più di tutto quello che viene dopo.** Se il tempo finisce, finisce qui.\n\n**Manca ancora**: il gestore di code (SLURM). `ssh` apre la porta, la coda fa entrare."
+      "md": "È il traguardo che ti apre il calcolo pesante di una tesi: ogni cluster universitario e ogni nodo cloud si tocca esattamente così.\n\n**Per te vale più di tutto quello che viene dopo.** Se il tempo finisce, finisce qui.\n\n**Manca ancora**: il gestore di code (SLURM). `ssh` apre la porta, la coda fa entrare.",
+      "ramo": "linux"
     },
     {
       "id": "lx-servizio",
@@ -291,7 +368,10 @@
       "titolo": "Un'acquisizione che gira 24 ore su 24",
       "livello": "Tecnico",
       "sottotitolo": "Un programma che parte da solo all'accensione, si riavvia dopo un blackout e lascia tracce leggibili.",
-      "richiede": ["l13", "c05"],
+      "richiede": [
+        "l13",
+        "c05"
+      ],
       "puoi": [
         "trasformare uno script in un servizio `systemd` che parte all'avvio",
         "leggere i log di sistema con `journalctl` e distinguere un guasto hardware da un errore tuo",
@@ -299,7 +379,8 @@
         "impedire che i log riempiano il disco dopo tre mesi (`logrotate`)",
         "diagnosticare un servizio che non riparte, invece di riavviare la macchina"
       ],
-      "md": "È il passaggio da «lancio un programma» a «gestisco un sistema che lavora anche quando dormo».\n\nUna stazione meteo, un banco che campiona per giorni, un ricevitore che ascolta passaggi satellitari: tutti vivono di questo."
+      "md": "È il passaggio da «lancio un programma» a «gestisco un sistema che lavora anche quando dormo».\n\nUna stazione meteo, un banco che campiona per giorni, un ricevitore che ascolta passaggi satellitari: tutti vivono di questo.",
+      "ramo": "linux"
     },
     {
       "id": "lx-hardware",
@@ -308,14 +389,17 @@
       "titolo": "Far vedere al sistema una scheda o un SDR",
       "livello": "Specialista",
       "sottotitolo": "Hai collegato l'acquisizione, la GPU o il ricevitore radio, e il sistema fa finta di niente.",
-      "richiede": ["l14"],
+      "richiede": [
+        "l14"
+      ],
       "puoi": [
         "elencare cosa è collegato davvero (`lspci`, `lshw`, `dmidecode`)",
         "capire se manca il modulo del kernel e caricarlo (`lsmod`, `modprobe`)",
         "leggere `/proc` e `/sys` per sapere cosa il sistema pensa dell'hardware",
         "cambiare un parametro del kernel con `sysctl` sapendo cosa tocchi"
       ],
-      "md": "È il traguardo che serve la prima volta che una scheda di acquisizione o un SDR non viene riconosciuto, e la documentazione del produttore si ferma a «installare i driver».\n\n`/proc` è anche il punto in cui si capisce sul serio che in Unix tutto è un file."
+      "md": "È il traguardo che serve la prima volta che una scheda di acquisizione o un SDR non viene riconosciuto, e la documentazione del produttore si ferma a «installare i driver».\n\n`/proc` è anche il punto in cui si capisce sul serio che in Unix tutto è un file.",
+      "ramo": "linux"
     },
     {
       "id": "lx-prestazioni",
@@ -324,14 +408,17 @@
       "titolo": "Capire perché la simulazione è lenta",
       "livello": "Specialista",
       "sottotitolo": "Non «è lenta»: quale delle cinque risorse è satura, e come lo dimostri.",
-      "richiede": ["l15"],
+      "richiede": [
+        "l15"
+      ],
       "puoi": [
         "distinguere se il collo di bottiglia è CPU, memoria, disco, rete o attesa (`top`, `vmstat`, `iostat`)",
         "vedere cosa un programma sta davvero chiedendo al sistema con `strace`",
         "profilare dove va il tempo con `perf`, invece di indovinare",
         "limitare le risorse di un processo con i cgroups, così un job non affoga la macchina"
       ],
-      "md": "È la differenza fra ottimizzare a caso e ottimizzare la cosa giusta: quasi sempre il problema non è il calcolo, è l'accesso ai dati.\n\nCgroups e namespaces sono anche il pavimento dei container — questo traguardo prepara il prossimo."
+      "md": "È la differenza fra ottimizzare a caso e ottimizzare la cosa giusta: quasi sempre il problema non è il calcolo, è l'accesso ai dati.\n\nCgroups e namespaces sono anche il pavimento dei container — questo traguardo prepara il prossimo.",
+      "ramo": "linux"
     },
     {
       "id": "lx-storage",
@@ -340,7 +427,9 @@
       "titolo": "Progettare lo storage di una campagna",
       "livello": "Specialista",
       "sottotitolo": "Terabyte di acquisizione da tenere, proteggere e far crescere senza spegnere niente.",
-      "richiede": ["l16"],
+      "richiede": [
+        "l16"
+      ],
       "puoi": [
         "partizionare, formattare e montare un disco, e renderlo permanente in `/etc/fstab`",
         "scegliere il filesystem con un criterio (ext4, XFS, Btrfs, ZFS) invece che per default",
@@ -348,7 +437,8 @@
         "capire cosa protegge un RAID — e ripetere a chi serve che **non è un backup**",
         "cifrare un disco che esce dal laboratorio (LUKS)"
       ],
-      "md": "Dati di volo, immagini, telemetria: si accumulano, e il momento in cui ci si pone il problema è sempre quello in cui il disco è pieno.\n\nÈ anche il modulo che spiega davvero `mount` — e quindi, retroattivamente, cos'è `/mnt/c` in WSL."
+      "md": "Dati di volo, immagini, telemetria: si accumulano, e il momento in cui ci si pone il problema è sempre quello in cui il disco è pieno.\n\nÈ anche il modulo che spiega davvero `mount` — e quindi, retroattivamente, cos'è `/mnt/c` in WSL.",
+      "ramo": "linux"
     },
     {
       "id": "lx-container",
@@ -357,7 +447,11 @@
       "titolo": "Rendere un'analisi riproducibile",
       "livello": "Specialista",
       "sottotitolo": "Chiunque, fra due anni, riottiene i tuoi numeri con un comando.",
-      "richiede": ["b03", "l17", "c07"],
+      "richiede": [
+        "b03",
+        "l17",
+        "c07"
+      ],
       "puoi": [
         "descrivere l'ambiente di calcolo in un file invece che in un README",
         "impacchettare codice, dipendenze e versioni in un'immagine che gira uguale ovunque",
@@ -365,7 +459,8 @@
         "consegnare a un revisore qualcosa che non richiede la tua macchina",
         "capire cosa succede quando un container scrive dei file: volumi, permessi, dati che restano"
       ],
-      "md": "La riproducibilità è quello che distingue un risultato scientifico da uno screenshot, ed è ciò che rende una tesi utile a chi viene dopo invece che un file in un cassetto.\n\nÈ la versione seria del problema che `venv` e `conda` affrontano in piccolo."
+      "md": "La riproducibilità è quello che distingue un risultato scientifico da uno screenshot, ed è ciò che rende una tesi utile a chi viene dopo invece che un file in un cassetto.\n\nÈ la versione seria del problema che `venv` e `conda` affrontano in piccolo.",
+      "ramo": "linux"
     },
     {
       "id": "lx-hardening",
@@ -374,7 +469,11 @@
       "titolo": "Esporre una macchina senza farsi bucare",
       "livello": "Specialista",
       "sottotitolo": "Se la stazione è raggiungibile da fuori, è raggiungibile anche da chi non ti interessa.",
-      "richiede": ["l11", "l12", "l18"],
+      "richiede": [
+        "l11",
+        "l12",
+        "l18"
+      ],
       "puoi": [
         "chiudere tutto e aprire solo quello che serve (`ufw`, `nftables`)",
         "configurare `sshd` in modo che accetti solo le chiavi, e non le password",
@@ -382,7 +481,8 @@
         "capire cosa fanno SELinux o AppArmor quando bloccano qualcosa, invece di disattivarli",
         "leggere un incidente nei log invece di riformattare e ricominciare"
       ],
-      "md": "Tutto difensivo: indurire sistemi tuoi o affidati a te. È il pavimento di qualunque percorso di sicurezza, non la stanza intera.\n\n**Manca ancora, e non è poco:** reti a fondo, crittografia applicata, sicurezza applicativa, analisi binaria — e pratica su bersagli legali (CTF, macchine tue, laboratori autorizzati).\n\nLa nicchia dove la tua laurea vale doppio: sicurezza per l'aeronavigabilità (DO-326A), bus embedded (CAN, ARINC 429, MIL-STD-1553), link satellitari, spoofing GNSS. Lì un informatico deve imparare il volo; tu no."
+      "md": "Tutto difensivo: indurire sistemi tuoi o affidati a te. È il pavimento di qualunque percorso di sicurezza, non la stanza intera.\n\n**Manca ancora, e non è poco:** reti a fondo, crittografia applicata, sicurezza applicativa, analisi binaria — e pratica su bersagli legali (CTF, macchine tue, laboratori autorizzati).\n\nLa nicchia dove la tua laurea vale doppio: sicurezza per l'aeronavigabilità (DO-326A), bus embedded (CAN, ARINC 429, MIL-STD-1553), link satellitari, spoofing GNSS. Lì un informatico deve imparare il volo; tu no.",
+      "ramo": "linux"
     },
     {
       "id": "lx-flotta",
@@ -391,14 +491,18 @@
       "titolo": "Gestire quattro macchine identiche",
       "livello": "Specialista",
       "sottotitolo": "Configurate a mano divergono in un mese. Scritte in un playbook, restano uguali per anni.",
-      "richiede": ["l19", "c06"],
+      "richiede": [
+        "l19",
+        "c06"
+      ],
       "puoi": [
         "descrivere la configurazione di una macchina in un file, e applicarla a tutte",
         "riapplicare la stessa configurazione senza rompere niente (idempotenza)",
         "ricostruire un nodo perso senza ricordarsi cosa ci avevi fatto sopra",
         "mettere in piedi un piccolo cluster: chiavi, storage condiviso, job lanciati da remoto"
       ],
-      "md": "È l'ultimo passo dell'amministrazione: smettere di amministrare a mano.\n\nPer un gruppo studentesco che gestisce quattro macchine — un cluster di calcolo, una stazione, un banco — è la differenza fra un'infrastruttura e quattro computer che nessuno sa più com'erano messi."
+      "md": "È l'ultimo passo dell'amministrazione: smettere di amministrare a mano.\n\nPer un gruppo studentesco che gestisce quattro macchine — un cluster di calcolo, una stazione, un banco — è la differenza fra un'infrastruttura e quattro computer che nessuno sa più com'erano messi.",
+      "ramo": "linux"
     },
     {
       "id": "lx-groundstation",
@@ -407,7 +511,16 @@
       "titolo": "Montare una ground station per CubeSat",
       "livello": "Specialista",
       "sottotitolo": "Il segmento di terra completo: ricezione, decodifica, archivio, elaborazione — e tutto sopravvive a un riavvio.",
-      "richiede": ["l11", "l13", "l14", "l16", "l17", "l18", "p08", "m09"],
+      "richiede": [
+        "l11",
+        "l13",
+        "l14",
+        "l16",
+        "l17",
+        "l18",
+        "p08",
+        "m09"
+      ],
       "puoi": [
         "far riconoscere al sistema il ricevitore SDR e la rotazione dell'antenna",
         "tenere la stazione raggiungibile in rete e chiusa a chi non deve entrare",
@@ -416,7 +529,8 @@
         "impacchettare la pipeline di elaborazione così che giri uguale fra due anni",
         "consegnare tutto questo a chi arriva dopo di te, documentato in file invece che a voce"
       ],
-      "md": "**È il progetto più ambizioso che questo percorso rende possibile**, e non è un esercizio teorico: esiste in decine di università, e i gruppi che lo fanno cercano sempre qualcuno che sappia tenerlo in piedi.\n\nOgni pezzo del ramo Linux converge qui: hardware, rete, servizi, dischi, container, sicurezza. È il capolinea del ramo.\n\n**Fermarti qui vuol dire** essere la persona che nel gruppo possiede l'infrastruttura — un ruolo che nei progetti studenteschi manca quasi sempre, e che non si impara a lezione."
+      "md": "**È il progetto più ambizioso che questo percorso rende possibile**, e non è un esercizio teorico: esiste in decine di università, e i gruppi che lo fanno cercano sempre qualcuno che sappia tenerlo in piedi.\n\nOgni pezzo del ramo Linux converge qui: hardware, rete, servizi, dischi, container, sicurezza. È il capolinea del ramo.\n\n**Fermarti qui vuol dire** essere la persona che nel gruppo possiede l'infrastruttura — un ruolo che nei progetti studenteschi manca quasi sempre, e che non si impara a lezione.",
+      "ramo": "linux"
     }
   ]
 }
