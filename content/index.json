@@ -86,11 +86,10 @@
         "l03",
         "l04",
         "l05",
+        "l06",
         "c04"
       ],
-      "prossimi": [
-        "WSL"
-      ]
+      "prossimi": []
     },
     {
       "id": "html",
@@ -216,6 +215,12 @@
       "id": "l05",
       "file": "l05-script.json",
       "titolo": "Variabili e script",
+      "disponibile": true
+    },
+    {
+      "id": "l06",
+      "file": "l06-wsl.json",
+      "titolo": "WSL - Linux dentro Windows",
       "disponibile": true
     },
     {

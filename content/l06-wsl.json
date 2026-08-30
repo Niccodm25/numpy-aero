@@ -1,0 +1,478 @@
+{
+  "id": "l06",
+  "titolo": "WSL - Linux dentro Windows",
+  "perche": "La macchina che hai e' Windows, e meta' degli strumenti scientifici da' Linux per scontato. WSL risolve la cosa senza doppio avvio: kernel vero, stessi comandi del resto del ramo, e un confine fra i due dischi che va capito una volta sola.",
+  "funzioni": [
+    "wsl",
+    "wsl -l -v",
+    "wsl --shutdown",
+    "/mnt/c",
+    "\\\\wsl$",
+    "explorer.exe",
+    "CRLF"
+  ],
+  "lezioni": [
+    {
+      "id": "l06-l1",
+      "titolo": "Cos'e' WSL, e cosa non e'",
+      "md": "```powershell\nwsl --install            # la prima volta: installa WSL e Ubuntu\nwsl                      # entra nella distribuzione predefinita\nwsl -l -v                # quali distribuzioni ci sono, e in che versione\nwsl --shutdown           # le spegne tutte, quando qualcosa si e' impantanato\n```\n\nWSL 2 fa girare **un kernel Linux vero**, dentro una macchina virtuale leggerissima gestita da Windows. Non e' un emulatore e non e' un traduttore di comandi: i programmi Linux che ci girano sono gli stessi binari che girerebbero su un server.\n\nNon e' nemmeno una macchina virtuale come le intendi di solito: si avvia in un paio di secondi, condivide la memoria con Windows, e non ha una finestra propria - vive dentro un terminale.\n\n### Cosa ci fai davvero\n\nTi serve quando un pacchetto scientifico ha istruzioni di installazione che presuppongono Linux, quando devi provare in piccolo quello che poi girera' su un cluster, o quando un `Makefile` da' per scontati `gcc` e `make`. Tutto il ramo Linux di questa app si applica a WSL identico: e' Linux.\n\n### Le due versioni\n\n`wsl -l -v` mostra una colonna `VERSION`: `2` e' quella con il kernel vero, `1` era una traduzione delle chiamate di sistema. Se leggi `1`, quasi sempre conviene convertire - a meno che tu non lavori quasi solo su file dentro `C:`, dove la 1 e' piu' veloce, ed e' l'unico caso in cui vale ancora.\n\n### Da dentro e da fuori\n\n```powershell\nwsl ls /home             # un comando solo, senza entrare\nwsl                      # oppure entri, e resti in bash finche' non scrivi exit\n```\n\nDa PowerShell puoi lanciare un comando Linux mettendo `wsl` davanti. Dall'altra parte, da bash puoi lanciare un programma Windows scrivendone il nome **con l'estensione**: `notepad.exe file.txt`, `explorer.exe .`, `code .`."
+    },
+    {
+      "id": "l06-l2",
+      "titolo": "Due filesystem, e quale usare",
+      "md": "```\n/home/tu/            <- il disco di Linux: veloce\n/mnt/c/Users/tu/     <- il tuo disco C: visto da Linux: lento\n```\n\nDa dentro WSL, i dischi di Windows compaiono sotto `/mnt`: `C:` diventa `/mnt/c`, `D:` diventa `/mnt/d`. Non e' una copia, e' lo stesso disco - un file scritto da una parte si vede subito dall'altra.\n\nNella direzione opposta, il disco di Linux si raggiunge da Esplora Risorse con `\\\\wsl$\\Ubuntu\\home\\tu` (o `\\\\wsl.localhost\\...` sulle versioni recenti). Da bash, `explorer.exe .` apre la finestra sulla cartella in cui sei.\n\n### La regola che conta\n\n**Tieni i file dove gira il codice.** Attraversare il confine costa: leggere `/mnt/c` da Linux passa da un protocollo di rete interno, e su una cartella con molti file - un repository git, una `node_modules`, una campagna di misure - la differenza fra `/home` e `/mnt/c` si misura in *decine di volte*, non in percentuali.\n\nSe il lavoro e' in Linux, i dati stanno in `/home/tu`. Se e' un progetto Windows aperto in un programma Windows, sta in `C:` e lo tocchi da li'.\n\n### I permessi non sono quelli\n\nSu `/mnt/c` i permessi Unix sono finti: Windows non ha `rwx` per utente, gruppo e altri, quindi `ls -l` mostra spesso `777` su tutto, e `chmod` puo' non attaccare. Un `chmod +x` che non ha effetto e uno script che non parte, su `/mnt/c`, quasi sempre sono questo - non un errore tuo."
+    },
+    {
+      "id": "l06-l3",
+      "titolo": "Gli attriti: fine riga, spazi, due Python",
+      "md": "```\nbash: ./riduci.sh: /bin/bash^M: bad interpreter\nriduci.sh: riga 2: $'\\r': comando non trovato\n```\n\nQuesti due messaggi vogliono dire una cosa sola: **il file ha le fine riga di Windows**. Windows chiude ogni riga con due caratteri (`CR` + `LF`), Unix con uno (`LF`). Il `CR` in piu' finisce dentro il nome del comando, e bash cerca un programma che si chiama `bash\\r`, che non esiste.\n\nCapita ogni volta che uno script viene scritto con un editor Windows e lanciato in Linux. Le difese, in ordine:\n\n- nell'editor, scegliere `LF` invece di `CRLF` (in VS Code e' nella barra in basso a destra)\n- in git: `git config --global core.autocrlf input` sul lato Linux\n- di emergenza: `dos2unix script.sh`\n\n### Gli spazi nei percorsi\n\n`/mnt/c/Users/tu/Documenti Vecchi/dati.csv` non funziona come credi: la shell lo legge come due argomenti. Le virgolette lo risolvono - `cd \"/mnt/c/Users/tu/Documenti Vecchi\"` - ed e' il motivo per cui su Linux le cartelle si chiamano `documenti_vecchi`.\n\n### Due Python, e nessuno dei due sa dell'altro\n\nIl Python installato su Windows e quello dentro WSL sono **due installazioni separate**: pacchetti separati, ambienti virtuali separati, versioni diverse. Un `pip install numpy` fatto in PowerShell non si vede da bash, e viceversa.\n\nÈ lo stesso problema del PATH del ramo *Ambienti e pacchetti*, con un confine in piu': prima di installare qualcosa, `which python` ti dice da che parte sei.\n\n### VS Code sta in mezzo\n\nCon l'estensione **WSL**, VS Code gira su Windows ma esegue tutto - terminale, interprete Python, debugger - dentro Linux. È il modo normale di lavorarci: si apre la cartella con `code .` da bash, e da li' in poi il progetto e' un progetto Linux."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l06-wsl",
+      "comando": "wsl",
+      "titolo": "cos'e', e come ci si entra",
+      "esercizi": [
+        {
+          "id": "l06-ws-1",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Cosa fa girare WSL 2?",
+          "opzioni": [
+            "un kernel Linux vero, in una macchina virtuale leggera",
+            "una traduzione dei comandi Linux in comandi Windows",
+            "un emulatore che interpreta i binari Linux uno per uno",
+            "una copia di Windows con i nomi dei comandi cambiati"
+          ],
+          "risposta": "un kernel Linux vero, in una macchina virtuale leggera",
+          "spiegazione": "Kernel vero, binari veri: i programmi che ci girano sono gli stessi che girerebbero su un server. Per questo tutto il ramo Linux di questa app vale identico dentro WSL."
+        },
+        {
+          "id": "l06-ws-2",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Da PowerShell, come lanci un solo comando Linux senza entrare in bash?",
+          "opzioni": [
+            "`wsl ls /home`",
+            "`bash -c ls /home`",
+            "`linux ls /home`",
+            "`wsl --run ls /home`"
+          ],
+          "risposta": "`wsl ls /home`",
+          "spiegazione": "`wsl` seguito da un comando lo esegue dentro la distribuzione e torna subito a PowerShell. Senza niente dopo, `wsl` ti lascia dentro bash finche' non scrivi `exit`."
+        },
+        {
+          "id": "l06-ws-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`wsl -l -v` mostra `VERSION 1` accanto alla tua distribuzione. Cosa vuol dire?",
+          "opzioni": [
+            "e' la vecchia WSL, che traduceva le chiamate di sistema invece di usare un kernel",
+            "e' la prima distribuzione installata, in ordine",
+            "e' in sola lettura",
+            "e' una versione di prova, che scade"
+          ],
+          "risposta": "e' la vecchia WSL, che traduceva le chiamate di sistema invece di usare un kernel",
+          "spiegazione": "WSL 1 non aveva un kernel: traduceva. Va bene ancora in un caso solo - se lavori quasi sempre su file dentro `C:`, dove non paga l'attraversamento del confine. In tutti gli altri conviene convertire alla 2."
+        },
+        {
+          "id": "l06-ws-4",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Da dentro bash, come apri Esplora Risorse sulla cartella in cui sei?",
+          "opzioni": [
+            "`explorer.exe .`",
+            "`open .`",
+            "`start .`",
+            "`xdg-open .`"
+          ],
+          "risposta": "`explorer.exe .`",
+          "spiegazione": "Da WSL i programmi Windows si lanciano scrivendone il nome **con l'estensione**: `explorer.exe`, `notepad.exe`, `code .`. Il punto e' la cartella corrente, tradotta al volo in un percorso Windows."
+        },
+        {
+          "id": "l06-ws-5",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "WSL non risponde piu' e vuoi ripartire pulito, senza riavviare il computer. Da PowerShell:",
+          "opzioni": [
+            "`wsl --shutdown`",
+            "`wsl --restart`",
+            "`wsl --kill`",
+            "`taskkill /f /im wsl.exe`"
+          ],
+          "risposta": "`wsl --shutdown`",
+          "spiegazione": "Spegne tutte le distribuzioni e la macchina virtuale che le ospita; il comando `wsl` successivo la riaccende da zero in qualche secondo. È la prima cosa da provare quando qualcosa si e' impantanato."
+        },
+        {
+          "id": "l06-ws-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Hai installato `numpy` con `pip` dentro WSL. Da PowerShell, `python -c \"import numpy\"` cosa risponde?",
+          "opzioni": [
+            "`ModuleNotFoundError`: sono due Python diversi",
+            "funziona: i pacchetti sono condivisi",
+            "funziona solo se la cartella e' sotto `/mnt/c`",
+            "un errore di permessi"
+          ],
+          "risposta": "`ModuleNotFoundError`: sono due Python diversi",
+          "spiegazione": "Due installazioni separate, due `site-packages`, nessuna delle due sa dell'altra. È lo stesso problema del PATH del ramo *Ambienti e pacchetti*, con un confine di sistema operativo in mezzo: `which python` prima di installare."
+        },
+        {
+          "id": "l06-ws-7",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Quale di queste cose **non** e' vera di WSL 2?",
+          "opzioni": [
+            "ha una sua finestra grafica, come una macchina virtuale classica",
+            "condivide la memoria e la rete con Windows",
+            "si avvia in pochi secondi",
+            "puo' eseguire gli stessi binari di un server Linux"
+          ],
+          "risposta": "ha una sua finestra grafica, come una macchina virtuale classica",
+          "spiegazione": "Vive dentro un terminale: non c'e' un desktop Linux da guardare. (Le app grafiche Linux si possono aprire, e compaiono come finestre di Windows normali - ma un desktop suo non ce l'ha.)"
+        },
+        {
+          "id": "l06-ws-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' installare WSL invece di lavorare direttamente in PowerShell?",
+          "opzioni": [
+            "perche' molte istruzioni e molti strumenti scientifici danno Linux per scontato",
+            "perche' PowerShell non sa gestire i file di dati",
+            "perche' Python su Windows e' piu' lento",
+            "perche' PowerShell non ha una pipe"
+          ],
+          "risposta": "perche' molte istruzioni e molti strumenti scientifici danno Linux per scontato",
+          "spiegazione": "PowerShell e' una shell ottima, e per amministrare Windows e' migliore. Ma un `README` che dice `apt install`, un `Makefile`, un cluster a cui ti colleghi in ssh: quello e' il mondo che WSL ti mette a disposizione senza cambiare computer."
+        }
+      ]
+    },
+    {
+      "id": "l06-mnt",
+      "comando": "/mnt/c",
+      "titolo": "i due dischi",
+      "esercizi": [
+        {
+          "id": "l06-mn-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei dentro WSL. Guarda cosa c'e' nella cartella Documenti del tuo disco `C:`.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/analisi/riduci.sh": "echo riduco\n",
+            "/mnt/c/Users/tu/Documenti/relazione.docx": "documento binario\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          },
+          "soluzione": "ls /mnt/c/Users/tu/Documenti",
+          "verifica": {
+            "usa": [
+              "ls"
+            ],
+            "stampa": "campagna.csv"
+          },
+          "hint": [
+            "Il disco C: si vede sotto /mnt.",
+            "ls /mnt/c/Users/tu/Documenti"
+          ],
+          "spiegazione": "`C:\\Users\\tu\\Documenti` diventa `/mnt/c/Users/tu/Documenti`: la lettera del disco diventa una cartella dentro `/mnt`, e le barre si girano. Non e' una copia - e' lo stesso disco."
+        },
+        {
+          "id": "l06-mn-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Copia `campagna.csv` dal disco Windows dentro `analisi`, nella tua home Linux.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/analisi/riduci.sh": "echo riduco\n",
+            "/mnt/c/Users/tu/Documenti/relazione.docx": "documento binario\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          },
+          "soluzione": "cp /mnt/c/Users/tu/Documenti/campagna.csv analisi\nls analisi",
+          "verifica": {
+            "esiste": [
+              "/home/tu/analisi/campagna.csv"
+            ],
+            "usa": [
+              "cp"
+            ]
+          },
+          "hint": [
+            "cp funziona attraverso il confine come su qualunque altra cartella.",
+            "cp /mnt/c/Users/tu/Documenti/campagna.csv analisi"
+          ],
+          "spiegazione": "Attraversare il confine e' un `cp` come tutti gli altri. Quello che cambia e' il **tempo**: la stessa copia dentro `/home` sarebbe molto piu' rapida, e su una cartella con migliaia di file la differenza diventa minuti."
+        },
+        {
+          "id": "l06-mn-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Dove conviene tenere una campagna di misure che analizzerai con script Linux?",
+          "opzioni": [
+            "in `/home/tu`, il disco di Linux",
+            "in `/mnt/c/Users/tu`, cosi' si vede anche da Windows",
+            "e' indifferente: e' lo stesso disco",
+            "in `/mnt/c/Windows`, che e' la parte piu' veloce"
+          ],
+          "risposta": "in `/home/tu`, il disco di Linux",
+          "spiegazione": "**I file stanno dove gira il codice.** Leggere `/mnt/c` da Linux passa da un protocollo interno di tipo rete: su molti file piccoli la differenza si misura in decine di volte. Se ti serve vederli anche da Windows, `\\\\wsl$\\Ubuntu\\home\\tu` li mostra in Esplora Risorse."
+        },
+        {
+          "id": "l06-mn-4",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Trova tutti i `.csv` che stanno sotto la tua cartella utente di Windows.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/analisi/riduci.sh": "echo riduco\n",
+            "/mnt/c/Users/tu/Documenti/relazione.docx": "documento binario\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          },
+          "soluzione": "find /mnt/c/Users/tu -name *.csv",
+          "verifica": {
+            "usa": [
+              "find"
+            ],
+            "stampa": "dati_grezzi.csv"
+          },
+          "hint": [
+            "find funziona su /mnt come su qualunque cartella.",
+            "find /mnt/c/Users/tu -name *.csv"
+          ],
+          "spiegazione": "Due file, in due cartelle diverse: `find` scende in tutto l'albero anche di la' dal confine. È il modo piu' rapido di ritrovare un file scaricato dal browser di Windows quando poi lo devi elaborare in Linux."
+        },
+        {
+          "id": "l06-mn-5",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Da Windows, come raggiungi `/home/tu` con Esplora Risorse?",
+          "opzioni": [
+            "`\\\\wsl$\\Ubuntu\\home\\tu`",
+            "`C:\\wsl\\home\\tu`",
+            "`C:\\Users\\tu\\Linux`",
+            "non si puo': il disco Linux non e' visibile da Windows"
+          ],
+          "risposta": "`\\\\wsl$\\Ubuntu\\home\\tu`",
+          "spiegazione": "Il disco di Linux si monta come una condivisione di rete: `\\\\wsl$\\<distribuzione>\\...` (sulle versioni recenti anche `\\\\wsl.localhost\\...`). Puoi aprirci i file con programmi Windows - ma per lavorarci davvero conviene stare dalla parte di Linux."
+        },
+        {
+          "id": "l06-mn-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Salva l'elenco dei CSV di Windows in `analisi/da_windows.txt`, dentro la home Linux.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/analisi/riduci.sh": "echo riduco\n",
+            "/mnt/c/Users/tu/Documenti/relazione.docx": "documento binario\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          },
+          "soluzione": "find /mnt/c/Users/tu -name *.csv > analisi/da_windows.txt\ncat analisi/da_windows.txt",
+          "verifica": {
+            "contiene": {
+              "/home/tu/analisi/da_windows.txt": "campagna.csv"
+            },
+            "usa": [
+              "find"
+            ]
+          },
+          "hint": [
+            "find, poi la redirezione verso un file in analisi.",
+            "find /mnt/c/Users/tu -name *.csv > analisi/da_windows.txt"
+          ],
+          "spiegazione": "Leggi di la', scrivi di qua: e' lo schema normale di una giornata in WSL. Il risultato del lavoro sta sul disco veloce, i dati originali restano dove il resto di Windows se li aspetta."
+        },
+        {
+          "id": "l06-mn-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`ls -l` su un file dentro `/mnt/c` mostra `-rwxrwxrwx` su tutto, e `chmod 600` non cambia niente. Perche'?",
+          "opzioni": [
+            "Windows non ha i permessi Unix: su /mnt sono finti",
+            "il file e' aperto da un programma Windows",
+            "manca sudo",
+            "il file e' su un disco esterno"
+          ],
+          "risposta": "Windows non ha i permessi Unix: su /mnt sono finti",
+          "spiegazione": "I permessi che vedi su `/mnt/c` sono una convenzione, non la realta' del disco. Uno script che non parte nonostante `chmod +x`, su `/mnt/c`, e' quasi sempre questo - e la soluzione e' spostarlo in `/home`."
+        },
+        {
+          "id": "l06-mn-8",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Porta l'intera cartella `analisi` sul disco Windows, dentro Documenti, per allegarla a una mail.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/analisi/riduci.sh": "echo riduco\n",
+            "/mnt/c/Users/tu/Documenti/relazione.docx": "documento binario\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          },
+          "soluzione": "cp -r analisi /mnt/c/Users/tu/Documenti\nls /mnt/c/Users/tu/Documenti",
+          "verifica": {
+            "esiste": [
+              "/mnt/c/Users/tu/Documenti/analisi/prova1.csv"
+            ],
+            "usa": [
+              "cp"
+            ]
+          },
+          "hint": [
+            "Una cartella si copia con -r.",
+            "cp -r analisi /mnt/c/Users/tu/Documenti"
+          ],
+          "spiegazione": "Nell'altro verso vale la stessa regola: si porta di la' il **risultato**, quando serve a un programma Windows. Quello che resta di la' in permanenza sono i file di Windows, non quelli su cui stai lavorando."
+        }
+      ]
+    },
+    {
+      "id": "l06-attriti",
+      "comando": "CRLF e interop",
+      "titolo": "gli attriti del confine",
+      "esercizi": [
+        {
+          "id": "l06-at-1",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Lanci uno script scritto su Windows e leggi: `bash: ./riduci.sh: /bin/bash^M: bad interpreter`. Cos'e' successo?",
+          "opzioni": [
+            "il file ha le fine riga di Windows (CRLF)",
+            "manca il permesso di esecuzione",
+            "bash non e' installato",
+            "lo shebang punta a una cartella sbagliata"
+          ],
+          "risposta": "il file ha le fine riga di Windows (CRLF)",
+          "spiegazione": "`^M` e' il carattere `CR` che Windows mette prima di ogni `LF`. Finisce dentro il nome dell'interprete, e bash cerca un programma che si chiama `bash\\r`. Il file e' giusto, il testo e' giusto: e' invisibile, ed e' l'errore piu' sconcertante della prima settimana in WSL."
+        },
+        {
+          "id": "l06-at-2",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Come lo eviti alla radice, invece di ripararlo ogni volta?",
+          "opzioni": [
+            "impostando l'editor su `LF` per i file che finiscono in Linux",
+            "rinominando lo script con estensione `.bash`",
+            "lanciandolo sempre con `bash script.sh` invece che con `./`",
+            "mettendo `set -e` in cima"
+          ],
+          "risposta": "impostando l'editor su `LF` per i file che finiscono in Linux",
+          "spiegazione": "In VS Code la fine riga si sceglie nella barra in basso a destra, e si puo' fissare per tutto il progetto. Sul lato git, `git config --global core.autocrlf input` evita che sia git a rimetterceli. `dos2unix` ripara, ma ripara sempre - meglio non produrli."
+        },
+        {
+          "id": "l06-at-3",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "`cd /mnt/c/Users/tu/Documenti Vecchi` non funziona. Perche'?",
+          "opzioni": [
+            "lo spazio divide il percorso in due argomenti: servono le virgolette",
+            "`cd` non funziona su /mnt",
+            "i nomi con la maiuscola vanno scritti minuscoli",
+            "manca la barra finale"
+          ],
+          "risposta": "lo spazio divide il percorso in due argomenti: servono le virgolette",
+          "spiegazione": "`cd \"/mnt/c/Users/tu/Documenti Vecchi\"` funziona. Su Windows gli spazi nei nomi sono normali, in Linux sono un campo minato: e' il motivo per cui le cartelle di lavoro si chiamano `documenti_vecchi`."
+        },
+        {
+          "id": "l06-at-4",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Nella tua home c'e' una cartella con lo spazio nel nome. Entraci e verifica dove sei.",
+          "filesystem": {
+            "/home/tu/dati vecchi/prova.csv": "quota,mach\n100,0.10\n",
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n"
+          },
+          "soluzione": "cd \"dati vecchi\"\npwd",
+          "verifica": {
+            "cwd": "/home/tu/dati vecchi",
+            "usa": [
+              "cd"
+            ]
+          },
+          "hint": [
+            "Le virgolette tengono insieme il nome.",
+            "cd \"dati vecchi\""
+          ],
+          "spiegazione": "Le virgolette dicono alla shell che quello e' **un** argomento. Senza, `cd` riceve `dati` e `vecchi` e prova a entrare nel primo."
+        },
+        {
+          "id": "l06-at-5",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Su Linux hai `Dati.csv` e `dati.csv` nella stessa cartella. Su Windows?",
+          "opzioni": [
+            "non possono coesistere: per Windows sono lo stesso nome",
+            "coesistono, ma il secondo e' nascosto",
+            "coesistono senza problemi",
+            "Windows rinomina il secondo automaticamente"
+          ],
+          "risposta": "non possono coesistere: per Windows sono lo stesso nome",
+          "spiegazione": "Linux distingue maiuscole e minuscole nei nomi dei file, Windows no. Un progetto che su Linux ha `Utils.py` e `utils.py` si rompe appena qualcuno lo apre su Windows - e il messaggio non parlera' di maiuscole."
+        },
+        {
+          "id": "l06-at-6",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Vuoi lavorare su un progetto WSL con VS Code. Il modo giusto:",
+          "opzioni": [
+            "l'estensione WSL: VS Code gira su Windows, tutto il resto dentro Linux",
+            "aprire la cartella da `\\\\wsl$` come una cartella qualsiasi",
+            "installare VS Code dentro la distribuzione Linux",
+            "copiare il progetto su `C:` e lavorarci da li'"
+          ],
+          "risposta": "l'estensione WSL: VS Code gira su Windows, tutto il resto dentro Linux",
+          "spiegazione": "Con l'estensione, terminale, interprete Python, debugger ed estensioni girano dentro Linux, e l'interfaccia resta su Windows. Si apre scrivendo `code .` da bash. Aprire `\\\\wsl$` come cartella di rete invece funziona, ma il terminale e l'interprete restano quelli di Windows: e' li' che nasce meta' della confusione."
+        },
+        {
+          "id": "l06-at-7",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prima di installare un pacchetto vuoi essere sicuro di che parte del confine sei. Chiedilo al sistema.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/usr/bin/python": "binario\n",
+            "/usr/bin/pip": "binario\n"
+          },
+          "soluzione": "which python\npwd",
+          "verifica": {
+            "usa": [
+              "which"
+            ],
+            "stampa": "/usr/bin/python"
+          },
+          "hint": [
+            "Il comando che dice quale file risponde.",
+            "which python"
+          ],
+          "spiegazione": "`/usr/bin/python` e' un percorso Linux: sei dentro WSL, e il `pip` che lanci installera' qui. Se leggessi qualcosa che comincia per `/mnt/c/...`, staresti per installare nel Python di Windows attraverso il confine - che funziona, ed e' quasi sempre un guaio."
+        },
+        {
+          "id": "l06-at-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Riassumendo: qual e' la regola pratica che evita meta' dei problemi in WSL?",
+          "opzioni": [
+            "i file stanno dove gira il codice che li usa",
+            "usare sempre percorsi assoluti",
+            "lanciare tutto con sudo",
+            "tenere una copia di ogni file su tutti e due i dischi"
+          ],
+          "risposta": "i file stanno dove gira il codice che li usa",
+          "spiegazione": "Progetto Linux, file in `/home`. Progetto Windows, file in `C:`. Il confine si attraversa per portare un risultato di la' o un dato di qua, non per lavorarci sopra tutti i giorni: da li' vengono la lentezza, i permessi finti e meta' dei problemi di fine riga."
+        }
+      ]
+    }
+  ]
+}
