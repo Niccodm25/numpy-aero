@@ -398,9 +398,9 @@
     },
     {
       "id": "l11",
-      "file": "",
+      "file": "l11-rete.json",
       "titolo": "Rete",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l12",

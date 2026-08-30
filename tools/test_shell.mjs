@@ -16,6 +16,7 @@ import { PROCESSI, PROCESSI_PS, statoProcessi } from "../js/processi.js";
 import { SISTEMA, statoSistema } from "../js/sistema.js";
 import { UTENTI, statoUtenti } from "../js/utenti.js";
 import { TESTO } from "../js/testo.js";
+import { RETE, statoRete } from "../js/rete.js";
 
 let fatti = 0;
 const casi = [];
@@ -546,6 +547,13 @@ caso("awk estrae campi e xargs applica un comando ai nomi", () => {
   assert.equal(V.esiste(sh.fs, "a.tmp"), false);
 });
 
+caso("rete: DNS, ping, porte e route descrivono lo stesso scenario", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...RETE } }); statoRete(sh);
+  assert.match(esegui(sh, "ping cluster.univ.it").out, /10\.20\.0\.15/);
+  assert.match(esegui(sh, "ss -tulpn").out, /sshd/);
+  assert.match(esegui(sh, "ip route").out, /192\.168\.1\.1/);
+});
+
 // ---------- verifica degli esercizi ----------
 
 caso("verifica promuove la soluzione giusta", () => {
@@ -1013,11 +1021,14 @@ for (const meta of indice.moduli) {
           };
         if (es.testoAvanzato)
           comandi = { ...(comandi ?? POSIX), ...TESTO };
+        if (es.rete)
+          comandi = { ...(comandi ?? POSIX), ...RETE };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
         if (es.sistema) statoSistema(sh, es.sistema === true ? undefined : es.sistema);
         if (es.utenti) statoUtenti(sh, es.utenti === true ? undefined : es.utenti);
+        if (es.rete) statoRete(sh, es.rete === true ? undefined : es.rete);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(
