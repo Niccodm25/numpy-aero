@@ -293,8 +293,10 @@ export const POSIX = {
             const p = base + (base === "/" ? "" : "/") + n;
             const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, p));
             const dir = nodo.tipo === "dir";
-            const dim = dir ? 0 : nodo.contenuto.length;
-            return `${dir ? "d" : "-"}${V.permessiTesto(nodo)}  ${(nodo.proprietario ?? "tu").padEnd(5)}  ${String(dim).padStart(6)}  ${n}`;
+            const link = nodo.tipo === "link";
+            const dim = dir || link ? 0 : nodo.contenuto.length;
+            const nome = link ? `${n} -> ${nodo.destinazione}` : n;
+            return `${dir ? "d" : link ? "l" : "-"}${V.permessiTesto(nodo)}  ${(nodo.proprietario ?? "tu").padEnd(5)}  ${String(dim).padStart(6)}  ${nome}`;
           })
           .join("\n");
       }
@@ -347,6 +349,26 @@ export const POSIX = {
     const { resto } = opzioni(args);
     if (resto.length < 2) throw new V.ErroreFs("servono sorgente e destinazione");
     V.sposta(sh.fs, resto[0], resto[1]);
+    return "";
+  },
+
+  rmdir(sh, args) {
+    if (!args.length) throw new V.ErroreFs("manca il nome della directory");
+    for (const d of args) {
+      if (!V.esiste(sh.fs, d)) throw new V.ErroreFs(`${d}: file o directory non esistente`);
+      if (!V.eDir(sh.fs, d)) throw new V.ErroreFs(`${d}: non e' una directory`);
+      if (V.elenca(sh.fs, d).length) throw new V.ErroreFs(`${d}: directory non vuota`);
+      sh.fs.nodi.delete(V.normalizza(sh.fs, d));
+    }
+    return "";
+  },
+
+  ln(sh, args) {
+    const simbolico = args[0] === "-s";
+    const resto = simbolico ? args.slice(1) : args;
+    if (resto.length !== 2) throw new V.ErroreFs("servono bersaglio e nome del link");
+    if (simbolico) V.collegaSimbolico(sh.fs, resto[0], resto[1]);
+    else V.collegaDuro(sh.fs, resto[0], resto[1]);
     return "";
   },
 

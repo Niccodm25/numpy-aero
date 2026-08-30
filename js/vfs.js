@@ -71,9 +71,42 @@ export const tipo = (fs, p) => fs.nodi.get(normalizza(fs, p))?.tipo ?? null;
 export const eDir = (fs, p) => tipo(fs, p) === "dir";
 export const eFile = (fs, p) => tipo(fs, p) === "file";
 
+/** Crea un collegamento simbolico: il bersaglio viene risolto quando lo usi. */
+export function collegaSimbolico(fs, bersaglio, nome) {
+  const abs = normalizza(fs, nome);
+  if (fs.nodi.has(abs)) throw new ErroreFs(`${nome}: esiste gia'`);
+  const dir = genitore(abs);
+  if (!fs.nodi.has(dir)) throw new ErroreFs(`${dir}: directory non esistente`);
+  fs.nodi.set(abs, { tipo: "link", destinazione: normalizza(fs, bersaglio), modo: 0o777, proprietario: fs.utente ?? UTENTE });
+}
+
+/** Un hard link e' un secondo nome per lo stesso nodo-file. */
+export function collegaDuro(fs, bersaglio, nome) {
+  const origine = fs.nodi.get(normalizza(fs, bersaglio));
+  const abs = normalizza(fs, nome);
+  if (!origine) throw new ErroreFs(`${bersaglio}: file o directory non esistente`);
+  if (origine.tipo !== "file") throw new ErroreFs(`${bersaglio}: non e' un file regolare`);
+  if (fs.nodi.has(abs)) throw new ErroreFs(`${nome}: esiste gia'`);
+  if (!fs.nodi.has(genitore(abs))) throw new ErroreFs(`${genitore(abs)}: directory non esistente`);
+  fs.nodi.set(abs, origine);
+}
+
+function seguiLink(fs, percorso) {
+  let abs = normalizza(fs, percorso);
+  let n = fs.nodi.get(abs);
+  let passi = 0;
+  while (n?.tipo === "link") {
+    if (++passi > 16) throw new ErroreFs(`${percorso}: troppi collegamenti simbolici`);
+    abs = n.destinazione;
+    n = fs.nodi.get(abs);
+  }
+  if (!n)
+    throw new ErroreFs(passi ? `${percorso}: collegamento simbolico non valido` : `${percorso}: file o directory non esistente`);
+  return n;
+}
+
 export function leggi(fs, p, utente = fs.utente ?? UTENTE) {
-  const n = fs.nodi.get(normalizza(fs, p));
-  if (!n) throw new ErroreFs(`${p}: file o directory non esistente`);
+  const n = seguiLink(fs, p);
   if (n.tipo === "dir") throw new ErroreFs(`${p}: e' una directory`);
   if (!puoi(fs, p, "r", utente)) throw new ErroreFs(`${p}: permesso negato`);
   return n.contenuto;
@@ -83,10 +116,21 @@ export function scrivi(fs, p, contenuto) {
   const abs = normalizza(fs, p);
   const dir = genitore(abs);
   if (!fs.nodi.has(dir)) throw new ErroreFs(`${dir}: directory non esistente`);
-  const vecchio = fs.nodi.get(abs);
+  let bersaglio = abs;
+  let vecchio = fs.nodi.get(abs);
+  if (vecchio?.tipo === "link") {
+    bersaglio = vecchio.destinazione;
+    vecchio = seguiLink(fs, bersaglio);
+  }
   if (vecchio?.tipo === "dir") throw new ErroreFs(`${p}: e' una directory`);
   if (vecchio && !puoi(fs, abs, "w")) throw new ErroreFs(`${p}: permesso negato`);
-  fs.nodi.set(abs, {
+  if (vecchio?.tipo === "file") {
+    // Se esistono hard link, i due percorsi puntano allo stesso oggetto: una
+    // scrittura deve quindi aggiornare entrambi, come avviene con un inode.
+    vecchio.contenuto = String(contenuto);
+    return;
+  }
+  fs.nodi.set(bersaglio, {
     tipo: "file",
     contenuto: String(contenuto),
     // Riscrivere un file non ne cambia i permessi: e' quello che succede davvero,

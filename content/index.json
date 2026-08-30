@@ -374,9 +374,9 @@
     },
     {
       "id": "l08",
-      "file": "",
+      "file": "l08-editor-link.json",
       "titolo": "Editor nel terminale, e i link",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l09",

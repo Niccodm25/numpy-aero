@@ -146,6 +146,23 @@ caso("la redirezione scrive e quella doppia aggiunge", () => {
   assert.equal(esegui(sh, "cat note.txt").out, "prima\nseconda");
 });
 
+caso("ln distingue hard link e collegamento simbolico", () => {
+  const sh = shell({ "/home/tu/origine.txt": "uno\n" });
+  assert.equal(esegui(sh, "ln origine.txt copia.txt").errore, null);
+  esegui(sh, "echo due > copia.txt");
+  assert.equal(V.leggi(sh.fs, "origine.txt"), "due\n", "un hard link condivide il contenuto");
+  assert.equal(esegui(sh, "ln -s origine.txt scorciatoia.txt").errore, null);
+  assert.equal(esegui(sh, "cat scorciatoia.txt").out, "due");
+  assert.match(esegui(sh, "ls -l").out, /scorciatoia\.txt -> \/home\/tu\/origine\.txt/);
+});
+
+caso("rmdir rimuove solo una directory vuota", () => {
+  const sh = shell({ "/home/tu/vuota": null, "/home/tu/piena/a.txt": "x" });
+  assert.equal(esegui(sh, "rmdir vuota").errore, null);
+  assert.equal(V.esiste(sh.fs, "vuota"), false);
+  assert.match(esegui(sh, "rmdir piena").errore, /non vuota/);
+});
+
 caso("un comando sconosciuto lo dice, invece di rompere", () => {
   const sh = shell();
   assert.match(esegui(sh, "aptitude install x").errore, /comando non trovato/);
