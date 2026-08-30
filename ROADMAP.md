@@ -279,3 +279,170 @@ Modifiche contenute, perché i contenuti sono già separati dal motore.
   dipartimento lavora in conda, serve un modulo intero.
 - **Un ramo o due per le shell?** Tenerli separati è più chiaro; un unico ramo "riga
   di comando" con le due varianti a confronto insegna meglio le differenze.
+
+
+---
+
+## 8. Ramo D — estensione: da nuovo a esperto  ← **piano, tutto in arrivo**
+
+Il ramo Linux copre oggi la prima colonna e mezza della mappa classica (file,
+permessi, processi, ricerca e filtri, script, WSL). Questo e' il piano per
+arrivare in fondo — fino a quello che serve per **amministrare** una macchina,
+non solo per usarla. Nessuno di questi moduli e' scritto: sono tutti **in
+arrivo**, elencati nell'ordine in cui vanno fatti.
+
+Convenzione dei moduli gia' esistenti: una raccolta per comando o per gruppo
+stretto di comandi, otto esercizi ciascuna, tipo `terminale` dove il
+simulatore puo' eseguire davvero e `predict` dove fingerlo insegnerebbe il
+finto.
+
+### Stadio 1 — completare le basi (colonna rossa)
+
+**l07 — Archivi, pacchetti e spazio**
+Raccolte: `tar` · `gzip e gunzip` · `apt` (con `dnf` e `pacman` a confronto) ·
+`df, du, free, uname`.
+Perche': i dati arrivano e partono compressi, il software si installa da un
+gestore e non da un sito, e "il job e' morto" nove volte su dieci e' disco
+pieno o memoria finita.
+Motore: `tar`/`gzip` sono file nel filesystem virtuale, si simulano bene. Per
+`apt` serve un **elenco di pacchetti finto** con dipendenze, sulla falsariga
+del modello degli ambienti Python. `df`/`free` sono numeri inventati coerenti.
+
+**l08 — Editor nel terminale, e i link**
+Raccolte: `nano` · `vim, e come uscirne` · `ln e ln -s` · `rmdir e la pulizia`.
+Perche': su una macchina remota non c'e' VS Code, e prima o poi ci si trova
+dentro `vim` senza sapere come si esce. I link simbolici sono il modo in cui
+mezzo sistema e' tenuto insieme (`/usr/bin/python` in testa).
+Motore: serve un **editor a schermo dentro il terminale simulato** — la cosa
+piu' invasiva di tutto il piano. In alternativa: `nano` a schermo vero, `vim`
+solo per predizione (i tasti, la modalita', `:wq`).
+
+**l09 — Utenti, gruppi e permessi speciali**
+Raccolte: `useradd e passwd` · `groups e usermod` · `/etc/passwd e /etc/group` ·
+`setuid, setgid, sticky bit`.
+Perche': completa l03. Il bit `s` su `passwd` e lo sticky su `/tmp` spiegano
+come mai certi programmi possono fare cose che tu non puoi.
+Motore: il filesystem virtuale ha gia' proprietario e modo; servono i gruppi e
+un file `/etc/passwd` leggibile. Tutto simulabile.
+
+**l10 — Testo avanzato: sed, awk, xargs**
+Raccolte: `sed` · `awk` · `xargs` · `cut, tr e tee`.
+Perche': la seconda meta' di l02. Estrarre una colonna, sostituire in massa,
+applicare un comando a mille file. E' il punto in cui la shell smette di
+cercare e comincia a trasformare.
+Motore: `cut`, `tr`, `tee` sono banali. `sed` con la sola `s///` e `awk` con i
+soli campi `$1`, `$3` e `NR` coprono il novanta per cento dell'uso reale —
+oltre non si va, e va detto nella lezione.
+
+### Stadio 2 — la macchina come servizio (colonna verde)
+
+**l11 — Rete**
+Raccolte: `ip e ifconfig` · `ping e traceroute` · `ss e netstat` ·
+`dig, nslookup e la risoluzione dei nomi` · `nmcli e NetworkManager`.
+Perche': **e' il buco strutturale del percorso.** Meta' dei guasti e meta'
+degli attacchi vivono qui, e oggi nessun ramo ne parla.
+Motore: serve un **modello di rete finto** — interfacce, indirizzi, tabella di
+routing, porte in ascolto, una zona DNS. E' il pezzo di motore piu' grosso del
+piano, e da solo abilita anche l12 e parte di l19.
+
+**l12 — La macchina remota**
+Raccolte: `ssh` · `chiavi ssh` · `scp e rsync` · `~/.ssh/config e sshd_config` ·
+`tmux`.
+Perche': **la lacuna numero uno per te.** Senza questo il cluster non lo
+tocchi. `tmux` sta qui perche' un job lungo lanciato via ssh muore quando cade
+la connessione, ed e' la lezione di l04 vista da lontano.
+Motore: serve una **seconda macchina finta** — un secondo filesystem
+virtuale con un suo utente — e `ssh` che sposta la sessione da uno all'altro.
+Concettualmente semplice, e rende esercitabili anche `scp` e `rsync`.
+
+**l13 — Servizi, log e lavori periodici**
+Raccolte: `systemctl` · `scrivere una unit` · `journalctl e dmesg` ·
+`cron e systemd-timer` · `logrotate`.
+Perche': un programma che deve girare sempre non si lancia a mano. E quando
+qualcosa si rompe, la risposta e' nei log — se sai dove sono.
+Motore: le unit sono file nel filesystem, lo stato dei servizi e' una tabella
+finta come quella dei processi di l04. Il log e' un file che cresce.
+
+**l14 — Hardware e kernel**
+Raccolte: `lspci, lshw, dmidecode` · `lsmod e modprobe` · `/proc e /sys` ·
+`sysctl`.
+Perche': serve quando colleghi una scheda di acquisizione, un ricevitore SDR o
+una GPU e il sistema non la vede. `/proc` e' il punto in cui si capisce che in
+Unix tutto e' un file, davvero.
+Motore: `/proc` e `/sys` sono cartelle finte nel filesystem virtuale — la
+simulazione qui e' piu' fedele che altrove, perche' sul serio sono file.
+
+### Stadio 3 — amministrare sul serio (colonna blu)
+
+**l15 — Prestazioni e diagnosi**
+Raccolte: `top, vmstat, iostat` · `strace` · `perf` · `cgroups e namespaces` ·
+`hdparm e tuned`.
+Perche': la domanda "perche' e' lento" ha cinque risposte possibili (CPU,
+memoria, disco, rete, attesa) e strumenti diversi per distinguerle. `cgroups` e
+`namespaces` sono anche il pavimento dei container, quindi preparano l17.
+Motore: numeri finti coerenti fra un comando e l'altro. Molto `predict`: qui
+conta leggere l'uscita, non digitare il comando.
+
+**l16 — Dischi, filesystem e volumi**
+Raccolte: `mount e /etc/fstab` · `fdisk e mkfs` · `ext4, xfs, btrfs, zfs` ·
+`LVM` · `RAID con mdadm` · `LUKS e dm-crypt`.
+Perche': e' il modulo che ti fa passare da "uso un disco" a "progetto lo
+storage": quale filesystem per dati di campagna, come si aggiunge spazio senza
+spegnere, cosa protegge davvero il RAID (e cosa no: **non e' un backup**).
+Motore: dischi e volumi finti, con lo stato che cambia. `mount` e' un'ottima
+lezione perche' spiega anche `/mnt/c` di WSL.
+
+**l17 — Container e virtualizzazione**
+Raccolte: `docker run e le immagini` · `scrivere un Dockerfile` ·
+`volumi e reti` · `Apptainer sui cluster` · `KVM, QEMU, libvirt`.
+Perche': e' la versione seria del problema che il ramo *Ambienti e pacchetti*
+affronta con `venv` e `conda`, ed e' il modo standard di portarsi dietro un
+ambiente che funziona anche sul cluster dell'universita'.
+Motore: immagini e container come tabella finta, il Dockerfile come file da
+scrivere e verificare riga per riga — vicino agli esercizi `html`, che gia'
+verificano un file scritto a mano.
+
+**l18 — Sicurezza del sistema**
+Raccolte: `ufw e firewalld` · `iptables e nftables` · `SELinux e AppArmor` ·
+`capabilities` · `PAM` · `l'igiene di un server esposto`.
+Perche': chiude la colonna blu, e insieme a l11 e l12 e' il pavimento di
+qualunque percorso di sicurezza. Tutto difensivo: indurire una macchina tua,
+non entrare in quelle degli altri.
+Motore: le regole del firewall sono uno stato che si legge e si modifica, come
+i permessi. Va scritto dopo l11, perche' senza il modello di rete non ha senso.
+
+**l19 — Automazione a scala**
+Raccolte: `Ansible: inventario e playbook` · `idempotenza` ·
+`ruoli e riuso` · `Puppet e Chef, in che cosa differiscono`.
+Perche': l'ultimo passo e' smettere di amministrare a mano. Dieci macchine
+configurate a colpi di `ssh` divergono in un mese; un playbook e' la
+configurazione scritta una volta e applicabile all'infinito.
+Motore: quasi tutto `predict` e lettura di YAML. Un playbook applicato al
+filesystem finto e' fattibile, ma e' l'ultimo pezzo e il meno urgente.
+
+### Cantieri (progetti aperti, fuori dalla coda di ripasso)
+
+- **c05 — Il server che regge** (dopo l13): un servizio che deve restare in
+  piedi. Unit, log, rotazione, job periodico, e un guasto da diagnosticare
+  leggendo `journalctl`.
+- **c06 — Il cluster in miniatura** (dopo l16): quattro macchine finte, chiavi
+  ssh, storage condiviso, un job lanciato da remoto che sopravvive alla
+  disconnessione, i risultati riportati indietro con `rsync`.
+- **c07 — La pipeline riproducibile** (dopo l17): la stessa analisi di c04,
+  ma dentro un container, con un `Dockerfile` che chiunque puo' rieseguire.
+
+### Note sul piano
+
+- **L'ordine conta piu' della completezza.** l11 (rete) e l12 (remoto) valgono,
+  per uno studente di aerospaziale, piu' di tutto lo stadio 3 messo insieme:
+  sono quelli che aprono il cluster. Se il tempo finisce, finisce dopo l13.
+- **Tre pezzi di motore da costruire**, in ordine di costo: la seconda macchina
+  per `ssh` (piccola), l'elenco pacchetti per `apt` (media), il modello di rete
+  per l11 (grande). L'editor a schermo di l08 e' opzionale: `nano` si puo'
+  aggirare insegnando `echo` e `cat`, come si fa oggi.
+- **Dove il simulatore non arriva, si dichiara.** La regola del ramo resta
+  quella: meglio un `predict` onesto che un comando finto che risponde sempre
+  di si'.
+- **Corrispondenza con le certificazioni**, per chi volesse un riscontro
+  esterno: stadio 1 e 2 coprono in larga parte LFCS; stadi 1-3 insieme sono
+  l'area di RHCSA, con l18 e l19 che sconfinano in RHCE.

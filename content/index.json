@@ -89,7 +89,22 @@
         "l06",
         "c04"
       ],
-      "prossimi": []
+      "prossimi": [
+        "l07 — Archivi, pacchetti e spazio (tar, gzip, apt, df/du/free)",
+        "l08 — Editor nel terminale e link (nano, vim, ln -s)",
+        "l09 — Utenti, gruppi e permessi speciali (useradd, setuid, sticky)",
+        "l10 — Testo avanzato (sed, awk, xargs, cut, tee)",
+        "l11 — Rete (ip, ping, ss, dig, nmcli)",
+        "l12 — La macchina remota (ssh, chiavi, scp, rsync, tmux)",
+        "l13 — Servizi, log e lavori periodici (systemctl, journalctl, cron)",
+        "l14 — Hardware e kernel (lspci, modprobe, /proc, sysctl)",
+        "l15 — Prestazioni e diagnosi (strace, perf, cgroups)",
+        "l16 — Dischi, filesystem e volumi (mount, LVM, RAID, LUKS)",
+        "l17 — Container e virtualizzazione (Docker, Apptainer, KVM)",
+        "l18 — Sicurezza del sistema (firewall, SELinux, capabilities, PAM)",
+        "l19 — Automazione a scala (Ansible)",
+        "Cantieri c05, c06, c07 — il server, il cluster, la pipeline riproducibile"
+      ]
     },
     {
       "id": "html",
