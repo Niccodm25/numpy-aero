@@ -153,3 +153,43 @@ button.minuscolo {
   font-size: .72rem; font-weight: 500; color: var(--tx2);
   background: none; border: 1px solid var(--bordo);
 }
+
+/* ---------- terminale simulato ---------- */
+
+/* Il pannello di stato sta sopra il terminale e non scorre con esso: il punto
+   e' proprio che la cartella corrente sia sempre visibile. */
+.stato-shell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem; color: var(--tx2);
+  background: var(--codebg); border: 1px solid var(--bordo);
+  border-bottom: none; border-radius: var(--raggio) var(--raggio) 0 0;
+  padding: .35rem .6rem;
+}
+
+.terminale {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .85rem; line-height: 1.45;
+  background: var(--codebg); border: 1px solid var(--bordo);
+  padding: .6rem; min-height: 9rem; max-height: 22rem; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+}
+.terminale .eco { color: var(--tx2); }
+.terminale .errore-shell { color: var(--ko); }
+.terminale .muto { color: var(--tx2); font-style: italic; }
+
+.riga-prompt {
+  display: flex; align-items: center; gap: .4rem;
+  border: 1px solid var(--bordo); border-top: none;
+  border-radius: 0 0 var(--raggio) var(--raggio);
+  background: var(--card); padding: .2rem .6rem;
+}
+.riga-prompt .prompt {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: var(--acc); font-weight: 700;
+}
+.riga-prompt input {
+  flex: 1; border: none; background: none; color: var(--tx);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .9rem; padding: .5rem 0; min-height: 44px;
+}
+.riga-prompt input:focus { outline: none; }

@@ -108,11 +108,11 @@ Estensione diretta di quello che c'è. Motore invariato.
 Matplotlib prima di SciPy: completa NumPy invece di aprire un fronte nuovo, e senza
 grafici non vedi mai i risultati che calcoli.
 
-### Ramo B — Ambienti e pacchetti  ← **il primo dei tre che servono il terminale**
+### Ramo B — Ambienti e pacchetti  ← **iniziato**
 
 Il ramo che sblocca tutto il resto. Simulato, con il pannello di stato sempre visibile.
 
-1. **Dove sta Python** — PATH, `where python`, perché ne hai tre installati
+1. **Dove sta Python** — PATH, `which`, venv, pip, e le tre righe di diagnostica. **fatto**
 2. **pip** — install, uninstall, `list`, `show`, `freeze`, e cosa significa davvero
    "installato": in quale Python
 3. **venv** — creare, attivare, disattivare, perché l'attivazione è solo una modifica
@@ -219,7 +219,7 @@ poi come farlo girare, poi gli strumenti di calcolo, poi il sistema sotto.
 |---|---|---|
 | 1 | **Usare NumPy per qualche settimana** | Il sistema di ripasso non è mai stato provato da uno studente vero. Tararlo prima di replicarlo su sei rami |
 | 2 | **Ramo E — Python base** | ~~Da fare~~ **fatto**: otto moduli sul motore che c'era gia', nessun software nuovo |
-| 3 | **Motore del terminale simulato** | Blocca tre rami su sei. Costruirlo su un ramo solo e riusarlo |
+| 3 | **Motore del terminale simulato** | ~~Da fare~~ **fatto**: `js/vfs.js` e `js/shell.js`, piu' `js/ambienti.js` per python/pip/venv. 59 casi in `tools/test_shell.mjs` |
 | 4 | **Ramo B — Ambienti** | Il più utile subito, e il più piccolo. Mette alla prova il motore nuovo su un dominio ristretto |
 | 5 | **Ramo C — PowerShell** | La macchina che usi tutti i giorni |
 | 6 | **Matplotlib** | Completa NumPy, motore già pronto |
@@ -250,9 +250,15 @@ Modifiche contenute, perché i contenuti sono già separati dal motore.
 
 ## 7. Decisioni ancora aperte
 
-- **Quanto in profondità simulare?** Un filesystem e venti comandi coprono il 90% del
-  valore. Andare oltre — permessi realistici, processi, rete — moltiplica il lavoro e
-  aggiunge poco, ma va deciso prima di scrivere il motore, non dopo.
+- ~~**Quanto in profondità simulare?**~~ **Deciso.** Filesystem, venti comandi POSIX,
+  e per gli ambienti un solo modello: un interprete e' un percorso con dentro dei
+  pacchetti, e il PATH decide quale risponde. Niente permessi, niente processi,
+  niente rete, niente pipe — e il terminale lo dice quando incontra qualcosa che
+  non supporta, invece di far finta.
+- **Come si correggono gli esercizi di terminale.** Non con codice ma con un blocco
+  dichiarativo (`cwd`, `esiste`, `contenuto`, `usa`, `stampa`, `errore`) che descrive
+  lo stato finale atteso. Sta nel JSON accanto al testo, non c'e' niente da eseguire,
+  e ogni soluzione viene rieseguita davvero da `tools/test_shell.mjs`.
 - **I compiti sulla macchina vera si verificano?** Chiedere di incollare l'output e
   controllarlo con una regex è fragile ma reale. L'alternativa è l'autocertificazione.
 - **Quanto Anaconda?** Se non ti servirà, tre lezioni concettuali bastano. Se il

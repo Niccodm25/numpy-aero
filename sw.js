@@ -20,6 +20,10 @@ const PRECACHE = [
   "js/scheduler.js",
   "js/storage.js",
   "js/md.js",
+  "js/percorso.js",
+  "js/vfs.js",
+  "js/shell.js",
+  "js/ambienti.js",
   "content/index.json",
 ];
 

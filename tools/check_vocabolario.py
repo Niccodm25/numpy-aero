@@ -200,6 +200,8 @@ def main():
         print(f"\n{mid} — {modulo['titolo']}")
         for r in gruppi:
             for e in r["esercizi"]:
+                if e.get("tipo") == "terminale":
+                    continue  # comandi di shell, non nomi Python
                 # I tre pezzi vanno analizzati separatamente: lo starter e'
                 # incompleto per costruzione, e unirli farebbe fallire il parse
                 # di tutto, scartando le violazioni invece di segnalarle.

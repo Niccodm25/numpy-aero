@@ -3,6 +3,8 @@ import * as R from "./runner.js";
 import * as S from "./storage.js";
 import * as L from "./scheduler.js";
 import * as P from "./percorso.js";
+import * as SH from "./shell.js";
+import * as A from "./ambienti.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -248,6 +250,89 @@ async function vistaModulo(id) {
            <p class="muto">Un esercizio per comando a rotazione, finché non li sai tutti.</p>
            ${cartaPercorso(id, m)}`
     }`;
+}
+
+/**
+ * Terminale simulato dentro un esercizio. Restituisce la shell e la
+ * trascrizione, che la verifica legge quando premi Verifica.
+ *
+ * Il pannello di stato sopra il prompt non e' decorazione: il problema vero di
+ * una shell non e' la sintassi, e' che non vedi mai in che stato sei. Qui la
+ * cartella corrente e' sempre a schermo.
+ */
+function montaTerminale(zona, es) {
+  // Gli esercizi che dichiarano degli interpreti ottengono anche i comandi
+  // python, pip e venv: e' quello che distingue il ramo degli ambienti da uno
+  // di sola shell, e si accende dal contenuto invece che dal codice.
+  const sh = SH.creaShell(es.filesystem || {}, {
+    cwd: es.cwd,
+    env: es.env,
+    comandi: es.interpreti ? A.AMBIENTI : undefined,
+  });
+  if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
+  const trascrizione = [];
+
+  zona.innerHTML = `
+    <div class="stato-shell"><span id="t-cwd"></span></div>
+    <div class="terminale" id="t-out"></div>
+    <div class="riga-prompt">
+      <span class="prompt" id="t-prompt"></span>
+      <input id="t-in" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off">
+    </div>
+    <p class="muto">Invio per eseguire. Freccia su per riprendere l'ultimo comando.</p>`;
+
+  const out = zona.querySelector("#t-out");
+  const input = zona.querySelector("#t-in");
+  const aggiornaStato = () => {
+    zona.querySelector("#t-cwd").textContent = sh.fs.cwd;
+    zona.querySelector("#t-prompt").textContent = "$";
+  };
+
+  const scrivi = (testo, classe = "") => {
+    const riga = document.createElement("div");
+    if (classe) riga.className = classe;
+    riga.textContent = testo;
+    out.appendChild(riga);
+    out.scrollTop = out.scrollHeight;
+  };
+
+  if (es.benvenuto) scrivi(es.benvenuto, "muto");
+  aggiornaStato();
+
+  let indiceStoria = null;
+  input.onkeydown = (ev) => {
+    if (ev.key === "ArrowUp") {
+      ev.preventDefault();
+      if (!sh.storia.length) return;
+      indiceStoria = indiceStoria === null ? sh.storia.length - 1 : Math.max(0, indiceStoria - 1);
+      input.value = sh.storia[indiceStoria];
+      return;
+    }
+    if (ev.key === "ArrowDown") {
+      ev.preventDefault();
+      if (indiceStoria === null) return;
+      indiceStoria = Math.min(sh.storia.length - 1, indiceStoria + 1);
+      input.value = sh.storia[indiceStoria];
+      return;
+    }
+    if (ev.key !== "Enter") return;
+
+    const riga = input.value;
+    input.value = "";
+    indiceStoria = null;
+    scrivi(`$ ${riga}`, "eco");
+    const r = SH.esegui(sh, riga);
+    trascrizione.push({ riga, ...r });
+    if (r.out) scrivi(r.out);
+    if (r.errore) scrivi(r.errore, "errore-shell");
+    aggiornaStato();
+  };
+
+  // Su desktop il cursore va nel terminale da solo; su telefono no, perche'
+  // aprirebbe la tastiera coprendo il testo dell'esercizio appena aperto.
+  if (matchMedia("(min-width: 700px)").matches) input.focus();
+
+  return { sh, trascrizione };
 }
 
 function cartaPercorso(id, m) {
@@ -526,10 +611,16 @@ function montaEsercizio({
   const esito = app.querySelector("#esito");
   const azioni = app.querySelector("#azioni");
 
+  // Il terminale tiene uno stato proprio fra un comando e l'altro: la shell
+  // vive quanto la schermata, e la verifica guarda dove sei arrivato.
+  let term = null;
+
   if (es.tipo === "predict") {
     zona.innerHTML = es.opzioni
       .map((o, i) => `<label class="card riga"><input type="radio" name="op" value="${i}"> <code>${escapeHtml(o)}</code></label>`)
       .join("");
+  } else if (es.tipo === "terminale") {
+    term = montaTerminale(zona, es);
   } else {
     zona.innerHTML = `
       ${es.setup ? `<p class="muto">Dati forniti, gia caricati:</p><pre><code>${escapeHtml(es.setup)}</code></pre>` : ""}
@@ -579,6 +670,11 @@ function montaEsercizio({
       const sel = zona.querySelector("input[name=op]:checked");
       if (!sel) { btn.disabled = false; return; }
       ok = es.opzioni[+sel.value] === es.risposta;
+    } else if (es.tipo === "terminale") {
+      const esitoT = SH.verifica(term.sh, es.verifica, term.trascrizione);
+      ok = esitoT.ok;
+      if (!ok)
+        dettaglio += `<ul>${esitoT.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
     } else {
       btn.textContent = "Eseguo…";
       const codice = (es.setup ? es.setup + "\n" : "") + zona.querySelector("#ed").value;
