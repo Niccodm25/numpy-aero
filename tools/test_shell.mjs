@@ -849,7 +849,54 @@ caso("un Dockerfile con una base sconosciuta o un COPY fuori contesto fallisce",
   assert.match(esegui(sh, "docker build -t rotta:2 .").errore, /fuori dal contesto/);
 });
 caso("ufw conserva una policy difensiva verificabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...SICUREZZA}});statoSicurezza(sh);esegui(sh,"ufw enable");esegui(sh,"ufw allow 443");assert.match(esegui(sh,"ufw status").out,/443\/tcp/);});
-caso("playbook idempotente cambia solo alla prima esecuzione",()=>{const sh=creaShell({}, {comandi:{...POSIX,...AUTOMAZIONE}});statoAutomazione(sh);esegui(sh,"ansible-playbook sito.yml");assert.match(esegui(sh,"ansible-playbook sito.yml").out,/changed=0/);});
+function conAnsible() {
+  const sh = creaShell(
+    {
+      "/home/tu/inventario.ini": "[stazioni]" + CAPO + "meteo01" + CAPO + "meteo02" + CAPO,
+      "/home/tu/sito.yml":
+        "- hosts: stazioni" + CAPO +
+        "  tasks:" + CAPO +
+        "    - name: cartella dei dati" + CAPO +
+        "      file:" + CAPO +
+        "        path: /opt/dati" + CAPO +
+        "        state: directory" + CAPO +
+        "    - name: configurazione" + CAPO +
+        "      copy:" + CAPO +
+        "        dest: /opt/dati/analisi.conf" + CAPO +
+        "        content: soglia=10" + CAPO,
+    },
+    { comandi: { ...POSIX, ...SERVIZI, ...AUTOMAZIONE } }
+  );
+  statoServizi(sh, { unita: {} });
+  statoAutomazione(sh);
+  return sh;
+}
+
+caso("un playbook applica i task, e la seconda volta non cambia niente", () => {
+  const sh = conAnsible();
+  const prima = esegui(sh, "ansible-playbook -i inventario.ini sito.yml").out;
+  assert.match(prima, /changed=2/, "la prima volta crea cartella e file");
+  assert.equal(V.leggi(sh.fs, "/opt/dati/analisi.conf"), "soglia=10" + CAPO);
+  assert.match(esegui(sh, "ansible-playbook -i inventario.ini sito.yml").out, /changed=0/, "idempotente");
+});
+
+caso("--check dice cosa cambierebbe senza cambiare niente", () => {
+  const sh = conAnsible();
+  assert.match(esegui(sh, "ansible-playbook -i inventario.ini sito.yml --check").out, /changed=2/);
+  assert.equal(V.esiste(sh.fs, "/opt/dati"), false, "la prova a vuoto non tocca il filesystem");
+});
+
+caso("l'inventario decide gli host, e un modulo sconosciuto lo dice", () => {
+  const sh = conAnsible();
+  assert.match(esegui(sh, "ansible all -i inventario.ini -m ping").out, /meteo02 \| SUCCESS/);
+  assert.match(esegui(sh, "ansible-inventory -i inventario.ini").out, /stazioni/);
+  esegui(sh, "echo '- hosts: stazioni' > strano.yml");
+  esegui(sh, "echo '  tasks:' >> strano.yml");
+  esegui(sh, "echo '    - name: prova' >> strano.yml");
+  esegui(sh, "echo '      docker_container:' >> strano.yml");
+  esegui(sh, "echo '        name: prova' >> strano.yml");
+  assert.match(esegui(sh, "ansible-playbook -i inventario.ini strano.yml").errore, /non supportato/);
+});
 
 // ---------- verifica degli esercizi ----------
 

@@ -1,53 +1,312 @@
 {
   "id": "l19",
-  "titolo": "Automazione a scala",
-  "perche": "Configurare dieci macchine a mano produce dieci varianti. Un playbook dichiara lo stato desiderato, lo applica ripetutamente senza cambiamenti inutili e lascia una revisione leggibile.",
+  "titolo": "Automazione a scala: Ansible",
+  "perche": "Quattro macchine configurate a mano divergono in un mese, e ricostruirne una persa diventa archeologia. Qui la configurazione diventa un file di testo che si applica a tutte le macchine tutte le volte che serve — e la seconda volta non cambia niente, che e' l'unica cosa che rende l'automazione affidabile.",
   "funzioni": [
-    "Ansible",
-    "inventario",
+    "inventario.ini",
+    "ansible -m ping",
+    "ansible -m setup",
+    "ansible-inventory",
     "ansible-playbook",
-    "playbook YAML",
+    "--check",
+    "hosts",
+    "tasks",
+    "file",
+    "copy",
+    "lineinfile",
+    "service",
+    "package",
     "idempotenza",
-    "ruoli",
-    "Puppet",
-    "Chef"
+    "PLAY RECAP"
   ],
   "lezioni": [
     {
       "id": "l19-l1",
-      "titolo": "Stato desiderato e idempotenza",
-      "md": "Un inventario dice quali host esistono; un playbook YAML dice lo stato da ottenere: pacchetto presente, servizio attivo, file con un contenuto. `ansible-playbook sito.yml` applica quelle dichiarazioni via SSH. Una seconda esecuzione sana riporta `changed=0`: e' idempotenza, non inattivita'. Prima automatizza una macchina bene; poi replica. Puppet e Chef perseguono la stessa configurazione dichiarativa con modelli diversi.\n\n### Da dove viene il nome\n\n- `ansible` — dal termine della fantascienza per un dispositivo di comunicazione istantanea a distanza\n- `playbook` — il «copione»: la sequenza di azioni da applicare alle macchine\n- idempotenza — dal latino *idem potens*, «con lo stesso effetto»: applicare due volte la stessa configurazione non cambia niente la seconda\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
+      "titolo": "Perche' smettere di amministrare a mano",
+      "md": "Quattro macchine configurate a colpi di `ssh` divergono in un mese: su una hai messo il pacchetto, su un'altra no; su una il file di configurazione ha la riga in piu' che serviva a novembre. Dopo sei mesi nessuno sa piu' com'erano messe, e ricostruirne una persa e' archeologia.\n\nAnsible risolve il problema in un modo preciso: **la configurazione diventa un file di testo**, e quel file si applica a tutte le macchine tutte le volte che vuoi.\n\n```\nansible-playbook -i inventario.ini sito.yml\n```\n\nTre pezzi:\n\n- **inventario** — quali macchine, divise in gruppi\n- **playbook** — cosa deve essere vero su quelle macchine\n- **il comando** — che applica il secondo al primo\n\n### Non serve installare niente sulle macchine\n\nAnsible si collega in `ssh` — le chiavi del modulo l12 — ed esegue. Nessun agente da installare, nessuna porta in piu' da aprire: e' la ragione principale per cui ha vinto su Puppet e Chef, che invece un agente ce l'hanno.\n\n### L'inventario\n\n```ini\n[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n```\n\nGruppi fra parentesi quadre, host sotto. Da qui in poi «tutte le stazioni» e' una parola: `stazioni`.\n\n```\nansible all -i inventario.ini -m ping     # rispondono?\nansible-inventory -i inventario.ini       # chi c'e', raggruppato\n```\n\n`-m ping` non e' il ping della rete: verifica che Ansible riesca a **collegarsi ed eseguire** — cioe' ssh, chiavi e permessi. È il primo comando da lanciare, sempre."
+    },
+    {
+      "id": "l19-l2",
+      "titolo": "Il playbook descrive lo stato, non i passi",
+      "md": "```yaml\n- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n```\n\nQuesto file non dice «crea la cartella»: dice **«la cartella deve esistere»**. La differenza sembra sottile e cambia tutto — un playbook si puo' rilanciare cento volte senza fare danni, perche' ogni task prima guarda e poi agisce solo se serve.\n\n### I moduli che coprono quasi tutto\n\n| Modulo | A cosa serve |\n|---|---|\n| `file` | cartelle e file: `state: directory`, `state: absent` |\n| `copy` | mette un contenuto in un file |\n| `lineinfile` | garantisce che **una riga** ci sia |\n| `service` | avvia, ferma, abilita un servizio |\n| `package` | installa o rimuove un pacchetto |\n\n`lineinfile` invece di `copy` quando il file e' di qualcun altro e tu devi solo aggiungerci una riga: sovrascriverlo intero cancellerebbe il resto.\n\n### Il riepilogo\n\n```\nPLAY RECAP\nmeteo01  : ok=2 changed=1 unreachable=0 failed=0\n```\n\n- **changed** — quanti task hanno modificato qualcosa\n- **ok** — quanti erano gia' a posto\n- **failed** — quanti sono andati storti (e li' il playbook si ferma)\n\nLa riga da guardare la seconda volta e' `changed=0`."
+    },
+    {
+      "id": "l19-l3",
+      "titolo": "Idempotenza, e la prova prima di applicare",
+      "md": "**Idempotente** vuol dire che applicare due volte la stessa configurazione non cambia niente la seconda. Dal latino *idem potens*, «con lo stesso effetto».\n\n```\nansible-playbook sito.yml     ->  changed=3\nansible-playbook sito.yml     ->  changed=0\n```\n\nQuel secondo `changed=0` e' la garanzia che il playbook **descrive uno stato** invece di eseguire dei passi. Se un task risulta `changed` a ogni esecuzione, quel task e' scritto male: sta facendo qualcosa a prescindere, e su cento macchine fara' cento cose inutili.\n\nÈ anche il modo di verificare che una macchina sia **conforme**: si lancia il playbook, e se dice `changed=0` la macchina e' come deve essere. Se qualcuno aveva messo le mani, `changed` maggiore di zero lo dice — e nel frattempo lo rimette a posto.\n\n### --check: la prova a vuoto\n\n```\nansible-playbook sito.yml --check\n```\n\nDice cosa **cambierebbe** senza cambiare niente. Su una macchina in produzione e' la differenza fra una modifica pianificata e una sorpresa: si guarda l'elenco dei `changed`, si controlla che siano quelli attesi, e solo dopo si applica davvero.\n\nÈ lo stesso riflesso di `sed` senza `-i`, di `mount -a` prima del riavvio, di `sshd -t` prima del restart. **Prima si guarda, poi si applica**, e a questo punto del ramo dovrebbe essere un'abitudine.\n\n### Puppet, Chef, e perche' Ansible\n\nFanno la stessa cosa con filosofie diverse. Puppet e Chef vogliono un **agente** installato su ogni macchina che periodicamente si allinea; Ansible si collega in ssh quando lo lanci tu, e non lascia niente dietro.\n\nPer quattro macchine di laboratorio, il secondo modello vince senza discussione: niente da installare, niente da mantenere, e il playbook e' leggibile anche da chi non lo ha scritto."
     }
   ],
   "raccolte": [
     {
-      "id": "l19-auto",
-      "comando": "ansible-playbook",
-      "titolo": "replicare senza divergere",
+      "id": "l19-inventario",
+      "comando": "inventario e ansible",
+      "titolo": "quali macchine, e rispondono?",
       "esercizi": [
         {
-          "id": "l19-1",
+          "id": "l19-in-1",
           "tipo": "terminale",
-          "testo": "Applica il playbook sito.yml e leggi il riepilogo.",
+          "difficolta": 2,
+          "testo": "Guarda l'inventario del laboratorio: quali macchine ci sono e come sono raggruppate.",
           "automazione": true,
-          "soluzione": "ansible-playbook sito.yml",
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "cat inventario.ini\nansible-inventory -i inventario.ini",
           "verifica": {
-            "stampa": "failed=0",
+            "stampa": "meteo02",
+            "usa": [
+              "ansible-inventory",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prima il file, poi il comando che lo interpreta.",
+            "ansible-inventory -i inventario.ini"
+          ],
+          "spiegazione": "Due gruppi: `banco` con una macchina, `stazioni` con due. Da questo momento «tutte le stazioni» e' una parola sola nei comandi.\n\nIl file e' testo, e si versiona in git insieme al resto: chi arriva dopo di te sa quali macchine esistono senza chiederlo a nessuno."
+        },
+        {
+          "id": "l19-in-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Verifica che Ansible riesca davvero a raggiungere ed eseguire su tutte le macchine.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "ansible all -i inventario.ini -m ping",
+          "verifica": {
+            "stampa": "pong",
+            "usa": [
+              "ansible"
+            ]
+          },
+          "hint": [
+            "-m ping e' il modulo di verifica.",
+            "ansible all -i inventario.ini -m ping"
+          ],
+          "spiegazione": "`-m ping` non e' il `ping` della rete: verifica che Ansible riesca a **collegarsi in ssh, autenticarsi ed eseguire** un modulo. Prova tutta la catena del modulo l12 in un comando.\n\nÈ sempre il primo comando su un inventario nuovo: se questo fallisce, nessun playbook potra' funzionare, e il problema e' nelle chiavi o nella rete."
+        },
+        {
+          "id": "l19-in-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Chiedi solo alle stazioni, non a tutte le macchine, e salva l'esito in `raggiungibili.txt`.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "ansible stazioni -i inventario.ini -m ping > raggiungibili.txt\ncat raggiungibili.txt",
+          "verifica": {
+            "contiene": {
+              "raggiungibili.txt": "meteo01"
+            },
+            "usa": [
+              "ansible"
+            ]
+          },
+          "hint": [
+            "Al posto di all si mette il nome del gruppo.",
+            "ansible stazioni -i inventario.ini -m ping"
+          ],
+          "spiegazione": "Il gruppo limita l'azione: e' la prima difesa contro il comando giusto lanciato sulle macchine sbagliate.\n\nSu inventari veri i gruppi sono la struttura portante — `produzione`, `collaudo`, `stazioni` — e quasi ogni comando ne nomina uno invece di `all`."
+        },
+        {
+          "id": "l19-in-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Aggiungi una stazione nuova all'inventario e verifica che compaia nel gruppo giusto.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "echo meteo03 >> inventario.ini\nansible-inventory -i inventario.ini\nansible stazioni -i inventario.ini -m ping",
+          "verifica": {
+            "contiene": {
+              "inventario.ini": "meteo03"
+            },
+            "stampa": "meteo03",
+            "usa": [
+              "ansible-inventory",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Basta aggiungere la riga in fondo al gruppo.",
+            "echo meteo03 >> inventario.ini"
+          ],
+          "spiegazione": "Una riga, e la macchina nuova entra in tutto quello che riguarda le stazioni: ogni playbook che dice `hosts: stazioni` la includera' da adesso.\n\nÈ il momento in cui l'automazione comincia a rendere: aggiungere la decima macchina costa quanto la seconda."
+        },
+        {
+          "id": "l19-in-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Raccogli le informazioni di sistema delle stazioni e tieni solo le righe che nominano il kernel.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "ansible stazioni -i inventario.ini -m setup | grep kernel",
+          "verifica": {
+            "stampa": "ansible_kernel",
+            "usa": [
+              "ansible",
+              "grep"
+            ]
+          },
+          "hint": [
+            "-m setup raccoglie i dati delle macchine.",
+            "ansible stazioni -i inventario.ini -m setup | grep kernel"
+          ],
+          "spiegazione": "`setup` raccoglie i **fatti** delle macchine: distribuzione, kernel, memoria, indirizzi. Ansible li usa per decidere cosa fare — per esempio installare con `apt` o con `dnf` a seconda della distribuzione.\n\nPer te sono anche l'inventario tecnico piu' rapido che esista: una domanda, tutte le macchine, una tabella."
+        },
+        {
+          "id": "l19-in-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa serve installare **sulle macchine** perche' Ansible funzioni?",
+          "opzioni": [
+            "niente: si collega in ssh ed esegue, senza agente",
+            "un agente Ansible su ogni macchina",
+            "un server centrale raggiungibile da tutte",
+            "Python e un database condiviso"
+          ],
+          "risposta": "niente: si collega in ssh ed esegue, senza agente",
+          "spiegazione": "È la scelta di progetto che ha fatto vincere Ansible su Puppet e Chef, che invece un agente lo vogliono: niente da installare, niente da tenere aggiornato, nessuna porta in piu' da aprire.\n\nQuello che serve c'e' gia': `ssh` con le chiavi, e Python sulla macchina remota — che su qualunque Linux moderno e' presente."
+        },
+        {
+          "id": "l19-in-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' l'inventario sta in un file versionato invece che nella testa di chi amministra?",
+          "opzioni": [
+            "perche' e' la mappa delle macchine: senza, ricostruire un nodo perso e' archeologia",
+            "perche' Ansible non funziona senza",
+            "per motivi di sicurezza",
+            "perche' i file di testo sono piu' veloci"
+          ],
+          "risposta": "perche' e' la mappa delle macchine: senza, ricostruire un nodo perso e' archeologia",
+          "spiegazione": "Un inventario in git risponde a domande che altrimenti richiedono una persona: quali macchine esistono, come sono raggruppate, quando ne e' stata aggiunta una.\n\nÈ la stessa ragione per cui il Dockerfile vale piu' di un README: **la configurazione scritta e' l'unica che non si dimentica**."
+        },
+        {
+          "id": "l19-in-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il controllo del mattino.** Verifica che tutte le macchine rispondano, e salva l'esito in un file con la data nel nome del contenuto.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "ansible all -i inventario.ini -m ping > controllo.txt\ngrep -c SUCCESS controllo.txt\ncat controllo.txt",
+          "verifica": {
+            "contiene": {
+              "controllo.txt": "banco01"
+            },
+            "stampa": "3",
+            "usa": [
+              "ansible",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Tutte le macchine, l'esito in un file, poi conta i successi.",
+            "grep -c SUCCESS controllo.txt"
+          ],
+          "spiegazione": "Tre macchine, tre risposte: il controllo che su una flotta si lancia ogni mattina, e che con dieci macchine diventa l'unico modo per sapere se ne manca una.\n\n`grep -c` conta invece di elencare — quando le macchine sono cinquanta, il numero e' l'informazione, e l'elenco serve solo se il numero non torna."
+        }
+      ]
+    },
+    {
+      "id": "l19-playbook",
+      "comando": "ansible-playbook",
+      "titolo": "descrivere lo stato",
+      "esercizi": [
+        {
+          "id": "l19-pb-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda il playbook della stazione e capisci cosa dichiara.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n"
+          },
+          "soluzione": "cat sito.yml",
+          "verifica": {
+            "stampa": "state: directory",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "È un file di testo.",
+            "cat sito.yml"
+          ],
+          "spiegazione": "Due task: una cartella che **deve esistere** e un file di configurazione che **deve contenere** una certa riga. Non c'e' scritto «crea» da nessuna parte: e' descritto lo stato finale, e Ansible decide cosa fare per arrivarci.\n\nQuesta e' la differenza con uno script bash, che invece esegue passi: uno script rilanciato due volte puo' fare danni, un playbook no."
+        },
+        {
+          "id": "l19-pb-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Prima si guarda.** Chiedi cosa cambierebbe il playbook senza applicare niente, e verifica che la cartella non sia stata creata.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n"
+          },
+          "soluzione": "ansible-playbook -i inventario.ini sito.yml --check\nls /opt",
+          "verifica": {
+            "nonEsiste": [
+              "/opt/dati"
+            ],
+            "stampa": "changed",
             "usa": [
               "ansible-playbook"
             ]
           },
           "hint": [
-            "ansible-playbook sito.yml"
+            "--check e' la prova a vuoto.",
+            "ansible-playbook -i inventario.ini sito.yml --check"
           ],
-          "spiegazione": "Il recap e' la prova dell'applicazione, non il solo comando."
+          "spiegazione": "Il riepilogo dice cosa **cambierebbe**, e `/opt` e' rimasto vuoto. Su una macchina in produzione questa e' la differenza fra una modifica pianificata e una sorpresa.\n\nÈ lo stesso riflesso di `sed` senza `-i` e di `sshd -t`: prima si guarda, poi si applica. A questo punto del ramo dovrebbe essere automatico."
         },
         {
-          "id": "l19-2",
+          "id": "l19-pb-3",
           "tipo": "terminale",
-          "testo": "Esegui due volte lo stesso playbook e verifica che la seconda sia idempotente.",
+          "difficolta": 3,
+          "testo": "Applica il playbook per davvero e verifica sul filesystem che i due task abbiano fatto quello che dichiaravano.",
           "automazione": true,
-          "soluzione": "ansible-playbook sito.yml\nansible-playbook sito.yml",
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n"
+          },
+          "soluzione": "ansible-playbook -i inventario.ini sito.yml\nls /opt/dati\ncat /opt/dati/analisi.conf",
+          "verifica": {
+            "esiste": [
+              "/opt/dati/analisi.conf"
+            ],
+            "stampa": "soglia=10",
+            "usa": [
+              "ansible-playbook"
+            ]
+          },
+          "hint": [
+            "Senza --check applica.",
+            "ansible-playbook -i inventario.ini sito.yml"
+          ],
+          "spiegazione": "`changed=2`: entrambi i task hanno modificato qualcosa, perche' niente era ancora al suo posto.\n\nLa verifica sul filesystem non e' pignoleria: il recap dice cosa Ansible **crede** di aver fatto, `cat` dice cosa c'e' davvero."
+        },
+        {
+          "id": "l19-pb-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La prova dell'idempotenza.** Rilancia lo stesso playbook e guarda il riepilogo.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n"
+          },
+          "soluzione": "ansible-playbook -i inventario.ini sito.yml\nansible-playbook -i inventario.ini sito.yml",
           "verifica": {
             "stampa": "changed=0",
             "usa": [
@@ -55,48 +314,302 @@
             ]
           },
           "hint": [
-            "Ripeti la stessa riga."
+            "Due volte di seguito, lo stesso comando.",
+            "ansible-playbook -i inventario.ini sito.yml, due volte"
           ],
-          "spiegazione": "La seconda esecuzione non deve riconfigurare cio' che e' gia' corretto."
+          "spiegazione": "`changed=0`: la seconda volta non c'era niente da fare, perche' lo stato era gia' quello dichiarato.\n\nQuesta riga e' anche un **controllo di conformita'**: se domani qualcuno mette le mani su una macchina, il playbook rilanciato dira' `changed` maggiore di zero — e nel frattempo rimettera' tutto a posto."
         },
         {
-          "id": "l19-3",
-          "tipo": "predict",
-          "testo": "Cosa contiene un inventario Ansible?",
-          "opzioni": [
-            "gli host e gruppi a cui applicare il playbook",
-            "le password in chiaro",
-            "i dati CSV",
-            "la cache del browser"
+          "id": "l19-pb-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Scrivi da zero un playbook minimo che garantisca l'esistenza della cartella `/opt/archivio`, e applicalo.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "echo '- hosts: stazioni' > archivio.yml\necho '  tasks:' >> archivio.yml\necho '    - name: cartella archivio' >> archivio.yml\necho '      file:' >> archivio.yml\necho '        path: /opt/archivio' >> archivio.yml\necho '        state: directory' >> archivio.yml\nansible-playbook -i inventario.ini archivio.yml\nls /opt",
+          "verifica": {
+            "dir": [
+              "/opt/archivio"
+            ],
+            "esiste": [
+              "archivio.yml"
+            ],
+            "usa": [
+              "ansible-playbook",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Sei righe: hosts, tasks, name, modulo e i suoi due parametri.",
+            "echo '- hosts: stazioni' > archivio.yml, poi le altre con >>"
           ],
-          "risposta": "gli host e gruppi a cui applicare il playbook",
-          "spiegazione": "L'inventario separa destinazioni e configurazione."
+          "spiegazione": "L'indentazione conta: in YAML e' la struttura, non un abbellimento. `file:` senza valore apre il modulo, e le due righe rientrate sono i suoi parametri.\n\nSei righe che descrivono uno stato, e valgono per una macchina come per cinquanta."
         },
         {
-          "id": "l19-4",
-          "tipo": "predict",
-          "testo": "Perche' l'idempotenza e' importante?",
-          "opzioni": [
-            "puoi rieseguire senza creare cambiamenti inutili",
-            "rende SSH piu' veloce",
-            "sostituisce backup",
-            "elimina il bisogno di review"
+          "id": "l19-pb-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Aggiungi una riga a un file di configurazione **senza sovrascriverlo**: usa il modulo giusto e verifica che il contenuto vecchio sia rimasto.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/etc/acquisizione.conf": "soglia=10\npercorso=/opt/dati\n"
+          },
+          "soluzione": "echo '- hosts: stazioni' > riga.yml\necho '  tasks:' >> riga.yml\necho '    - name: abilita il log dettagliato' >> riga.yml\necho '      lineinfile:' >> riga.yml\necho '        path: /etc/acquisizione.conf' >> riga.yml\necho '        line: log=verbose' >> riga.yml\nansible-playbook -i inventario.ini riga.yml\ncat /etc/acquisizione.conf",
+          "verifica": {
+            "contiene": {
+              "/etc/acquisizione.conf": "soglia=10"
+            },
+            "stampa": "log=verbose",
+            "usa": [
+              "ansible-playbook"
+            ]
+          },
+          "hint": [
+            "lineinfile garantisce che una riga ci sia.",
+            "echo '      lineinfile:' >> riga.yml"
           ],
-          "risposta": "puoi rieseguire senza creare cambiamenti inutili",
-          "spiegazione": "Una configurazione ripetibile e' anche recuperabile."
+          "spiegazione": "`copy` avrebbe **sostituito** il file, cancellando la configurazione che c'era. `lineinfile` garantisce solo che quella riga esista, e lascia il resto dov'era.\n\nÈ la distinzione da tenere a mente su ogni file che non hai scritto tu: quasi sempre vuoi aggiungere, non riscrivere."
         },
         {
-          "id": "l19-5",
+          "id": "l19-pb-7",
           "tipo": "predict",
-          "testo": "Qual e' il rischio di automatizzare prima di capire una configurazione?",
+          "difficolta": 3,
+          "testo": "Un task risulta `changed` **a ogni esecuzione** del playbook. Cosa vuol dire?",
           "opzioni": [
-            "replicare velocemente un errore su molte macchine",
-            "nessun rischio",
-            "ridurre troppo i log",
-            "rompere solo il proprio terminale"
+            "e' scritto male: sta eseguendo un'azione invece di garantire uno stato",
+            "e' normale, i task cambiano sempre qualcosa",
+            "la macchina ha un problema",
+            "manca --check"
           ],
-          "risposta": "replicare velocemente un errore su molte macchine",
-          "spiegazione": "L'ordine corretto e' capire, provare su una macchina, poi automatizzare."
+          "risposta": "e' scritto male: sta eseguendo un'azione invece di garantire uno stato",
+          "spiegazione": "Un task idempotente guarda prima e agisce solo se serve. Uno che risulta sempre `changed` sta facendo qualcosa a prescindere — tipicamente un comando shell messo li' senza condizione.\n\nSu cento macchine vuol dire cento azioni inutili a ogni giro, e soprattutto vuol dire che il `changed=0` non e' piu' un controllo di conformita': non puoi piu' distinguere «tutto a posto» da «qualcuno ha toccato»."
+        },
+        {
+          "id": "l19-pb-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La stazione completa, in un file.** Cartella dei dati, cartella dell'archivio, configurazione: applica, verifica sul filesystem, e rilancia per dimostrare l'idempotenza.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n"
+          },
+          "soluzione": "ansible-playbook -i inventario.ini sito.yml\nls /opt/dati\ncat /opt/dati/analisi.conf\nansible-playbook -i inventario.ini sito.yml",
+          "verifica": {
+            "esiste": [
+              "/opt/dati/analisi.conf"
+            ],
+            "stampa": "changed=0",
+            "usa": [
+              "ansible-playbook",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Applica, verifica, rilancia.",
+            "ansible-playbook -i inventario.ini sito.yml, due volte con le verifiche in mezzo"
+          ],
+          "spiegazione": "Il file `sito.yml` adesso **e'** la definizione di cosa vuol dire «stazione meteo configurata». Una macchina nuova si allinea con un comando; una macchina persa si ricostruisce senza ricordarsi niente.\n\nÈ il punto di arrivo del ramo: non stai piu' amministrando una macchina, stai **descrivendo un'infrastruttura**."
+        }
+      ]
+    },
+    {
+      "id": "l19-stato",
+      "comando": "service, package, idempotenza",
+      "titolo": "la macchina che resta a posto",
+      "esercizi": [
+        {
+          "id": "l19-st-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda i servizi di questa macchina prima di automatizzarli.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl list-units",
+          "verifica": {
+            "stampa": "sshd.service",
+            "usa": [
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "list-units li elenca.",
+            "systemctl list-units"
+          ],
+          "spiegazione": "`acquisizione.service` c'e' ma non e' attivo ne' abilitato: e' esattamente lo stato che un playbook deve correggere, e nel prossimo esercizio lo fa.\n\nGuardare prima di automatizzare e' la stessa prudenza di `--check`: non si scrive un playbook su una macchina che non si e' guardata.",
+          "servizi": true
+        },
+        {
+          "id": "l19-st-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Scrivi un playbook che garantisca il servizio di acquisizione **avviato e abilitato**, e applicalo.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "echo '- hosts: stazioni' > servizio.yml\necho '  tasks:' >> servizio.yml\necho '    - name: acquisizione sempre attiva' >> servizio.yml\necho '      service:' >> servizio.yml\necho '        name: acquisizione' >> servizio.yml\necho '        state: started' >> servizio.yml\necho '        enabled: yes' >> servizio.yml\nansible-playbook -i inventario.ini servizio.yml\nsystemctl is-active acquisizione\nsystemctl is-enabled acquisizione",
+          "verifica": {
+            "stampa": "enabled",
+            "usa": [
+              "ansible-playbook",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Il modulo service vuole name, state ed enabled.",
+            "echo '        enabled: yes' >> servizio.yml"
+          ],
+          "spiegazione": "Due proprieta' in un task: **attivo adesso** e **abilitato al boot** — le due cose che il modulo sui servizi teneva separate, qui dichiarate insieme.\n\nÈ anche la risposta al guasto di quel modulo: con questo playbook, la stazione che ha preso un blackout torna a posto da sola al primo `ansible-playbook`.",
+          "servizi": true
+        },
+        {
+          "id": "l19-st-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Rilancia il playbook dei servizi e dimostra che la seconda volta non tocca niente.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "echo '- hosts: stazioni' > servizio.yml\necho '  tasks:' >> servizio.yml\necho '    - name: acquisizione sempre attiva' >> servizio.yml\necho '      service:' >> servizio.yml\necho '        name: acquisizione' >> servizio.yml\necho '        state: started' >> servizio.yml\necho '        enabled: yes' >> servizio.yml\nansible-playbook -i inventario.ini servizio.yml\nansible-playbook -i inventario.ini servizio.yml",
+          "verifica": {
+            "stampa": "changed=0",
+            "usa": [
+              "ansible-playbook"
+            ]
+          },
+          "hint": [
+            "Applica due volte e guarda il secondo recap.",
+            "ansible-playbook -i inventario.ini servizio.yml, due volte"
+          ],
+          "spiegazione": "Il servizio era gia' avviato e abilitato, quindi il task e' `ok` e non `changed`. Il modulo `service` guarda lo stato prima di agire, come tutti i moduli scritti bene.\n\nÈ la ragione per cui un playbook si puo' mettere in un lavoro periodico: applicarlo ogni notte non fa danni, e rimette a posto quello che nel frattempo e' cambiato.",
+          "servizi": true
+        },
+        {
+          "id": "l19-st-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il playbook deve anche garantire che `tmux` sia installato sulle stazioni. Scrivilo e applicalo.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "echo '- hosts: stazioni' > pacchetti.yml\necho '  tasks:' >> pacchetti.yml\necho '    - name: tmux presente' >> pacchetti.yml\necho '      package:' >> pacchetti.yml\necho '        name: tmux' >> pacchetti.yml\necho '        state: present' >> pacchetti.yml\nansible-playbook -i inventario.ini pacchetti.yml\nansible-playbook -i inventario.ini pacchetti.yml",
+          "verifica": {
+            "stampa": "changed=0",
+            "esiste": [
+              "pacchetti.yml"
+            ],
+            "usa": [
+              "ansible-playbook"
+            ]
+          },
+          "hint": [
+            "Il modulo package vuole name e state.",
+            "echo '        state: present' >> pacchetti.yml"
+          ],
+          "spiegazione": "La prima esecuzione installa, la seconda non fa niente. `package` e' anche un modulo **generico**: sceglie `apt` o `dnf` secondo la distribuzione, quindi lo stesso playbook funziona su Ubuntu e su Red Hat.\n\nÈ il livello di astrazione che rende utile Ansible: dichiari `tmux presente`, non «lancia apt install»."
+        },
+        {
+          "id": "l19-st-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a usare un modulo che qui non esiste e leggi come te lo dice.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n"
+          },
+          "soluzione": "echo '- hosts: stazioni' > strano.yml\necho '  tasks:' >> strano.yml\necho '    - name: prova' >> strano.yml\necho '      docker_container:' >> strano.yml\necho '        name: prova' >> strano.yml\nansible-playbook -i inventario.ini strano.yml",
+          "verifica": {
+            "errore": "non supportato",
+            "usa": [
+              "ansible-playbook"
+            ]
+          },
+          "hint": [
+            "Un modulo inventato, e leggi l'errore.",
+            "ansible-playbook -i inventario.ini strano.yml"
+          ],
+          "spiegazione": "Il simulatore dichiara cosa sa fare invece di far finta: `file`, `copy`, `lineinfile`, `service`, `package`. Ansible vero ne ha migliaia, e la documentazione e' l'unico posto dove cercarli.\n\nQuello che **non** c'e' qui — variabili, template, handler, ruoli — e' meta' di Ansible: quando questi esercizi ti staranno stretti, e' li' che si continua."
+        },
+        {
+          "id": "l19-st-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa vuol dire che un playbook e' **idempotente**?",
+          "opzioni": [
+            "applicarlo due volte non cambia niente la seconda: descrive uno stato, non dei passi",
+            "gira su qualunque distribuzione",
+            "non richiede sudo",
+            "si puo' interrompere a meta' senza danni"
+          ],
+          "risposta": "applicarlo due volte non cambia niente la seconda: descrive uno stato, non dei passi",
+          "spiegazione": "Dal latino *idem potens*, «con lo stesso effetto». È la proprieta' che permette di rilanciare la configurazione ogni notte senza pensarci, e di usare `changed=0` come **controllo di conformita'**.\n\nUno script bash normalmente non e' idempotente: rilanciato, riesegue tutto — e `mkdir` fallisce, il pacchetto si reinstalla, la riga viene aggiunta due volte."
+        },
+        {
+          "id": "l19-st-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Puppet e Chef vogliono un agente su ogni macchina, Ansible no. Cosa cambia in pratica per un laboratorio con quattro macchine?",
+          "opzioni": [
+            "con Ansible non c'e' niente da installare e da mantenere sulle macchine: bastano ssh e le chiavi",
+            "Ansible e' piu' veloce a parita' di configurazione",
+            "Puppet non funziona su Linux",
+            "nessuna differenza pratica"
+          ],
+          "risposta": "con Ansible non c'e' niente da installare e da mantenere sulle macchine: bastano ssh e le chiavi",
+          "spiegazione": "Un agente e' un programma in piu' da installare, aggiornare e diagnosticare quando smette di parlare con il server. Su quattro macchine e' costo puro.\n\nSu migliaia di macchine il modello ad agente ha i suoi vantaggi — si allineano da sole, anche quando nessuno lancia niente. È il tipo di scelta che dipende dalla scala, e la tua scala e' piccola."
+        },
+        {
+          "id": "l19-st-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Una stazione da zero.** Applica il playbook completo, verifica cartella, configurazione e servizio, e chiudi con la prova di conformita'.",
+          "automazione": true,
+          "filesystem": {
+            "/home/tu/inventario.ini": "[banco]\nbanco01\n\n[stazioni]\nmeteo01\nmeteo02\n",
+            "/home/tu/sito.yml": "- hosts: stazioni\n  tasks:\n    - name: cartella dei dati\n      file:\n        path: /opt/dati\n        state: directory\n    - name: configurazione dell'acquisizione\n      copy:\n        dest: /opt/dati/analisi.conf\n        content: soglia=10\n",
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "ansible-playbook -i inventario.ini sito.yml\nls /opt/dati\nsystemctl is-active acquisizione\nansible-playbook -i inventario.ini sito.yml\nansible all -i inventario.ini -m ping",
+          "verifica": {
+            "esiste": [
+              "/opt/dati/analisi.conf"
+            ],
+            "stampa": "changed=0",
+            "usa": [
+              "ansible-playbook",
+              "systemctl",
+              "ansible"
+            ]
+          },
+          "hint": [
+            "Applica, verifica sul sistema, rilancia, e controlla che le macchine rispondano.",
+            "ansible-playbook ... poi systemctl is-active acquisizione"
+          ],
+          "spiegazione": "Un file descrive la stazione, un comando la mette in quello stato, un secondo comando dimostra che ci e' rimasta. Da qui in avanti aggiungere la quinta macchina costa una riga nell'inventario.\n\nÈ l'ultimo passo del ramo Linux: hai smesso di amministrare macchine e hai cominciato a **descrivere infrastruttura**. Il pezzo che manca per chiuderla davvero e' fuori da qui: playbook e inventario in un repository git, dove le modifiche hanno una storia e un autore.",
+          "servizi": true
         }
       ]
     }
