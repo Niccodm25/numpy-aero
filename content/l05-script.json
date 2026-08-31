@@ -662,17 +662,25 @@
         },
         {
           "id": "l05-ro-4",
-          "tipo": "predict",
-          "difficolta": 2,
-          "testo": "Dove va messo `set -eu` dentro uno script?",
-          "opzioni": [
-            "subito dopo lo shebang, prima di qualunque comando",
-            "in fondo, cosi' vale su tutto quello che precede",
-            "prima di ogni comando che puo' fallire",
-            "fuori dallo script, sulla riga che lo lancia"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lo script che si ferma dove deve.** Scrivi `sicuro.sh` con `set -eu` in cima, una riga che fallisce e una che non deve mai essere eseguita, lancialo e dimostra con un conteggio che l'ultima riga non ha scritto niente.",
+          "soluzione": "echo 'set -eu' > sicuro.sh\necho 'cat manca.txt' >> sicuro.sh\necho 'echo arrivato > esito.txt' >> sicuro.sh\nbash sicuro.sh\nls\ncat sicuro.sh",
+          "verifica": {
+            "nonEsiste": [
+              "esito.txt"
+            ],
+            "errore": "non esistente",
+            "usa": [
+              "bash",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Tre righe nello script, poi lancialo e guarda se il file esiste.",
+            "echo 'set -eu' > sicuro.sh, poi le altre con >>"
           ],
-          "risposta": "subito dopo lo shebang, prima di qualunque comando",
-          "spiegazione": "Vale da dove lo scrivi in avanti, quindi in fondo non protegge niente. Lo schema fisso e' tre righe: `#!/bin/bash`, `set -eu`, poi il lavoro. Chi legge lo script dopo di te lo cerca li'."
+          "spiegazione": "`esito.txt` non esiste: lo script si e' fermato sulla riga che ha fallito, e la successiva non e' mai partita. Senza `set -e` quel file ci sarebbe, e direbbe «arrivato» pur avendo saltato il pezzo importante.\n\nÈ il caso che rende `set -eu` non negoziabile: uno script che prosegue sui cocci produce un risultato **che sembra valido**."
         },
         {
           "id": "l05-ar-8",

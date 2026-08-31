@@ -175,29 +175,62 @@
         },
         {
           "id": "l07-ar-7",
-          "tipo": "predict",
-          "testo": "Perche' `tar -tzf archivio.tar.gz` e' una buona abitudine prima di `tar -xzf`?",
-          "opzioni": [
-            "perche' controlla percorsi e contenuti senza scrivere file",
-            "perche' ripara automaticamente l'archivio",
-            "perche' comprime ancora di piu' i dati",
-            "perche' cancella i duplicati"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Archivia solo i CSV.** Trova i file `.csv` sotto `dati`, mettili in un archivio compresso, e verifica che dentro ci siano solo quelli.",
+          "soluzione": "find dati -name *.csv\ntar -czf csv.tar.gz dati/volo.csv dati/a.csv\ntar -tzf csv.tar.gz",
+          "verifica": {
+            "esiste": [
+              "csv.tar.gz"
+            ],
+            "stampa": "dati/a.csv",
+            "usa": [
+              "find",
+              "tar"
+            ]
+          },
+          "hint": [
+            "Prima guarda cosa trova find, poi passa quei file a tar.",
+            "tar -czf csv.tar.gz dati/volo.csv dati/a.csv"
           ],
-          "risposta": "perche' controlla percorsi e contenuti senza scrivere file",
-          "spiegazione": "L'opzione `t` elenca. Estrarre e' una modifica del filesystem; prima di modificare, guardare cosa accadra' e' la stessa disciplina di `ls` prima di `rm`."
+          "spiegazione": "Guardare **prima** cosa si sta per archiviare e' la stessa prudenza di `ls` prima di `rm`: un archivio fatto sul percorso sbagliato si scopre solo quando serve, cioe' nel momento peggiore.\n\n`-t` elenca il contenuto senza estrarre: e' la verifica che costa un secondo e che quasi nessuno fa.",
+          "filesystem": {
+            "/home/tu/dati/volo.csv": "quota\n1000\n",
+            "/home/tu/dati/a.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore\nINFO fine\nERROR timeout\n",
+            "/home/tu/misure.log": "ok\n"
+          },
+          "sistema": true
         },
         {
           "id": "l07-ar-8",
-          "tipo": "predict",
-          "testo": "Un unico `.tar.gz` sulla stessa chiavetta dei dati originali e' un backup sufficiente?",
-          "opzioni": [
-            "no: serve almeno una copia separata e una prova di ripristino",
-            "si': tar garantisce tre copie interne",
-            "si', se contiene gzip",
-            "no, perche' tar non puo' archiviare cartelle"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il ciclo completo dell'archivio.** Comprimi la cartella, cancella l'originale, ripristina dall'archivio e dimostra che i dati sono tornati identici contando le righe del log.",
+          "soluzione": "tar -czf backup.tar.gz dati\nrm -r dati\nls\ntar -xzf backup.tar.gz\nwc -l dati/log.txt\ngrep -c ERROR dati/log.txt",
+          "verifica": {
+            "esiste": [
+              "dati/log.txt"
+            ],
+            "stampa": "2",
+            "usa": [
+              "tar",
+              "rm",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Comprimi, cancella, ripristina, e poi conta per verificare.",
+            "tar -xzf backup.tar.gz, poi grep -c ERROR dati/log.txt"
           ],
-          "risposta": "no: serve almeno una copia separata e una prova di ripristino",
-          "spiegazione": "Un archivio semplifica il trasporto, non crea ridondanza. Se si rompe il supporto, si perdono originale e archivio insieme."
+          "spiegazione": "Un backup che non hai mai ripristinato non e' un backup: e' un file di cui speri qualcosa. Questa e' la prova di ripristino, in tre comandi.\n\nIl conteggio finale e' la verifica che conta: i file esistono **e** contengono quello che devono. Un archivio troncato produce file presenti e vuoti, e la differenza si vede solo contando.",
+          "filesystem": {
+            "/home/tu/dati/volo.csv": "quota\n1000\n",
+            "/home/tu/dati/a.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore\nINFO fine\nERROR timeout\n",
+            "/home/tu/misure.log": "ok\n"
+          },
+          "sistema": true
         }
       ]
     },
@@ -246,20 +279,23 @@
         {
           "id": "l07-pa-3",
           "tipo": "terminale",
-          "testo": "Installa `tmux`, poi rimuovilo senza toccare gli altri pacchetti.",
-          "sistema": true,
-          "soluzione": "sudo apt install tmux\nsudo apt remove tmux\napt list --installed",
+          "difficolta": 3,
+          "testo": "Installa `tmux`, verifica che risulti installato, poi rimuovilo e dimostra che non c'e' piu' nell'elenco.",
+          "soluzione": "sudo apt install tmux\napt list --installed | grep tmux\nsudo apt remove tmux\napt list --installed | grep -c tmux",
           "verifica": {
+            "stampa": "0",
             "usa": [
               "apt",
-              "sudo"
+              "sudo",
+              "grep"
             ]
           },
           "hint": [
-            "remove e' l'opposto di install.",
-            "sudo apt remove tmux"
+            "Filtra l'elenco degli installati con grep, prima e dopo.",
+            "apt list --installed | grep -c tmux"
           ],
-          "spiegazione": "Rimuovere un pacchetto e' un'operazione del gestore, non un `rm` su un eseguibile: cosi' il sistema sa anche quali file gli appartengono."
+          "spiegazione": "`grep -c` restituisce `0`: nell'elenco non c'e' piu' niente che si chiami cosi'. Verificare con un conteggio invece che a occhio e' la differenza fra un controllo e un'impressione — e su un elenco di trecento pacchetti l'occhio non basta.\n\nNota che `remove` toglie il pacchetto ma lascia i file di configurazione; `purge` toglie anche quelli.",
+          "sistema": true
         },
         {
           "id": "l07-pa-4",
@@ -276,29 +312,49 @@
         },
         {
           "id": "l07-pa-5",
-          "tipo": "predict",
-          "testo": "Su Ubuntu devi installare uno strumento da riga di comando. Da dove parti?",
-          "opzioni": [
-            "dal repository con apt, cercando prima il nome del pacchetto",
-            "da un installer casuale trovato con un motore di ricerca",
-            "copiando /usr/bin da un altro computer",
-            "creando un alias bash"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Prima di installare, guarda cosa c'e' gia'.** Conta i pacchetti installati, installane uno, e conta di nuovo.",
+          "soluzione": "apt list --installed | wc -l\nsudo apt install ripgrep\napt list --installed | wc -l\napt list --installed | grep ripgrep",
+          "verifica": {
+            "stampa": "ripgrep",
+            "usa": [
+              "apt",
+              "wc",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Conta prima, installa, conta dopo.",
+            "apt list --installed | wc -l, prima e dopo"
           ],
-          "risposta": "dal repository con apt, cercando prima il nome del pacchetto",
-          "spiegazione": "Il repository conserva dipendenze, aggiornamenti e provenienza. Un download casuale puo' funzionare oggi e lasciare un sistema non aggiornabile domani."
+          "spiegazione": "Il conteggio prima e dopo e' il modo piu' rapido di accorgersi che un'installazione si e' portata dietro **altro**: su una macchina vera un pacchetto ne tira dentro dieci di dipendenze, ed e' il momento in cui conviene guardare.\n\nGli strumenti sono sempre gli stessi del modulo sui log: l'uscita di `apt` e' testo come qualunque altra.",
+          "sistema": true
         },
         {
           "id": "l07-pa-6",
-          "tipo": "predict",
-          "testo": "Quale abbinamento distribuzione-formato e' corretto?",
-          "opzioni": [
-            "Debian e Ubuntu usano .deb; Fedora e RHEL usano .rpm",
-            "Ubuntu usa .rpm; Fedora usa .deb",
-            "tutte usano soltanto snap",
-            "un formato di pacchetto e' un archivio tar senza metadati"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Installa `rsync` e `htop`, poi salva l'elenco dei pacchetti installati in `pacchetti.txt`, per poter ricostruire questa macchina da un'altra parte.",
+          "soluzione": "sudo apt install rsync\nsudo apt install htop\napt list --installed > pacchetti.txt\nwc -l pacchetti.txt\ncat pacchetti.txt",
+          "verifica": {
+            "esiste": [
+              "pacchetti.txt"
+            ],
+            "contiene": {
+              "pacchetti.txt": "rsync"
+            },
+            "usa": [
+              "apt",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Installa, poi salva l'elenco con una redirezione.",
+            "apt list --installed > pacchetti.txt"
           ],
-          "risposta": "Debian e Ubuntu usano .deb; Fedora e RHEL usano .rpm",
-          "spiegazione": "Il formato cambia insieme al gestore: `apt` nel mondo Debian/Ubuntu, `dnf` nel mondo Fedora/RHEL. I concetti di repository e dipendenza restano gli stessi."
+          "spiegazione": "È il modo povero — e sorprendentemente efficace — di documentare una macchina: l'elenco dei pacchetti installati dice quasi tutto di cosa ci gira sopra.\n\nSu una macchina vera si usa `dpkg --get-selections` per rimetterli tutti su un'altra. È la stessa idea del `requirements.txt` del ramo Python e del Dockerfile del modulo sui container: **la configurazione scritta e' l'unica che non si dimentica**.",
+          "sistema": true
         },
         {
           "id": "l07-pa-7",
@@ -416,55 +472,93 @@
         },
         {
           "id": "l07-ri-5",
-          "tipo": "predict",
-          "testo": "Un programma risponde `No space left on device`. Qual e' il primo comando?",
-          "opzioni": [
-            "df -h",
-            "free -h",
-            "kill -9",
-            "uname -a"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Chi ha riempito il disco?** Guarda lo spazio, poi misura quanto occupa la cartella dei dati e salvane il totale in `spazio.txt`.",
+          "soluzione": "df -h > spazio.txt\ndu -sh dati >> spazio.txt\ncat spazio.txt",
+          "verifica": {
+            "contiene": {
+              "spazio.txt": "dati"
+            },
+            "stampa": "Mounted on",
+            "usa": [
+              "df",
+              "du"
+            ]
+          },
+          "hint": [
+            "df guarda i filesystem, du una cartella.",
+            "df -h > spazio.txt, poi du -sh dati >> spazio.txt"
           ],
-          "risposta": "df -h",
-          "spiegazione": "L'errore parla di un dispositivo, cioe' del filesystem. `df -h` dice subito quale filesystem e' pieno e quanto spazio resta."
+          "spiegazione": "Due domande diverse: `df` dice **quanto e' pieno il disco**, `du` dice **quanto occupa una cartella**. Si usano in quest'ordine — prima si scopre che il disco e' pieno, poi si cerca chi lo ha riempito.\n\nQuando i due numeri non tornano — disco pieno ma `du` non trova niente — il sospetto e' il modulo sui dischi: dati scritti in un punto di mount mentre il disco non era montato.",
+          "filesystem": {
+            "/home/tu/dati/volo.csv": "quota\n1000\n",
+            "/home/tu/dati/a.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore\nINFO fine\nERROR timeout\n",
+            "/home/tu/misure.log": "ok\n"
+          },
+          "sistema": true
         },
         {
           "id": "l07-ri-6",
-          "tipo": "predict",
-          "testo": "`df -h` dice che il disco e' pieno. Quale comando aiuta a trovare quale cartella sta occupando spazio?",
-          "opzioni": [
-            "du -sh CARTELLA",
-            "ps aux",
-            "apt update",
-            "gunzip"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prepara la scheda della macchina: sistema, kernel e memoria in `macchina.txt`, e poi mostra solo la riga del kernel.",
+          "soluzione": "uname -a > macchina.txt\nfree -h >> macchina.txt\ngrep Linux macchina.txt",
+          "verifica": {
+            "contiene": {
+              "macchina.txt": "Swap"
+            },
+            "stampa": "x86_64",
+            "usa": [
+              "uname",
+              "free",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Due comandi in un file, poi filtra.",
+            "uname -a > macchina.txt, poi free -h >> macchina.txt"
           ],
-          "risposta": "du -sh CARTELLA",
-          "spiegazione": "`df` localizza il filesystem pieno; `du` misura una directory. Di solito si parte dalla propria cartella di output, non si cancella alla cieca."
+          "spiegazione": "`uname -a` dice sistema, versione del kernel e architettura: sono le tre cose che chiede chiunque debba aiutarti, e la prima cosa che serve per sapere se un pacchetto compilato altrove puo' girare qui.\n\nÈ la stessa scheda che nel modulo sull'hardware si costruisce con `lspci` e `/proc`: qui in due comandi, li' in dettaglio.",
+          "sistema": true
         },
         {
           "id": "l07-ri-7",
-          "tipo": "predict",
-          "testo": "Il computer e' lentissimo e `free -h` mostra swap usato. Cosa suggerisce prima di tutto?",
-          "opzioni": [
-            "che la pressione di memoria puo' aver spostato dati su disco",
-            "che il filesystem e' certamente pieno",
-            "che tar ha corrotto i file",
-            "che apt deve aggiornare i repository"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La verifica prima di lanciare un calcolo lungo.** Controlla spazio libero e memoria, e tieni solo le righe che contano in `controllo.txt`.",
+          "soluzione": "df -h | grep -v tmpfs > controllo.txt\nfree -h | grep Mem >> controllo.txt\ncat controllo.txt",
+          "verifica": {
+            "contiene": {
+              "controllo.txt": "Mem"
+            },
+            "usa": [
+              "df",
+              "free",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Filtra le righe inutili di df, e di free tieni solo Mem.",
+            "df -h | grep -v tmpfs > controllo.txt"
           ],
-          "risposta": "che la pressione di memoria puo' aver spostato dati su disco",
-          "spiegazione": "Lo swap e' molto piu' lento della RAM. Cancellare file non libera RAM: occorre ridurre il carico, chiudere processi inutili o chiedere piu' memoria."
+          "spiegazione": "Due numeri prima di lanciare un job di sei ore: spazio per l'uscita e memoria per il calcolo. Sono i due modi piu' comuni in cui un calcolo lungo muore **dopo** cinque ore invece che subito.\n\n`grep -v` toglie le righe dei filesystem temporanei, che non interessano mai: la stessa pulizia che si fa su qualunque uscita verbosa.",
+          "sistema": true
         },
         {
           "id": "l07-ri-8",
           "tipo": "predict",
-          "testo": "Perche' `du -sh dati` e `df -h` possono raccontare numeri apparentemente diversi?",
+          "difficolta": 3,
+          "testo": "`df` dice che il disco e' pieno al 100%, ma `du -sh /` non trova cosi' tanti dati. Cosa sospetti?",
           "opzioni": [
-            "du misura una cartella; df misura l'intero filesystem che la contiene",
-            "uno misura RAM e l'altro CPU",
-            "df mostra solo file compressi",
-            "du funziona solo su archivi tar"
+            "file nascosti sotto un punto di mount, scritti quando il disco non era montato",
+            "un errore di df",
+            "il journal di systemd",
+            "la cache del kernel, che si libera da sola"
           ],
-          "risposta": "du misura una cartella; df misura l'intero filesystem che la contiene",
-          "spiegazione": "Le domande sono diverse e complementari: `df` dice quanto resta sul volume, `du` chi sta consumando spazio dentro una porzione dell'albero."
+          "risposta": "file nascosti sotto un punto di mount, scritti quando il disco non era montato",
+          "spiegazione": "Se una cartella e' un punto di mount, quello che c'era scritto **sotto** resta sul disco di sistema ed e' invisibile finche' il disco e' montato sopra. `du` non lo vede, `df` lo conta.\n\nLa verifica e' smontare e guardare, ed e' il guasto per esteso del modulo sui dischi. L'altro sospetto classico: un file grande cancellato mentre un processo lo teneva aperto — lo spazio torna solo quando quel processo finisce."
         }
       ]
     }

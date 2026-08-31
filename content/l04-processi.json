@@ -184,19 +184,23 @@
         {
           "id": "l04-ki-1",
           "tipo": "terminale",
-          "testo": "Ferma il processo `firefox`, che ha PID 1455.",
-          "processi": true,
-          "soluzione": "kill 1455\nps aux",
+          "difficolta": 3,
+          "testo": "Il processo `1455` non risponde piu'. Terminalo e **dimostra** che non c'e' piu' fra i processi.",
+          "soluzione": "ps aux | grep 1455\nkill 1455\nps aux | grep -c 1455",
           "verifica": {
+            "stampa": "0",
             "usa": [
-              "kill"
+              "kill",
+              "ps",
+              "grep"
             ]
           },
           "hint": [
-            "kill seguito dal numero.",
-            "kill 1455"
+            "Contalo prima e dopo, invece di guardare a occhio.",
+            "ps aux | grep -c 1455"
           ],
-          "spiegazione": "`kill` senza opzioni manda `SIGTERM`, che significa \"per favore, chiuditi\". Il programma lo **riceve** e puo' reagire: salvare, chiudere le connessioni, cancellare i temporanei."
+          "spiegazione": "`grep -c` restituisce `0`: il processo non c'e' piu'. Verificare con un conteggio e' la differenza fra un controllo e un'impressione — su una macchina con duecento processi l'elenco non si legge a occhio.\n\n`kill` senza numero manda il segnale 15, che **chiede** al programma di chiudersi: quello lo riceve e puo' salvare il suo lavoro prima di uscire.",
+          "processi": true
         },
         {
           "id": "l04-ki-2",
@@ -232,20 +236,23 @@
         {
           "id": "l04-ki-4",
           "tipo": "terminale",
-          "testo": "Fermalo davvero, come amministratore.",
-          "processi": true,
-          "soluzione": "sudo kill 412\nps aux",
+          "difficolta": 3,
+          "testo": "Il processo di un altro utente non risponde. Terminalo con i privilegi giusti e verifica che sia sparito.",
+          "soluzione": "ps aux | grep 412\nsudo kill 412\nps aux | grep -c 412",
           "verifica": {
+            "stampa": "0",
             "usa": [
               "sudo",
-              "kill"
+              "kill",
+              "grep"
             ]
           },
           "hint": [
-            "Anteponi sudo.",
-            "sudo kill 412"
+            "Con sudo, e poi conta.",
+            "sudo kill 412, poi ps aux | grep -c 412"
           ],
-          "spiegazione": "`sudo kill` funziona. Vale la pena chiedersi **perche'** stai fermando un processo di sistema prima di farlo: quasi sempre la risposta giusta e' non farlo, e riavviare il servizio invece che ucciderlo."
+          "spiegazione": "Senza `sudo` il segnale non parte: puoi terminare solo i **tuoi** processi. È la stessa regola dei permessi sui file, applicata ai processi.\n\nSu una macchina condivisa e' anche una cortesia: prima di uccidere il calcolo di qualcun altro conviene guardare `ps aux` e capire di chi e'.",
+          "processi": true
         },
         {
           "id": "l04-ki-5",
@@ -305,20 +312,23 @@
         {
           "id": "l04-ki-7",
           "tipo": "terminale",
-          "testo": "Ferma tutti i processi chiamati `python`, per nome invece che per numero.",
-          "processi": true,
-          "soluzione": "ps aux | grep python\npkill python\nps aux",
+          "difficolta": 4,
+          "testo": "Tutti i processi Python del banco vanno fermati. Falli fuori per nome e dimostra che non ne resta nessuno.",
+          "soluzione": "ps aux | grep python\npkill python\nps aux | grep -c python",
           "verifica": {
+            "stampa": "0",
             "usa": [
               "pkill",
-              "ps"
+              "ps",
+              "grep"
             ]
           },
           "hint": [
-            "Il comando e' pkill seguito dal nome.",
-            "pkill python"
+            "pkill lavora per nome; poi conta quelli rimasti.",
+            "pkill python, poi ps aux | grep -c python"
           ],
-          "spiegazione": "`pkill python` li ferma **tutti** — qui due. È comodo e pericoloso: con tre python in esecuzione ne ferma tre, compreso quello che stava scrivendo i risultati di sei ore di calcolo.\n\nPrima di `pkill`, `ps aux | grep` sullo stesso nome: se l'elenco mostra quello che ti aspetti, `pkill` fermera' quello."
+          "spiegazione": "`pkill` colpisce **tutti** i processi che corrispondono al nome, ed e' comodo e pericoloso in parti uguali: `pkill python` su una macchina condivisa uccide anche i calcoli degli altri.\n\nLa forma prudente e' sempre la stessa: `ps aux | grep python` **prima**, per vedere chi verrebbe colpito. È lo stesso riflesso di `ls` prima di `rm` e di `xargs echo rm` prima di `xargs rm`.",
+          "processi": true
         },
         {
           "id": "l04-ki-8",
@@ -343,19 +353,23 @@
         {
           "id": "l04-so-1",
           "tipo": "terminale",
-          "testo": "Avvia una simulazione in sottofondo e riprendi subito il prompt.",
-          "processi": true,
-          "soluzione": "avvia python lungo.py",
+          "difficolta": 3,
+          "testo": "Avvia il calcolo lungo in sottofondo e verifica che stia girando davvero, contando quante volte compare fra i processi.",
+          "soluzione": "avvia python lungo.py\nps aux | grep lungo.py\nps aux | grep -c lungo.py",
           "verifica": {
+            "stampa": "1",
             "usa": [
-              "avvia"
+              "avvia",
+              "ps",
+              "grep"
             ]
           },
           "hint": [
-            "Il comando e' avvia, seguito da quello da lanciare.",
-            "avvia python lungo.py"
+            "Avvialo, poi contalo fra i processi.",
+            "ps aux | grep -c lungo.py"
           ],
-          "spiegazione": "Il sistema risponde con il numero del lavoro e il PID. Su una shell vera si scrive `python simula.py &`, con la e commerciale in fondo; `avvia` e' soltanto la forma esplicita lasciata in questi primi esercizi. Il modulo successivo usa direttamente la &."
+          "spiegazione": "Il processo c'e' e il terminale e' tornato libero: e' quello che fa il sottofondo. `avvia` qui sta per il `&` finale di una riga vera — un comando del simulatore, come dice la lezione.\n\nContare invece di guardare serve soprattutto negli script: `if [ $(ps aux | grep -c mio_calcolo) -eq 0 ]` e' il modo con cui uno script controlla se il suo lavoro sta ancora girando.",
+          "processi": true
         },
         {
           "id": "l04-so-2",
@@ -444,36 +458,49 @@
         },
         {
           "id": "l04-so-7",
-          "tipo": "predict",
-          "testo": "Su un cluster, per un calcolo di sei ore: `nohup` o `tmux` ?",
-          "opzioni": [
-            "tmux: fa sopravvivere il processo e permette di tornare a guardarlo",
-            "nohup: e' piu' semplice e fa la stessa cosa",
-            "nessuno dei due: basta la & in fondo",
-            "tmux, perche' nohup non funziona via SSH"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Prima di andare a casa.** Lancia il calcolo in modo che sopravviva alla disconnessione, salva l'elenco dei processi in `serale.txt`, e conta quanti ne restano attivi.",
+          "soluzione": "nohup python simula.py\nps aux > serale.txt\ngrep -c simula serale.txt\ncat serale.txt",
+          "verifica": {
+            "contiene": {
+              "serale.txt": "simula.py"
+            },
+            "stampa": "1",
+            "usa": [
+              "nohup",
+              "ps",
+              "grep"
+            ]
+          },
+          "hint": [
+            "nohup, poi salva ps aux in un file e conta.",
+            "ps aux > serale.txt, poi grep -c simula serale.txt"
           ],
-          "risposta": "tmux: fa sopravvivere il processo e permette di tornare a guardarlo",
-          "spiegazione": "`tmux` — o `screen` — perche' oltre a far sopravvivere il processo permettono di **tornare a guardarlo**: ci si riconnette alla sessione e si vede l'output dal vivo. `nohup` lancia e lascia andare, e per rivedere qualcosa bisogna leggere `nohup.out`."
+          "spiegazione": "L'elenco salvato e' il promemoria per domani: quali calcoli hai lasciato girare, con quali numeri. Su una macchina condivisa e' anche la risposta alla domanda «di chi e' questo processo che occupa la macchina da tre giorni?».\n\n`nohup` e' la difesa minima; per un calcolo che vuoi **rivedere** mentre gira, il modulo sulla macchina remota mostra `tmux`.",
+          "processi": true
         },
         {
           "id": "l04-so-8",
           "tipo": "terminale",
-          "testo": "**Il ciclo completo.** Avvia un calcolo che sopravviva, controlla che sia partito, e fermalo quando decidi tu.",
-          "difficolta": 3,
-          "processi": true,
-          "soluzione": "nohup python simula.py\nps aux | grep simula\npkill python",
+          "difficolta": 4,
+          "testo": "**Il calcolo di stanotte.** Lancialo in modo che sopravviva alla disconnessione, verifica che stia girando, e alla fine fermalo dimostrando che non e' rimasto niente.",
+          "soluzione": "nohup python simula.py\nps aux | grep -c simula\npkill python\nps aux | grep -c simula",
           "verifica": {
+            "stampa": "0",
             "usa": [
               "nohup",
               "ps",
-              "pkill"
+              "pkill",
+              "grep"
             ]
           },
           "hint": [
-            "nohup per avviarlo, ps aux | grep per controllarlo.",
-            "pkill python per fermarlo, oppure kill con il PID."
+            "Conta prima e dopo, invece di guardare l'elenco a occhio.",
+            "ps aux | grep -c simula, prima e dopo pkill"
           ],
-          "spiegazione": "Avviare, verificare, fermare: sono le tre cose che si fanno a un calcolo lungo, e la seconda e' quella che si dimentica. Un processo avviato con `nohup` e mai controllato puo' essere morto dopo dieci secondi senza che nessuno se ne accorga fino al giorno dopo.\n\nLa regola da portarsi via: se il calcolo dura piu' di quanto sei disposto a tenere aperta la finestra, `nohup` o `tmux`. Deciderlo **prima** costa dieci caratteri; scoprirlo dopo costa il calcolo."
+          "spiegazione": "Il conteggio a `1` dopo il lancio e a `0` dopo `pkill` e' la prova che il ciclo si e' chiuso: avviato, verificato, fermato.\n\nLasciare processi in giro su una macchina condivisa e' il modo piu' rapido di rendersi antipatici — e di trovare la macchina piena quando servira' a te.",
+          "processi": true
         }
       ]
     }

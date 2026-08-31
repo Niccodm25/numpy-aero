@@ -86,7 +86,7 @@
         "l02",
         "l03",
         "l04",
-        "l04bis",
+        "l21",
         "l05",
         "l06",
         "c04",
@@ -238,8 +238,8 @@
       "disponibile": true
     },
     {
-      "id": "l04bis",
-      "file": "l04bis-job-control.json",
+      "id": "l21",
+      "file": "l21-job-control.json",
       "titolo": "Controllare i job interattivi",
       "disponibile": true
     },
