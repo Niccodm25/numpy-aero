@@ -792,7 +792,45 @@ caso("il RAID resta leggibile con un disco guasto, un LUKS chiuso non si monta",
   esegui(sh, "mount /dev/mapper/sicuro /sicuro");
   assert.match(esegui(sh, "mount").out, /\/sicuro/);
 });
-caso("docker simulato costruisce e avvia immagini",()=>{const sh=creaShell({}, {comandi:{...POSIX,...CONTAINER}});statoContainer(sh);esegui(sh,"docker build -t analisi:1 .");assert.match(esegui(sh,"docker run analisi:1").out,/isolamento/);});
+caso("build legge un Dockerfile vero, e il container muore con i suoi file", () => {
+  const sh = creaShell({ "/home/tu/analisi.sh": "x" + CAPO }, { comandi: { ...POSIX, ...CONTAINER } });
+  statoContainer(sh);
+  assert.match(esegui(sh, "docker build -t analisi:1 .").errore, /Dockerfile/, "senza Dockerfile non si costruisce");
+
+  esegui(sh, "echo 'FROM python:3.12' > Dockerfile");
+  esegui(sh, "echo 'RUN pip install numpy==2.2.5' >> Dockerfile");
+  esegui(sh, "echo 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile");
+  esegui(sh, "echo 'WORKDIR /lavoro' >> Dockerfile");
+  esegui(sh, "docker build -t analisi:1 .");
+  assert.match(esegui(sh, "docker run analisi:1 pip list").out, /numpy==2\.2\.5/);
+  assert.match(esegui(sh, "docker run analisi:1 ls").out, /analisi\.sh/);
+
+  esegui(sh, "docker run analisi:1 sh -c 'echo perso > /lavoro/out.txt'");
+  assert.equal(V.esiste(sh.fs, "/home/tu/out.txt"), false, "quello che scrive dentro muore con lui");
+});
+
+caso("un volume fa uscire il risultato, Apptainer monta la home", () => {
+  const sh = creaShell(
+    { "/home/tu/dati/log.txt": "INFO a" + CAPO + "ERROR b" + CAPO },
+    { comandi: { ...POSIX, ...CONTAINER } }
+  );
+  statoContainer(sh);
+  esegui(sh, "docker run -v /home/tu/dati:/lavoro/dati python:3.12 sh -c 'grep -c ERROR /lavoro/dati/log.txt > /lavoro/dati/errori.txt'");
+  assert.match(V.leggi(sh.fs, "/home/tu/dati/errori.txt"), /1/, "il volume riporta il risultato");
+
+  esegui(sh, "apptainer build base.sif docker://python:3.12");
+  assert.equal(esegui(sh, "apptainer exec base.sif grep -c ERROR dati/log.txt").out, "1", "la home c'e' senza -v");
+});
+
+caso("un Dockerfile con una base sconosciuta o un COPY fuori contesto fallisce", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...CONTAINER } });
+  statoContainer(sh);
+  esegui(sh, "echo 'FROM python:4.0' > Dockerfile");
+  assert.match(esegui(sh, "docker build -t rotta:1 .").errore, /base sconosciuta/);
+  esegui(sh, "echo 'FROM python:3.12' > Dockerfile");
+  esegui(sh, "echo 'COPY ../fuori.txt /lavoro/fuori.txt' >> Dockerfile");
+  assert.match(esegui(sh, "docker build -t rotta:2 .").errore, /fuori dal contesto/);
+});
 caso("ufw conserva una policy difensiva verificabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...SICUREZZA}});statoSicurezza(sh);esegui(sh,"ufw enable");esegui(sh,"ufw allow 443");assert.match(esegui(sh,"ufw status").out,/443\/tcp/);});
 caso("playbook idempotente cambia solo alla prima esecuzione",()=>{const sh=creaShell({}, {comandi:{...POSIX,...AUTOMAZIONE}});statoAutomazione(sh);esegui(sh,"ansible-playbook sito.yml");assert.match(esegui(sh,"ansible-playbook sito.yml").out,/changed=0/);});
 

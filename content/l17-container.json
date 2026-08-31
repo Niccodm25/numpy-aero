@@ -1,1 +1,666 @@
-{"id":"l17","titolo":"Container e virtualizzazione","perche":"Un ambiente riproducibile non dipende da cosa hai installato ieri sul portatile. Un'immagine dichiara software e versione; un container la esegue isolata, con dati e rete espliciti.","funzioni":["docker images","docker run","docker build -t","Dockerfile","volumi","reti","Apptainer","KVM","QEMU","libvirt"],"lezioni":[{"id":"l17-l1","titolo":"Immagine, container, volume","md":"Un'immagine e' un modello immutabile; `docker run immagine` crea un container, cioe' un processo isolato da quel modello. `docker build -t analisi:1 .` costruisce un'immagine da un Dockerfile. I dati non devono vivere dentro il container: un volume o bind mount li rende espliciti e persistenti. Immagine e container non sono una VM: condividono il kernel dell'host."},{"id":"l17-l2","titolo":"Dal portatile al cluster","md":"Un Dockerfile e' documentazione eseguibile: base, dipendenze, copia del codice e comando di avvio. Fissa versioni importanti e non mettere segreti nell'immagine. Sui cluster spesso si usa Apptainer, progettato per ambienti multiutente. KVM/QEMU/libvirt sono invece virtualizzazione completa: un kernel ospite, piu' isolamento e piu' costo."}],"raccolte":[{"id":"l17-con","comando":"docker","titolo":"rendere un'analisi portabile","esercizi":[{"id":"l17-1","tipo":"terminale","testo":"Elenca le immagini disponibili.","container":true,"soluzione":"docker images","verifica":{"stampa":"python:3.12","usa":["docker"]},"hint":["docker images"],"spiegazione":"L'immagine e' il modello riutilizzabile."},{"id":"l17-2","tipo":"terminale","testo":"Avvia l'immagine Python isolata.","container":true,"soluzione":"docker run python:3.12","verifica":{"stampa":"isolamento","usa":["docker"]},"hint":["docker run immagine."],"spiegazione":"Run crea un container dall'immagine."},{"id":"l17-3","tipo":"terminale","testo":"Costruisci l'immagine analisi:1 dal Dockerfile della cartella corrente.","container":true,"soluzione":"docker build -t analisi:1 .\ndocker images","verifica":{"stampa":"analisi:1","usa":["docker"]},"hint":["-t assegna il tag."],"spiegazione":"Il tag identifica una versione riproducibile."},{"id":"l17-4","tipo":"predict","testo":"Dove devono stare i risultati prodotti da un container?","opzioni":["in un volume o bind mount esplicito","solo dentro il layer del container","nel Dockerfile","nella cache di Docker"],"risposta":"in un volume o bind mount esplicito","spiegazione":"Cosi' i dati sopravvivono alla rimozione del container."},{"id":"l17-5","tipo":"predict","testo":"Quando un cluster non permette Docker daemon, quale strumento e' comune?","opzioni":["Apptainer","rm -r","tmux","netstat"],"risposta":"Apptainer","spiegazione":"E' pensato per l'uso multiutente sui cluster."}]}]}
+{
+  "id": "l17",
+  "titolo": "Container: immagini, volumi, riproducibilita'",
+  "perche": "Un'analisi che gira solo sul tuo portatile vale meta'. Un container mette ambiente, librerie e codice in un pacchetto che chiunque puo' rieseguire — sul cluster, fra due anni, con gli stessi numeri. Qui impari a costruirlo, a farne uscire i risultati, e a portarlo dove Docker non c'e'.",
+  "funzioni": [
+    "docker images",
+    "docker pull",
+    "docker run",
+    "docker run -v",
+    "docker run -d",
+    "docker ps",
+    "docker logs",
+    "docker stop",
+    "docker rm",
+    "docker build",
+    "Dockerfile",
+    "FROM",
+    "RUN",
+    "COPY",
+    "WORKDIR",
+    "CMD",
+    "apptainer build",
+    "apptainer exec"
+  ],
+  "lezioni": [
+    {
+      "id": "l17-l1",
+      "titolo": "Immagine, container, e cosa muore alla fine",
+      "md": "```\ndocker images                       # le immagini che hai\ndocker pull python:3.12             # scaricane una\ndocker run python:3.12 echo ciao    # avvia un container, esegui, esci\ndocker ps -a                        # i container, anche quelli finiti\ndocker logs c1                      # cosa aveva stampato\ndocker rm c1                        # buttalo via\n```\n\nDue parole diverse per due cose diverse:\n\n- **immagine**: il pacchetto fermo — sistema, librerie, il tuo codice. Come un file `.iso`.\n- **container**: un'immagine **in esecuzione**, con un filesystem suo che nasce quando parte e **muore quando finisce**.\n\n### La regola che sorprende tutti la prima volta\n\nQuello che il container scrive dentro se stesso **e' perso**. Lanci l'analisi, produce `risultati.csv`, il container esce, e di quel file non resta niente: era su un disco che non esiste piu'.\n\nNon e' un difetto, e' il punto: un container riparte sempre identico, perche' non si porta dietro le modifiche. Per far uscire un risultato serve un **volume**, ed e' la terza raccolta di questo modulo.\n\n### Perche' non basta un ambiente virtuale\n\n`venv` isola i pacchetti Python. Un container isola **tutto**: la versione di Python, le librerie di sistema, i compilatori, i file di configurazione. È la differenza fra «sul mio computer funziona» detto con speranza e detto con un file che chiunque puo' rieseguire."
+    },
+    {
+      "id": "l17-l2",
+      "titolo": "Il Dockerfile: l'ambiente scritto una volta",
+      "md": "```dockerfile\nFROM python:3.12\nRUN pip install numpy pandas\nCOPY analisi.sh /lavoro/analisi.sh\nWORKDIR /lavoro\nCMD [\"python\", \"analisi.py\"]\n```\n\nCinque istruzioni e hai descritto un ambiente di calcolo completo:\n\n- **FROM** — da cosa parti. Non si parte mai da zero.\n- **RUN** — cosa esegui **durante la costruzione**: installare pacchetti, compilare.\n- **COPY** — cosa porti dentro dall'esterno.\n- **WORKDIR** — la cartella in cui ti trovi quando il container parte.\n- **CMD** — cosa esegue se non gli dici altro.\n\n```\ndocker build -t analisi:1 .\n```\n\nIl punto finale e' il **contesto di build**: la cartella da cui `COPY` puo' prendere i file. Un `COPY ../altro` fallisce, e non e' un capriccio — il contesto e' quello che viene mandato al motore, e deve essere delimitato.\n\n### Le versioni non si lasciano al caso\n\n`FROM python:3.12` e' meglio di `FROM python:latest`, che domani sara' un'altra cosa. `RUN pip install numpy==2.2.5` e' meglio di `numpy` e basta. La riproducibilita' e' fatta esattamente di questi dettagli: un'immagine che ricostruisci fra due anni deve dare gli stessi numeri.\n\n### Dentro il container non si installa a mano\n\nSe entri in un container e lanci `pip install`, quella libreria muore con lui. La modifica va nel Dockerfile e l'immagine si ricostruisce: e' l'unico modo perche' resti anche per gli altri."
+    },
+    {
+      "id": "l17-l3",
+      "titolo": "Volumi, e Apptainer sui cluster",
+      "md": "```\ndocker run -v /home/tu/dati:/lavoro/dati analisi:1 sh -c 'python riduci.py'\n```\n\n`-v tua_cartella:cartella_del_container` collega le due: quello che il container scrive li' dentro **resta da te** quando esce. È il modo — l'unico — di far uscire dei risultati.\n\nSi legge come `scp`: prima la parte tua, poi quella di la'.\n\n### Sul cluster Docker non c'e'\n\nDocker richiede un demone con privilegi di amministratore, e nessun cluster condiviso te lo da'. La' si usa **Apptainer** (prima Singularity):\n\n```\napptainer build analisi.sif docker://analisi:1   # un file solo\napptainer exec analisi.sif python riduci.py      # niente demone\n```\n\nTre differenze pratiche che contano:\n\n1. l'immagine e' **un file** (`.sif`) che copi con `scp` come qualunque altro;\n2. gira **con il tuo utente**, non da root — ed e' il motivo per cui i cluster lo accettano;\n3. la tua **home e' montata di default**: i dati non si copiano dentro l'immagine, si leggono da dove sono.\n\n### La pipeline riproducibile\n\nL'obiettivo finale e' questo: un Dockerfile con le versioni fissate, il codice in un repository, i dati fuori dall'immagine e passati come volume. Chiunque, fra due anni, ricostruisce l'immagine e riottiene i tuoi numeri — sul portatile o sul cluster, e' lo stesso."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l17-base",
+      "comando": "docker run, ps, logs",
+      "titolo": "immagini e container",
+      "esercizi": [
+        {
+          "id": "l17-ba-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda quali immagini ci sono gia' su questa macchina, con i pacchetti che si portano dietro.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker images",
+          "verifica": {
+            "stampa": "python:3.12",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Una parola sola dopo docker.",
+            "docker images"
+          ],
+          "spiegazione": "Tre immagini di base: due Python e un Ubuntu. Le immagini sono **ferme**: sono pacchetti su disco, non programmi in esecuzione.\n\n`python:3.12-slim` esiste perche' un'immagine piu' piccola si scarica prima e ha meno roba dentro da tenere aggiornata — su un cluster dove copi immagini a mano, la differenza si sente."
+        },
+        {
+          "id": "l17-ba-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Avvia un container dall'immagine Python e fagli eseguire un comando, poi guarda l'elenco dei container.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run python:3.12 echo dentro il container\ndocker ps -a",
+          "verifica": {
+            "stampa": "dentro il container",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Dopo il nome dell'immagine si scrive il comando da eseguire.",
+            "docker run python:3.12 echo dentro il container"
+          ],
+          "spiegazione": "Il comando gira dentro il container e l'uscita torna qui, poi il container **finisce**: `docker ps -a` lo mostra come `exited`.\n\nUn container non e' una macchina virtuale accesa: e' un processo isolato che vive quanto il comando che gli hai dato."
+        },
+        {
+          "id": "l17-ba-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Chiedi al container che immagine sta usando e cosa c'e' dentro la cartella di lavoro: prima `pip list`, poi `ls`.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run python:3.12 pip list\ndocker run python:3.12 ls /",
+          "verifica": {
+            "stampa": "setuptools",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Due container, due comandi diversi.",
+            "docker run python:3.12 pip list"
+          ],
+          "spiegazione": "L'immagine di base ha `pip` e `setuptools` e basta: niente `numpy`, niente del tuo codice. Tutto quello che ti serve va aggiunto — ed e' il mestiere del Dockerfile della prossima raccolta.\n\nOgni `docker run` crea un container **nuovo**: i due comandi non si sono visti fra loro."
+        },
+        {
+          "id": "l17-ba-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quello che scrivi dentro sparisce.** Fai scrivere un file al container, poi controlla se e' arrivato da te e cosa dice `docker ps -a`.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run python:3.12 sh -c 'echo risultato > /lavoro/out.txt'\nls\ndocker ps -a",
+          "verifica": {
+            "nonEsiste": [
+              "out.txt"
+            ],
+            "stampa": "exited",
+            "usa": [
+              "docker",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Fai scrivere il file, poi guarda nella tua cartella.",
+            "docker run python:3.12 sh -c 'echo risultato > /lavoro/out.txt'"
+          ],
+          "spiegazione": "Il file e' stato scritto davvero — dentro il filesystem del container, che e' morto insieme a lui. Da te non c'e' niente.\n\nÈ la sorpresa numero uno di chi comincia, e non e' un difetto: un container riparte sempre identico proprio perche' non conserva le modifiche. Per far uscire un risultato serve un volume, ed e' la terza raccolta."
+        },
+        {
+          "id": "l17-ba-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Un container che gira in sottofondo: avvialo staccato, guarda l'elenco dei container attivi e fermalo.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run -d python:3.12 echo servizio\ndocker ps\ndocker stop c1\ndocker ps -a",
+          "verifica": {
+            "stampa": "exited",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "-d stacca il container e ti restituisce il suo id.",
+            "docker run -d python:3.12 echo servizio, poi docker stop c1"
+          ],
+          "spiegazione": "`-d` (detach) e' come il `&` del modulo sui processi: il container parte e tu riprendi il terminale. `docker ps` mostra solo quelli in esecuzione, `docker ps -a` anche quelli finiti.\n\nÈ la forma con cui girano i servizi: un database, un server web, una catena di acquisizione."
+        },
+        {
+          "id": "l17-ba-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Recupera quello che aveva stampato un container gia' finito, poi fai pulizia.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run python:3.12 echo misura completata\ndocker logs c1\ndocker rm c1\ndocker ps -a",
+          "verifica": {
+            "stampa": "misura completata",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "logs con l'id del container, poi rm.",
+            "docker logs c1, poi docker rm c1"
+          ],
+          "spiegazione": "L'uscita di un container resta consultabile anche dopo che e' finito: `docker logs` e' il primo posto dove guardare quando un job containerizzato non ha prodotto quello che doveva.\n\n`docker rm` libera lo spazio: i container finiti restano li' finche' non li togli, e su una macchina che ne lancia cento al giorno il disco se ne accorge."
+        },
+        {
+          "id": "l17-ba-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Che differenza c'e' fra un container e un ambiente virtuale Python (`venv`)?",
+          "opzioni": [
+            "il venv isola i pacchetti Python, il container isola tutto il sistema attorno",
+            "sono la stessa cosa, con nomi diversi",
+            "il container e' piu' leggero del venv",
+            "il venv funziona solo su Linux"
+          ],
+          "risposta": "il venv isola i pacchetti Python, il container isola tutto il sistema attorno",
+          "spiegazione": "Un `venv` non ti protegge da una versione diversa di Python, da una libreria di sistema mancante, da un compilatore assente. Un container si porta dietro anche quelli.\n\nIl prezzo e' il peso: un venv sono pochi megabyte, un'immagine anche un giga. Per un'analisi che gira solo sul tuo portatile, il venv basta; per una che deve girare **anche altrove fra due anni**, no."
+        },
+        {
+          "id": "l17-ba-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Confronto diretto.** Fai stampare al container la lista dei pacchetti dell'immagine di base e poi prova a installarne uno a mano dentro: leggi cosa risponde.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run python:3.12 pip list\ndocker run python:3.12 pip install numpy\ndocker images | grep python",
+          "verifica": {
+            "stampa": "si installa nel Dockerfile",
+            "usa": [
+              "docker",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Prima l'elenco, poi prova a installare dentro il container, poi guarda le immagini.",
+            "docker run python:3.12 pip install numpy, e docker images | grep python"
+          ],
+          "spiegazione": "Installare a mano dentro un container e' inutile due volte: la libreria muore con il container, e nessun altro sa che ti serviva.\n\nLa modifica va nel **Dockerfile**, che e' un file di testo versionabile: da li' chiunque ricostruisce lo stesso ambiente, tu compreso fra sei mesi. È tutta la differenza fra un ambiente e un ambiente **riproducibile**."
+        }
+      ]
+    },
+    {
+      "id": "l17-dockerfile",
+      "comando": "Dockerfile e docker build",
+      "titolo": "l'ambiente scritto una volta",
+      "esercizi": [
+        {
+          "id": "l17-df-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi un `Dockerfile` che parte da `python:3.12` e installa `numpy` e `pandas`, poi costruisci l'immagine `analisi:1`.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy pandas' >> Dockerfile\ndocker build -t analisi:1 .\ndocker images",
+          "verifica": {
+            "esiste": [
+              "Dockerfile"
+            ],
+            "stampa": "analisi:1",
+            "usa": [
+              "docker",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Due righe: FROM e RUN. Poi docker build -t nome:tag .",
+            "docker build -t analisi:1 ."
+          ],
+          "spiegazione": "Il punto finale non e' decorazione: e' il **contesto di build**, cioe' la cartella da cui l'immagine viene costruita.\n\n`docker images` mostra l'immagine nuova con i pacchetti che si porta dietro. Da questo momento e' un pacchetto fermo, pronto a essere eseguito o copiato altrove."
+        },
+        {
+          "id": "l17-df-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Aggiungi il tuo script all'immagine: copia `analisi.sh` in `/lavoro` e fai in modo che il container parta da li'. Poi verifica che dentro ci sia.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy pandas' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t analisi:2 .\ndocker run analisi:2 ls",
+          "verifica": {
+            "contiene": {
+              "Dockerfile": "COPY analisi.sh"
+            },
+            "stampa": "analisi.sh",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "COPY porta un file dentro l'immagine, WORKDIR decide da dove parte.",
+            "echo 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile"
+          ],
+          "spiegazione": "`COPY` mette il file **dentro l'immagine**: da adesso quel codice viaggia con lei, e chi la esegue non deve procurarselo.\n\n`WORKDIR` e' la cartella in cui il container si trova appena parte, ed e' il motivo per cui `ls` senza argomenti mostra proprio il tuo script."
+        },
+        {
+          "id": "l17-df-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a costruire un'immagine in una cartella senza `Dockerfile`, e leggi l'errore.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "mkdir vuota\ncd vuota\ndocker build -t prova:1 .",
+          "verifica": {
+            "errore": "Dockerfile",
+            "usa": [
+              "docker",
+              "mkdir"
+            ]
+          },
+          "hint": [
+            "Sposta la shell in una cartella vuota e prova a costruire.",
+            "cd vuota, poi docker build -t prova:1 ."
+          ],
+          "spiegazione": "`docker build` cerca un file chiamato esattamente `Dockerfile` nel contesto che gli hai indicato. Il messaggio e' esplicito, ed e' quasi sempre uno di due casi: sei nella cartella sbagliata, oppure il file si chiama `dockerfile` con la minuscola."
+        },
+        {
+          "id": "l17-df-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Nel Dockerfile scrivi `FROM python:4.0`, che non esiste, e guarda a che punto fallisce la costruzione.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:4.0' > Dockerfile\necho 'RUN pip install numpy' >> Dockerfile\ndocker build -t rotta:1 .",
+          "verifica": {
+            "errore": "immagine di base sconosciuta",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Scrivi una base inesistente e costruisci.",
+            "docker build -t rotta:1 ."
+          ],
+          "spiegazione": "Fallisce alla **prima** istruzione: senza una base non c'e' niente su cui costruire. È il motivo per cui `FROM` sta sempre in cima.\n\nSu una macchina vera l'errore arriva dal registro (`manifest unknown`), ed e' quasi sempre un `tag` scritto male: `python:3.12` esiste, `python:3.12.0-slim-bookworm` forse no."
+        },
+        {
+          "id": "l17-df-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Prova a copiare dentro l'immagine un file che sta **fuori** dalla cartella di build, e leggi perche' non si puo'.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'COPY ../segreto.txt /lavoro/segreto.txt' >> Dockerfile\ndocker build -t fuori:1 .",
+          "verifica": {
+            "errore": "fuori dal contesto",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Un COPY che comincia con .. esce dal contesto di build.",
+            "docker build -t fuori:1 ."
+          ],
+          "spiegazione": "Il contesto di build e' la cartella che passi come ultimo argomento: tutto quello che serve deve stare li' dentro. Non e' una limitazione arbitraria — quella cartella e' cio' che viene consegnato al motore di build, e permettere `..` vorrebbe dire spedire mezzo disco.\n\nLa soluzione e' spostare i file nel contesto, oppure ridurre il contesto e usare `.dockerignore` per escludere quello che non serve."
+        },
+        {
+          "id": "l17-df-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Fissa le versioni: costruisci un'immagine che installa esattamente `numpy==2.2.5`, e verifica dall'interno cosa e' installato.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy==2.2.5' >> Dockerfile\ndocker build -t analisi:3 .\ndocker run analisi:3 pip list",
+          "verifica": {
+            "stampa": "numpy==2.2.5",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "La versione si fissa con il doppio uguale, come in requirements.txt.",
+            "echo 'RUN pip install numpy==2.2.5' >> Dockerfile"
+          ],
+          "spiegazione": "Senza la versione, l'immagine ricostruita fra un anno prendera' l'ultima `numpy` disponibile — e i tuoi numeri potrebbero cambiare senza che nessuno abbia toccato il codice.\n\nÈ la stessa disciplina del `requirements.txt` del ramo *Ambienti e pacchetti*, applicata all'intero ambiente invece che ai soli pacchetti Python."
+        },
+        {
+          "id": "l17-df-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' `FROM python:latest` e' una cattiva idea in un Dockerfile che deve durare?",
+          "opzioni": [
+            "`latest` cambia nel tempo: la stessa build fra un anno dara' un ambiente diverso",
+            "`latest` e' piu' lenta da scaricare",
+            "`latest` non esiste su tutti i registri",
+            "non c'e' differenza pratica"
+          ],
+          "risposta": "`latest` cambia nel tempo: la stessa build fra un anno dara' un ambiente diverso",
+          "spiegazione": "`latest` non vuol dire «stabile»: vuol dire «l'ultima che c'e' adesso». Un'immagine costruita oggi e una costruita fra un anno dalla stessa riga possono avere Python diversi, librerie di sistema diverse, e risultati numerici diversi.\n\nPer una tesi o una pubblicazione questo e' il contrario di quello che serve: si fissa la versione, e si scrive nel README quale."
+        },
+        {
+          "id": "l17-df-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**L'immagine completa dell'analisi.** Dockerfile con base fissata, pacchetti dai requisiti, il tuo script, cartella di lavoro e comando di default. Costruiscila e lanciala senza argomenti.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy==2.2.5 pandas==2.2.3' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\necho 'CMD [\"ls\", \"-l\"]' >> Dockerfile\ndocker build -t analisi:4 .\ndocker run analisi:4",
+          "verifica": {
+            "contiene": {
+              "Dockerfile": "CMD"
+            },
+            "stampa": "analisi.sh",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Cinque istruzioni: FROM, RUN, COPY, WORKDIR, CMD.",
+            "echo 'CMD [\"ls\", \"-l\"]' >> Dockerfile, poi docker run analisi:4 senza comando"
+          ],
+          "spiegazione": "`CMD` e' cosa fa il container quando non gli dici niente: `docker run analisi:4` esegue quello, ed e' cosi' che si consegna un'analisi a chi non sa come si lancia.\n\nQuesto Dockerfile e' gia' un documento tecnico: dice con che Python girano i tuoi numeri, con che versioni delle librerie, e quale comando li produce. Vale piu' di mezza pagina di README."
+        }
+      ]
+    },
+    {
+      "id": "l17-volumi",
+      "comando": "volumi e Apptainer",
+      "titolo": "far uscire i risultati",
+      "esercizi": [
+        {
+          "id": "l17-vo-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Passa la tua cartella `dati` dentro il container e fai vedere che il container la vede.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run -v /home/tu/dati:/lavoro/dati python:3.12 ls /lavoro/dati",
+          "verifica": {
+            "stampa": "quota.csv",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "-v cartella_tua:cartella_del_container",
+            "docker run -v /home/tu/dati:/lavoro/dati python:3.12 ls /lavoro/dati"
+          ],
+          "spiegazione": "Si legge come `scp`: prima la parte tua, poi quella di la'. Da questo momento le due cartelle **sono la stessa cosa**: il container non ha una copia, ha la tua.\n\nÈ il motivo per cui i dati non si mettono dentro l'immagine: l'immagine e' il codice e l'ambiente, i dati stanno fuori e si passano."
+        },
+        {
+          "id": "l17-vo-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il risultato che resta.** Fai calcolare al container quante righe di errore ci sono nel log, e fai in modo che il risultato arrivi da te in `dati/errori.txt`.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run -v /home/tu/dati:/lavoro/dati python:3.12 sh -c 'grep ERROR /lavoro/dati/log.txt | wc -l > /lavoro/dati/errori.txt'\ncat dati/errori.txt",
+          "verifica": {
+            "contiene": {
+              "/home/tu/dati/errori.txt": "2"
+            },
+            "usa": [
+              "docker",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Scrivi dentro la cartella montata, non altrove.",
+            "docker run -v /home/tu/dati:/lavoro/dati python:3.12 sh -c '... > /lavoro/dati/errori.txt'"
+          ],
+          "spiegazione": "Il file c'e', perche' e' stato scritto **dentro il volume**. Se lo avessi scritto in `/lavoro/errori.txt` — fuori dal volume — sarebbe morto con il container, come nell'esercizio della prima raccolta.\n\nQuesta e' la forma di ogni analisi containerizzata: codice e ambiente dentro l'immagine, dati e risultati fuori, collegati da un volume."
+        },
+        {
+          "id": "l17-vo-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Confronta i due casi nello stesso esercizio: scrivi un file **fuori** dal volume e uno **dentro**, poi guarda cosa e' arrivato.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "docker run -v /home/tu/dati:/lavoro/dati python:3.12 sh -c 'echo perso > /lavoro/perso.txt'\ndocker run -v /home/tu/dati:/lavoro/dati python:3.12 sh -c 'echo salvo > /lavoro/dati/salvo.txt'\nls\nls dati",
+          "verifica": {
+            "esiste": [
+              "/home/tu/dati/salvo.txt"
+            ],
+            "nonEsiste": [
+              "/home/tu/perso.txt"
+            ],
+            "usa": [
+              "docker",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Uno scrive in /lavoro, l'altro in /lavoro/dati.",
+            "il secondo file va dentro la cartella montata"
+          ],
+          "spiegazione": "Un carattere di percorso separa un risultato che esiste da uno che non e' mai esistito. Non c'e' errore, non c'e' avviso: il container scrive, esce, e quel disco non c'e' piu'.\n\nÈ il guasto piu' comune con i container, e la difesa e' un'abitudine: **il container scrive solo dentro il volume**."
+        },
+        {
+          "id": "l17-vo-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Costruisci l'immagine dell'analisi e usala sui tuoi dati montati, lanciando lo script che hai copiato dentro.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy pandas' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t analisi:5 .\ndocker run -v /home/tu/dati:/lavoro/dati analisi:5 sh -c 'grep ERROR /lavoro/dati/log.txt | wc -l'",
+          "verifica": {
+            "stampa": "2",
+            "usa": [
+              "docker"
+            ]
+          },
+          "hint": [
+            "Prima costruisci, poi esegui montando i dati.",
+            "docker run -v /home/tu/dati:/lavoro/dati analisi:5 ..."
+          ],
+          "spiegazione": "Immagine e dati restano separati, ed e' la divisione che rende tutto riutilizzabile: la stessa immagine gira su una campagna di agosto e su una di novembre, senza ricostruire niente.\n\nSe i dati fossero dentro l'immagine, ogni campagna nuova vorrebbe dire un'immagine nuova da un giga."
+        },
+        {
+          "id": "l17-vo-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Sul cluster Docker non c'e'. Trasforma l'immagine in un file Apptainer e verificane la presenza.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy pandas' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t analisi:6 .\napptainer build analisi.sif docker://analisi:6\nls -l analisi.sif",
+          "verifica": {
+            "esiste": [
+              "analisi.sif"
+            ],
+            "stampa": "analisi.sif",
+            "usa": [
+              "apptainer"
+            ]
+          },
+          "hint": [
+            "apptainer build NOMEFILE.sif docker://immagine",
+            "apptainer build analisi.sif docker://analisi:6"
+          ],
+          "spiegazione": "Il risultato e' **un file**: lo copi sul cluster con `scp` come qualunque altro, senza registri e senza demoni.\n\nÈ la ragione per cui i cluster hanno scelto Apptainer: Docker richiede un demone con privilegi di amministratore, e su una macchina condivisa da trecento persone nessuno te lo da'."
+        },
+        {
+          "id": "l17-vo-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Esegui l'analisi con Apptainer: la tua home e' gia' montata, quindi i dati si leggono da dove sono.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy pandas' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t analisi:7 .\napptainer build analisi.sif docker://analisi:7\napptainer exec analisi.sif grep -c ERROR dati/log.txt",
+          "verifica": {
+            "stampa": "2",
+            "usa": [
+              "apptainer"
+            ]
+          },
+          "hint": [
+            "Con apptainer exec non serve -v: la home c'e' gia'.",
+            "apptainer exec analisi.sif grep -c ERROR dati/log.txt"
+          ],
+          "spiegazione": "Nessun `-v`: Apptainer monta la tua home di default, e il percorso `dati/log.txt` funziona come fuori. Su un cluster e' quello che vuoi — i dati stanno gia' nella tua area, e copiarli dentro un'immagine sarebbe assurdo.\n\nÈ anche la differenza di sicurezza che conta: il container gira **con il tuo utente**, quindi puo' toccare solo quello che potresti toccare tu."
+        },
+        {
+          "id": "l17-vo-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Su un cluster universitario ti dicono che Docker non e' disponibile. Perche', e cosa usi?",
+          "opzioni": [
+            "Docker vuole un demone con privilegi di root: si usa Apptainer, che gira con il tuo utente",
+            "Docker e' a pagamento sui cluster",
+            "Docker non supporta Linux a 64 bit",
+            "nessun motivo tecnico: e' una scelta di comodo"
+          ],
+          "risposta": "Docker vuole un demone con privilegi di root: si usa Apptainer, che gira con il tuo utente",
+          "spiegazione": "Con il demone Docker chiunque puo' montare il disco di sistema dentro un container e diventare root sulla macchina: su un nodo condiviso e' inaccettabile.\n\nApptainer non ha demone e non eleva privilegi: l'immagine e' un file, il processo e' tuo, e il gestore di code lo tratta come qualunque altro job."
+        },
+        {
+          "id": "l17-vo-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La pipeline riproducibile.** Costruisci l'immagine con le versioni fissate, esegui l'analisi montando i dati, salva il risultato da te, e prepara il file `.sif` da portare sul cluster.",
+          "container": true,
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/requisiti.txt": "numpy==2.2.5\npandas==2.2.3\n",
+            "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+            "/home/tu/dati/quota.csv": "t,quota\n0,1000\n120,8400\n"
+          },
+          "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy==2.2.5' >> Dockerfile\necho 'COPY analisi.sh /lavoro/analisi.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t campagna:1 .\ndocker run -v /home/tu/dati:/lavoro/dati campagna:1 sh -c 'grep ERROR /lavoro/dati/log.txt | wc -l > /lavoro/dati/errori.txt'\ncat dati/errori.txt\napptainer build campagna.sif docker://campagna:1",
+          "verifica": {
+            "esiste": [
+              "campagna.sif"
+            ],
+            "contiene": {
+              "/home/tu/dati/errori.txt": "2"
+            },
+            "usa": [
+              "docker",
+              "apptainer"
+            ]
+          },
+          "hint": [
+            "Dockerfile con versioni, build, run con volume, poi il file .sif.",
+            "docker build -t campagna:1 ., poi il run con -v, poi apptainer build"
+          ],
+          "spiegazione": "Quattro pezzi e la campagna e' riproducibile: **le versioni fissate** dicono con cosa girano i numeri, **il volume** tiene i dati fuori dall'immagine, **il risultato** arriva da te, **il `.sif`** porta tutto sul cluster senza cambiare una riga.\n\nQuello che manca per chiuderla davvero e' fuori da questo modulo: il Dockerfile e il codice in un repository git, cosi' che «l'ambiente di quell'analisi» sia una cosa che si scarica invece di una cosa che si ricorda."
+        }
+      ]
+    }
+  ]
+}

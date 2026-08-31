@@ -1,1 +1,134 @@
-{"id":"c07","cantiere":true,"titolo":"Cantiere — La pipeline riproducibile","perche":"Un'analisi di campagna deve produrre lo stesso artefatto su un altro computer: ambiente dichiarato, tag esplicito, dati fuori dal container e una prova di esecuzione.","funzioni":["Dockerfile","docker build -t","docker run","volumi"],"lezioni":[{"id":"c07-b","titolo":"Briefing","md":"Hai `analizza.py` e un piccolo CSV. Costruisci un ambiente chiamato `campagna:1`, eseguilo e conserva il risultato fuori dal container. La verifica vuole un Dockerfile leggibile, un tag esplicito e un artefatto nel filesystem del progetto."}],"esercizi":[{"id":"c07-f1","tipo":"terminale","difficolta":3,"testo":"Crea un Dockerfile minimo che dichiari Python 3.12 come base e un comando di avvio per analizza.py.","filesystem":{"/home/tu/analizza.py":"print('ok')\n"},"soluzione":"echo 'FROM python:3.12' > Dockerfile\necho 'CMD python analizza.py' >> Dockerfile\ncat Dockerfile","verifica":{"contiene":{"Dockerfile":"FROM python:3.12"},"usa":["echo"]},"spiegazione":"Il Dockerfile dichiara l'ambiente prima dell'esecuzione."},{"id":"c07-f2","tipo":"terminale","difficolta":3,"testo":"Costruisci l'immagine con il tag campagna:1 e verifica che esista.","container":true,"filesystem":{"/home/tu/Dockerfile":"FROM python:3.12\n"},"soluzione":"docker build -t campagna:1 .\ndocker images","verifica":{"stampa":"campagna:1","usa":["docker"]},"spiegazione":"Il tag e' una versione leggibile."},{"id":"c07-f3","tipo":"terminale","difficolta":3,"testo":"Avvia l'immagine di campagna isolata.","container":true,"soluzione":"docker build -t campagna:1 .\ndocker run campagna:1","verifica":{"stampa":"isolamento","usa":["docker"]},"spiegazione":"L'esecuzione nasce dall'immagine dichiarata."},{"id":"c07-f4","tipo":"predict","difficolta":3,"testo":"Dove devono finire CSV e risultati di una pipeline containerizzata?","opzioni":["in un volume o bind mount dichiarato","solo nel layer del container","dentro l'immagine pubblicata","nella cache Docker"],"risposta":"in un volume o bind mount dichiarato","spiegazione":"Il container puo' essere rimosso; i dati devono restare controllabili."}]}
+{
+  "id": "c07",
+  "cantiere": true,
+  "titolo": "Cantiere — La pipeline riproducibile",
+  "perche": "La riduzione della campagna funziona sul tuo portatile. In cinque fasi diventa qualcosa che gira sul cluster, e che fra due anni chiunque puo' rieseguire ottenendo gli stessi numeri.",
+  "funzioni": [
+    "Dockerfile",
+    "docker build",
+    "docker run -v",
+    "apptainer build",
+    "apptainer exec"
+  ],
+  "lezioni": [
+    {
+      "id": "c07-b",
+      "titolo": "Briefing",
+      "md": "## La situazione\n\nLa riduzione della campagna funziona sul tuo portatile. Fra sei mesi dovra' girare sul cluster del dipartimento, e fra due anni qualcuno dovra' rifarla per rispondere a un revisore.\n\nIn `dati` ci sono il log dell'acquisizione e le quote; `analizza.sh` e' la riduzione.\n\n## Cosa devi produrre\n\nCinque fasi, ciascuna costruita sul risultato della precedente:\n\n1. **L'ambiente dichiarato** — un Dockerfile con le versioni fissate\n2. **L'immagine** — costruita e verificata\n3. **I dati fuori, i risultati dentro** — l'esecuzione con un volume\n4. **Il formato del cluster** — la stessa immagine come file Apptainer\n5. **La prova** — la stessa analisi, due strade, lo stesso numero\n\n## La regola di questo cantiere\n\n**Il codice e l'ambiente stanno dentro l'immagine, i dati stanno fuori.** Ogni volta che stai per copiare un CSV dentro un'immagine, fermati: quella e' la strada che porta a un'immagine da un giga per ogni campagna.\n\n## Non c'e' una sola strada\n\nLa verifica guarda i file che restano e quello che stampi, non i comandi. Se trovi una via piu' corta e' la tua a essere giusta."
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c07-f1",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 1 - L'ambiente dichiarato.**\n\nScrivi un `Dockerfile` che parta da `python:3.12`, installi `numpy` **con la versione fissata** a `2.2.5`, copi `analizza.sh` in `/lavoro` e si posizioni li'.\n\nNiente dati dentro l'immagine.",
+      "container": true,
+      "filesystem": {
+        "/home/tu/analizza.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+        "/home/tu/dati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n"
+      },
+      "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy==2.2.5' >> Dockerfile\necho 'COPY analizza.sh /lavoro/analizza.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ncat Dockerfile",
+      "verifica": {
+        "contiene": {
+          "Dockerfile": "numpy==2.2.5"
+        },
+        "esiste": [
+          "Dockerfile"
+        ]
+      },
+      "spiegazione": "Quattro righe che dicono con che Python girano i tuoi numeri e con quale `numpy`. È gia' un documento tecnico: vale piu' di mezza pagina di README, e non puo' diventare obsoleto senza che qualcuno cambi il file.\n\nLa versione fissata e' la parte che conta: `pip install numpy` e basta, ricostruito fra un anno, installerebbe un'altra libreria."
+    },
+    {
+      "id": "c07-f2",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 2 - L'immagine.**\n\nCostruiscila con il tag `campagna:1`, poi verifica che ci sia e che dentro ci sia davvero `numpy` alla versione giusta.",
+      "container": true,
+      "filesystem": {
+        "/home/tu/analizza.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+        "/home/tu/dati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+        "/home/tu/Dockerfile": "FROM python:3.12\nRUN pip install numpy==2.2.5\nCOPY analizza.sh /lavoro/analizza.sh\nWORKDIR /lavoro\n"
+      },
+      "soluzione": "docker build -t campagna:1 .\ndocker images\ndocker run campagna:1 pip list",
+      "verifica": {
+        "stampa": "numpy==2.2.5",
+        "usa": [
+          "docker"
+        ]
+      },
+      "spiegazione": "`docker images` la mostra ferma sul disco; `pip list` eseguito **dentro** dice cosa si porta dietro davvero. Sono due verifiche diverse e la seconda e' quella che conta: un `RUN` scritto male costruisce lo stesso un'immagine, solo senza il pacchetto.\n\nIl punto finale di `docker build -t campagna:1 .` e' il contesto: la cartella da cui `COPY` prende i file."
+    },
+    {
+      "id": "c07-f3",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 3 - I dati fuori, i risultati dentro.**\n\nEsegui l'analisi montando `dati` dentro il container, e fai in modo che il conteggio degli errori finisca in `dati/errori.txt` **da te**.\n\nPoi verificalo dal tuo lato.",
+      "container": true,
+      "filesystem": {
+        "/home/tu/analizza.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+        "/home/tu/dati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+        "/home/tu/Dockerfile": "FROM python:3.12\nRUN pip install numpy==2.2.5\nCOPY analizza.sh /lavoro/analizza.sh\nWORKDIR /lavoro\n"
+      },
+      "soluzione": "docker build -t campagna:1 .\ndocker run -v /home/tu/dati:/lavoro/dati campagna:1 sh -c 'grep ERROR /lavoro/dati/log.txt | wc -l > /lavoro/dati/errori.txt'\ncat dati/errori.txt",
+      "verifica": {
+        "contiene": {
+          "/home/tu/dati/errori.txt": "2"
+        },
+        "usa": [
+          "docker"
+        ]
+      },
+      "spiegazione": "Due errori nel log, e il file e' arrivato **da te** perche' e' stato scritto dentro il volume. Un carattere di percorso piu' in la' — `/lavoro/errori.txt` invece di `/lavoro/dati/errori.txt` — e non ci sarebbe niente: nessun errore, nessun avviso, solo un container morto con dentro il tuo risultato.\n\nLa stessa immagine gira sulla campagna di agosto e su quella di novembre: cambiano i dati montati, non l'immagine."
+    },
+    {
+      "id": "c07-f4",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 4 - Il formato del cluster.**\n\nSul cluster Docker non c'e'. Trasforma l'immagine in un file Apptainer `campagna.sif` e verifica che sia li'.",
+      "container": true,
+      "filesystem": {
+        "/home/tu/analizza.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+        "/home/tu/dati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+        "/home/tu/Dockerfile": "FROM python:3.12\nRUN pip install numpy==2.2.5\nCOPY analizza.sh /lavoro/analizza.sh\nWORKDIR /lavoro\n"
+      },
+      "soluzione": "docker build -t campagna:1 .\napptainer build campagna.sif docker://campagna:1\nls -l campagna.sif",
+      "verifica": {
+        "esiste": [
+          "campagna.sif"
+        ],
+        "usa": [
+          "apptainer"
+        ]
+      },
+      "spiegazione": "Un file solo: si copia sul cluster con `scp`, come qualunque altro. Niente registri, niente demoni, e soprattutto niente privilegi di amministratore — che e' la ragione per cui i cluster accettano Apptainer e rifiutano Docker.\n\nDa qui in poi il modulo sulla macchina remota si incastra con questo: `scp campagna.sif cluster:` e l'analisi e' di la'."
+    },
+    {
+      "id": "c07-f5",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 5 - La prova.**\n\nEsegui la stessa riduzione con Apptainer — che monta la tua home da solo — e confronta il numero con quello della fase 3.\n\nSe i due numeri coincidono, la pipeline e' riproducibile.",
+      "container": true,
+      "filesystem": {
+        "/home/tu/analizza.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+        "/home/tu/dati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+        "/home/tu/Dockerfile": "FROM python:3.12\nRUN pip install numpy==2.2.5\nCOPY analizza.sh /lavoro/analizza.sh\nWORKDIR /lavoro\n"
+      },
+      "soluzione": "docker build -t campagna:1 .\napptainer build campagna.sif docker://campagna:1\napptainer exec campagna.sif grep -c ERROR dati/log.txt\napptainer exec campagna.sif sh -c 'grep -c ERROR dati/log.txt > dati/errori_cluster.txt'\ncat dati/errori_cluster.txt",
+      "verifica": {
+        "contiene": {
+          "/home/tu/dati/errori_cluster.txt": "2"
+        },
+        "usa": [
+          "apptainer"
+        ]
+      },
+      "spiegazione": "Stesso numero, due strade diverse: sul portatile con Docker e un volume, sul cluster con Apptainer e la home montata da sola. È questa coincidenza che rende un risultato difendibile davanti a un revisore.\n\n**Quello che manca per chiudere davvero**, e sta fuori da questo cantiere: Dockerfile e codice in un repository git, cosi' che «l'ambiente di quell'analisi» sia una cosa che si scarica invece di una cosa che si ricorda. È la lacuna piu' grande di tutto il percorso, ed e' segnata nel piano."
+    }
+  ]
+}

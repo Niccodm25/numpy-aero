@@ -435,7 +435,7 @@
     {
       "id": "l17",
       "file": "l17-container.json",
-      "titolo": "Container e virtualizzazione",
+      "titolo": "Container: immagini, volumi, riproducibilita'",
       "disponibile": true
     },
     {

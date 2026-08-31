@@ -428,12 +428,11 @@ export const POSIX = {
     if (!motivo) throw new V.ErroreFs("serve un motivo da cercare");
     if (!file.length) {
       const soloTesto = flag.has("i") ? motivo.toLowerCase() : motivo;
-      return righeDi(ingresso(sh, undefined))
-        .filter((r) => {
-          const c = flag.has("i") ? r.toLowerCase() : r;
-          return c.includes(soloTesto) !== flag.has("v");
-        })
-        .join("\n");
+      const trovate = righeDi(ingresso(sh, undefined)).filter((r) => {
+        const c = flag.has("i") ? r.toLowerCase() : r;
+        return c.includes(soloTesto) !== flag.has("v");
+      });
+      return flag.has("c") ? String(trovate.length) : trovate.join("\n");
     }
     const cerca = flag.has("i") ? motivo.toLowerCase() : motivo;
     const out = [];
@@ -444,6 +443,7 @@ export const POSIX = {
         if (dentro !== flag.has("v")) out.push(file.length > 1 ? `${f}:${riga}` : riga);
       }
     }
+    if (flag.has("c")) return String(out.length);
     return out.join("\n");
   },
 
