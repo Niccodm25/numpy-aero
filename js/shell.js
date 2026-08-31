@@ -296,7 +296,11 @@ export const POSIX = {
             const link = nodo.tipo === "link";
             const dim = dir || link ? 0 : nodo.contenuto.length;
             const nome = link ? `${n} -> ${nodo.destinazione}` : n;
-            return `${dir ? "d" : link ? "l" : "-"}${V.permessiTesto(nodo)}  ${(nodo.proprietario ?? "tu").padEnd(5)}  ${String(dim).padStart(6)}  ${nome}`;
+            // Proprietario e gruppo sono due colonne diverse, ed e' la seconda
+            // che decide chi altro puo' leggere un file in una cartella condivisa.
+            const chi = (nodo.proprietario ?? "tu").padEnd(6);
+            const gruppo = (nodo.gruppo ?? nodo.proprietario ?? "tu").padEnd(9);
+            return `${dir ? "d" : link ? "l" : "-"}${V.permessiTesto(nodo)}  ${chi} ${gruppo} ${String(dim).padStart(6)}  ${nome}`;
           })
           .join("\n");
       }

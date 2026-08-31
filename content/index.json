@@ -81,6 +81,7 @@
       "perche": "Appena tocchi un cluster, un Raspberry, un server o WSL.",
       "disponibile": true,
       "moduli": [
+        "l00",
         "l01",
         "l02",
         "l03",
@@ -205,6 +206,12 @@
       "file": "b05-vscode.json",
       "titolo": "VS Code e l'interprete",
       "disponibile": true
+    },
+    {
+      "id": "l00",
+      "file": "",
+      "titolo": "Che cos'e' Linux, e perche' ti riguarda",
+      "disponibile": false
     },
     {
       "id": "l01",

@@ -295,8 +295,8 @@ caso("il caso classico: la variabile vuota nel percorso", () => {
 caso("ls -l mostra permessi e proprietario veri", () => {
   const sh = shell({ "/home/tu/a.txt": "ciao", "/home/tu/dati": null });
   const out = esegui(sh, "ls -l").out;
-  assert.match(out, /-rw-r--r--\s+tu\s+4\s+a\.txt/);
-  assert.match(out, /drwxr-xr-x\s+tu/);
+  assert.match(out, /-rw-r--r--\s+tu\s+tu\s+4\s+a\.txt/, "permessi, proprietario, gruppo, dimensione");
+  assert.match(out, /drwxr-xr-x\s+tu\s+tu/);
 });
 
 caso("chmod numerico cambia i permessi", () => {

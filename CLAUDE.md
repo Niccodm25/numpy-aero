@@ -55,6 +55,10 @@ Regole di forma — le verifica `tools/check_moduli.py`:
 
 Regole di sostanza — non automatizzabili, ma non negoziabili:
 
+- **Il nome del comando si scioglie la prima volta.** `ls` e' *list*, `cd` e'
+  *change directory*, `chmod` e' *change mode*, `grep` viene da *g/re/p*. Un
+  nome che significa qualcosa si ricorda; tre lettere a caso si ripassano ogni
+  volta. La lezione che introduce un comando dice da dove viene il nome.
 - **Lo scenario prima del comando.** «Il banco ha smesso di scrivere alle 3:12,
   trova perché» è un esercizio; «usa `journalctl -u X`» è una didascalia.
   Il testo descrive una situazione da laboratorio, da cluster o da volo, e

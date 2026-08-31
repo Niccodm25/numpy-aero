@@ -2,12 +2,20 @@
   "id": "l08",
   "titolo": "Editor nel terminale, e i link",
   "perche": "Su una macchina remota non c'e' sempre un editor grafico. E quando un percorso sembra un file ma in realta' e' un collegamento, copiare o cancellare senza capire il tipo di link porta a modificare la cosa sbagliata.",
-  "funzioni": ["nano", "vim", ":wq", "ln", "ln -s", "ls -l", "rmdir"],
+  "funzioni": [
+    "nano",
+    "vim",
+    ":wq",
+    "ln",
+    "ln -s",
+    "ls -l",
+    "rmdir"
+  ],
   "lezioni": [
     {
       "id": "l08-l1",
       "titolo": "Modificare una riga senza perdere il file",
-      "md": "Su un server, l'editor piu' gentile da incontrare e' `nano file.txt`: in basso mostra le scorciatoie; `Ctrl-O`, Invio salva e `Ctrl-X` esce. E' una scelta ottima per cambiare una configurazione breve.\n\n`vim file.txt` e' diverso: apre in modalita' normale. `i` entra in inserimento, Esc torna normale, `:wq` salva ed esce, `:q!` esce buttando le modifiche. Non provare a impararlo sotto pressione su un file di produzione: prima fai una copia e una modifica piccola.\n\nQui non imitiamo una finestra di editor dentro una riga di comando: sarebbe una versione falsa di un'interazione fisica. Gli esercizi controllano invece le scelte, le modalita' e il piano di recupero. Per scrivere file nel simulatore restano `echo` e le redirezioni gia' note."
+      "md": "Su un server, l'editor piu' gentile da incontrare e' `nano file.txt`: in basso mostra le scorciatoie; `Ctrl-O`, Invio salva e `Ctrl-X` esce. E' una scelta ottima per cambiare una configurazione breve.\n\n`vim file.txt` e' diverso: apre in modalita' normale. `i` entra in inserimento, Esc torna normale, `:wq` salva ed esce, `:q!` esce buttando le modifiche. Non provare a impararlo sotto pressione su un file di produzione: prima fai una copia e una modifica piccola.\n\nQui non imitiamo una finestra di editor dentro una riga di comando: sarebbe una versione falsa di un'interazione fisica. Gli esercizi controllano invece le scelte, le modalita' e il piano di recupero. Per scrivere file nel simulatore restano `echo` e le redirezioni gia' note.\n\n### Da dove viene il nome\n\n- `nano` — il nome dell'editor, «piccolo»: nato come sostituto libero di `pico`\n- `vim` — *vi improved* — il `vi` migliorato; `vi` sta per *visual*, perche' nel 1976 mostrare il testo a schermo era la novita'\n- `ln` — *link* — collega\n- `ln -s` — *symbolic* — un collegamento per nome invece che per contenuto\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
     },
     {
       "id": "l08-l2",
@@ -26,14 +34,110 @@
       "comando": "nano e vim",
       "titolo": "entrare e uscire da un editor remoto",
       "esercizi": [
-        {"id":"l08-ed-1","tipo":"predict","testo":"In `nano config.txt`, quale sequenza salva e poi esce?","opzioni":["Ctrl-O, Invio, poi Ctrl-X","i, Esc, :wq","Ctrl-Z, bg","rm config.txt"],"risposta":"Ctrl-O, Invio, poi Ctrl-X","spiegazione":"Nano mostra queste scorciatoie nella barra inferiore: O sta per Write Out, poi X esce."},
-        {"id":"l08-ed-2","tipo":"predict","testo":"Apri vim e le lettere compaiono come comandi invece che testo. Cosa hai dimenticato?","opzioni":["premere i per entrare in inserimento","usare sudo vim","lanciare fg %1","comprimere il file"],"risposta":"premere i per entrare in inserimento","spiegazione":"Vim parte in modalita' normale: `i` entra in inserimento, Esc torna a quella normale."},
-        {"id":"l08-ed-3","tipo":"predict","testo":"Quale comando di vim salva ed esce?","opzioni":[":wq",":q!","Ctrl-O", "ln -s"],"risposta":":wq","spiegazione":"Dopo Esc, `:wq` scrive (*write*) e chiude (*quit*). `:q!` fa l'opposto: esce scartando."},
-        {"id":"l08-ed-4","tipo":"predict","testo":"Se devi correggere una configurazione remota per la prima volta, qual e' la scelta piu' prudente?","opzioni":["fare una copia e cambiare una cosa piccola, leggendo l'output","riscrivere tutto a memoria in vim","usare rm -r sul file vecchio","premere Ctrl-Z appena si apre"],"risposta":"fare una copia e cambiare una cosa piccola, leggendo l'output","spiegazione":"Un editor non protegge da una modifica concettualmente sbagliata. Una copia e un passo piccolo rendono reversibile l'errore."},
-        {"id":"l08-ed-5","tipo":"predict","testo":"Perche' gli esercizi non simulano nano e vim come una normale riga di shell?","opzioni":["perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola","perche' non esistono su Linux","perche' possono modificare solo file binari","perche' richiedono sempre root"],"risposta":"perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola","spiegazione":"Fingere un editor modale con un parser di una riga insegnerebbe scorciatoie false. Qui si impara cosa aspettarsi e quando fermarsi."},
-        {"id":"l08-ed-6","tipo":"predict","testo":"In vim vuoi uscire senza salvare una prova sbagliata. Quale comando usi dopo Esc?","opzioni":[":q!",":wq","Ctrl-X","rmdir"],"risposta":":q!","spiegazione":"Il punto esclamativo forza l'uscita scartando le modifiche non salvate."},
-        {"id":"l08-ed-7","tipo":"predict","testo":"Quale editor e' spesso piu' immediato per una piccola modifica su un server?","opzioni":["nano, perche' mostra le scorciatoie","vim, perche' non ha modalita'","un browser web","tar"],"risposta":"nano, perche' mostra le scorciatoie","spiegazione":"Nano e' adatto a una modifica breve e occasionale. Vim ripaga con pratica, ma non conviene impararlo in mezzo a un incidente."},
-        {"id":"l08-ed-8","tipo":"predict","testo":"Prima di modificare un file di configurazione in produzione, cosa vale la pena fare?","opzioni":["leggerlo e farne una copia di sicurezza","cancellarlo e ricrearlo","eseguire apt update","creare un hard link casuale"],"risposta":"leggerlo e farne una copia di sicurezza","spiegazione":"Capire lo stato iniziale e poter tornare indietro sono piu' importanti della velocita' di digitazione."}
+        {
+          "id": "l08-ed-1",
+          "tipo": "predict",
+          "testo": "In `nano config.txt`, quale sequenza salva e poi esce?",
+          "opzioni": [
+            "Ctrl-O, Invio, poi Ctrl-X",
+            "i, Esc, :wq",
+            "Ctrl-Z, bg",
+            "rm config.txt"
+          ],
+          "risposta": "Ctrl-O, Invio, poi Ctrl-X",
+          "spiegazione": "Nano mostra queste scorciatoie nella barra inferiore: O sta per Write Out, poi X esce."
+        },
+        {
+          "id": "l08-ed-2",
+          "tipo": "predict",
+          "testo": "Apri vim e le lettere compaiono come comandi invece che testo. Cosa hai dimenticato?",
+          "opzioni": [
+            "premere i per entrare in inserimento",
+            "usare sudo vim",
+            "lanciare fg %1",
+            "comprimere il file"
+          ],
+          "risposta": "premere i per entrare in inserimento",
+          "spiegazione": "Vim parte in modalita' normale: `i` entra in inserimento, Esc torna a quella normale."
+        },
+        {
+          "id": "l08-ed-3",
+          "tipo": "predict",
+          "testo": "Quale comando di vim salva ed esce?",
+          "opzioni": [
+            ":wq",
+            ":q!",
+            "Ctrl-O",
+            "ln -s"
+          ],
+          "risposta": ":wq",
+          "spiegazione": "Dopo Esc, `:wq` scrive (*write*) e chiude (*quit*). `:q!` fa l'opposto: esce scartando."
+        },
+        {
+          "id": "l08-ed-4",
+          "tipo": "predict",
+          "testo": "Se devi correggere una configurazione remota per la prima volta, qual e' la scelta piu' prudente?",
+          "opzioni": [
+            "fare una copia e cambiare una cosa piccola, leggendo l'output",
+            "riscrivere tutto a memoria in vim",
+            "usare rm -r sul file vecchio",
+            "premere Ctrl-Z appena si apre"
+          ],
+          "risposta": "fare una copia e cambiare una cosa piccola, leggendo l'output",
+          "spiegazione": "Un editor non protegge da una modifica concettualmente sbagliata. Una copia e un passo piccolo rendono reversibile l'errore."
+        },
+        {
+          "id": "l08-ed-5",
+          "tipo": "predict",
+          "testo": "Perche' gli esercizi non simulano nano e vim come una normale riga di shell?",
+          "opzioni": [
+            "perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola",
+            "perche' non esistono su Linux",
+            "perche' possono modificare solo file binari",
+            "perche' richiedono sempre root"
+          ],
+          "risposta": "perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola",
+          "spiegazione": "Fingere un editor modale con un parser di una riga insegnerebbe scorciatoie false. Qui si impara cosa aspettarsi e quando fermarsi."
+        },
+        {
+          "id": "l08-ed-6",
+          "tipo": "predict",
+          "testo": "In vim vuoi uscire senza salvare una prova sbagliata. Quale comando usi dopo Esc?",
+          "opzioni": [
+            ":q!",
+            ":wq",
+            "Ctrl-X",
+            "rmdir"
+          ],
+          "risposta": ":q!",
+          "spiegazione": "Il punto esclamativo forza l'uscita scartando le modifiche non salvate."
+        },
+        {
+          "id": "l08-ed-7",
+          "tipo": "predict",
+          "testo": "Quale editor e' spesso piu' immediato per una piccola modifica su un server?",
+          "opzioni": [
+            "nano, perche' mostra le scorciatoie",
+            "vim, perche' non ha modalita'",
+            "un browser web",
+            "tar"
+          ],
+          "risposta": "nano, perche' mostra le scorciatoie",
+          "spiegazione": "Nano e' adatto a una modifica breve e occasionale. Vim ripaga con pratica, ma non conviene impararlo in mezzo a un incidente."
+        },
+        {
+          "id": "l08-ed-8",
+          "tipo": "predict",
+          "testo": "Prima di modificare un file di configurazione in produzione, cosa vale la pena fare?",
+          "opzioni": [
+            "leggerlo e farne una copia di sicurezza",
+            "cancellarlo e ricrearlo",
+            "eseguire apt update",
+            "creare un hard link casuale"
+          ],
+          "risposta": "leggerlo e farne una copia di sicurezza",
+          "spiegazione": "Capire lo stato iniziale e poter tornare indietro sono piu' importanti della velocita' di digitazione."
+        }
       ]
     },
     {
@@ -41,14 +145,151 @@
       "comando": "ln, ln -s, rmdir",
       "titolo": "nomi, scorciatoie e pulizia",
       "esercizi": [
-        {"id":"l08-li-1","tipo":"terminale","testo":"Crea un collegamento simbolico `corrente.csv` che punti a `dati.csv`, poi leggilo.","filesystem":{"/home/tu/dati.csv":"quota,1000\n"},"soluzione":"ln -s dati.csv corrente.csv\ncat corrente.csv","verifica":{"stampa":"quota,1000","usa":["ln","cat"]},"hint":["Con -s, prima il bersaglio poi il nome.","ln -s dati.csv corrente.csv"],"spiegazione":"Il symlink e' un percorso indiretto: `cat` segue il bersaglio, mentre `ls -l` mostra la freccia."},
-        {"id":"l08-li-2","tipo":"terminale","testo":"Crea un hard link `copia.txt` di `origine.txt`, modifica la copia e verifica che l'origine veda lo stesso contenuto.","filesystem":{"/home/tu/origine.txt":"uno\n"},"soluzione":"ln origine.txt copia.txt\necho due > copia.txt\ncat origine.txt","verifica":{"stampa":"due","usa":["ln","echo","cat"]},"hint":["Senza -s e' un hard link.","ln origine.txt copia.txt"],"spiegazione":"I due nomi sono lo stesso file: modificare uno aggiorna cio' che leggi dall'altro."},
-        {"id":"l08-li-3","tipo":"terminale","testo":"Crea il symlink e usa `ls -l` per riconoscere il bersaglio dalla freccia.","filesystem":{"/home/tu/dati.csv":"x\n"},"soluzione":"ln -s dati.csv corrente.csv\nls -l","verifica":{"stampa":"corrente.csv -> /home/tu/dati.csv","usa":["ln","ls"]},"hint":["L'elenco lungo mostra i dettagli.","ls -l"],"spiegazione":"Un link simbolico ha tipo `l` e mostra `-> bersaglio`. E' il modo per distinguere una scorciatoia da un file normale."},
-        {"id":"l08-li-4","tipo":"predict","testo":"Sposti il file bersaglio di un symlink senza aggiornare il link. Cosa accade?","opzioni":["il symlink puo' restare rotto","il symlink diventa automaticamente un hard link","il file viene copiato nel link","rmdir lo ripara"],"risposta":"il symlink puo' restare rotto","spiegazione":"Il link conserva un percorso. Se quel percorso non esiste piu', non contiene una copia dei dati con cui rimettersi in piedi."},
-        {"id":"l08-li-5","tipo":"terminale","testo":"Rimuovi la cartella vuota `temporanei` con il comando che rifiuterebbe una cartella piena.","filesystem":{"/home/tu/temporanei":null},"soluzione":"rmdir temporanei","verifica":{"nonEsiste":["temporanei"],"usa":["rmdir"]},"hint":["Il comando e' rmdir.","rmdir temporanei"],"spiegazione":"`rmdir` dichiara che ti aspetti una cartella vuota. Se non lo e', l'errore e' una protezione utile."},
-        {"id":"l08-li-6","tipo":"terminale","testo":"Prova a usare `rmdir` su una cartella piena e leggi il messaggio di protezione.","filesystem":{"/home/tu/risultati/a.csv":"x\n"},"soluzione":"rmdir risultati","verifica":{"errore":"non vuota","usa":["rmdir"]},"hint":["Non cancellare il file: qui vuoi vedere l'errore.","rmdir risultati"],"spiegazione":"Per cancellare un albero servirebbe `rm -r`, ma prima devi aver controllato con precisione cosa contiene."},
-        {"id":"l08-li-7","tipo":"predict","testo":"Qual e' la differenza essenziale fra hard link e symlink?","opzioni":["l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio","il symlink comprime il file","l'hard link funziona solo online","non esiste alcuna differenza"],"risposta":"l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio","spiegazione":"Per questo un symlink puo' diventare rotto quando sposti il bersaglio, mentre un hard link condivide il file stesso."},
-        {"id":"l08-li-8","tipo":"predict","testo":"Vuoi eliminare solo un collegamento simbolico, non il file a cui punta. Cosa fai?","opzioni":["rm sul nome del collegamento dopo ls -l","rm -r sul bersaglio","gzip il collegamento","usare fg"],"risposta":"rm sul nome del collegamento dopo ls -l","spiegazione":"`rm collegamento` rimuove il link. Guardare prima `ls -l` conferma che stai cancellando la scorciatoia e non il dato vero."}
+        {
+          "id": "l08-li-1",
+          "tipo": "terminale",
+          "testo": "Crea un collegamento simbolico `corrente.csv` che punti a `dati.csv`, poi leggilo.",
+          "filesystem": {
+            "/home/tu/dati.csv": "quota,1000\n"
+          },
+          "soluzione": "ln -s dati.csv corrente.csv\ncat corrente.csv",
+          "verifica": {
+            "stampa": "quota,1000",
+            "usa": [
+              "ln",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Con -s, prima il bersaglio poi il nome.",
+            "ln -s dati.csv corrente.csv"
+          ],
+          "spiegazione": "Il symlink e' un percorso indiretto: `cat` segue il bersaglio, mentre `ls -l` mostra la freccia."
+        },
+        {
+          "id": "l08-li-2",
+          "tipo": "terminale",
+          "testo": "Crea un hard link `copia.txt` di `origine.txt`, modifica la copia e verifica che l'origine veda lo stesso contenuto.",
+          "filesystem": {
+            "/home/tu/origine.txt": "uno\n"
+          },
+          "soluzione": "ln origine.txt copia.txt\necho due > copia.txt\ncat origine.txt",
+          "verifica": {
+            "stampa": "due",
+            "usa": [
+              "ln",
+              "echo",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Senza -s e' un hard link.",
+            "ln origine.txt copia.txt"
+          ],
+          "spiegazione": "I due nomi sono lo stesso file: modificare uno aggiorna cio' che leggi dall'altro."
+        },
+        {
+          "id": "l08-li-3",
+          "tipo": "terminale",
+          "testo": "Crea il symlink e usa `ls -l` per riconoscere il bersaglio dalla freccia.",
+          "filesystem": {
+            "/home/tu/dati.csv": "x\n"
+          },
+          "soluzione": "ln -s dati.csv corrente.csv\nls -l",
+          "verifica": {
+            "stampa": "corrente.csv -> /home/tu/dati.csv",
+            "usa": [
+              "ln",
+              "ls"
+            ]
+          },
+          "hint": [
+            "L'elenco lungo mostra i dettagli.",
+            "ls -l"
+          ],
+          "spiegazione": "Un link simbolico ha tipo `l` e mostra `-> bersaglio`. E' il modo per distinguere una scorciatoia da un file normale."
+        },
+        {
+          "id": "l08-li-4",
+          "tipo": "predict",
+          "testo": "Sposti il file bersaglio di un symlink senza aggiornare il link. Cosa accade?",
+          "opzioni": [
+            "il symlink puo' restare rotto",
+            "il symlink diventa automaticamente un hard link",
+            "il file viene copiato nel link",
+            "rmdir lo ripara"
+          ],
+          "risposta": "il symlink puo' restare rotto",
+          "spiegazione": "Il link conserva un percorso. Se quel percorso non esiste piu', non contiene una copia dei dati con cui rimettersi in piedi."
+        },
+        {
+          "id": "l08-li-5",
+          "tipo": "terminale",
+          "testo": "Rimuovi la cartella vuota `temporanei` con il comando che rifiuterebbe una cartella piena.",
+          "filesystem": {
+            "/home/tu/temporanei": null
+          },
+          "soluzione": "rmdir temporanei",
+          "verifica": {
+            "nonEsiste": [
+              "temporanei"
+            ],
+            "usa": [
+              "rmdir"
+            ]
+          },
+          "hint": [
+            "Il comando e' rmdir.",
+            "rmdir temporanei"
+          ],
+          "spiegazione": "`rmdir` dichiara che ti aspetti una cartella vuota. Se non lo e', l'errore e' una protezione utile."
+        },
+        {
+          "id": "l08-li-6",
+          "tipo": "terminale",
+          "testo": "Prova a usare `rmdir` su una cartella piena e leggi il messaggio di protezione.",
+          "filesystem": {
+            "/home/tu/risultati/a.csv": "x\n"
+          },
+          "soluzione": "rmdir risultati",
+          "verifica": {
+            "errore": "non vuota",
+            "usa": [
+              "rmdir"
+            ]
+          },
+          "hint": [
+            "Non cancellare il file: qui vuoi vedere l'errore.",
+            "rmdir risultati"
+          ],
+          "spiegazione": "Per cancellare un albero servirebbe `rm -r`, ma prima devi aver controllato con precisione cosa contiene."
+        },
+        {
+          "id": "l08-li-7",
+          "tipo": "predict",
+          "testo": "Qual e' la differenza essenziale fra hard link e symlink?",
+          "opzioni": [
+            "l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio",
+            "il symlink comprime il file",
+            "l'hard link funziona solo online",
+            "non esiste alcuna differenza"
+          ],
+          "risposta": "l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio",
+          "spiegazione": "Per questo un symlink puo' diventare rotto quando sposti il bersaglio, mentre un hard link condivide il file stesso."
+        },
+        {
+          "id": "l08-li-8",
+          "tipo": "predict",
+          "testo": "Vuoi eliminare solo un collegamento simbolico, non il file a cui punta. Cosa fai?",
+          "opzioni": [
+            "rm sul nome del collegamento dopo ls -l",
+            "rm -r sul bersaglio",
+            "gzip il collegamento",
+            "usare fg"
+          ],
+          "risposta": "rm sul nome del collegamento dopo ls -l",
+          "spiegazione": "`rm collegamento` rimuove il link. Guardare prima `ls -l` conferma che stai cancellando la scorciatoia e non il dato vero."
+        }
       ]
     }
   ]

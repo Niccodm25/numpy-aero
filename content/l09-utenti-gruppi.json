@@ -1,32 +1,621 @@
 {
-  "id":"l09",
-  "titolo":"Utenti, gruppi e permessi speciali",
-  "perche":"I permessi di l03 hanno tre terne, ma mancava chi fosse davvero il gruppo centrale. Qui condividi dati senza renderli pubblici, capisci cosa ci sia in /etc e riconosci i tre bit speciali senza trasformarli in magia.",
-  "funzioni":["useradd -m","passwd","groups","id","usermod -aG","chgrp","/etc/passwd","/etc/group","chmod 4755","chmod 2775","chmod 1777"],
-  "lezioni":[
-    {"id":"l09-l1","titolo":"Account e gruppi: il permesso centrale","md":"Un account ha un UID, un gruppo primario e zero o piu' gruppi supplementari. `groups anna` li elenca; `id anna` mostra anche numeri e gruppo primario. Le informazioni leggibili stanno in `/etc/passwd` e `/etc/group`; la `x` nel primo non e' una password, che vive altrove.\n\n```bash\nsudo useradd -m anna          # account e home /home/anna\nsudo passwd anna              # imposta la password in modo interattivo\nsudo usermod -aG ricerca anna # aggiunge senza togliere gli altri gruppi\nchgrp ricerca dati.csv        # assegna il gruppo del file\n```\n\nLa `a` di `usermod -aG` e' vitale: senza append sostituisci i gruppi supplementari. `chgrp` permette al proprietario di assegnare solo un gruppo di cui fa parte; root puo' assegnarli tutti. Cosi' la terna centrale di `chmod 640 dati.csv` diventa utile: il gruppo legge, gli altri no."},
-    {"id":"l09-l2","titolo":"setuid, setgid e sticky: eccezioni strette","md":"Un quarto numero davanti a chmod attiva bit speciali:\n\n```bash\nchmod 4755 programma   # setuid: appare s nella x del proprietario\nchmod 2775 progetto    # setgid: nuovi file ereditano il gruppo della directory\nchmod 1777 /tmp        # sticky: chi crea un file puo' rimuovere il proprio\n```\n\nIl setuid fa eseguire un programma con l'identita' del proprietario: `passwd` e' il caso storico, e per questo un programma setuid scritto male e' un problema di sicurezza serio. Il setgid sulle directory serve ai progetti condivisi. Lo sticky bit su `/tmp` lascia a tutti la scrittura, ma impedisce a un utente di cancellare il file di un altro.\n\nNon usare bit speciali per aggiustare un problema che non hai capito: prima controlla proprietario, gruppo e permessi normali."}
+  "id": "l09",
+  "titolo": "Utenti, gruppi e permessi speciali",
+  "perche": "Quattro persone sullo stesso computer di acquisizione, senza pestarsi i piedi ne' i dati. Qui impari a creare account e gruppi, a condividere file con chi deve e con nessun altro, e i tre bit speciali che rendono utilizzabile una cartella comune.",
+  "funzioni": [
+    "whoami",
+    "id",
+    "groups",
+    "useradd -m",
+    "groupadd",
+    "usermod -aG",
+    "passwd",
+    "/etc/passwd",
+    "/etc/group",
+    "chgrp",
+    "chmod 640",
+    "chmod 660",
+    "setuid 4000",
+    "setgid 2000",
+    "sticky 1000",
+    "prova-come"
   ],
-  "raccolte":[
-    {"id":"l09-gruppi","comando":"groups, useradd, usermod, chgrp","titolo":"condividere senza rendere pubblico","esercizi":[
-      {"id":"l09-gr-1","tipo":"terminale","testo":"Crea l'account anna con la sua home.","utenti":true,"soluzione":"sudo useradd -m anna","verifica":{"dir":["/home/anna"],"usa":["sudo","useradd"]},"hint":["-m crea la home.","sudo useradd -m anna"],"spiegazione":"Un account senza home puo' esistere, ma per una persona interattiva e' quasi sempre una scelta sbagliata."},
-      {"id":"l09-gr-2","tipo":"terminale","testo":"Aggiungi anna al gruppo ricerca senza rimuovere altri gruppi, poi verificalo.","utenti":{"gruppi":{"ricerca":[]}},"soluzione":"sudo useradd -m anna\nsudo usermod -aG ricerca anna\ngroups anna","verifica":{"stampa":"ricerca","usa":["usermod","groups"]},"hint":["aG significa append ai gruppi.","sudo usermod -aG ricerca anna"],"spiegazione":"Usare `-aG` preserva i gruppi gia' assegnati."},
-      {"id":"l09-gr-3","tipo":"terminale","testo":"Assegna il gruppo ricerca al tuo file condiviso.","utenti":{"gruppi":{"ricerca":["tu"]}},"filesystem":{"/home/tu/dati.csv":{"contenuto":"quota\n","modo":416}},"soluzione":"chgrp ricerca dati.csv","verifica":{"usa":["chgrp"]},"hint":["Prima il gruppo, poi il file.","chgrp ricerca dati.csv"],"spiegazione":"Il file e' gia' 640: dopo chgrp la terna centrale puo' concedere lettura ai membri di ricerca."},
-      {"id":"l09-gr-4","tipo":"predict","testo":"Perche' in usermod si usa `-aG` e non solo `-G` per aggiungere un gruppo?","opzioni":["per non sostituire i gruppi supplementari gia' presenti","per rendere il gruppo amministratore","per cambiare la password","per creare la home"],"risposta":"per non sostituire i gruppi supplementari gia' presenti","spiegazione":"Senza `-a` l'elenco indicato rimpiazza gli altri gruppi supplementari."},
-      {"id":"l09-gr-5","tipo":"predict","testo":"Dove si trova la lista leggibile di account locali?","opzioni":["/etc/passwd","/etc/shadow come file pubblico","/home/root","/usr/bin/users"],"risposta":"/etc/passwd","spiegazione":"`/etc/passwd` e' leggibile e contiene metadati; le password non sono li'."},
-      {"id":"l09-gr-6","tipo":"predict","testo":"Un file e' 640 e appartiene al gruppo ricerca. Cosa puo' fare un membro di ricerca che non e' proprietario?","opzioni":["leggerlo","scriverlo","eseguirlo","cancellarlo sempre"],"risposta":"leggerlo","spiegazione":"640 significa proprietario rw, gruppo r, altri niente."},
-      {"id":"l09-gr-7","tipo":"terminale","testo":"Chiedi quali gruppi hai e l'identita' completa dell'account.","utenti":true,"soluzione":"groups\nid","verifica":{"stampa":"studenti","usa":["groups","id"]},"hint":["Due comandi, uno per riga.","groups poi id"],"spiegazione":"Quando un accesso fallisce, questa e' l'informazione da verificare prima di cambiare permessi."},
-      {"id":"l09-gr-8","tipo":"predict","testo":"Chi puo' usare chgrp per assegnare un gruppo di cui non fa parte?","opzioni":["root","il proprietario del file sempre","chiunque possa leggere il file","solo il gruppo stesso"],"risposta":"root","spiegazione":"Il proprietario puo' scegliere solo fra i propri gruppi; altrimenti potrebbe concedere accesso a un gruppo a cui non appartiene."}
-    ]},
-    {"id":"l09-speciali","comando":"setuid, setgid, sticky bit","titolo":"le tre eccezioni ai permessi normali","esercizi":[
-      {"id":"l09-sp-1","tipo":"terminale","testo":"Imposta setuid su programma e riconosci la s nell'elenco lungo.","utenti":true,"filesystem":{"/home/tu/programma":"x"},"soluzione":"chmod 4755 programma\nls -l","verifica":{"stampa":"rwsr-xr-x","usa":["chmod","ls"]},"hint":["Il quarto numero e' 4.","chmod 4755 programma"],"spiegazione":"La s al posto della x del proprietario segnala setuid."},
-      {"id":"l09-sp-2","tipo":"terminale","testo":"Imposta lo sticky bit su una cartella condivisa.","utenti":true,"filesystem":{"/home/tu/scambio":null},"soluzione":"chmod 1777 scambio\nls -l","verifica":{"stampa":"rwxrwxrwt","usa":["chmod"]},"hint":["Sticky e' il quarto numero 1.","chmod 1777 scambio"],"spiegazione":"Tutti possono creare file, ma la cancellazione resta limitata al proprietario del file."},
-      {"id":"l09-sp-3","tipo":"predict","testo":"A cosa serve il setgid su una directory di progetto?","opzioni":["i nuovi file ereditano il gruppo della directory","tutti diventano root","la directory diventa compressa","si cancella automaticamente dopo un giorno"],"risposta":"i nuovi file ereditano il gruppo della directory","spiegazione":"Evita che ogni nuovo file di un progetto condiviso finisca nel gruppo privato di chi l'ha creato."},
-      {"id":"l09-sp-4","tipo":"predict","testo":"Perche' un programma setuid richiede particolare prudenza?","opzioni":["puo' agire con i privilegi del proprietario","non puo' piu' essere aggiornato","funziona solo in /tmp","nasconde il suo contenuto"],"risposta":"puo' agire con i privilegi del proprietario","spiegazione":"Setuid e' un'eccezione deliberata al modello normale: un errore nel programma diventa un errore con privilegi maggiori."},
-      {"id":"l09-sp-5","tipo":"predict","testo":"Che problema risolve lo sticky bit in /tmp?","opzioni":["impedisce agli utenti di cancellare i file temporanei altrui","rende /tmp privato","impedisce ogni scrittura","crittografa i file"],"risposta":"impedisce agli utenti di cancellare i file temporanei altrui","spiegazione":"/tmp deve restare scrivibile da tutti, ma non deve permettere a chiunque di eliminare i file degli altri."},
-      {"id":"l09-sp-6","tipo":"terminale","testo":"Imposta setgid su una directory progetto e guarda la s nella terna del gruppo.","utenti":true,"filesystem":{"/home/tu/progetto":null},"soluzione":"chmod 2775 progetto\nls -l","verifica":{"stampa":"rwxrwsr-x","usa":["chmod"]},"hint":["Il quarto numero e' 2.","chmod 2775 progetto"],"spiegazione":"La s nella x del gruppo segnala setgid."},
-      {"id":"l09-sp-7","tipo":"predict","testo":"Prima di aggiungere un bit speciale a un file, cosa controlli?","opzioni":["se proprietario, gruppo e permessi normali risolvono gia' il bisogno","se tar puo' comprimerlo","se apt e' aggiornato","se il PID e' alto"],"risposta":"se proprietario, gruppo e permessi normali risolvono gia' il bisogno","spiegazione":"I bit speciali sono eccezioni: partire da una configurazione semplice riduce i privilegi e i guasti inattesi."},
-      {"id":"l09-sp-8","tipo":"predict","testo":"In `-rwsr-xr-x`, quale bit speciale e' attivo?","opzioni":["setuid","setgid","sticky","nessuno"],"risposta":"setuid","spiegazione":"La s e' nella posizione di esecuzione del proprietario; setgid comparirebbe nella terna del gruppo."}
-    ]}
+  "lezioni": [
+    {
+      "id": "l09-l1",
+      "titolo": "Chi sei, e a quali gruppi appartieni",
+      "md": "```\nwhoami                    # il tuo nome utente\nid                        # nome, numero, gruppo primario e supplementari\ngroups anna               # i gruppi di un altro utente\ncat /etc/passwd           # gli account: nome, numero, home, shell\ncat /etc/group            # i gruppi, e chi ci sta dentro\n```\n\nIl sistema non ragiona per nomi ma per **numeri**: `uid` per l'utente, `gid` per il gruppo. Il nome e' una comodita' scritta in `/etc/passwd` — motivo per cui lo stesso file, su due macchine diverse, puo' risultare di due persone diverse.\n\n### Creare un account\n\n```\nsudo groupadd ricerca                 # il gruppo del progetto\nsudo useradd -m anna                  # -m crea anche /home/anna\nsudo usermod -aG ricerca anna         # AGGIUNGI ai gruppi\nsudo passwd anna\n```\n\n**`-aG` con la `a`, sempre.** `usermod -G ricerca anna` **sostituisce** l'elenco dei gruppi supplementari: se anna era anche in `sudo`, esce da `sudo` — e su una macchina remota questo puo' voler dire che nessuno puo' piu' diventare amministratore. La `a` sta per *append*, aggiungi.\n\n### Primario e supplementari\n\nOgni utente ha **un** gruppo primario — quello che viene assegnato ai file che crea — e quanti gruppi supplementari servono. `id` li mostra separati per questo motivo: il primo decide, gli altri permettono.\n\n### Da dove viene il nome\n\n- `id` — *identity* — chi sei, per numero e per gruppi\n- `useradd` — «aggiungi utente»\n- `groupadd` — «aggiungi gruppo»\n- `usermod` — *user modify* — modifica un utente; `-aG` sta per *append to Groups*\n- `chgrp` — *change group*\n- `passwd` — *password* — e il file `/etc/passwd` e' l'elenco degli account (le password vere stanno in `/etc/shadow`)\n- setuid, setgid — *set user id* e *set group id*: il programma gira con l'identita' del proprietario, o del gruppo\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
+    },
+    {
+      "id": "l09-l2",
+      "titolo": "Il gruppo e' il permesso condiviso",
+      "md": "La terna di mezzo di `ls -l` esiste per un motivo solo: **far lavorare piu' persone sugli stessi file senza aprirli a tutta la macchina**.\n\n```\nls -l dati.csv\n-rw-r-----  tu  ricerca  120  dati.csv\n     ^^^          ^^^^^^^\n     gruppo        il gruppo del file\n```\n\n`640` su un file di gruppo `ricerca` vuol dire: tu leggi e scrivi, chi e' in `ricerca` legge, tutti gli altri niente.\n\n```\nchgrp ricerca dati.csv     # cambia il gruppo del file\nchmod 640 dati.csv         # e i permessi che contano\nchmod 660 dati.csv         # se il gruppo deve anche scrivere\n```\n\n### Provare con gli occhi di un altro\n\nUn permesso si verifica solo provandolo. In questo simulatore:\n\n```\nprova-come anna cat /home/tu/dati.csv\n```\n\nesegue quel comando **come se fossi anna**. Sulla macchina vera e' `sudo -u anna cat ...`, oppure semplicemente chiedere alla collega di provare.\n\nÈ la differenza fra «dovrebbe funzionare» e «funziona»: il numero dei permessi si sbaglia facilmente, e l'unico modo di accorgersene e' guardare dal lato di chi deve leggere.\n\n### I numeri che si usano davvero\n\n| Numero | Significa | Quando |\n|---|---|---|\n| `600` | solo tu | chiavi, appunti privati |\n| `640` | tu scrivi, il gruppo legge | dati condivisi in sola lettura |\n| `660` | tu e il gruppo scrivete | lavoro comune |\n| `755` | tutti leggono ed eseguono | programmi, cartelle |"
+    },
+    {
+      "id": "l09-l3",
+      "titolo": "I tre bit speciali: setuid, setgid, sticky",
+      "md": "Oltre alle nove lettere ce ne sono altre tre, e ognuna risolve un problema preciso.\n\n### setuid (4000): il programma gira come il suo proprietario\n\n```\n-rwsr-xr-x  root root  /usr/bin/passwd\n   ^ la s al posto della x del proprietario\n```\n\n`passwd` deve scrivere in un file che solo root puo' toccare, ma lo lanci tu: con setuid il programma gira **come root** anche se lo esegui tu.\n\nÈ potente e pericoloso: un programma setuid con un difetto regala i privilegi di root a chi lo sfrutta. Si usa su pochissimi programmi, scritti con cura, e mai su uno script tuo. L'alternativa moderna sono le **capacita'** del modulo sulla sicurezza: un permesso solo invece di tutti.\n\n### setgid (2000) su una directory: il gruppo si eredita\n\n```\nchmod 2775 progetto\ndrwxrwsr-x  tu  ricerca  progetto\n```\n\nOgni file creato dentro prende il gruppo **della cartella**, non quello di chi lo crea. Senza, ognuno crea file leggibili solo dal proprio gruppo e la cartella condivisa non funziona.\n\nÈ il bit piu' utile dei tre per un gruppo di lavoro, e quello che nessuno conosce.\n\n### sticky bit (1000): dentro cancelli solo la tua roba\n\n```\nchmod 1777 scambio\ndrwxrwxrwt  tu  tu  scambio\n```\n\nUna cartella scrivibile da tutti sarebbe un disastro: chiunque potrebbe cancellare i file di chiunque. Con lo sticky bit ognuno puo' cancellare **solo quello che ha creato**.\n\nÈ il motivo per cui `/tmp` e' `drwxrwxrwt` su ogni macchina Linux del mondo."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l09-conti",
+      "comando": "id, useradd, usermod",
+      "titolo": "account e gruppi",
+      "esercizi": [
+        {
+          "id": "l09-ut-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Prima di toccare qualsiasi permesso: chi sei, con che numero, e in quali gruppi.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "whoami\nid",
+          "verifica": {
+            "stampa": "uid=1000(tu)",
+            "usa": [
+              "id"
+            ]
+          },
+          "hint": [
+            "whoami da' il nome, id da' tutto il resto.",
+            "whoami, poi id"
+          ],
+          "spiegazione": "`id` dice tre cose in una riga: il tuo numero (`uid`), il tuo gruppo primario (`gid`) e i gruppi supplementari. Il sistema usa i **numeri**; i nomi sono una comodita' scritta in `/etc/passwd`.\n\nÈ la ragione per cui un disco esterno portato da un'altra macchina mostra file «di uno sconosciuto»: l'uid 1000 di la' e' un'altra persona."
+        },
+        {
+          "id": "l09-ut-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Arriva una nuova tesista. Crea l'account `anna` con la sua home e verifica che la cartella ci sia e sia sua.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo useradd -m anna\nls -l /home",
+          "verifica": {
+            "dir": [
+              "/home/anna"
+            ],
+            "stampa": "anna",
+            "usa": [
+              "useradd",
+              "sudo"
+            ]
+          },
+          "hint": [
+            "-m crea anche la home.",
+            "sudo useradd -m anna"
+          ],
+          "spiegazione": "Senza `-m` l'utente esiste ma non ha una casa: al primo accesso si ritrova in una cartella che non c'e', e meta' dei programmi falliscono in modo incomprensibile.\n\nCreare utenti e' un'operazione di sistema: senza `sudo`, `useradd` non parte nemmeno."
+        },
+        {
+          "id": "l09-ut-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Crea il gruppo `ricerca` per il progetto e mettici dentro sia te sia anna, poi verifica i gruppi di anna.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\ngroups anna",
+          "verifica": {
+            "stampa": "ricerca",
+            "usa": [
+              "groupadd",
+              "usermod",
+              "groups"
+            ]
+          },
+          "hint": [
+            "Prima il gruppo, poi usermod -aG per ciascuno.",
+            "sudo usermod -aG ricerca anna"
+          ],
+          "spiegazione": "Un gruppo e' il modo con cui due persone lavorano sugli stessi file senza aprirli a tutta la macchina. Da solo non fa niente: serve assegnarlo ai file, ed e' la raccolta successiva.\n\nNota che serve `sudo` per tutto: modificare account e gruppi tocca `/etc/passwd` e `/etc/group`, che sono di root."
+        },
+        {
+          "id": "l09-ut-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La `a` che conta.** Anna e' gia' nel gruppo `sudo`. Aggiungila a `ricerca` con `-aG` e verifica che sia rimasta anche in `sudo`.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo groupadd sudo\nsudo usermod -aG sudo anna\nsudo usermod -aG ricerca anna\ngroups anna",
+          "verifica": {
+            "stampa": "sudo",
+            "usa": [
+              "usermod",
+              "groups"
+            ]
+          },
+          "hint": [
+            "-aG aggiunge; -G da solo sostituirebbe l'elenco.",
+            "sudo usermod -aG ricerca anna"
+          ],
+          "spiegazione": "Con `-aG` anna e' in tutti e due i gruppi. Con `-G ricerca` sarebbe stata **tolta** da `sudo`, perche' `-G` sostituisce l'elenco intero invece di aggiungere.\n\nSu una macchina remota, togliere l'ultimo utente dal gruppo `sudo` vuol dire che nessuno puo' piu' diventare amministratore: si rimedia solo con l'accesso fisico. È l'errore da cui non si torna con un comando."
+        },
+        {
+          "id": "l09-ut-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda l'elenco degli account di sistema e conta quanti sono, usando gli strumenti che gia' conosci.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "cat /etc/passwd\nwc -l /etc/passwd",
+          "verifica": {
+            "stampa": "/etc/passwd",
+            "usa": [
+              "cat",
+              "wc"
+            ]
+          },
+          "hint": [
+            "/etc/passwd e' un file di testo come gli altri.",
+            "cat /etc/passwd, poi wc -l /etc/passwd"
+          ],
+          "spiegazione": "Sette campi separati dai due punti: nome, la `x` che ricorda dove sta la password (in `/etc/shadow`, leggibile solo da root), uid, gid, descrizione, home, shell.\n\nÈ **testo**: `grep`, `cut` e `wc` funzionano come su qualunque altro file. `cut -d: -f1 /etc/passwd` da' l'elenco dei nomi, ed e' il modo piu' rapido di sapere chi c'e' su una macchina."
+        },
+        {
+          "id": "l09-ut-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Salva in `utenti.txt` le righe di `/etc/passwd` che riguardano account con una shell di login, e contale.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo useradd -m anna\ngrep bash /etc/passwd > utenti.txt\nwc -l utenti.txt",
+          "verifica": {
+            "contiene": {
+              "utenti.txt": "anna"
+            },
+            "usa": [
+              "grep",
+              "wc",
+              "useradd"
+            ]
+          },
+          "hint": [
+            "/etc/passwd e' testo: filtralo con grep.",
+            "grep bash /etc/passwd > utenti.txt"
+          ],
+          "spiegazione": "Nessun comando speciale: `/etc/passwd` e' un file di testo, e `grep` e `wc` funzionano come su qualunque log. Le righe con `/bin/bash` sono gli account con cui qualcuno entra davvero.\n\nGli altri, su una macchina vera, sono una ventina di account di servizio — `daemon`, `www-data`, `sshd` — che non sono persone: sono le identita' con cui girano i programmi, ognuna con i suoi permessi ridotti.\n\nPer estrarre **solo la colonna dei nomi** servirebbe `cut -d: -f1`, ed e' il primo comando del modulo sul testo avanzato."
+        },
+        {
+          "id": "l09-ut-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa succede con `usermod -G ricerca anna`, senza la `a`?",
+          "opzioni": [
+            "anna finisce SOLO in ricerca: esce da tutti gli altri gruppi supplementari",
+            "e' identico a -aG",
+            "il comando fallisce",
+            "anna viene aggiunta a ricerca come gruppo primario"
+          ],
+          "risposta": "anna finisce SOLO in ricerca: esce da tutti gli altri gruppi supplementari",
+          "spiegazione": "`-G` **sostituisce** l'elenco. Se anna era in `sudo`, in `dialout` per l'accesso alle porte seriali del banco, o in `docker`, esce da tutti in un colpo — senza avviso e senza errore.\n\nLa lettera `a` sta per *append*. Si scrive sempre `-aG`, e quando si vuole davvero sostituire si scrive dopo aver guardato `groups` per sapere cosa si sta togliendo."
+        },
+        {
+          "id": "l09-ut-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Prepara il progetto.** Crea il gruppo `ricerca`, l'account `anna` con la home, mettete tutti e due nel gruppo, e salva in `squadra.txt` chi ne fa parte.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\ngrep ricerca /etc/group > squadra.txt\ncat squadra.txt",
+          "verifica": {
+            "contiene": {
+              "squadra.txt": "anna"
+            },
+            "dir": [
+              "/home/anna"
+            ],
+            "usa": [
+              "groupadd",
+              "usermod",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Gruppo, utente, due usermod, poi grep su /etc/group.",
+            "grep ricerca /etc/group > squadra.txt"
+          ],
+          "spiegazione": "La riga di `/etc/group` elenca i membri separati da virgole: e' la verifica piu' diretta di chi appartiene davvero a un gruppo.\n\nDa qui in poi il gruppo esiste, ma non protegge ancora niente: i file sono ancora tutti personali. Assegnarli e' la raccolta successiva."
+        }
+      ]
+    },
+    {
+      "id": "l09-gruppi",
+      "comando": "chgrp e permessi di gruppo",
+      "titolo": "condividere con chi deve",
+      "esercizi": [
+        {
+          "id": "l09-gr-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda a chi appartiene `dati.csv`: proprietario **e** gruppo.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "ls -l dati.csv",
+          "verifica": {
+            "stampa": "dati.csv",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "ls -l mostra due colonne di appartenenza.",
+            "ls -l dati.csv"
+          ],
+          "spiegazione": "Due colonne, due cose diverse: il **proprietario** (tu) e il **gruppo** (il tuo gruppo primario). La terna di mezzo dei permessi vale per chi appartiene a quel gruppo.\n\nFinche' il gruppo del file e' il tuo gruppo personale, quella terna non serve a nessuno: e' il motivo per cui il prossimo passo e' cambiarlo."
+        },
+        {
+          "id": "l09-gr-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Assegna `dati.csv` al gruppo `ricerca` e verifica il cambiamento.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo usermod -aG ricerca tu\nchgrp ricerca dati.csv\nls -l dati.csv",
+          "verifica": {
+            "stampa": "ricerca",
+            "usa": [
+              "chgrp"
+            ]
+          },
+          "hint": [
+            "chgrp GRUPPO FILE, ma devi farne parte.",
+            "chgrp ricerca dati.csv"
+          ],
+          "spiegazione": "`chgrp` cambia il gruppo di un file, e puoi farlo solo se il file e' tuo **e** appartieni al gruppo di destinazione: non si regalano file a gruppi di cui non fai parte.\n\nDa adesso la terna di mezzo dei permessi riguarda chi e' in `ricerca`, e comincia a servire."
+        },
+        {
+          "id": "l09-gr-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il numero giusto.** Metti `dati.csv` a `640` e verifica dal lato di anna, che e' in `ricerca`, che riesca a leggerlo.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\nchgrp ricerca dati.csv\nchmod 640 dati.csv\nprova-come anna cat dati.csv",
+          "verifica": {
+            "stampa": "p1,9000",
+            "usa": [
+              "chmod",
+              "chgrp",
+              "prova-come"
+            ]
+          },
+          "hint": [
+            "640: tu leggi e scrivi, il gruppo legge.",
+            "chmod 640 dati.csv, poi prova-come anna cat dati.csv"
+          ],
+          "spiegazione": "Il file e' di `ricerca` e la terna di mezzo dice `r--`: anna, che e' nel gruppo, legge. Chi non e' nel gruppo non vede niente, perche' l'ultima terna e' `---`.\n\n`prova-come` esegue il comando **con l'identita' di anna**: e' l'unico modo di verificare un permesso davvero. Sulla macchina vera si scrive `sudo -u anna cat dati.csv`, oppure si chiede alla collega di provare."
+        },
+        {
+          "id": "l09-gr-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Anna deve anche poter **scrivere** nel file. Sistemalo, e verificalo facendole aggiungere una riga.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\nchgrp ricerca dati.csv\nchmod 660 dati.csv\nprova-come anna cat dati.csv\nls -l dati.csv",
+          "verifica": {
+            "stampa": "rw-rw----",
+            "usa": [
+              "chmod",
+              "prova-come"
+            ]
+          },
+          "hint": [
+            "660: tu e il gruppo leggete e scrivete.",
+            "chmod 660 dati.csv"
+          ],
+          "spiegazione": "`660` e' il permesso del lavoro comune: chi e' nel gruppo puo' modificare, chi non c'e' non vede niente.\n\nDa qui in avanti il pericolo cambia natura: due persone che scrivono lo stesso file possono sovrascriversi a vicenda. È la ragione per cui i dati grezzi si mettono in sola lettura (`640` o `444`) e si condivide la **cartella** dei risultati, non il file."
+        },
+        {
+          "id": "l09-gr-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Verifica che uno che **non** e' nel gruppo resti fuori: crea `luca`, non metterlo in `ricerca`, e fagli provare a leggere.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m luca\nsudo usermod -aG ricerca tu\nchgrp ricerca dati.csv\nchmod 640 dati.csv\nprova-come luca cat dati.csv",
+          "verifica": {
+            "errore": "permesso negato",
+            "usa": [
+              "prova-come",
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Crea un utente fuori dal gruppo e prova a leggere come lui.",
+            "prova-come luca cat dati.csv"
+          ],
+          "spiegazione": "L'ultima terna e' `---`, e luca non e' in `ricerca`: niente da fare. Questa e' la prova che il permesso di gruppo funziona — un permesso che non nega mai nessuno non protegge niente.\n\nProvare **il caso negativo** e' la parte che tutti saltano, ed e' quella che dice se hai davvero chiuso qualcosa."
+        },
+        {
+          "id": "l09-gr-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Metti i dati grezzi in sola lettura per tutti, gruppo compreso, e dimostra che nemmeno tu puoi piu' sovrascriverli per sbaglio.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "chmod 440 dati.csv\nls -l dati.csv\necho rovinato > dati.csv\ncat dati.csv",
+          "verifica": {
+            "errore": "permesso negato",
+            "contiene": {
+              "dati.csv": "p1,9000"
+            },
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "440: lettura per te e per il gruppo, scrittura per nessuno.",
+            "chmod 440 dati.csv"
+          ],
+          "spiegazione": "I dati raccolti una volta sola non si riscrivono: `440` toglie la scrittura anche a te, e la redirezione fallisce **prima** di svuotare il file.\n\nResta vero che `chmod` puo' rimetterlo scrivibile in un secondo: i permessi fermano gli sbagli, non le decisioni. Ma uno sbaglio fermato e' esattamente quello che ti serve alle undici di sera."
+        },
+        {
+          "id": "l09-gr-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Un file e' `640` e appartiene al gruppo `ricerca`. Cosa puo' fare un utente in `ricerca` che non ne e' il proprietario?",
+          "opzioni": [
+            "leggerlo, ma non modificarlo",
+            "leggerlo e modificarlo",
+            "niente",
+            "modificarlo ma non leggerlo"
+          ],
+          "risposta": "leggerlo, ma non modificarlo",
+          "spiegazione": "`640` = `rw- r-- ---`: proprietario legge e scrive, **gruppo legge**, altri niente. È il permesso tipico dei dati condivisi che non devono essere toccati.\n\nSe servisse anche la scrittura, `660`. Se dovesse vederlo chiunque sulla macchina, `644` — ma su dati di una campagna e' quasi sempre di troppo."
+        },
+        {
+          "id": "l09-gr-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La cartella di progetto.** Crea `progetto`, assegnala a `ricerca`, permetti al gruppo di scriverci, e verifica che anna riesca a crearci dentro un file.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\nmkdir progetto\nchgrp ricerca progetto\nchmod 770 progetto\nprova-come anna touch progetto/misura.csv\nls -l progetto",
+          "verifica": {
+            "esiste": [
+              "progetto/misura.csv"
+            ],
+            "usa": [
+              "chgrp",
+              "chmod",
+              "prova-come"
+            ]
+          },
+          "hint": [
+            "Sulla cartella serve anche la x per attraversarla: 770.",
+            "chmod 770 progetto, poi prova-come anna touch progetto/misura.csv"
+          ],
+          "spiegazione": "Su una **cartella** i tre bit hanno un altro significato: `r` elenca, `w` crea e cancella, `x` attraversa. Senza `x` non ci entri nemmeno, e `770` e' la combinazione che serve a un gruppo di lavoro.\n\nResta un problema che qui non si vede ancora: il file creato da anna appartiene al **suo** gruppo, non a `ricerca` — quindi tu potresti non riuscire a leggerlo. La cura e' il setgid, ed e' la prossima raccolta."
+        }
+      ]
+    },
+    {
+      "id": "l09-speciali",
+      "comando": "setuid, setgid, sticky",
+      "titolo": "i tre bit in piu'",
+      "esercizi": [
+        {
+          "id": "l09-sp-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda i permessi di `passwd`, il programma che cambia la tua password: c'e' una lettera che non hai mai visto.",
+          "utenti": true,
+          "filesystem": {
+            "/usr/bin/passwd": {
+              "contenuto": "binario\n",
+              "modo": 2541,
+              "proprietario": "root"
+            }
+          },
+          "soluzione": "ls -l /usr/bin/passwd",
+          "verifica": {
+            "stampa": "rwsr-xr-x",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "Guarda al posto della x del proprietario.",
+            "ls -l /usr/bin/passwd"
+          ],
+          "spiegazione": "La `s` al posto della `x` e' il **setuid**: quel programma gira come il suo proprietario — `root` — anche quando lo lanci tu.\n\nServe perche' cambiare la tua password vuol dire scrivere in `/etc/shadow`, che solo root puo' toccare. Senza setuid dovresti chiedere all'amministratore ogni volta."
+        },
+        {
+          "id": "l09-sp-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Metti il setuid su un programma tuo e riconosci la `s` nell'elenco.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/programma": {
+              "contenuto": "binario\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "chmod 4755 programma\nls -l programma",
+          "verifica": {
+            "stampa": "rwsr-xr-x",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Il quarto numero davanti: 4 per setuid.",
+            "chmod 4755 programma"
+          ],
+          "spiegazione": "Il `4` davanti a `755` accende il setuid. Da adesso quel programma gira con **i tuoi** privilegi anche se lo lancia un altro utente.\n\nSu un programma di root, questo vuol dire regalare root a chiunque lo esegua se il programma ha un difetto. È il motivo per cui i setuid sul sistema sono pochissimi e scritti con estrema cura — e per cui non si mette **mai** su uno script."
+        },
+        {
+          "id": "l09-sp-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' non si mette mai il setuid su uno script di shell?",
+          "opzioni": [
+            "uno script e' facile da influenzare dall'esterno: variabili, PATH, comandi che chiama",
+            "gli script non possono avere permessi speciali",
+            "perche' rallenta l'esecuzione",
+            "perche' funziona solo con bash"
+          ],
+          "risposta": "uno script e' facile da influenzare dall'esterno: variabili, PATH, comandi che chiama",
+          "spiegazione": "Uno script chiama altri comandi, e quali comandi trova dipende dal `PATH` di chi lo lancia; usa variabili che arrivano dall'ambiente; passa argomenti a programmi che li interpretano. Con i privilegi di root, ognuna di queste e' una via d'ingresso.\n\nMolti sistemi ignorano proprio il setuid sugli script per questo motivo. Se serve un privilegio preciso, si usa una **capacita'** (`setcap`) o una regola `sudo` scritta stretta."
+        },
+        {
+          "id": "l09-sp-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Il bit che serve davvero a un gruppo.** Metti il setgid sulla cartella `progetto` e verifica la `s` nella terna del gruppo.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo usermod -aG ricerca tu\nmkdir progetto\nchgrp ricerca progetto\nchmod 2775 progetto\nls -l",
+          "verifica": {
+            "stampa": "rwxrwsr-x",
+            "usa": [
+              "chmod",
+              "chgrp"
+            ]
+          },
+          "hint": [
+            "Il 2 davanti accende il setgid.",
+            "chmod 2775 progetto"
+          ],
+          "spiegazione": "La `s` sta nella terna **del gruppo**: e' il setgid, e su una directory ha un effetto tutto suo — i file creati dentro ereditano il gruppo della cartella invece di quello di chi li crea.\n\nL'esercizio successivo lo dimostra, ed e' il momento in cui la cartella condivisa comincia davvero a funzionare."
+        },
+        {
+          "id": "l09-sp-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Dimostralo: crea un file dentro la cartella con setgid e guarda che gruppo ha preso.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "sudo groupadd ricerca\nsudo usermod -aG ricerca tu\nmkdir progetto\nchgrp ricerca progetto\nchmod 2775 progetto\necho misura > progetto/dato.csv\nls -l progetto",
+          "verifica": {
+            "stampa": "ricerca",
+            "esiste": [
+              "progetto/dato.csv"
+            ],
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Crea il file dentro la cartella e guarda la colonna del gruppo.",
+            "echo misura > progetto/dato.csv, poi ls -l progetto"
+          ],
+          "spiegazione": "Il file ha preso il gruppo `ricerca` **della cartella**, non il tuo gruppo personale. Senza setgid ogni file creato sarebbe appartenuto al gruppo di chi lo ha scritto, e i colleghi non avrebbero potuto leggerlo: la cartella condivisa sarebbe stata condivisa solo di nome.\n\nÈ il bit piu' utile dei tre per un gruppo di lavoro, e quello che quasi nessuno conosce."
+        },
+        {
+          "id": "l09-sp-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "La cartella di scambio deve essere scrivibile da tutti. Mettici lo sticky bit e riconosci la `t` finale.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/dati.csv": "prova,quota\np1,9000\n",
+            "/home/tu/note.txt": "appunti di agosto\n"
+          },
+          "soluzione": "mkdir scambio\nchmod 1777 scambio\nls -l",
+          "verifica": {
+            "stampa": "rwxrwxrwt",
+            "usa": [
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Il 1 davanti accende lo sticky bit.",
+            "chmod 1777 scambio"
+          ],
+          "spiegazione": "La `t` finale e' lo **sticky bit**: la cartella e' scrivibile da tutti, ma dentro ognuno puo' cancellare solo quello che ha creato.\n\n`drwxrwxrwt` e' esattamente il permesso di `/tmp` su ogni macchina Linux del mondo: senza sticky, chiunque potrebbe cancellare i file temporanei di chiunque altro — compresi quelli di un calcolo in corso."
+        },
+        {
+          "id": "l09-sp-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La prova dello sticky bit.** Nella cartella di scambio c'e' un file di anna. Prova a cancellarlo, poi cancella il tuo.",
+          "utenti": true,
+          "filesystem": {
+            "/home/tu/scambio/mio.txt": "roba mia\n",
+            "/home/tu/scambio/di_anna.txt": {
+              "contenuto": "roba di anna\n",
+              "proprietario": "anna"
+            }
+          },
+          "soluzione": "chmod 1777 scambio\nls -l scambio\nrm scambio/di_anna.txt\nrm scambio/mio.txt\nls scambio",
+          "verifica": {
+            "errore": "sticky bit",
+            "esiste": [
+              "scambio/di_anna.txt"
+            ],
+            "nonEsiste": [
+              "scambio/mio.txt"
+            ],
+            "usa": [
+              "rm",
+              "chmod"
+            ]
+          },
+          "hint": [
+            "Prova a cancellare prima quello che non e' tuo.",
+            "rm scambio/di_anna.txt, poi rm scambio/mio.txt"
+          ],
+          "spiegazione": "Il file di anna resta, il tuo se ne va: la cartella e' scrivibile da tutti, ma **il permesso di cancellare segue la proprieta'**.\n\nSenza sticky bit, `rwx` sulla cartella basterebbe a cancellare qualunque file, di chiunque — perche' cancellare non e' un permesso del file, e' un permesso della cartella che lo contiene. Lo sticky bit e' l'eccezione che rende utilizzabili le cartelle comuni."
+        },
+        {
+          "id": "l09-sp-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La cartella condivisa fatta bene.** Gruppo di progetto, setgid perche' i file lo ereditino, sticky perche' nessuno cancelli il lavoro altrui: mettila in piedi e fai creare un file ad anna.",
+          "utenti": true,
+          "filesystem": {},
+          "soluzione": "sudo groupadd ricerca\nsudo useradd -m anna\nsudo usermod -aG ricerca anna\nsudo usermod -aG ricerca tu\nmkdir campagna\nchgrp ricerca campagna\nchmod 3770 campagna\nls -l\nprova-come anna touch campagna/prova_anna.csv\nls -l campagna",
+          "verifica": {
+            "esiste": [
+              "campagna/prova_anna.csv"
+            ],
+            "stampa": "ricerca",
+            "usa": [
+              "chmod",
+              "chgrp",
+              "prova-come"
+            ]
+          },
+          "hint": [
+            "3 = setgid (2) + sticky (1), su 770.",
+            "chmod 3770 campagna"
+          ],
+          "spiegazione": "`3770` mette insieme i due bit che servono a un gruppo: **setgid** perche' ogni file nasca del gruppo `ricerca` e quindi leggibile da tutti i membri, **sticky** perche' ognuno possa cancellare solo il proprio.\n\nÈ la configurazione di una cartella di campagna condivisa fra tesisti, e regge anche quando il gruppo cambia: chi entra nel gruppo vede tutto, chi esce non vede piu' niente, e nessuno puo' cancellare il lavoro di un altro per sbaglio."
+        }
+      ]
+    }
   ]
 }

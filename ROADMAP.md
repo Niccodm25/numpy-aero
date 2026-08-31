@@ -335,6 +335,23 @@ gruppo di moduli precedente permette di chiuderli senza indovinare.
 | 24–25 | l18 sicurezza · c08 Stazione | Indurire una macchina esposta e tenerla operativa senza perdere dati. **in arrivo** |
 | 26 | l19 automazione a scala | Solo alla fine replichi la configurazione: automatizzare un errore su dieci macchine è peggio che farlo una volta. **in arrivo** |
 
+### Stadio 0 — prima di toccare la tastiera
+
+**l00 — Che cos'e' Linux, e perche' ti riguarda**
+Raccolte: `da Unix a Linux` · `dove gira Linux oggi` · `distribuzioni, kernel, shell`.
+Perche': si comincia a digitare comandi senza sapere che cosa si sta usando ne'
+perche' esista. Un modulo corto — storia essenziale, vantaggi concreti, e dove
+lo incontrerai davvero: cluster di calcolo, Raspberry e banchi prova, computer
+di bordo, satelliti, i server di mezzo mondo. Serve anche a rispondere alla
+domanda che viene sempre: «e Windows?».
+Contenuto: Unix ai Bell Labs, la filosofia dei programmi piccoli che si
+compongono (che e' esattamente quello che si fa dal modulo l02 in poi), GNU e il
+kernel di Torvalds, cosa vuol dire software libero in pratica, la differenza fra
+kernel, distribuzione e shell. Aerospaziale: i cluster HPC, ROS sui droni,
+Linux sui payload dei CubeSat, e il perche' della riproducibilita'.
+Motore: nessuno. Sono lezioni e `predict` — l'unico modulo del ramo senza
+terminale, e va bene cosi'.
+
 ### Stadio 1 — completare le basi (colonna rossa)
 
 **l04-bis — Controllare i job interattivi** ← **in arrivo**

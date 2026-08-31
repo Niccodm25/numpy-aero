@@ -96,6 +96,37 @@ export const UTENTI = {
     return `password aggiornata per ${nome}`;
   },
 
+  groupadd(sh, args) {
+    richiediRoot(sh);
+    const nome = args.find((a) => !a.startsWith("-"));
+    if (!nome) throw new V.ErroreFs("manca il nome del gruppo");
+    if (sh.gruppi[nome]) throw new V.ErroreFs(`${nome}: gruppo gia' esistente`);
+    sh.gruppi[nome] = [];
+    sincronizza(sh);
+    return "";
+  },
+
+  /** Eseguire un comando con l'identita' di un altro utente: e' l'unico modo
+   *  per verificare davvero se i permessi che hai messo funzionano. */
+  "sudo-u"(sh, args) {
+    return UTENTI["prova-come"](sh, args);
+  },
+
+  "prova-come"(sh, args) {
+    const [nome, ...comando] = args.filter((a) => !a.startsWith("-"));
+    if (!nome || !comando.length) throw new V.ErroreFs("usa prova-come UTENTE COMANDO");
+    if (!sh.utenti?.[nome]) throw new V.ErroreFs(`utente non esistente: ${nome}`);
+    const prima = sh.fs.utente ?? "tu";
+    sh.fs.utente = nome;
+    try {
+      const fn = sh.comandi[comando[0]];
+      if (!fn) throw new V.ErroreFs(`${comando[0]}: comando non trovato`);
+      return fn(sh, comando.slice(1)) ?? "";
+    } finally {
+      sh.fs.utente = prima;
+    }
+  },
+
   usermod(sh, args) {
     richiediRoot(sh);
     const i = args.findIndex((a) => a === "-aG");

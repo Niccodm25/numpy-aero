@@ -138,8 +138,17 @@ export function scrivi(fs, p, contenuto) {
     // ed e' il motivo per cui un file reso eseguibile resta tale.
     modo: vecchio?.modo ?? MODO_FILE,
     proprietario: vecchio?.proprietario ?? fs.utente ?? UTENTE,
-    gruppo: vecchio?.gruppo ?? vecchio?.proprietario ?? fs.utente ?? UTENTE,
+    gruppo: vecchio?.gruppo ?? gruppoEreditato(fs, bersaglio) ?? fs.utente ?? UTENTE,
   });
+}
+
+/** Con setgid sulla cartella, quello che nasce dentro prende il SUO gruppo.
+ *  Senza, prenderebbe il gruppo di chi scrive - e in una cartella condivisa
+ *  vorrebbe dire che ogni file e' leggibile solo dal suo autore. */
+function gruppoEreditato(fs, percorso) {
+  const dir = fs.nodi.get(genitore(normalizza(fs, percorso)));
+  if (dir && (dir.modo ?? MODO_DIR) & 0o2000) return dir.gruppo ?? null;
+  return null;
 }
 
 /**
@@ -188,7 +197,12 @@ export function creaDir(fs, p, ricorsivo = false) {
     if (!ricorsivo) throw new ErroreFs(`${dir}: directory non esistente`);
     creaDir(fs, dir, true);
   }
-  fs.nodi.set(abs, { tipo: "dir", modo: MODO_DIR, proprietario: fs.utente ?? UTENTE, gruppo: fs.utente ?? UTENTE });
+  fs.nodi.set(abs, {
+    tipo: "dir",
+    modo: MODO_DIR,
+    proprietario: fs.utente ?? UTENTE,
+    gruppo: gruppoEreditato(fs, abs) ?? fs.utente ?? UTENTE,
+  });
 }
 
 /** I figli diretti di una cartella, ordinati. Solo i nomi, non i percorsi. */
@@ -222,6 +236,13 @@ export function rimuovi(fs, p, ricorsivo = false) {
   const abs = normalizza(fs, p);
   const n = fs.nodi.get(abs);
   if (!n) throw new ErroreFs(`${p}: file o directory non esistente`);
+  // Sticky bit sulla cartella che lo contiene: dentro puoi cancellare solo
+  // quello che e' tuo, anche se la cartella e' scrivibile da tutti. E' la
+  // ragione per cui /tmp non e' un campo di battaglia.
+  const dir = fs.nodi.get(genitore(abs));
+  const utente = fs.utente ?? UTENTE;
+  if (dir && (dir.modo ?? MODO_DIR) & 0o1000 && utente !== "root" && (n.proprietario ?? UTENTE) !== utente)
+    throw new ErroreFs(`${p}: operazione non permessa (sticky bit: non e' tuo)`);
   if (n.tipo === "dir") {
     if (!ricorsivo) throw new ErroreFs(`${p}: e' una directory`);
     for (const c of sottoalbero(fs, abs)) fs.nodi.delete(c);
