@@ -229,8 +229,7 @@
       "livello": "Autonomo",
       "sottotitolo": "Sospendere, riprendere o lasciare andare un lavoro senza confondere una shell con un servizio.",
       "richiede": [
-        "l04",
-        "l21"
+        "l04"
       ],
       "puoi": [
         "distinguere un processo in sottofondo da uno sospeso",

@@ -68,16 +68,28 @@
         },
         {
           "id": "l02-gr-2",
-          "tipo": "predict",
-          "testo": "Il log contiene sia `ERROR` sia `error`. `grep ERROR` le trova tutte?",
-          "opzioni": [
-            "no: grep distingue maiuscole e minuscole, serve -i",
-            "si': grep ignora sempre le maiuscole",
-            "si', ma solo sui file di log",
-            "no, e non c'e' modo di cercarle insieme"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prima di cercare, guarda il log per intero: cosi' sai cosa stai filtrando. Poi tieni solo le righe di avvertimento.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          },
+          "soluzione": "cat volo/log.txt\ngrep WARN volo/log.txt",
+          "verifica": {
+            "stampa": "batteria bassa",
+            "usa": [
+              "cat",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Prima cat, poi grep.",
+            "grep WARN volo/log.txt"
           ],
-          "risposta": "no: grep distingue maiuscole e minuscole, serve -i",
-          "spiegazione": "No: trova solo quelle maiuscole. Un log scritto da programmi diversi contiene tutte le varianti, e cercarne una sola ne perde due terzi senza dire niente. `-i` ignora la differenza, ed e' quasi sempre la scelta giusta quando cerchi in testo scritto da altri."
+          "spiegazione": "Guardare il file prima di filtrarlo evita il caso peggiore: un `grep` che non trova niente perche' la parola era scritta diversamente, e la conclusione sbagliata che «non ci sono errori».\n\nSu un log da un giga non si fa `cat`: si fa `head`, ed e' lo stesso gesto."
         },
         {
           "id": "l02-gr-3",
@@ -208,16 +220,30 @@
         },
         {
           "id": "l02-gr-8",
-          "tipo": "predict",
-          "testo": "Che differenza c'e' fra `grep` e `find` ?",
-          "opzioni": [
-            "grep cerca dentro i file, find cerca i file",
-            "grep cerca i file, find cerca dentro i file",
-            "sono equivalenti, cambia la sintassi",
-            "grep lavora su una cartella, find su tutto il disco"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La riga che spiega il guasto.** Trova gli errori del log, salvali in `errori.txt`, e leggi il file per intero.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n"
+          },
+          "soluzione": "grep -i error volo/log.txt > errori.txt\ncat errori.txt\nls -l errori.txt",
+          "verifica": {
+            "contiene": {
+              "errori.txt": "timeout"
+            },
+            "stampa": "sensore quota",
+            "usa": [
+              "grep",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Filtra con grep, salva, poi rileggi con cat.",
+            "grep -i error volo/log.txt > errori.txt"
           ],
-          "risposta": "grep cerca dentro i file, find cerca i file",
-          "spiegazione": "`grep` cerca **dentro** i file, `find` cerca **i** file. Sono le due meta' della stessa domanda e si confondono di continuo: se non sai dove sta un file usi `find`, se non sai cosa contiene usi `grep`."
+          "spiegazione": "Il file resta per la segnalazione, `cat` te lo fa rileggere subito, e `ls -l` dice che non e' vuoto — che dopo una redirezione non e' mai scontato.\n\n`-i` prende anche l'`error` minuscolo della quarta riga: i log veri non sono coerenti nelle maiuscole, e chi filtra senza `-i` perde righe senza accorgersene."
         }
       ]
     },
@@ -328,16 +354,27 @@
         },
         {
           "id": "l02-fn-5",
-          "tipo": "predict",
-          "testo": "Perche' `find` stampa percorsi completi e non solo i nomi?",
-          "opzioni": [
-            "perche' il percorso e' l'unica cosa riusabile da un altro comando",
-            "perche' i nomi da soli potrebbero ripetersi",
-            "e' una scelta arbitraria, si puo' cambiare con -name",
-            "perche' find non conosce i nomi dei file"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Trova i CSV della campagna e leggi il primo che ti restituisce, per controllare che formato hanno.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n"
+          },
+          "soluzione": "find volo -name *.csv\ncat volo/dati/prova1.csv",
+          "verifica": {
+            "stampa": "quota,mach",
+            "usa": [
+              "find",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prima find, poi cat su uno dei risultati.",
+            "cat volo/dati/prova1.csv"
           ],
-          "risposta": "perche' il percorso e' l'unica cosa riusabile da un altro comando",
-          "spiegazione": "Perche' il percorso e' l'unica cosa **riusabile**: un nome da solo non dice dove sta il file, e non si puo' passare a un altro comando. È la stessa ragione per cui `find .` e `find /home/tu` producono percorsi diversi per gli stessi file."
+          "spiegazione": "Trovare e guardare sono due passi diversi, e il secondo dice cose che il nome del file non dice: qui l'intestazione con i nomi delle colonne.\n\nSu un file grosso conviene `head -n 1` invece di `cat`: la prima riga basta a sapere che colonne ci sono."
         },
         {
           "id": "l02-fn-6",
@@ -369,27 +406,30 @@
         {
           "id": "l02-fn-7",
           "tipo": "terminale",
-          "testo": "Trova i CSV che stanno **solo** dentro `volo/dati`, non altrove.",
+          "difficolta": 4,
+          "testo": "**L'inventario della campagna.** Trova i CSV, salvane l'elenco in `elenco.txt`, e aggiungi in coda al file il contenuto della prima prova.",
           "filesystem": {
-            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
-            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
-            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
-            "/home/tu/volo/note.md": "campagna di agosto\n"
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
           },
-          "soluzione": "find volo/dati -name *.csv",
+          "soluzione": "find volo -name *.csv > elenco.txt\ncat volo/dati/prova1.csv >> elenco.txt\ncat elenco.txt",
           "verifica": {
-            "stampa": "/home/tu/volo/dati/prova2.csv",
+            "contiene": {
+              "elenco.txt": "9000,0.82"
+            },
+            "stampa": "prova2.csv",
             "usa": [
-              "find"
+              "find",
+              "cat"
             ]
           },
           "hint": [
-            "Cambia la cartella di partenza.",
-            "find volo/dati -name *.csv"
+            "find con redirezione, poi cat in coda.",
+            "cat volo/dati/prova1.csv >> elenco.txt"
           ],
-          "spiegazione": "Restringere il punto di partenza e' piu' semplice e piu' veloce che filtrare dopo: `find` non scende dove non gli dici di andare."
+          "spiegazione": "Un file solo con **dove sono** i dati e **come sono fatti**: e' quello che serve a chi riceve la campagna e non era in laboratorio.\n\nLe due frecce diverse non sono intercambiabili: la seconda `>` avrebbe cancellato l'elenco appena scritto."
         },
         {
           "id": "l02-fn-8",
@@ -453,27 +493,27 @@
         {
           "id": "l02-fi-2",
           "tipo": "terminale",
-          "testo": "Guarda solo le prime due righe del log.",
+          "difficolta": 3,
+          "testo": "Guarda le prime due righe del log, e poi leggilo tutto per verificare che le hai lette dall'inizio giusto.",
           "filesystem": {
-            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
-            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
-            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
-            "/home/tu/volo/note.md": "campagna di agosto\n"
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
           },
-          "soluzione": "head -n 2 volo/log.txt",
+          "soluzione": "head -n 2 volo/log.txt\ncat volo/log.txt",
           "verifica": {
-            "stampa": "INFO avvio",
+            "stampa": "batteria bassa",
             "usa": [
-              "head"
+              "head",
+              "cat"
             ]
           },
           "hint": [
-            "L'opzione e' -n seguita dal numero.",
+            "head prende dall'inizio.",
             "head -n 2 volo/log.txt"
           ],
-          "spiegazione": "`head` prende dall'inizio, `tail` dalla fine. Su un file di cui non sai niente, `head` e' il primo comando da dare: dice com'e' fatto senza riversare un milione di righe a schermo."
+          "spiegazione": "Su un file piccolo il confronto e' immediato: le prime due righe di `head` sono le prime due di `cat`. Su un log da un giga, `cat` non si fa — ed e' il motivo per cui `head` esiste.\n\nSenza `-n`, `head` ne mostra dieci: e' il valore storico, e non e' scritto da nessuna parte nel comando."
         },
         {
           "id": "l02-fi-3",
@@ -569,42 +609,55 @@
         {
           "id": "l02-co-12",
           "tipo": "terminale",
-          "testo": "Il log e' cresciuto: guarda solo l'ultima riga scritta.",
-          "difficolta": 2,
-          "filesystem": {
-            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota non risponde\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout lettura\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota non risponde\n",
-            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n11000,0.78\n",
-            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
-            "/home/tu/volo/dati/scarti.txt": "prova2 sospetta\n",
-            "/home/tu/volo/vecchi/prova0.csv": "quota,mach\n1000,0.20\n",
-            "/home/tu/volo/note.md": "campagna di agosto\n"
-          },
-          "soluzione": "tail -n 1 volo/log.txt",
+          "difficolta": 4,
+          "testo": "**Il riepilogo del log.** Salva in `riepilogo.txt` quante righe ha il log e quante sono di errore.",
+          "soluzione": "wc -l volo/log.txt > riepilogo.txt\ngrep -c -i error volo/log.txt >> riepilogo.txt\ncat riepilogo.txt",
           "verifica": {
+            "contiene": {
+              "riepilogo.txt": "6"
+            },
+            "stampa": "3",
             "usa": [
-              "tail"
-            ],
-            "stampa": "10:09 ERROR"
+              "wc",
+              "grep"
+            ]
           },
           "hint": [
-            "Una riga sola, dal fondo.",
-            "tail -n 1 volo/log.txt"
+            "Due conteggi in un file solo.",
+            "wc -l volo/log.txt > riepilogo.txt, poi grep -c -i error ... >>"
           ],
-          "spiegazione": "Le righe nuove di un log si aggiungono in fondo: l'ultima e' quella appena successa. È il motivo per cui su un log si usa `tail` e quasi mai `head`."
+          "spiegazione": "Sei righe in tutto, tre di errore: due numeri che dicono se la campagna e' andata bene molto piu' in fretta di qualunque lettura.\n\n`grep -c` conta invece di stampare, e con `-i` prende anche gli `error` minuscoli — che in questo log ci sono, e senza `-i` sfuggirebbero.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          }
         },
         {
           "id": "l02-co-13",
-          "tipo": "predict",
-          "testo": "Un programma sta scrivendo su `log.txt` proprio adesso e vuoi vedere le righe mentre arrivano. Quale comando?",
+          "tipo": "terminale",
           "difficolta": 3,
-          "opzioni": [
-            "tail -f log.txt",
-            "head -f log.txt",
-            "cat -f log.txt",
-            "wc -f log.txt"
+          "testo": "Quali sono le prime tre righe **di errore** del log? Combina il filtro con il taglio.",
+          "soluzione": "grep -i error volo/log.txt | head -n 3",
+          "verifica": {
+            "stampa": "sensore quota",
+            "usa": [
+              "grep",
+              "head"
+            ]
+          },
+          "hint": [
+            "Prima filtra, poi taglia.",
+            "grep -i error volo/log.txt | head -n 3"
           ],
-          "risposta": "tail -f log.txt",
-          "spiegazione": "`-f` sta per *follow*: `tail` resta aperto e stampa ogni riga nuova appena viene scritta. È il comando con cui si guarda un programma lungo mentre gira, e si chiude con Ctrl-C. Qui nel simulatore non c'e' niente che scriva in tempo reale, ma sulla tua macchina e' quello che userai di piu'."
+          "spiegazione": "L'ordine conta: filtrare e poi tagliare da' le prime tre righe **fra quelle di errore**; tagliare e poi filtrare darebbe gli errori fra le prime tre righe, che e' un'altra domanda.\n\nÈ l'errore piu' comune nelle pipeline, e non produce nessun messaggio: solo un risultato sbagliato.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          }
         }
       ]
     },
@@ -635,16 +688,28 @@
         },
         {
           "id": "l02-fi-5",
-          "tipo": "predict",
-          "testo": "`sort` su righe che contengono `10`, `9` e `100`: in che ordine escono?",
-          "opzioni": [
-            "10, 100, 9 — perche' il confronto e' fra stringhe",
-            "9, 10, 100 — sort riconosce i numeri",
-            "100, 10, 9 — sort ordina al contrario sui numeri",
-            "solleva un errore sui valori non testuali"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda il file dei codici, poi ordinalo: e' il passo che serve prima di poterli contare.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          },
+          "soluzione": "cat codici.txt\nsort codici.txt",
+          "verifica": {
+            "stampa": "E07",
+            "usa": [
+              "cat",
+              "sort"
+            ]
+          },
+          "hint": [
+            "Prima leggilo, poi ordinalo.",
+            "sort codici.txt"
           ],
-          "risposta": "10, 100, 9 — perche' il confronto e' fra stringhe",
-          "spiegazione": "`10`, `100`, `9`: il confronto e' fra **stringhe**, e `1` viene prima di `9`. Serve `sort -n` per ordinare per valore numerico. L'errore non segnala niente, perche' un ordinamento sbagliato e' pur sempre un ordinamento."
+          "spiegazione": "Ordinare mette vicini i doppioni, ed e' l'unico motivo per cui si ordina prima di contare: `uniq` guarda solo la riga precedente.\n\nIl file originale non viene toccato: `sort` stampa, e per salvare serve una redirezione."
         },
         {
           "id": "l02-fi-6",
@@ -709,25 +774,30 @@
         {
           "id": "l02-or-9",
           "tipo": "terminale",
-          "testo": "`numeri.txt` contiene 10, 9, 100, 9. Ordinali **come numeri** e salva il risultato in `ordinati.txt`.",
-          "difficolta": 2,
+          "difficolta": 4,
+          "testo": "**Ordina i codici e conservali.** Salva la versione ordinata in `ordinati.txt` e verifica che il file originale sia rimasto com'era.",
           "filesystem": {
-            "/home/tu/numeri.txt": "10\n9\n100\n9\n"
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
           },
-          "soluzione": "sort -n numeri.txt > ordinati.txt\ncat ordinati.txt",
+          "soluzione": "sort codici.txt > ordinati.txt\ncat ordinati.txt\ncat codici.txt",
           "verifica": {
             "contenuto": {
-              "ordinati.txt": "9\n9\n10\n100"
+              "ordinati.txt": "E07\nE12\nE12"
             },
+            "stampa": "E12",
             "usa": [
-              "sort"
+              "sort",
+              "cat"
             ]
           },
           "hint": [
-            "Senza -n il confronto e' fra stringhe.",
-            "sort -n numeri.txt > ordinati.txt"
+            "Redirezione dell'uscita di sort, poi confronta i due file.",
+            "sort codici.txt > ordinati.txt"
           ],
-          "spiegazione": "Senza `-n` l'ordine sarebbe `10, 100, 9`: perfettamente alfabetico e completamente sbagliato. `sort` non protesta, perche' un ordinamento sbagliato e' pur sempre un ordinamento - lo scopri dal risultato, non da un errore."
+          "spiegazione": "`sort` non modifica niente: stampa. Il file ordinato esiste solo perche' l'hai salvato, e l'originale e' intatto.\n\nÈ la differenza con `sed -i` del modulo sul testo, che invece riscrive: quasi tutti i comandi di questo ramo stampano, e sei tu a decidere dove finisce l'uscita."
         },
         {
           "id": "l02-or-10",
@@ -753,17 +823,32 @@
         },
         {
           "id": "l02-or-11",
-          "tipo": "predict",
-          "testo": "`sort -r` su `a`, `c`, `b`. Cosa esce?",
-          "difficolta": 2,
-          "opzioni": [
-            "c, b, a",
-            "a, b, c",
-            "l'ordine originale: a, c, b",
-            "un errore: -r vuole dei numeri"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La classifica dei guasti della campagna.** Salvala in `classifica.txt` e mostra il codice piu' frequente.",
+          "soluzione": "sort codici.txt | uniq -c | sort -n -r > classifica.txt\nhead -n 1 classifica.txt\ncat classifica.txt",
+          "verifica": {
+            "contenuto": {
+              "classifica.txt": "2 E12\n1 E07"
+            },
+            "stampa": "2 E12",
+            "usa": [
+              "sort",
+              "uniq",
+              "head"
+            ]
+          },
+          "hint": [
+            "La coppia sort | uniq -c, poi si riordina e si prende la prima riga.",
+            "sort codici.txt | uniq -c | sort -n -r > classifica.txt"
           ],
-          "risposta": "c, b, a",
-          "spiegazione": "`-r` inverte l'ordine, qualunque esso sia: alfabetico se sei senza `-n`, numerico con `-n`. Non ha niente a che vedere con il `-r` di `rm` e `cp`, che sta per ricorsivo: la stessa lettera vuole dire cose diverse a seconda del comando, e non c'e' regola."
+          "spiegazione": "Quattro comandi e una risposta: `E12` e' **il** guasto. Il file resta per la riunione, la prima riga risponde subito.\n\nÈ la catena che userai piu' spesso di tutte, e vale identica su codici di errore, indirizzi IP nei log di accesso, nomi di file piu' modificati.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          }
         }
       ]
     },
@@ -774,16 +859,27 @@
       "esercizi": [
         {
           "id": "l02-pi-1",
-          "tipo": "predict",
-          "testo": "Cosa fa la barra verticale in `cat log.txt | grep ERROR` ?",
-          "opzioni": [
-            "passa l'uscita del comando a sinistra in ingresso a quello a destra",
-            "esegue i due comandi in parallelo",
-            "esegue il secondo comando solo se il primo riesce",
-            "unisce i due file in uno"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Leggi il log con `cat` e fallo passare a `grep` per tenere solo gli errori: e' la stessa risposta di prima, ottenuta con una pipe.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n"
+          },
+          "soluzione": "cat volo/log.txt | grep -i error",
+          "verifica": {
+            "stampa": "timeout",
+            "usa": [
+              "cat",
+              "grep"
+            ]
+          },
+          "hint": [
+            "La barra verticale passa l'uscita al comando dopo.",
+            "cat volo/log.txt | grep -i error"
           ],
-          "risposta": "passa l'uscita del comando a sinistra in ingresso a quello a destra",
-          "spiegazione": "Prende l'**uscita** del comando a sinistra e la da' in **ingresso** a quello a destra. È l'idea centrale di Unix: comandi piccoli che fanno una cosa sola, e un modo per metterli in fila. Nessuno dei due sa che l'altro esiste."
+          "spiegazione": "`grep -i error volo/log.txt` fa la stessa cosa ed e' piu' corto: la pipe serve quando l'ingresso **non** e' un file, ma l'uscita di qualcos'altro.\n\nVederle equivalenti su un caso semplice e' il modo di capire cosa passa dentro la pipe: testo, e nient'altro."
         },
         {
           "id": "l02-pi-2",
@@ -814,16 +910,28 @@
         },
         {
           "id": "l02-pi-3",
-          "tipo": "predict",
-          "testo": "`grep ERROR log.txt` e `cat log.txt | grep ERROR` danno lo stesso risultato. Quale conviene?",
-          "opzioni": [
-            "la prima: la pipe serve quando l'ingresso non e' un file",
-            "la seconda: e' piu' esplicita",
-            "sono equivalenti in tutto",
-            "la seconda: cat legge piu' velocemente"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Quante righe restano se togli dal log tutte quelle informative? Contale in una pipeline sola.",
+          "soluzione": "grep -v INFO volo/log.txt | wc -l",
+          "verifica": {
+            "stampa": "4",
+            "usa": [
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "-v inverte il criterio.",
+            "grep -v INFO volo/log.txt | wc -l"
           ],
-          "risposta": "la prima: la pipe serve quando l'ingresso non e' un file",
-          "spiegazione": "La prima: e' piu' corta e legge il file una volta invece di passarlo attraverso un comando in piu'. La pipe serve quando l'ingresso **non** e' un file ma l'uscita di qualcos'altro — usarla per leggere un file che potevi nominare e' lavoro sprecato."
+          "spiegazione": "Quattro righe su sei non sono informative: due errori maiuscoli, uno minuscolo e un avviso. È il modo piu' rapido di sapere **quanto rumore** c'e' in un log prima di leggerlo.\n\nAttenzione a `-v` con criteri larghi: toglie tutto quello che contiene quella parola, anche dove non te lo aspetti.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          }
         },
         {
           "id": "l02-pi-4",
@@ -897,16 +1005,32 @@
         },
         {
           "id": "l02-pi-7",
-          "tipo": "predict",
-          "testo": "In `grep X f.txt | sort > out.txt`, cosa finisce dentro `out.txt` ?",
-          "opzioni": [
-            "l'uscita di sort, cioe' il risultato dell'ultimo comando della catena",
-            "l'uscita di grep, prima dell'ordinamento",
-            "le uscite di entrambi, una dopo l'altra",
-            "niente: non si possono combinare pipe e redirezione"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La diagnosi da allegare.** Metti in `diagnosi.txt` le righe non informative ordinate, e conta quante sono.",
+          "soluzione": "grep -v INFO volo/log.txt | sort > diagnosi.txt\nwc -l diagnosi.txt\nhead -n 2 diagnosi.txt",
+          "verifica": {
+            "contiene": {
+              "diagnosi.txt": "ERROR"
+            },
+            "stampa": "4 diagnosi.txt",
+            "usa": [
+              "grep",
+              "sort",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Filtra, ordina, salva, conta.",
+            "grep -v INFO volo/log.txt | sort > diagnosi.txt"
           ],
-          "risposta": "l'uscita di sort, cioe' il risultato dell'ultimo comando della catena",
-          "spiegazione": "L'uscita di `sort`, cioe' il risultato dell'**ultimo** comando della catena. La redirezione riguarda la fine della fila, non l'inizio: `grep` passa a `sort`, e solo quello che esce da `sort` viene scritto."
+          "spiegazione": "Ordinate per orario — che qui coincide con l'ordine alfabetico, visto che il formato della data comincia dall'anno. È il motivo per cui i log si scrivono con `2026-08-29` e non con `29/08/2026`: cosi' `sort` funziona senza saperne niente.\n\nQuattro righe, un file, e una segnalazione che si puo' leggere.",
+          "filesystem": {
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/codici.txt": "E12\nE07\nE12\n"
+          }
         },
         {
           "id": "l02-pi-8",

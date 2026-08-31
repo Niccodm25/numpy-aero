@@ -106,45 +106,91 @@
         },
         {
           "id": "l06-ws-6",
-          "tipo": "predict",
+          "tipo": "terminale",
           "difficolta": 3,
-          "testo": "Hai installato `numpy` con `pip` dentro WSL. Da PowerShell, `python -c \"import numpy\"` cosa risponde?",
-          "opzioni": [
-            "`ModuleNotFoundError`: sono due Python diversi",
-            "funziona: i pacchetti sono condivisi",
-            "funziona solo se la cartella e' sotto `/mnt/c`",
-            "un errore di permessi"
+          "testo": "Sei dentro WSL: dimostra con due comandi che il disco di Linux e quello di Windows sono due posti diversi, e salva la prova in `confine.txt`.",
+          "soluzione": "pwd > confine.txt\nls /mnt/c/Users/tu >> confine.txt\nls >> confine.txt\ncat confine.txt",
+          "verifica": {
+            "contiene": {
+              "confine.txt": "Documenti"
+            },
+            "stampa": "analisi",
+            "usa": [
+              "pwd",
+              "ls"
+            ]
+          },
+          "hint": [
+            "La tua home, poi la cartella utente di Windows.",
+            "ls /mnt/c/Users/tu >> confine.txt"
           ],
-          "risposta": "`ModuleNotFoundError`: sono due Python diversi",
-          "spiegazione": "Due installazioni separate, due `site-packages`, nessuna delle due sa dell'altra. È lo stesso problema del PATH del ramo *Ambienti e pacchetti*, con un confine di sistema operativo in mezzo: `which python` prima di installare."
+          "spiegazione": "Due alberi, un solo filesystem: `/home/tu` sta sul disco veloce di Linux, `/mnt/c` e' il disco di Windows visto da qui. Sono raggiungibili con gli stessi comandi e si comportano in modo diverso — velocita' e permessi.\n\nAvere la prova scritta serve piu' di quanto sembri: meta' della confusione dei primi giorni con WSL nasce dal non sapere **da che parte** si sta lavorando.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          }
         },
         {
           "id": "l06-ws-7",
-          "tipo": "predict",
-          "difficolta": 2,
-          "testo": "Quale di queste cose **non** e' vera di WSL 2?",
-          "opzioni": [
-            "ha una sua finestra grafica, come una macchina virtuale classica",
-            "condivide la memoria e la rete con Windows",
-            "si avvia in pochi secondi",
-            "puo' eseguire gli stessi binari di un server Linux"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il file scaricato dal browser di Windows.** Trovalo sotto la cartella utente, portalo nella tua home Linux, e conta le righe per verificare che sia arrivato intero.",
+          "soluzione": "find /mnt/c/Users/tu -name *.csv\ncp /mnt/c/Users/tu/Downloads/dati_grezzi.csv analisi/\nwc -l analisi/dati_grezzi.csv",
+          "verifica": {
+            "esiste": [
+              "/home/tu/analisi/dati_grezzi.csv"
+            ],
+            "stampa": "2",
+            "usa": [
+              "find",
+              "cp",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Trova, copia di qua, conta.",
+            "cp /mnt/c/Users/tu/Downloads/dati_grezzi.csv analisi/"
           ],
-          "risposta": "ha una sua finestra grafica, come una macchina virtuale classica",
-          "spiegazione": "Vive dentro un terminale: non c'e' un desktop Linux da guardare. (Le app grafiche Linux si possono aprire, e compaiono come finestre di Windows normali - ma un desktop suo non ce l'ha.)"
+          "spiegazione": "È la giornata tipo con WSL: il browser di Windows scarica, il lavoro si fa in Linux. Copiare **di qua** invece di lavorare su `/mnt/c` non e' pedanteria — su una cartella con molti file la differenza di velocita' si misura in decine di volte.\n\nIl conteggio finale e' la verifica: un file copiato a meta' esiste, ed e' il modo peggiore di accorgersene tre passaggi dopo.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          }
         },
         {
           "id": "l06-ws-8",
-          "tipo": "predict",
-          "difficolta": 3,
-          "testo": "Perche' installare WSL invece di lavorare direttamente in PowerShell?",
-          "opzioni": [
-            "perche' molte istruzioni e molti strumenti scientifici danno Linux per scontato",
-            "perche' PowerShell non sa gestire i file di dati",
-            "perche' Python su Windows e' piu' lento",
-            "perche' PowerShell non ha una pipe"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il risultato torna a Windows.** Analizza il log nella home Linux, salva il conteggio degli errori, e copia il risultato nei Documenti di Windows.",
+          "soluzione": "grep -c ERROR analisi/log.txt > analisi/errori.txt\ncp analisi/errori.txt /mnt/c/Users/tu/Documenti/errori.txt\ncat /mnt/c/Users/tu/Documenti/errori.txt",
+          "verifica": {
+            "esiste": [
+              "/mnt/c/Users/tu/Documenti/errori.txt"
+            ],
+            "stampa": "1",
+            "usa": [
+              "grep",
+              "cp"
+            ]
+          },
+          "hint": [
+            "Analizza di qua, poi copia il risultato di la'.",
+            "cp analisi/errori.txt /mnt/c/Users/tu/Documenti/errori.txt"
           ],
-          "risposta": "perche' molte istruzioni e molti strumenti scientifici danno Linux per scontato",
-          "spiegazione": "PowerShell e' una shell ottima, e per amministrare Windows e' migliore. Ma un `README` che dice `apt install`, un `Makefile`, un cluster a cui ti colleghi in ssh: quello e' il mondo che WSL ti mette a disposizione senza cambiare computer."
+          "spiegazione": "Il verso completo: **i dati entrano da Windows, il lavoro si fa in Linux, il risultato torna di la'** dove Excel e la posta lo trovano.\n\nQuello che resta su `/mnt/c` in permanenza sono i file di Windows; quello su cui stai lavorando sta in `/home`. È la regola che risolve meta' dei problemi con WSL, e qui si vede in tre comandi.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          }
         }
       ]
     },
@@ -156,8 +202,8 @@
         {
           "id": "l06-mn-1",
           "tipo": "terminale",
-          "difficolta": 2,
-          "testo": "Sei dentro WSL. Guarda cosa c'e' nella cartella Documenti del tuo disco `C:`.",
+          "difficolta": 3,
+          "testo": "Sei dentro WSL. Guarda cosa c'e' nella cartella Documenti del disco `C:`, e leggi uno dei file che trovi.",
           "filesystem": {
             "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
@@ -167,16 +213,17 @@
             "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
             "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
           },
-          "soluzione": "ls /mnt/c/Users/tu/Documenti",
+          "soluzione": "ls /mnt/c/Users/tu/Documenti\ncat /mnt/c/Users/tu/Documenti/campagna.csv",
           "verifica": {
+            "stampa": "12000",
             "usa": [
-              "ls"
-            ],
-            "stampa": "campagna.csv"
+              "ls",
+              "cat"
+            ]
           },
           "hint": [
             "Il disco C: si vede sotto /mnt.",
-            "ls /mnt/c/Users/tu/Documenti"
+            "ls /mnt/c/Users/tu/Documenti, poi cat sul file"
           ],
           "spiegazione": "`C:\\Users\\tu\\Documenti` diventa `/mnt/c/Users/tu/Documenti`: la lettera del disco diventa una cartella dentro `/mnt`, e le barre si girano. Non e' una copia - e' lo stesso disco."
         },
@@ -211,23 +258,35 @@
         },
         {
           "id": "l06-mn-3",
-          "tipo": "predict",
+          "tipo": "terminale",
           "difficolta": 3,
-          "testo": "Dove conviene tenere una campagna di misure che analizzerai con script Linux?",
-          "opzioni": [
-            "in `/home/tu`, il disco di Linux",
-            "in `/mnt/c/Users/tu`, cosi' si vede anche da Windows",
-            "e' indifferente: e' lo stesso disco",
-            "in `/mnt/c/Windows`, che e' la parte piu' veloce"
+          "testo": "Conta quanti file ci sono sotto la cartella utente di Windows, per capire se conviene lavorarci direttamente.",
+          "soluzione": "find /mnt/c/Users/tu | wc -l",
+          "verifica": {
+            "stampa": "5",
+            "usa": [
+              "find",
+              "wc"
+            ]
+          },
+          "hint": [
+            "find elenca tutto l'albero, wc conta.",
+            "find /mnt/c/Users/tu | wc -l"
           ],
-          "risposta": "in `/home/tu`, il disco di Linux",
-          "spiegazione": "**I file stanno dove gira il codice.** Leggere `/mnt/c` da Linux passa da un protocollo interno di tipo rete: su molti file piccoli la differenza si misura in decine di volte. Se ti serve vederli anche da Windows, `\\\\wsl$\\Ubuntu\\home\\tu` li mostra in Esplora Risorse."
+          "spiegazione": "Cinque voci su questa cartella finta; su una cartella utente vera sono decine di migliaia, e ognuna letta da Linux passa dal confine. È il motivo concreto per cui un progetto tenuto su `/mnt/c` e' lento: non e' il singolo file, e' il numero.\n\nLa stessa pipeline `find | wc -l` e' quella che useresti per decidere se una cartella va spostata.",
+          "filesystem": {
+            "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/analisi/log.txt": "INFO avvio\nERROR sensore\nINFO fine\n",
+            "/mnt/c/Users/tu/Documenti/campagna.csv": "quota,mach\n12000,0.91\n",
+            "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
+            "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
+          }
         },
         {
           "id": "l06-mn-4",
           "tipo": "terminale",
-          "difficolta": 2,
-          "testo": "Trova tutti i `.csv` che stanno sotto la tua cartella utente di Windows.",
+          "difficolta": 3,
+          "testo": "Trova tutti i `.csv` sotto la tua cartella utente di Windows e salvane l'elenco in `da_windows.txt`.",
           "filesystem": {
             "/home/tu/analisi/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/analisi/prova2.csv": "quota,mach\n3000,0.40\n",
@@ -237,16 +296,18 @@
             "/mnt/c/Users/tu/Downloads/dati_grezzi.csv": "quota,mach\n500,0.15\n",
             "/mnt/c/Windows/system32/nota.txt": "roba di sistema\n"
           },
-          "soluzione": "find /mnt/c/Users/tu -name *.csv",
+          "soluzione": "find /mnt/c/Users/tu -name *.csv\nfind /mnt/c/Users/tu -name *.csv > da_windows.txt\ncat da_windows.txt",
           "verifica": {
+            "contiene": {
+              "da_windows.txt": "campagna.csv"
+            },
             "usa": [
               "find"
-            ],
-            "stampa": "dati_grezzi.csv"
+            ]
           },
           "hint": [
-            "find funziona su /mnt come su qualunque cartella.",
-            "find /mnt/c/Users/tu -name *.csv"
+            "Prima guarda cosa trova, poi salvalo.",
+            "find /mnt/c/Users/tu -name *.csv > da_windows.txt"
           ],
           "spiegazione": "Due file, in due cartelle diverse: `find` scende in tutto l'albero anche di la' dal confine. È il modo piu' rapido di ritrovare un file scaricato dal browser di Windows quando poi lo devi elaborare in Linux."
         },

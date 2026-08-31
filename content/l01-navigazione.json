@@ -169,41 +169,58 @@
         },
         {
           "id": "l01-pw-7",
-          "tipo": "predict",
-          "testo": "Su Linux, `Dati` e `dati` sono la stessa cartella?",
-          "opzioni": [
-            "no: maiuscole e minuscole contano, e le due possono coesistere",
-            "si': i nomi non distinguono maiuscole e minuscole",
-            "dipende dal filesystem in uso",
-            "si', ma solo dentro /home"
-          ],
-          "risposta": "no: maiuscole e minuscole contano, e le due possono coesistere",
-          "spiegazione": "No: maiuscole e minuscole contano, e le due possono coesistere. È la differenza da Windows che fa perdere piu' tempo, perche' un progetto che funziona sul portatile fallisce sul cluster su un nome scritto con la maiuscola sbagliata."
-        },
-        {
-          "id": "l01-pw-8",
           "tipo": "terminale",
-          "testo": "Guarda cosa c'e' nella radice del sistema, senza spostarti.",
+          "difficolta": 3,
+          "testo": "In `volo` c'e' un file che `ls` non mostra. Trovalo e leggine il contenuto.",
+          "soluzione": "ls volo\nls -a volo\ncat volo/.conf",
+          "verifica": {
+            "stampa": "sep=,",
+            "usa": [
+              "ls",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Confronta l'elenco normale con quello che mostra tutto.",
+            "ls -a volo, poi cat volo/.conf"
+          ],
+          "spiegazione": "Il confronto fra i due elenchi e' la parte che insegna: `.conf` c'e' solo nel secondo. Un nome che comincia con il punto non e' protetto ne' speciale — `ls` lo salta e basta.\n\nÈ dove vivono quasi tutte le configurazioni personali: `.ssh`, `.bashrc`, `.config`. Su una macchina nuova, `ls -a` nella home dice cosa hai portato con te.",
           "filesystem": {
             "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
             "/home/tu/volo/note.txt": "campagna di agosto\n",
             "/home/tu/volo/.conf": "sep=,\n",
             "/home/tu/archivio": null
-          },
-          "soluzione": "ls /",
+          }
+        },
+        {
+          "id": "l01-pw-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Prima di lavorare, guarda dove sei e cosa hai.** Salva in `inventario.txt` la cartella corrente e l'elenco dettagliato di `volo`.",
+          "soluzione": "pwd > inventario.txt\nls -l volo >> inventario.txt\ncat inventario.txt",
           "verifica": {
-            "stampa": "home",
-            "cwd": "/home/tu",
+            "contiene": {
+              "inventario.txt": "/home/tu"
+            },
+            "stampa": "note.txt",
             "usa": [
+              "pwd",
               "ls"
             ]
           },
           "hint": [
-            "La radice si scrive con una barra sola.",
-            "ls /"
+            "Due comandi, due frecce diverse.",
+            "pwd > inventario.txt, poi ls -l volo >> inventario.txt"
           ],
-          "spiegazione": "`/` e' la radice, e sotto ci sta **tutto**: non esistono lettere di unita'. Un disco esterno viene montato in una cartella e da quel momento e' un ramo come gli altri."
+          "spiegazione": "Un file che dice **da dove** stavi guardando e **cosa** c'era: sono le due informazioni che mancano sempre quando si ricostruisce cosa e' andato storto.\n\nLa freccia doppia sulla seconda riga e' obbligatoria: con `>` avresti riscritto il file e perso il percorso.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          }
         }
       ]
     },
@@ -364,16 +381,31 @@
         },
         {
           "id": "l01-cd-7",
-          "tipo": "predict",
-          "testo": "Uno script contiene `cd dati`. Perche' puo' funzionare per te e fallire per un collega?",
-          "opzioni": [
-            "e' relativo: dipende da dove lo script viene lanciato",
-            "il collega non ha i permessi sulla cartella",
-            "cd non funziona dentro gli script",
-            "il nome della cartella distingue maiuscole e minuscole"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scendi in `volo/dati`, verifica dove sei, e guarda cosa contiene una delle prove senza risalire.",
+          "soluzione": "cd volo/dati\npwd\nls\ncat prova1.csv",
+          "verifica": {
+            "cwd": "/home/tu/volo/dati",
+            "stampa": "9000,0.82",
+            "usa": [
+              "cd",
+              "pwd",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Entra, controlla dove sei, poi leggi.",
+            "cd volo/dati, poi cat prova1.csv"
           ],
-          "risposta": "e' relativo: dipende da dove lo script viene lanciato",
-          "spiegazione": "Perche' e' un percorso **relativo**: dipende da dove lo script viene lanciato, non da dove si trova. Se il collega lo esegue da un'altra cartella, quella `dati` non c'e'. Negli script i percorsi vanno assoluti, o ricavati dalla posizione dello script stesso."
+          "spiegazione": "`pwd` dopo ogni `cd` e' un riflesso che vale la pena prendere: su una macchina remota, con dieci cartelle simili, sapere dove sei costa un comando e sbagliarlo costa un `rm` nel posto sbagliato.\n\nDa dentro la cartella i nomi sono relativi: `prova1.csv` e non `volo/dati/prova1.csv`. È la stessa cosa scritta in due modi, e il secondo funziona da ovunque.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          }
         },
         {
           "id": "l01-cd-8",
@@ -702,16 +734,32 @@
         },
         {
           "id": "l01-fi-7",
-          "tipo": "predict",
-          "testo": "Qual e' la differenza fra `>` e `>>` ?",
-          "opzioni": [
-            "> sovrascrive il file, >> aggiunge in fondo",
-            "> crea il file, >> lo modifica soltanto",
-            "sono equivalenti",
-            "> vale per il testo, >> per i dati binari"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Crea la cartella dei risultati, mettici dentro una nota con la data della campagna, e verifica che ci sia finita.",
+          "soluzione": "mkdir -p volo/risultati\necho campagna di agosto > volo/risultati/nota.txt\nls volo/risultati\ncat volo/risultati/nota.txt",
+          "verifica": {
+            "esiste": [
+              "volo/risultati/nota.txt"
+            ],
+            "stampa": "campagna di agosto",
+            "usa": [
+              "mkdir",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Crea la cartella, poi scrivici dentro.",
+            "echo campagna di agosto > volo/risultati/nota.txt"
           ],
-          "risposta": "> sovrascrive il file, >> aggiunge in fondo",
-          "spiegazione": "`>` **sovrascrive** il file, `>>` aggiunge in fondo. Un carattere, e il primo cancella tutto quello che c'era senza chiedere conferma. Su un file di dati raccolti in settimane, e' un errore da cui non si torna."
+          "spiegazione": "Una cartella con dentro una nota che dice cos'e': costa dieci secondi e vale sei mesi dopo, quando quella cartella e' una fra venti.\n\n`mkdir -p` non protesta se la cartella c'e' gia', quindi la riga si puo' rilanciare senza pensarci.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          }
         },
         {
           "id": "l01-ec-5",
@@ -846,16 +894,33 @@
         },
         {
           "id": "l01-cm-2",
-          "tipo": "predict",
-          "testo": "`cp a.txt archivio` con `archivio` che **non** esiste: cosa succede?",
-          "opzioni": [
-            "crea un file chiamato archivio, copia di a.txt",
-            "crea la cartella archivio e ci mette dentro a.txt",
-            "solleva un errore perche' la destinazione non esiste",
-            "non fa niente"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Copia la nota nell'archivio e verifica che l'originale sia rimasto al suo posto.",
+          "soluzione": "cp volo/note.txt archivio/note.txt\nls volo\nls archivio\ncat archivio/note.txt",
+          "verifica": {
+            "esiste": [
+              "archivio/note.txt",
+              "volo/note.txt"
+            ],
+            "stampa": "campagna",
+            "usa": [
+              "cp",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Copia, poi guarda tutte e due le cartelle.",
+            "cp volo/note.txt archivio/note.txt"
           ],
-          "risposta": "crea un file chiamato archivio, copia di a.txt",
-          "spiegazione": "Crea un **file** chiamato `archivio`, copia di `a.txt`. La stessa riga fa due cose diverse a seconda che la destinazione esista o no, e nel secondo caso ti ritrovi un file senza estensione dove ti aspettavi una cartella."
+          "spiegazione": "`cp` **duplica**: l'originale resta. È la differenza con `mv`, e guardare entrambe le cartelle dopo la copia e' il modo di accorgersene invece di ricordarselo.",
+          "filesystem": {
+            "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/volo/note.txt": "campagna di agosto\n",
+            "/home/tu/volo/.conf": "sep=,\n",
+            "/home/tu/archivio": null
+          }
         },
         {
           "id": "l01-cm-3",

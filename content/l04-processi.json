@@ -1,16 +1,19 @@
 {
   "id": "l04",
-  "titolo": "Processi",
-  "perche": "Trovare il processo giusto fra centinaia di righe, e le due cose che tutti sbagliano: kill -9 usato per abitudine invece che come ultima risorsa, e un calcolo lanciato dal terminale che muore quando il terminale si chiude — scoperta che arriva sempre dopo sei ore di calcolo.",
+  "titolo": "Processi e job control",
+  "perche": "Un calcolo che non risponde, uno che occupa la macchina, uno che deve continuare quando chiudi il terminale. Qui impari a vedere cosa sta girando, a fermarlo nel modo giusto, a sospenderlo e riprenderlo senza perderlo, e a farlo sopravvivere alla disconnessione.",
   "funzioni": [
-    "ps aux",
-    "top",
+    "&",
+    "Ctrl-Z",
+    "bg",
+    "fg",
+    "jobs",
     "kill",
     "kill -9",
+    "nohup",
     "pkill",
-    "jobs",
-    "&",
-    "nohup"
+    "ps aux",
+    "top"
   ],
   "lezioni": [
     {
@@ -21,12 +24,17 @@
     {
       "id": "l04-l2",
       "titolo": "kill: due segnali, non uno",
-      "md": "```\nkill 1204        # chiedi al processo di chiudersi\nkill -9 1204     # toglilo di mezzo\n```\n\nIl nome inganna: `kill` **manda un segnale**, non uccide per forza.\n\n### TERM, il default\n\n`kill 1204` manda `SIGTERM`, che significa \"per favore, chiuditi\". Il programma lo **riceve** e puo' reagire: salvare il file aperto, chiudere la connessione, cancellare i temporanei. È quello che vuoi quasi sempre.\n\n### KILL, l'ultima risorsa\n\n`kill -9` manda `SIGKILL`, che il programma **non riceve mai**: lo toglie di mezzo il kernel, all'istante. Nessun salvataggio, nessuna pulizia — file temporanei che restano, dati a metà, database da riparare.\n\n**Si usa solo dopo che `kill` normale ha fallito.** Un processo bloccato in modo grave ignora TERM, e allora `-9` e' l'unica strada; partire da li' per abitudine e' come spegnere il computer dalla presa perche' e' piu' rapido.\n\n### Cosa puoi fermare\n\nSolo i **tuoi** processi. Quelli di `root` richiedono `sudo`, ed e' la ragione per cui l'errore che vedi piu' spesso e' `operazione non permessa` e non `processo non esistente`.\n\n### Per nome invece che per numero\n\n```\npkill firefox\n```\n\nComodo e pericoloso: ferma **tutti** i processi con quel nome. Con `python` in esecuzione tre volte, ne ferma tre — compreso quello che stava scrivendo i risultati di sei ore di calcolo."
+      "md": "```\nkill 1204        # chiedi al processo di chiudersi\nkill -9 1204     # toglilo di mezzo\n```\n\nIl nome inganna: `kill` **manda un segnale**, non uccide per forza.\n\n### TERM, il default\n\n`kill 1204` manda `SIGTERM`, che significa \"per favore, chiuditi\". Il programma lo **riceve** e puo' reagire: salvare il file aperto, chiudere la connessione, cancellare i temporanei. È quello che vuoi quasi sempre.\n\n### KILL, l'ultima risorsa\n\n`kill -9` manda `SIGKILL`, che il programma **non riceve mai**: lo toglie di mezzo il kernel, all'istante. Nessun salvataggio, nessuna pulizia — file temporanei che restano, dati a metà, database da riparare.\n\n**Si usa solo dopo che `kill` normale ha fallito.** Un processo bloccato in modo grave ignora TERM, e allora `-9` e' l'unica strada; partire da li' per abitudine e' come spegnere il computer dalla presa perche' e' piu' rapido.\n\n### Cosa puoi fermare\n\nSolo i **tuoi** processi. Quelli di `root` richiedono `sudo`, ed e' la ragione per cui l'errore che vedi piu' spesso e' `operazione non permessa` e non `processo non esistente`.\n\n### Per nome invece che per numero\n\n```\npkill firefox\n```\n\nComodo e pericoloso: ferma **tutti** i processi con quel nome. Con `python` in esecuzione tre volte, ne ferma tre — compreso quello che stava scrivendo i risultati di sei ore di calcolo.\n\n### Ctrl-Z, e i due segnali che ci stanno sotto\n\n```\nkill -STOP 1501    # ferma il processo: e' quello che fa Ctrl-Z\nkill -CONT 1501    # lo fa ripartire dov'era\n```\n\n**Ctrl-Z** manda `SIGSTOP` al processo in primo piano; `bg` e `fg` mandano poi `SIGCONT` deciddendo dove farlo continuare. Con i numeri di processo si fa la stessa cosa su un job che non e' tuo — o su uno lanciato da un'altra sessione, dove `%1` non esiste.\n\nSono due segnali come `SIGTERM` e `SIGKILL` della raccolta precedente: `kill` non uccide e basta, **manda segnali**, e questi due dicono «fermati» e «riprendi»."
     },
     {
       "id": "l04-l3",
       "titolo": "Sottofondo: perche' il programma muore quando chiudi",
       "md": "Un comando lanciato dal terminale lo tiene occupato finche' non finisce. Per riavere il prompt subito, lo si manda in **sottofondo**:\n\n```\npython simula.py &\n[1] 1523\n```\n\nLa `&` in fondo alla riga; il sistema risponde con il numero del lavoro e il PID. Anche il simulatore la interpreta come una shell vera.\n\n```\njobs      # cosa sta girando in sottofondo, in questa shell\n```\n\nIl modulo successivo completa questo meccanismo con `bg`, `fg` e la sospensione di un job.\n\n### Il fatto che sorprende\n\n**Chiudendo il terminale, i processi che hai avviato muoiono con lui.** Sono suoi figli, e quando il padre se ne va il sistema li chiude.\n\nÈ la ragione per cui un calcolo lanciato via SSH su un cluster muore appena cade la connessione — e la scoperta arriva sempre dopo sei ore di calcolo.\n\n### nohup, per sopravvivere\n\n```\nnohup python simula.py &\n```\n\n`nohup` — *no hangup* — stacca il processo dal terminale: quando il terminale se ne va, lui resta. L'output, che non ha piu' dove andare, finisce in un file chiamato `nohup.out`.\n\nÈ la forma minima. Su un cluster vero si usa `screen` o `tmux`, che oltre a far sopravvivere il processo permettono di **tornare a guardarlo**; `nohup` lo lancia e lo lascia andare.\n\n### La regola\n\nSe il calcolo dura piu' di quanto sei disposto a tenere aperta la finestra, `nohup` o `tmux`. Deciderlo **prima** costa dieci caratteri; scoprirlo dopo costa il calcolo.\n\n### Una parola che esiste solo qui\n\n`esci` non e' un comando Linux: nel simulatore serve a chiudere il terminale, cosa che su una macchina vera fai premendo la X. Gli esercizi iniziali usano ancora `avvia programma` come forma esplicita del lancio in sottofondo; `python programma &` e' la sintassi Linux da preferire. Tutto il resto di questo modulo — `ps`, `kill`, `&`, `nohup` — e' vero e si scrive uguale."
+    },
+    {
+      "id": "l04-l2",
+      "titolo": "bg e fg: dove deve continuare il lavoro",
+      "md": "```bash\nbg %1              # riprendi il job 1, ma lascia libero il prompt\nfg %1              # riportalo davanti al prompt\n```\n\nDopo Ctrl-Z un lavoro e' fermo: non sta calcolando e non sta usando CPU. Hai due scelte.\n\n- `bg %1` lo **riprende in sottofondo**. Torna a lavorare, e tu puoi digitare altri comandi.\n- `fg %1` lo **porta in primo piano**. Il terminale torna a essergli collegato: e' utile per vedere l'output, rispondere a una domanda o fermarlo con Ctrl-C. Il prompt aspetta finche' il comando non termina o non premi Ctrl-Z di nuovo.\n\nSe c'e' un solo job, `bg` e `fg` senza `%1` scelgono quello corrente. Scrivere il numero e' piu' sicuro appena ne hai due: `[1]` e `[2]` non sono PID e non vanno passati a `kill`.\n\n### Non confondere fermare e uccidere\n\nUn job fermato non ha perso memoria e non ha ripartito da zero. `bg` o `fg` lo continuano esattamente dal punto in cui era. `kill` invece chiede di terminare; `kill -9` lo elimina senza appello. Prima di usare un segnale di terminazione, chiediti se volevi soltanto riprendere un job sospeso.\n\n### Ctrl-Z, e i due segnali che ci stanno sotto\n\n```\nkill -STOP 1501    # ferma il processo: e' quello che fa Ctrl-Z\nkill -CONT 1501    # lo fa ripartire dov'era\n```\n\n**Ctrl-Z** manda `SIGSTOP` al processo in primo piano; `bg` e `fg` mandano poi `SIGCONT` deciddendo dove farlo continuare. Con i numeri di processo si fa la stessa cosa su un job che non e' tuo — o su uno lanciato da un'altra sessione, dove `%1` non esiste.\n\nSono due segnali come `SIGTERM` e `SIGKILL` della raccolta precedente: `kill` non uccide e basta, **manda segnali**, e questi due dicono «fermati» e «riprendi»."
     }
   ],
   "raccolte": [
@@ -501,6 +509,157 @@
           ],
           "spiegazione": "Il conteggio a `1` dopo il lancio e a `0` dopo `pkill` e' la prova che il ciclo si e' chiuso: avviato, verificato, fermato.\n\nLasciare processi in giro su una macchina condivisa e' il modo piu' rapido di rendersi antipatici — e di trovare la macchina piena quando servira' a te.",
           "processi": true
+        }
+      ]
+    },
+    {
+      "id": "l04-bgfg",
+      "comando": "bg e fg",
+      "titolo": "riprendere nel posto giusto",
+      "esercizi": [
+        {
+          "id": "l04-bg-1",
+          "tipo": "terminale",
+          "testo": "Riprendi in sottofondo un job fermato e conferma con `jobs` che sta di nuovo eseguendo.",
+          "processi": true,
+          "soluzione": "python lunga.py &\nkill -STOP 1501\nbg %1\njobs",
+          "verifica": {
+            "stampa": "In esecuzione",
+            "usa": [
+              "bg",
+              "jobs"
+            ]
+          },
+          "hint": [
+            "bg prende un numero di job con il simbolo %.",
+            "bg %1"
+          ],
+          "spiegazione": "`bg %1` invia una ripresa al processo e restituisce subito il prompt. Il job resta in `jobs`, perche' continua in sottofondo."
+        },
+        {
+          "id": "l04-bg-2",
+          "tipo": "terminale",
+          "testo": "Porta in primo piano un job fermato: deve riprendere, ma non comparire piu' fra i job in sottofondo.",
+          "processi": true,
+          "soluzione": "python lunga.py &\nkill -STOP 1501\nfg %1\njobs\nps aux",
+          "verifica": {
+            "stampa": "python lunga.py",
+            "usa": [
+              "fg",
+              "jobs",
+              "ps"
+            ]
+          },
+          "hint": [
+            "Dopo STOP scegli fg, non bg.",
+            "fg %1"
+          ],
+          "spiegazione": "`fg` riporta il job al terminale: in un terminale vero il prompt aspetterebbe il suo termine. Nel simulatore viene riportato davanti senza bloccare la pagina, ma esce da `jobs` e resta visibile a `ps`."
+        },
+        {
+          "id": "l04-bg-3",
+          "tipo": "predict",
+          "testo": "Hai sospeso un programma e vuoi continuare a scrivere altri comandi mentre lui calcola. Cosa usi?",
+          "opzioni": [
+            "bg %1",
+            "fg %1",
+            "kill %1",
+            "ps aux"
+          ],
+          "risposta": "bg %1",
+          "spiegazione": "`bg` riprende il job in sottofondo e libera il prompt. `fg` farebbe il contrario: lo riprende, ma ti riconsegna il prompt solo alla fine."
+        },
+        {
+          "id": "l04-bg-4",
+          "tipo": "terminale",
+          "testo": "Prova a riprendere con `bg` un job che non hai fermato: leggi l'errore, invece di fingere che sia una sospensione.",
+          "processi": true,
+          "soluzione": "python lunga.py &\nbg %1",
+          "verifica": {
+            "errore": "non e' fermato",
+            "usa": [
+              "bg"
+            ]
+          },
+          "hint": [
+            "Il job e' gia' in esecuzione.",
+            "bg %1"
+          ],
+          "spiegazione": "`bg` serve a riprendere un job fermato. Se e' gia' in esecuzione in sottofondo, non c'e' niente da riprendere: controlla `jobs`, non indovinare."
+        },
+        {
+          "id": "l04-bg-5",
+          "tipo": "terminale",
+          "testo": "Ferma il calcolo, rimettilo in sottofondo senza indicare il numero del job, e conta quanti job risultano in esecuzione.",
+          "processi": true,
+          "soluzione": "python lunga.py &\nkill -STOP 1501\nbg\njobs | grep -c esecuzione",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "bg",
+              "jobs",
+              "grep"
+            ]
+          },
+          "hint": [
+            "bg senza argomenti agisce sull'ultimo job fermato.",
+            "jobs | grep -c esecuzione"
+          ],
+          "spiegazione": "Senza argomento `bg` sceglie il job corrente. E' comodo, ma quando hai piu' lavori il numero esplicito evita di riprendere quello sbagliato."
+        },
+        {
+          "id": "l04-bg-6",
+          "tipo": "predict",
+          "testo": "Dopo `fg %1`, cosa succede normalmente al prompt in un terminale reale?",
+          "opzioni": [
+            "aspetta il job, finche' non finisce o non lo sospendi di nuovo",
+            "resta libero come con bg",
+            "chiude il job appena torna in primo piano",
+            "trasforma il job in un servizio systemd"
+          ],
+          "risposta": "aspetta il job, finche' non finisce o non lo sospendi di nuovo",
+          "spiegazione": "`fg` ricollega il programma al terminale. Per questo e' il comando da usare quando devi guardare l'output interattivo, non quando vuoi continuare a lavorare al prompt."
+        },
+        {
+          "id": "l04-bg-7",
+          "tipo": "terminale",
+          "testo": "Avvia due job, ferma il primo e riportalo davanti specificando proprio `%1`.",
+          "difficolta": 2,
+          "processi": true,
+          "soluzione": "python primo.py &\npython secondo.py &\nkill -STOP 1501\nfg %1",
+          "verifica": {
+            "stampa": "python primo.py",
+            "usa": [
+              "fg",
+              "kill"
+            ]
+          },
+          "hint": [
+            "Il primo processo ha PID 1501 e job [1].",
+            "fg %1"
+          ],
+          "spiegazione": "Numero del job e PID non sono intercambiabili: qui `%1` seleziona il primo job anche se il secondo continua in sottofondo."
+        },
+        {
+          "id": "l04-bg-8",
+          "tipo": "terminale",
+          "testo": "**Gli stessi due segnali, per numero di processo.** Ferma il calcolo con `kill -STOP`, verifica che sia sospeso, fallo ripartire con `kill -CONT`, e conta i job in esecuzione.",
+          "difficolta": 4,
+          "processi": true,
+          "soluzione": "python lunga.py &\nkill -STOP 1501\njobs\nkill -CONT 1501\njobs | grep -c esecuzione",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "kill",
+              "jobs",
+              "grep"
+            ]
+          },
+          "hint": [
+            "-STOP ferma, -CONT riprende.",
+            "kill -CONT 1501, poi jobs | grep -c esecuzione"
+          ],
+          "spiegazione": "`bg` e' la scelta interattiva, perche' usa il job e ne ristabilisce il sottofondo. `kill -CONT` e' il segnale sottostante: utile da riconoscere nei log o negli script, non la scorciatoia quotidiana."
         }
       ]
     }

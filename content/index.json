@@ -86,7 +86,6 @@
         "l02",
         "l03",
         "l04",
-        "l21",
         "l05",
         "l06",
         "c04",
@@ -234,13 +233,7 @@
     {
       "id": "l04",
       "file": "l04-processi.json",
-      "titolo": "Processi",
-      "disponibile": true
-    },
-    {
-      "id": "l21",
-      "file": "l21-job-control.json",
-      "titolo": "Controllare i job interattivi",
+      "titolo": "Processi e job control",
       "disponibile": true
     },
     {

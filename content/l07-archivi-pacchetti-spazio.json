@@ -358,16 +358,27 @@
         },
         {
           "id": "l07-pa-7",
-          "tipo": "predict",
-          "testo": "Quando Snap o Flatpak sono spesso una scelta ragionevole?",
-          "opzioni": [
-            "per applicazioni desktop con dipendenze isolate",
-            "per sostituire sempre il kernel",
-            "per installare librerie Python dentro un venv",
-            "per comprimere file CSV"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Una macchina nuova da preparare.** Aggiorna l'elenco dei pacchetti, installa gli strumenti che ti servono, e salva in `strumenti.txt` la prova che ci sono.",
+          "soluzione": "sudo apt update\nsudo apt install ripgrep\nsudo apt install tmux\napt list --installed | grep tmux > strumenti.txt\napt list --installed | grep ripgrep >> strumenti.txt\nwc -l strumenti.txt\ncat strumenti.txt",
+          "verifica": {
+            "contiene": {
+              "strumenti.txt": "tmux"
+            },
+            "stampa": "strumenti.txt",
+            "usa": [
+              "apt",
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Aggiorna, installa, poi filtra l'elenco degli installati un pacchetto alla volta.",
+            "apt list --installed | grep tmux > strumenti.txt"
           ],
-          "risposta": "per applicazioni desktop con dipendenze isolate",
-          "spiegazione": "Snap e Flatpak privilegiano isolamento e portabilita' delle app. Per un tool di sistema o una libreria di sviluppo il pacchetto nativo e' spesso piu' integrato."
+          "spiegazione": "`apt update` non installa niente: aggiorna **l'elenco** di cosa e' disponibile. Saltarlo e' il motivo per cui a volte un pacchetto «non esiste» pur esistendo.\n\nIl file finale e' la prova di cosa hai messo su quella macchina — e su una macchina condivisa, la cortesia di dire cosa hai aggiunto.",
+          "sistema": true
         },
         {
           "id": "l07-pa-8",
