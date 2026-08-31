@@ -1,235 +1,428 @@
 {
   "id": "l08",
-  "titolo": "Editor nel terminale, e i link",
-  "perche": "Su una macchina remota non c'e' sempre un editor grafico. E quando un percorso sembra un file ma in realta' e' un collegamento, copiare o cancellare senza capire il tipo di link porta a modificare la cosa sbagliata.",
+  "titolo": "Editor nel terminale, collegamenti, pulizia",
+  "perche": "Sul Raspberry in cima al banco non installi VS Code: apri quello che c'e'. E i collegamenti simbolici sono il modo con cui mezzo sistema tiene insieme nomi stabili e cose che cambiano — a partire da quale Python risponde quando scrivi python.",
   "funzioni": [
     "nano",
     "vim",
+    "Ctrl-O",
+    "Ctrl-X",
     ":wq",
+    ":q!",
     "ln",
     "ln -s",
-    "ls -l",
-    "rmdir"
+    "rmdir",
+    "rm -r",
+    "cp di sicurezza",
+    "sed -i"
   ],
   "lezioni": [
     {
       "id": "l08-l1",
-      "titolo": "Modificare una riga senza perdere il file",
-      "md": "Su un server, l'editor piu' gentile da incontrare e' `nano file.txt`: in basso mostra le scorciatoie; `Ctrl-O`, Invio salva e `Ctrl-X` esce. E' una scelta ottima per cambiare una configurazione breve.\n\n`vim file.txt` e' diverso: apre in modalita' normale. `i` entra in inserimento, Esc torna normale, `:wq` salva ed esce, `:q!` esce buttando le modifiche. Non provare a impararlo sotto pressione su un file di produzione: prima fai una copia e una modifica piccola.\n\nQui non imitiamo una finestra di editor dentro una riga di comando: sarebbe una versione falsa di un'interazione fisica. Gli esercizi controllano invece le scelte, le modalita' e il piano di recupero. Per scrivere file nel simulatore restano `echo` e le redirezioni gia' note.\n\n### Da dove viene il nome\n\n- `nano` — il nome dell'editor, «piccolo»: nato come sostituto libero di `pico`\n- `vim` — *vi improved* — il `vi` migliorato; `vi` sta per *visual*, perche' nel 1976 mostrare il testo a schermo era la novita'\n- `ln` — *link* — collega\n- `ln -s` — *symbolic* — un collegamento per nome invece che per contenuto\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
+      "titolo": "Modificare un file dove non c'e' VS Code",
+      "md": "Sul Raspberry in cima al banco, o su un cluster raggiunto via ssh, non installi un editor grafico: usi quello che c'e'.\n\n### nano: si impara in un minuto\n\n```\nnano analisi.conf\n```\n\nI comandi sono scritti in fondo allo schermo, e `^` vuol dire Ctrl:\n\n- **Ctrl-O** salva (*write **O**ut*), poi Invio per confermare il nome\n- **Ctrl-X** esce\n- **Ctrl-K** taglia la riga, **Ctrl-U** la incolla\n- **Ctrl-W** cerca (***W**here is*)\n\nPer correggere una riga di configurazione alle undici di sera, `nano` basta e avanza.\n\n### vim: si trova ovunque, e bisogna saperne uscire\n\n`vim` ha due stati, ed e' tutto il segreto:\n\n- **modalita' normale** (quella d'ingresso): i tasti sono **comandi**, non testo\n- **modalita' inserimento**: si entra con `i`, si esce con **Esc**\n\n```\ni           entra in inserimento\nEsc         torna in normale\n:w          salva\n:q          esci\n:wq         salva ed esci\n:q!         esci buttando via le modifiche\n```\n\nSe ti trovi dentro senza volerlo: **Esc** poi `:q!` e sei fuori. È la sequenza piu' cercata di Internet, e vale la pena impararla adesso invece che nel panico.\n\n### Perche' qui non si simulano\n\nUn editor a schermo intero non e' un comando: e' un programma che prende il controllo del terminale. Fingerlo con qualche tasto insegnerebbe una cosa che sulla macchina vera non funziona.\n\nQuindi in questo modulo `nano` e `vim` si imparano **a memoria e in teoria**, e per modificare i file negli esercizi si usa quello che il simulatore fa davvero: `echo` con le frecce, e `sed -i` del modulo sul testo. Su una macchina vera vanno bene tutti e due: uno script che modifica un file non apre nessun editor."
     },
     {
       "id": "l08-l2",
-      "titolo": "Due nomi, oppure un cartello verso un nome",
-      "md": "```bash\nln dati.csv copia.csv       # hard link: un secondo nome per lo stesso file\nln -s dati.csv corrente.csv # symlink: un percorso che punta a un bersaglio\nls -l\n# corrente.csv -> /home/tu/dati.csv\n```\n\nUn **hard link** e' un altro nome per lo stesso contenuto: se modifichi uno, cambia anche l'altro; cancellare un nome non cancella il file finche' ne resta uno. Non si usa normalmente per le cartelle.\n\nUn **link simbolico** e' un piccolo file che contiene un percorso. Puo' attraversare filesystem e puntare a una cartella; puo' anche diventare rotto se il bersaglio viene spostato o cancellato. `ls -l` lo riconosce dalla freccia `->`.\n\nPer configurazioni e versioni `corrente -> rilascio-2026-08` e' molto piu' leggibile di una copia. Ma un link non e' una copia di sicurezza: se il bersaglio sparisce, il link non contiene dati da recuperare."
+      "titolo": "Collegamenti: un secondo nome, o un cartello",
+      "md": "```\nln -s dati.csv corrente.csv      # collegamento SIMBOLICO: un cartello\nln origine.txt copia.txt         # collegamento DURO: un secondo nome\nls -l\nlrwxrwxrwx  tu tu  corrente.csv -> /home/tu/dati.csv\n```\n\nIl primo carattere di `ls -l` dice cosa hai davanti: `-` file, `d` directory, `l` collegamento simbolico.\n\n### Simbolico: un cartello con scritto un percorso\n\nContiene **un percorso**, non i dati. Se sposti o cancelli il bersaglio, il cartello resta e punta nel vuoto — `cat` risponde `collegamento simbolico non valido`.\n\nServe a dare un nome stabile a una cosa che cambia:\n\n```\ncampagne/2026-09  ->  campagne/corrente\n```\n\nGli script leggono sempre `corrente`, e a ogni campagna nuova si sposta il cartello. È lo stesso meccanismo con cui `/usr/bin/python` punta alla versione che vuoi tu.\n\n### Duro: due nomi per lo stesso file\n\nNon c'e' un originale e una copia: ci sono **due nomi che indicano lo stesso contenuto**. Scrivi da una parte, e l'altra cambia. Cancellandone uno, il file resta finche' esiste l'altro nome.\n\nLimiti: solo sullo stesso disco, e non sulle cartelle. Nel dubbio si usa quello simbolico — e infatti quasi tutti i collegamenti che vedrai sono simbolici.\n\n### Cancellare un collegamento\n\n```\nrm corrente.csv        # toglie il collegamento, NON il file puntato\n```\n\nVale per entrambi i tipi: `rm` toglie **il nome** che gli dai. Con il simbolico il bersaglio non viene nemmeno sfiorato."
     },
     {
       "id": "l08-l3",
-      "titolo": "Pulire con il comando che dichiara l'intenzione",
-      "md": "```bash\nrmdir vuota/       # funziona solo se e' davvero vuota\nrm -r risultati/   # elimina anche tutto il contenuto: fermati e guarda prima\n```\n\n`rmdir` e' deliberatamente stretto: fallisce su una cartella non vuota. Per questo e' un buon comando quando la tua intenzione e' «togliere soltanto il contenitore rimasto vuoto». `rm -r` e' per un albero che hai gia' controllato.\n\nLa stessa precisione vale per i link: `rm collegamento` elimina il collegamento, non il suo bersaglio; un hard link pero' e' gia' un nome del file. Prima di cancellare, `ls -l` e `pwd`: due secondi che evitano di fare pulizia nel ramo sbagliato."
+      "titolo": "Pulire dichiarando l'intenzione",
+      "md": "```\nrmdir vuota            # cancella una directory SOLO se e' vuota\nrm -r piena            # cancella la directory e tutto quello che contiene\n```\n\nSono due comandi diversi apposta. `rmdir` fallisce se dentro c'e' qualcosa, e quel fallimento e' una **protezione**: se credevi fosse vuota e non lo era, il comando te lo dice invece di cancellare.\n\n`rm -r` non chiede niente a nessuno. Quando sei sicuro va bene; quando non lo sei, `rmdir` prima e `ls` dopo costano due secondi.\n\n### L'abitudine che vale la pena\n\n```\nls dati/*              # guarda cosa c'e'\nrm dati/*.tmp          # e poi cancella\n```\n\nFra i due comandi non deve succedere niente. È la stessa regola del primo modulo — `ls` prima di `rm`, sullo stesso percorso — e vale ancora di piu' quando i percorsi vengono da una variabile: con `$CARTELLA` vuota, `rm -rf $CARTELLA/` cancella la radice.\n\n### Cancellare un collegamento non e' cancellare la cartella\n\n```\nrm scorciatoia         # bene: toglie il collegamento\nrm -r scorciatoia/     # con la barra finale segue il collegamento: cancella il CONTENUTO\n```\n\nLa barra finale cambia il significato: senza, parli del cartello; con, parli di dove punta. È una delle poche differenze in cui un carattere separa «tolgo un collegamento» da «svuoto una cartella di dati»."
     }
   ],
   "raccolte": [
     {
       "id": "l08-editor",
       "comando": "nano e vim",
-      "titolo": "entrare e uscire da un editor remoto",
+      "titolo": "modificare dove non c'e' un'interfaccia",
       "esercizi": [
         {
           "id": "l08-ed-1",
           "tipo": "predict",
-          "testo": "In `nano config.txt`, quale sequenza salva e poi esce?",
+          "difficolta": 2,
+          "testo": "In `nano`, quale sequenza salva il file e poi esce?",
           "opzioni": [
             "Ctrl-O, Invio, poi Ctrl-X",
-            "i, Esc, :wq",
-            "Ctrl-Z, bg",
-            "rm config.txt"
+            "Ctrl-S, poi Ctrl-Q",
+            ":wq",
+            "Esc, poi Ctrl-X"
           ],
           "risposta": "Ctrl-O, Invio, poi Ctrl-X",
-          "spiegazione": "Nano mostra queste scorciatoie nella barra inferiore: O sta per Write Out, poi X esce."
+          "spiegazione": "`Ctrl-O` e' *write **O**ut*: scrive il file e chiede conferma del nome, quindi serve l'Invio. `Ctrl-X` esce.\n\nI comandi sono scritti in fondo allo schermo mentre lavori: `nano` non chiede di ricordare niente, ed e' il motivo per cui e' la scelta giusta per una correzione veloce."
         },
         {
           "id": "l08-ed-2",
           "tipo": "predict",
-          "testo": "Apri vim e le lettere compaiono come comandi invece che testo. Cosa hai dimenticato?",
+          "difficolta": 2,
+          "testo": "Apri `vim`, cominci a scrivere, e le lettere non compaiono: sembrano comandi. Perche'?",
           "opzioni": [
-            "premere i per entrare in inserimento",
-            "usare sudo vim",
-            "lanciare fg %1",
-            "comprimere il file"
+            "vim parte in modalita' normale, dove i tasti sono comandi: si preme `i` per inserire",
+            "il file e' in sola lettura",
+            "manca il permesso di scrittura",
+            "la tastiera e' configurata male"
           ],
-          "risposta": "premere i per entrare in inserimento",
-          "spiegazione": "Vim parte in modalita' normale: `i` entra in inserimento, Esc torna a quella normale."
+          "risposta": "vim parte in modalita' normale, dove i tasti sono comandi: si preme `i` per inserire",
+          "spiegazione": "Sono due stati diversi, ed e' tutto il segreto di `vim`: **normale** (i tasti comandano) e **inserimento** (i tasti scrivono). Si entra in inserimento con `i`, si torna in normale con **Esc**.\n\nSembra scomodo e per un'ora lo e'. Il motivo per cui esiste: in modalita' normale ogni tasto e' un'operazione — cancella una riga, salta a fine file, ripeti l'ultima modifica — e chi ci lavora tutto il giorno non stacca mai le mani dalla tastiera."
         },
         {
           "id": "l08-ed-3",
           "tipo": "predict",
-          "testo": "Quale comando di vim salva ed esce?",
+          "difficolta": 3,
+          "testo": "Sei dentro `vim` per sbaglio e vuoi uscire **senza salvare**. Cosa premi?",
           "opzioni": [
-            ":wq",
-            ":q!",
-            "Ctrl-O",
-            "ln -s"
+            "Esc, poi `:q!`",
+            "Ctrl-C",
+            "`:wq`",
+            "Ctrl-X, poi n"
           ],
-          "risposta": ":wq",
-          "spiegazione": "Dopo Esc, `:wq` scrive (*write*) e chiude (*quit*). `:q!` fa l'opposto: esce scartando."
+          "risposta": "Esc, poi `:q!`",
+          "spiegazione": "**Esc** ti riporta in modalita' normale (da qualunque stato tu sia), `:q!` esce buttando via le modifiche. Il punto esclamativo vuol dire «esci comunque».\n\nSenza il `!`, `vim` si rifiuta di uscire se ci sono modifiche non salvate — e li' comincia il panico di chi non conosce questa riga. `:wq` invece salva ed esce."
         },
         {
           "id": "l08-ed-4",
-          "tipo": "predict",
-          "testo": "Se devi correggere una configurazione remota per la prima volta, qual e' la scelta piu' prudente?",
-          "opzioni": [
-            "fare una copia e cambiare una cosa piccola, leggendo l'output",
-            "riscrivere tutto a memoria in vim",
-            "usare rm -r sul file vecchio",
-            "premere Ctrl-Z appena si apre"
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Prima di modificare la configurazione del banco, mettila al sicuro e guarda cosa contiene.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "cp analisi.conf analisi.conf.bak\ncat analisi.conf\nls",
+          "verifica": {
+            "esiste": [
+              "analisi.conf.bak"
+            ],
+            "stampa": "soglia=10",
+            "usa": [
+              "cp",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Una copia, poi la lettura.",
+            "cp analisi.conf analisi.conf.bak"
           ],
-          "risposta": "fare una copia e cambiare una cosa piccola, leggendo l'output",
-          "spiegazione": "Un editor non protegge da una modifica concettualmente sbagliata. Una copia e un passo piccolo rendono reversibile l'errore."
+          "spiegazione": "L'abitudine che vale per qualunque editor: **prima la copia, poi la modifica**. Se l'editing va storto — o se `sed -i` cancella piu' del previsto — l'originale e' li'.\n\nÈ anche la cosa che un editor non fa per te: `nano` e `vim` scrivono sul file, senza rete."
         },
         {
           "id": "l08-ed-5",
-          "tipo": "predict",
-          "testo": "Perche' gli esercizi non simulano nano e vim come una normale riga di shell?",
-          "opzioni": [
-            "perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola",
-            "perche' non esistono su Linux",
-            "perche' possono modificare solo file binari",
-            "perche' richiedono sempre root"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Cambia la soglia da 10 a 25 senza aprire nessun editor, e verifica il risultato.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "cp analisi.conf analisi.conf.bak\nsed -i 's/soglia=10/soglia=25/' analisi.conf\ngrep soglia analisi.conf",
+          "verifica": {
+            "contiene": {
+              "analisi.conf": "soglia=25"
+            },
+            "stampa": "soglia=25",
+            "usa": [
+              "sed",
+              "grep"
+            ]
+          },
+          "hint": [
+            "sed -i modifica il file al posto tuo.",
+            "sed -i 's/soglia=10/soglia=25/' analisi.conf"
           ],
-          "risposta": "perche' sono interfacce a schermo con tasti e modalita', non comandi a risposta singola",
-          "spiegazione": "Fingere un editor modale con un parser di una riga insegnerebbe scorciatoie false. Qui si impara cosa aspettarsi e quando fermarsi."
+          "spiegazione": "Su una riga sola, `sed -i` e' piu' rapido di qualunque editor — e soprattutto **si puo' mettere in uno script**, cosa che nessun editor interattivo permette.\n\nLa regola pratica: se la modifica e' meccanica e ripetibile, `sed`; se devi leggere e decidere, un editor.",
+          "testoAvanzato": true
         },
         {
           "id": "l08-ed-6",
           "tipo": "predict",
-          "testo": "In vim vuoi uscire senza salvare una prova sbagliata. Quale comando usi dopo Esc?",
+          "difficolta": 3,
+          "testo": "Devi correggere **una riga** in un file di configurazione su cento macchine identiche. Editor o `sed`?",
           "opzioni": [
-            ":q!",
-            ":wq",
-            "Ctrl-X",
-            "rmdir"
+            "`sed -i` dentro uno script: e' meccanica e ripetibile",
+            "nano, una macchina alla volta",
+            "vim, che e' piu' veloce da usare",
+            "si scarica il file, si modifica e si ricarica"
           ],
-          "risposta": ":q!",
-          "spiegazione": "Il punto esclamativo forza l'uscita scartando le modifiche non salvate."
+          "risposta": "`sed -i` dentro uno script: e' meccanica e ripetibile",
+          "spiegazione": "Un editor richiede una persona davanti allo schermo; `sed -i` sta dentro un ciclo, un `ansible`, un `ssh`. Cento macchine a mano non e' un piano, e' un pomeriggio buttato con almeno un errore di distrazione.\n\nGli editor servono quando devi **leggere e decidere**. Quando sai gia' cosa cambiare, si scrive."
         },
         {
           "id": "l08-ed-7",
           "tipo": "predict",
-          "testo": "Quale editor e' spesso piu' immediato per una piccola modifica su un server?",
+          "difficolta": 3,
+          "testo": "Perche' in questo simulatore `nano` e `vim` non ci sono?",
           "opzioni": [
-            "nano, perche' mostra le scorciatoie",
-            "vim, perche' non ha modalita'",
-            "un browser web",
-            "tar"
+            "sono programmi a schermo intero, non comandi: fingerli insegnerebbe una cosa che sulla macchina vera non funziona",
+            "sono troppo complicati da scrivere",
+            "perche' sono obsoleti",
+            "perche' bastano echo e sed"
           ],
-          "risposta": "nano, perche' mostra le scorciatoie",
-          "spiegazione": "Nano e' adatto a una modifica breve e occasionale. Vim ripaga con pratica, ma non conviene impararlo in mezzo a un incidente."
+          "risposta": "sono programmi a schermo intero, non comandi: fingerli insegnerebbe una cosa che sulla macchina vera non funziona",
+          "spiegazione": "Un editor prende il controllo del terminale: disegna, sposta il cursore, intercetta ogni tasto. Riprodurne una parte darebbe l'illusione di saperlo usare, e la prima volta davanti a un `vim` vero sarebbe peggio che non averlo mai visto.\n\nQuindi qui si imparano le sequenze a memoria — sono cinque — e i file si modificano con gli strumenti che il simulatore esegue davvero. Sulla macchina vera userai entrambe le strade, come tutti."
         },
         {
           "id": "l08-ed-8",
-          "tipo": "predict",
-          "testo": "Prima di modificare un file di configurazione in produzione, cosa vale la pena fare?",
-          "opzioni": [
-            "leggerlo e farne una copia di sicurezza",
-            "cancellarlo e ricrearlo",
-            "eseguire apt update",
-            "creare un hard link casuale"
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Modifica sicura, dall'inizio alla fine.** Copia di sicurezza, modifica del percorso dati, verifica, e confronto con l'originale.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "cp analisi.conf analisi.conf.bak\nsed -i 's|/mnt/dati|/mnt/campagne|' analisi.conf\ncat analisi.conf\ngrep percorso analisi.conf.bak",
+          "verifica": {
+            "esiste": [
+              "analisi.conf.bak"
+            ],
+            "contiene": {
+              "analisi.conf": "/mnt/campagne"
+            },
+            "stampa": "percorso=/mnt/dati",
+            "usa": [
+              "cp",
+              "sed",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Copia, sed con un delimitatore diverso dalla barra, poi confronta.",
+            "sed -i 's|/mnt/dati|/mnt/campagne|' analisi.conf"
           ],
-          "risposta": "leggerlo e farne una copia di sicurezza",
-          "spiegazione": "Capire lo stato iniziale e poter tornare indietro sono piu' importanti della velocita' di digitazione."
+          "spiegazione": "Quattro passi che diventano un riflesso: **copia, modifica, verifica, confronto**. L'ultimo `grep` sul file di riserva dice cosa c'era prima — l'informazione che serve quando qualcuno chiede «cosa hai cambiato?».\n\nIl delimitatore `|` invece della barra e' obbligatorio con i percorsi, come nel modulo sul testo.",
+          "testoAvanzato": true
         }
       ]
     },
     {
       "id": "l08-link",
-      "comando": "ln, ln -s, rmdir",
-      "titolo": "nomi, scorciatoie e pulizia",
+      "comando": "ln e ln -s",
+      "titolo": "un secondo nome, o un cartello",
       "esercizi": [
         {
           "id": "l08-li-1",
           "tipo": "terminale",
-          "testo": "Crea un collegamento simbolico `corrente.csv` che punti a `dati.csv`, poi leggilo.",
+          "difficolta": 3,
+          "testo": "La campagna in corso e' quella di settembre. Crea un collegamento `corrente` che punta a `campagne/2026-09`, e usalo per leggere i dati.",
           "filesystem": {
-            "/home/tu/dati.csv": "quota,1000\n"
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
           },
-          "soluzione": "ln -s dati.csv corrente.csv\ncat corrente.csv",
+          "soluzione": "ln -s /home/tu/campagne/2026-09 corrente\nls corrente\ncat corrente/quota.csv",
           "verifica": {
-            "stampa": "quota,1000",
+            "esiste": [
+              "corrente"
+            ],
+            "stampa": "7100",
             "usa": [
               "ln",
               "cat"
             ]
           },
           "hint": [
-            "Con -s, prima il bersaglio poi il nome.",
-            "ln -s dati.csv corrente.csv"
+            "ln -s BERSAGLIO NOME",
+            "ln -s /home/tu/campagne/2026-09 corrente"
           ],
-          "spiegazione": "Il symlink e' un percorso indiretto: `cat` segue il bersaglio, mentre `ls -l` mostra la freccia."
+          "spiegazione": "Da adesso `corrente/quota.csv` e' un percorso valido: il collegamento si attraversa come una cartella.\n\nÈ il modo con cui si da' un **nome stabile a una cosa che cambia**: gli script leggono sempre `corrente`, e a campagna nuova si sposta il cartello invece di modificare dieci script."
         },
         {
           "id": "l08-li-2",
           "tipo": "terminale",
-          "testo": "Crea un hard link `copia.txt` di `origine.txt`, modifica la copia e verifica che l'origine veda lo stesso contenuto.",
+          "difficolta": 2,
+          "testo": "Riconosci un collegamento nell'elenco: guarda il primo carattere della riga e dove punta.",
           "filesystem": {
-            "/home/tu/origine.txt": "uno\n"
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
           },
-          "soluzione": "ln origine.txt copia.txt\necho due > copia.txt\ncat origine.txt",
+          "soluzione": "ln -s /home/tu/campagne/2026-09 corrente\nls -l corrente",
           "verifica": {
-            "stampa": "due",
+            "stampa": "corrente -> ",
             "usa": [
-              "ln",
-              "echo",
-              "cat"
+              "ls",
+              "ln"
             ]
           },
           "hint": [
-            "Senza -s e' un hard link.",
-            "ln origine.txt copia.txt"
+            "ls -l mostra la freccia verso il bersaglio.",
+            "ls -l corrente"
           ],
-          "spiegazione": "I due nomi sono lo stesso file: modificare uno aggiorna cio' che leggi dall'altro."
+          "spiegazione": "La `l` iniziale e la freccia dicono tutto: e' un collegamento, e quello e' il percorso a cui punta. I permessi `lrwxrwxrwx` sono sempre gli stessi e non contano — quelli che decidono sono i permessi del **bersaglio**.\n\nÈ la riga che si guarda per prima quando un percorso «non contiene quello che dovrebbe»."
         },
         {
           "id": "l08-li-3",
           "tipo": "terminale",
-          "testo": "Crea il symlink e usa `ls -l` per riconoscere il bersaglio dalla freccia.",
+          "difficolta": 3,
+          "testo": "**Il cartello che punta nel vuoto.** Crea il collegamento a un file, cancella il file, e guarda cosa risponde il collegamento.",
           "filesystem": {
-            "/home/tu/dati.csv": "x\n"
+            "/home/tu/dati.csv": "quota\n9000\n"
           },
-          "soluzione": "ln -s dati.csv corrente.csv\nls -l",
+          "soluzione": "ln -s dati.csv ultimo.csv\ncat ultimo.csv\nrm dati.csv\ncat ultimo.csv\nls -l ultimo.csv",
           "verifica": {
-            "stampa": "corrente.csv -> /home/tu/dati.csv",
+            "errore": "collegamento simbolico non valido",
+            "esiste": [
+              "ultimo.csv"
+            ],
             "usa": [
               "ln",
-              "ls"
+              "rm"
             ]
           },
           "hint": [
-            "L'elenco lungo mostra i dettagli.",
-            "ls -l"
+            "Crea, leggi, cancella il bersaglio, rileggi.",
+            "rm dati.csv, poi cat ultimo.csv"
           ],
-          "spiegazione": "Un link simbolico ha tipo `l` e mostra `-> bersaglio`. E' il modo per distinguere una scorciatoia da un file normale."
+          "spiegazione": "Il collegamento e' rimasto: contiene **un percorso**, non i dati. Il percorso adesso non porta a niente, e ogni programma che lo apre riceve lo stesso errore.\n\n`ls -l` continua a mostrarlo con la sua freccia — ed e' l'unico modo di scoprire **verso cosa** puntava, informazione che serve per capire cosa e' stato spostato."
         },
         {
           "id": "l08-li-4",
-          "tipo": "predict",
-          "testo": "Sposti il file bersaglio di un symlink senza aggiornare il link. Cosa accade?",
-          "opzioni": [
-            "il symlink puo' restare rotto",
-            "il symlink diventa automaticamente un hard link",
-            "il file viene copiato nel link",
-            "rmdir lo ripara"
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il collegamento duro e' un'altra cosa: creane uno, scrivi da un nome, e leggi dall'altro.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "ln note.txt copia.txt\necho seconda riga >> copia.txt\ncat note.txt",
+          "verifica": {
+            "stampa": "seconda riga",
+            "usa": [
+              "ln"
+            ]
+          },
+          "hint": [
+            "ln senza -s crea un secondo nome per lo stesso file.",
+            "ln note.txt copia.txt"
           ],
-          "risposta": "il symlink puo' restare rotto",
-          "spiegazione": "Il link conserva un percorso. Se quel percorso non esiste piu', non contiene una copia dei dati con cui rimettersi in piedi."
+          "spiegazione": "Non c'e' un originale e una copia: ci sono **due nomi per lo stesso contenuto**. Scrivere da una parte cambia l'altra, perche' e' lo stesso file.\n\nCancellandone uno, il contenuto resta finche' esiste l'altro nome — ed e' il motivo per cui il conteggio dei collegamenti compare in `ls -l` sui sistemi veri."
         },
         {
           "id": "l08-li-5",
           "tipo": "terminale",
-          "testo": "Rimuovi la cartella vuota `temporanei` con il comando che rifiuterebbe una cartella piena.",
+          "difficolta": 3,
+          "testo": "Cancella il collegamento e verifica che il file a cui puntava sia ancora al suo posto.",
           "filesystem": {
-            "/home/tu/temporanei": null
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
           },
-          "soluzione": "rmdir temporanei",
+          "soluzione": "ln -s /home/tu/campagne/2026-09 corrente\nrm corrente\nls\nls campagne/2026-09",
+          "verifica": {
+            "nonEsiste": [
+              "corrente"
+            ],
+            "esiste": [
+              "campagne/2026-09/quota.csv"
+            ],
+            "usa": [
+              "rm",
+              "ln"
+            ]
+          },
+          "hint": [
+            "rm toglie il nome che gli dai, non il bersaglio.",
+            "rm corrente"
+          ],
+          "spiegazione": "`rm` su un collegamento simbolico toglie **il cartello**: il bersaglio non viene nemmeno toccato.\n\nAttenzione alla barra finale, che cambia tutto: `rm -r corrente/` seguirebbe il collegamento e cancellerebbe il contenuto della cartella puntata. Un carattere separa «tolgo un collegamento» da «perdo una campagna»."
+        },
+        {
+          "id": "l08-li-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Sposti il file bersaglio di un collegamento simbolico senza aggiornare il collegamento. Cosa succede?",
+          "opzioni": [
+            "il collegamento resta e punta a un percorso che non esiste piu': si rompe in silenzio",
+            "il collegamento segue il file nella nuova posizione",
+            "il file non si puo' spostare finche' esiste il collegamento",
+            "il collegamento viene cancellato automaticamente"
+          ],
+          "risposta": "il collegamento resta e punta a un percorso che non esiste piu': si rompe in silenzio",
+          "spiegazione": "Il collegamento contiene un **percorso scritto**, e nessuno lo aggiorna. Il sistema non avvisa: te ne accorgi quando un programma non trova il file.\n\nIl collegamento **duro** invece non si rompe, perche' punta al contenuto e non al nome. È la differenza pratica fra i due, e il motivo per cui gli script seri controllano l'esistenza del bersaglio prima di fidarsi."
+        },
+        {
+          "id": "l08-li-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Sposta il cartello alla campagna nuova: ricrea `corrente` in modo che punti ad agosto invece che a settembre.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "ln -s /home/tu/campagne/2026-09 corrente\nrm corrente\nln -s /home/tu/campagne/2026-08 corrente\nls -l corrente\ncat corrente/quota.csv",
+          "verifica": {
+            "stampa": "8400",
+            "usa": [
+              "ln",
+              "rm"
+            ]
+          },
+          "hint": [
+            "Si toglie il vecchio collegamento e se ne crea uno nuovo.",
+            "rm corrente, poi ln -s /home/tu/campagne/2026-08 corrente"
+          ],
+          "spiegazione": "Un comando, e ogni script che leggeva `corrente/` adesso lavora sull'altra campagna: **nessuno script e' stato modificato**.\n\nSulla macchina vera si fa in un colpo solo con `ln -sfn nuovo corrente`, che sostituisce il collegamento esistente senza doverlo togliere prima."
+        },
+        {
+          "id": "l08-li-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il nome stabile.** Prepara la struttura: il collegamento alla campagna corrente, e uno script che legge sempre da li' — poi eseguilo.",
+          "filesystem": {
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "ln -s /home/tu/campagne/2026-09 corrente\necho 'wc -l corrente/quota.csv' > conta.sh\nbash conta.sh\nrm corrente\nln -s /home/tu/campagne/2026-08 corrente\nbash conta.sh",
+          "verifica": {
+            "esiste": [
+              "conta.sh",
+              "corrente"
+            ],
+            "stampa": "3 corrente/quota.csv",
+            "usa": [
+              "ln",
+              "bash"
+            ]
+          },
+          "hint": [
+            "Lo script nomina il collegamento, non la cartella vera.",
+            "echo 'wc -l corrente/quota.csv' > conta.sh"
+          ],
+          "spiegazione": "Lo stesso script, due campagne diverse, zero modifiche al codice: e' il motivo per cui i collegamenti simbolici sono ovunque nei sistemi Unix.\n\nÈ anche il meccanismo con cui `/usr/bin/python` punta alla versione che vuoi tu — il modulo sugli ambienti mostrava il PATH, questo mostra l'altra meta' della storia."
+        }
+      ]
+    },
+    {
+      "id": "l08-pulizia",
+      "comando": "rmdir e rm -r",
+      "titolo": "cancellare dichiarando l'intenzione",
+      "esercizi": [
+        {
+          "id": "l08-pu-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Cancella la cartella vuota `temporanei` con il comando che si rifiuta di toccare quelle piene.",
+          "filesystem": {
+            "/home/tu/temporanei": null,
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "ls\nrmdir temporanei\nls",
           "verifica": {
             "nonEsiste": [
               "temporanei"
@@ -239,56 +432,187 @@
             ]
           },
           "hint": [
-            "Il comando e' rmdir.",
+            "Cinque lettere: remove directory.",
             "rmdir temporanei"
           ],
-          "spiegazione": "`rmdir` dichiara che ti aspetti una cartella vuota. Se non lo e', l'errore e' una protezione utile."
+          "spiegazione": "`rmdir` (*remove directory*) cancella **solo** cartelle vuote. Non e' una limitazione: e' una protezione, e il prossimo esercizio mostra da cosa."
         },
         {
-          "id": "l08-li-6",
+          "id": "l08-pu-2",
           "tipo": "terminale",
-          "testo": "Prova a usare `rmdir` su una cartella piena e leggi il messaggio di protezione.",
+          "difficolta": 3,
+          "testo": "Prova `rmdir` su una cartella che contiene ancora dei dati, e leggi cosa risponde.",
           "filesystem": {
-            "/home/tu/risultati/a.csv": "x\n"
+            "/home/tu/analisi.conf": "percorso=/mnt/dati\nsoglia=10\n",
+            "/home/tu/campagne/2026-08/quota.csv": "t,quota\n0,1000\n120,8400\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/note.txt": "appunti\n"
           },
-          "soluzione": "rmdir risultati",
+          "soluzione": "rmdir campagne\nls campagne",
           "verifica": {
             "errore": "non vuota",
+            "esiste": [
+              "campagne/2026-08/quota.csv"
+            ],
             "usa": [
               "rmdir"
             ]
           },
           "hint": [
-            "Non cancellare il file: qui vuoi vedere l'errore.",
-            "rmdir risultati"
+            "Provaci e leggi l'errore.",
+            "rmdir campagne"
           ],
-          "spiegazione": "Per cancellare un albero servirebbe `rm -r`, ma prima devi aver controllato con precisione cosa contiene."
+          "spiegazione": "`directory non vuota`, e non ha cancellato niente. Se credevi che fosse vuota, questo messaggio ti ha appena salvato due campagne.\n\nÈ la differenza con `rm -r`, che avrebbe cancellato tutto senza dire niente: **`rmdir` dichiara l'intenzione** — «cancella solo se non c'e' niente dentro»."
         },
         {
-          "id": "l08-li-7",
-          "tipo": "predict",
-          "testo": "Qual e' la differenza essenziale fra hard link e symlink?",
-          "opzioni": [
-            "l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio",
-            "il symlink comprime il file",
-            "l'hard link funziona solo online",
-            "non esiste alcuna differenza"
+          "id": "l08-pu-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "La cartella `scarti` va via davvero, con tutto quello che contiene. Guarda prima cosa c'e' dentro, poi cancellala.",
+          "filesystem": {
+            "/home/tu/scarti/a.tmp": "x\n",
+            "/home/tu/scarti/b.tmp": "y\n",
+            "/home/tu/note.txt": "appunti\n"
+          },
+          "soluzione": "ls scarti\nrm -r scarti\nls",
+          "verifica": {
+            "nonEsiste": [
+              "scarti"
+            ],
+            "usa": [
+              "rm",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Prima ls, poi rm -r.",
+            "rm -r scarti"
           ],
-          "risposta": "l'hard link e' un altro nome del file; il symlink conserva un percorso al bersaglio",
-          "spiegazione": "Per questo un symlink puo' diventare rotto quando sposti il bersaglio, mentre un hard link condivide il file stesso."
+          "spiegazione": "`ls` prima di `rm`, sullo stesso percorso: e' la regola del primo modulo, e vale ancora. Costa due secondi e mostra esattamente quello che stai per perdere.\n\n`rm -r` non chiede conferma e non ha cestino. Quando sei sicuro va bene; il punto e' esserlo davvero."
         },
         {
-          "id": "l08-li-8",
-          "tipo": "predict",
-          "testo": "Vuoi eliminare solo un collegamento simbolico, non il file a cui punta. Cosa fai?",
-          "opzioni": [
-            "rm sul nome del collegamento dopo ls -l",
-            "rm -r sul bersaglio",
-            "gzip il collegamento",
-            "usare fg"
+          "id": "l08-pu-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Fai pulizia mirata: cancella i due file temporanei senza toccare il CSV che sta nella stessa cartella.",
+          "filesystem": {
+            "/home/tu/lavoro/a.tmp": "x\n",
+            "/home/tu/lavoro/b.tmp": "y\n",
+            "/home/tu/lavoro/dati.csv": "quota\n9000\n"
+          },
+          "soluzione": "ls lavoro\nrm lavoro/a.tmp lavoro/b.tmp\nls lavoro",
+          "verifica": {
+            "nonEsiste": [
+              "lavoro/a.tmp",
+              "lavoro/b.tmp"
+            ],
+            "esiste": [
+              "lavoro/dati.csv"
+            ],
+            "usa": [
+              "rm"
+            ]
+          },
+          "hint": [
+            "rm accetta piu' file di seguito.",
+            "rm lavoro/a.tmp lavoro/b.tmp"
           ],
-          "risposta": "rm sul nome del collegamento dopo ls -l",
-          "spiegazione": "`rm collegamento` rimuove il link. Guardare prima `ls -l` conferma che stai cancellando la scorciatoia e non il dato vero."
+          "spiegazione": "Nominare i file uno per uno e' piu' lento e infinitamente piu' sicuro di un `rm -r` sulla cartella. Su una cartella di lavoro con dentro anche i dati buoni, e' l'unica strada ragionevole.\n\nQuando i file sono molti, la forma giusta e' `find` con un criterio preciso, e prima si guarda cosa trova."
+        },
+        {
+          "id": "l08-pu-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Guarda prima di cancellare.** Trova tutti i `.tmp` sotto `lavoro`, salvane l'elenco in `da_cancellare.txt`, e solo dopo cancellali.",
+          "filesystem": {
+            "/home/tu/lavoro/a.tmp": "x\n",
+            "/home/tu/lavoro/b.tmp": "y\n",
+            "/home/tu/lavoro/dati.csv": "quota\n9000\n"
+          },
+          "soluzione": "find lavoro -name *.tmp > da_cancellare.txt\ncat da_cancellare.txt\nrm lavoro/a.tmp lavoro/b.tmp\nls lavoro",
+          "verifica": {
+            "contiene": {
+              "da_cancellare.txt": "a.tmp"
+            },
+            "nonEsiste": [
+              "lavoro/a.tmp"
+            ],
+            "esiste": [
+              "lavoro/dati.csv"
+            ],
+            "usa": [
+              "find",
+              "rm"
+            ]
+          },
+          "hint": [
+            "Prima l'elenco in un file, poi la cancellazione.",
+            "find lavoro -name *.tmp > da_cancellare.txt"
+          ],
+          "spiegazione": "L'elenco salvato e' la prova di cosa hai tolto — e serve davvero il giorno in cui qualcuno chiede «dov'e' finito quel file?».\n\nÈ anche la forma prudente della catena `find | xargs rm` del modulo sul testo: **prima si guarda, poi si esegue**."
+        },
+        {
+          "id": "l08-pu-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`rm -rf $CARTELLA/` con `CARTELLA` mai definita. Cosa cancella?",
+          "opzioni": [
+            "tutto quello che sta sotto la radice: la variabile vuota lascia `rm -rf /`",
+            "niente: il comando fallisce",
+            "solo la cartella corrente",
+            "chiede conferma prima di procedere"
+          ],
+          "risposta": "tutto quello che sta sotto la radice: la variabile vuota lascia `rm -rf /`",
+          "spiegazione": "La variabile vuota **sparisce** dalla riga, e resta la barra. Nessun errore, nessuna conferma: `-f` toglie anche l'ultima protesta.\n\nÈ il guasto piu' famoso di Unix, ed e' la ragione per cui il modulo sugli script insiste su `set -u`: con quello attivo, lo script si ferma sulla variabile non definita invece di cancellare il sistema."
+        },
+        {
+          "id": "l08-pu-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quale delle due righe toglie **solo** il collegamento, senza toccare la cartella puntata?",
+          "opzioni": [
+            "`rm scorciatoia`",
+            "`rm -r scorciatoia/`",
+            "sono equivalenti",
+            "`rmdir scorciatoia`"
+          ],
+          "risposta": "`rm scorciatoia`",
+          "spiegazione": "Senza la barra finale parli del **collegamento**; con la barra parli di **dove punta**, e `rm -r` cancella il contenuto della cartella vera.\n\nÈ una delle poche differenze in cui un carattere separa un'operazione innocua da una perdita di dati. Nel dubbio: `ls -l` prima, per vedere se stai guardando un collegamento o una cartella."
+        },
+        {
+          "id": "l08-pu-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Fine campagna.** Archivia il collegamento corrente, cancella i temporanei, elimina la cartella di lavoro rimasta vuota, e verifica che i dati siano intatti.",
+          "filesystem": {
+            "/home/tu/lavoro/a.tmp": "x\n",
+            "/home/tu/lavoro/b.tmp": "y\n",
+            "/home/tu/campagne/2026-09/quota.csv": "t,quota\n0,1000\n90,7100\n",
+            "/home/tu/corrente": {
+              "contenuto": "",
+              "modo": 420
+            }
+          },
+          "soluzione": "rm corrente\nrm lavoro/a.tmp lavoro/b.tmp\nls lavoro\nrmdir lavoro\nls\nls campagne/2026-09",
+          "verifica": {
+            "nonEsiste": [
+              "corrente",
+              "lavoro"
+            ],
+            "esiste": [
+              "campagne/2026-09/quota.csv"
+            ],
+            "usa": [
+              "rm",
+              "rmdir",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Collegamento, file temporanei, poi rmdir sulla cartella ormai vuota.",
+            "rm lavoro/a.tmp lavoro/b.tmp, poi rmdir lavoro"
+          ],
+          "spiegazione": "`rmdir` alla fine e' la verifica implicita: se avesse protestato, vorrebbe dire che dentro c'era ancora qualcosa che non avevi visto.\n\nUsare `rmdir` invece di `rm -r` per l'ultimo passo trasforma una cancellazione cieca in un **controllo**: e' gratis, e ogni tanto ti ferma."
         }
       ]
     }

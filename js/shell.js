@@ -268,6 +268,17 @@ function ingresso(sh, file) {
   return formatta(sh.stdin);
 }
 
+/** Una riga di ls -l: tipo, permessi, proprietario, gruppo, dimensione, nome. */
+function rigaLunga(nome, nodo, dim = nodo.tipo === "file" ? nodo.contenuto.length : 0) {
+  const tipo = nodo.tipo === "dir" ? "d" : nodo.tipo === "link" ? "l" : "-";
+  const etichetta = nodo.tipo === "link" && !nome.includes(" -> ") ? `${nome} -> ${nodo.destinazione}` : nome;
+  // Proprietario e gruppo sono due colonne diverse, ed e' la seconda che decide
+  // chi altro puo' leggere un file in una cartella condivisa.
+  const chi = (nodo.proprietario ?? "tu").padEnd(6);
+  const gruppo = (nodo.gruppo ?? nodo.proprietario ?? "tu").padEnd(9);
+  return `${tipo}${V.permessiTesto(nodo)}  ${chi} ${gruppo} ${String(dim).padStart(6)}  ${etichetta}`;
+}
+
 export const POSIX = {
   pwd: (sh) => sh.fs.cwd,
 
@@ -284,23 +295,27 @@ export const POSIX = {
     const { flag, resto } = opzioni(args);
     const bersagli = resto.length ? resto : ["."];
     const blocchi = bersagli.map((b) => {
+      // ls -l su un collegamento mostra IL COLLEGAMENTO, non il contenuto di
+      // dove punta: e' cosi' che si scopre dove va a finire, e se e' rotto.
+      const diretto = sh.fs.nodi.get(V.normalizza(sh.fs, b));
+      if (flag.has("l") && diretto?.tipo === "link") return rigaLunga(b, diretto);
       let nomi = V.elenca(sh.fs, b);
       if (!flag.has("a")) nomi = nomi.filter((n) => !n.startsWith("."));
       if (flag.has("l")) {
-        const base = V.eDir(sh.fs, b) ? V.normalizza(sh.fs, b) : V.genitore(V.normalizza(sh.fs, b));
+        // Su un collegamento, ls -l mostra il collegamento stesso: e' il modo
+        // di vedere dove punta, e di accorgersi che e' rotto.
+        const base = V.eDir(sh.fs, b) && V.tipo(sh.fs, b) !== "link"
+          ? V.normalizza(sh.fs, b)
+          : V.genitore(V.normalizza(sh.fs, b));
         return nomi
           .map((n) => {
             const p = base + (base === "/" ? "" : "/") + n;
             const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, p));
-            const dir = nodo.tipo === "dir";
-            const link = nodo.tipo === "link";
-            const dim = dir || link ? 0 : nodo.contenuto.length;
-            const nome = link ? `${n} -> ${nodo.destinazione}` : n;
+            const dim = nodo.tipo === "file" ? nodo.contenuto.length : 0;
+            const nome = nodo.tipo === "link" ? `${n} -> ${nodo.destinazione}` : n;
             // Proprietario e gruppo sono due colonne diverse, ed e' la seconda
             // che decide chi altro puo' leggere un file in una cartella condivisa.
-            const chi = (nodo.proprietario ?? "tu").padEnd(6);
-            const gruppo = (nodo.gruppo ?? nodo.proprietario ?? "tu").padEnd(9);
-            return `${dir ? "d" : link ? "l" : "-"}${V.permessiTesto(nodo)}  ${chi} ${gruppo} ${String(dim).padStart(6)}  ${nome}`;
+            return rigaLunga(nome, nodo, dim);
           })
           .join("\n");
       }

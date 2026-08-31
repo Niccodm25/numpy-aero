@@ -53,12 +53,23 @@ export function normalizza(fs, percorso) {
   if (p === "~" || p.startsWith("~/")) p = HOME + p.slice(1);
   const assoluto = p.startsWith("/");
   const pezzi = (assoluto ? p : fs.cwd + "/" + p).split("/");
+  const parti = pezzi.filter((x) => x !== "" && x !== ".");
   const out = [];
-  for (const pezzo of pezzi) {
-    if (pezzo === "" || pezzo === ".") continue;
-    if (pezzo === "..") out.pop();
-    else out.push(pezzo);
-  }
+  parti.forEach((pezzo, i) => {
+    if (pezzo === "..") {
+      out.pop();
+      return;
+    }
+    out.push(pezzo);
+    // Un collegamento IN MEZZO al percorso si attraversa: "corrente/dati.csv"
+    // funziona se "corrente" punta a una cartella. L'ultimo pezzo invece resta
+    // il collegamento stesso, altrimenti "rm corrente" cancellerebbe la
+    // cartella puntata invece del cartello.
+    if (i === parti.length - 1) return;
+    const nodo = fs.nodi.get("/" + out.join("/"));
+    if (nodo?.tipo === "link" && fs.nodi.get(nodo.destinazione)?.tipo === "dir")
+      out.splice(0, out.length, ...nodo.destinazione.split("/").filter(Boolean));
+  });
   return "/" + out.join("/");
 }
 
@@ -207,9 +218,24 @@ export function creaDir(fs, p, ricorsivo = false) {
 
 /** I figli diretti di una cartella, ordinati. Solo i nomi, non i percorsi. */
 export function elenca(fs, p = ".") {
-  const abs = normalizza(fs, p);
-  const n = fs.nodi.get(abs);
+  let abs = normalizza(fs, p);
+  let n = fs.nodi.get(abs);
   if (!n) throw new ErroreFs(`${p}: file o directory non esistente`);
+  // Un collegamento a una cartella si elenca come la cartella: e' quello che
+  // fa ls, ed e' il motivo per cui un symlink e' una scorciatoia utilizzabile
+  // e non solo un cartello da guardare.
+  if (n.tipo === "link") {
+    const bersaglio = fs.nodi.get(n.destinazione);
+    // Un collegamento rotto si elenca lo stesso: e' proprio guardandolo con
+    // ls -l che si scopre verso cosa punta e che quel cosa non c'e' piu'.
+    if (!bersaglio) return [foglia(abs)];
+    if (bersaglio.tipo === "dir") {
+      abs = n.destinazione;
+      n = bersaglio;
+    } else {
+      return [foglia(abs)];
+    }
+  }
   if (n.tipo === "file") return [foglia(abs)];
   const prefisso = abs === "/" ? "/" : abs + "/";
   const nomi = [];
