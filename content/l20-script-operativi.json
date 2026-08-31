@@ -1,0 +1,645 @@
+{
+  "id": "l20",
+  "titolo": "Script operativi: condizioni, cicli, funzioni",
+  "perche": "l05 insegna a raccogliere comandi in un file. Qui lo script comincia a **decidere**: guarda se un file c'e', conta, confronta, ripete su tutti i dati, si ferma con un codice che gli altri programmi capiscono, e pulisce dietro di se'. Con il confine dichiarato: dove bash diventa una cattiva idea, comincia Python.",
+  "funzioni": [
+    "$?",
+    "test",
+    "[ ]",
+    "-f",
+    "-d",
+    "-z",
+    "-eq",
+    "-gt",
+    "if",
+    "then",
+    "else",
+    "fi",
+    "for",
+    "do",
+    "done",
+    "funzioni",
+    "$(comando)",
+    "exit",
+    "trap"
+  ],
+  "lezioni": [
+    {
+      "id": "l20-l1",
+      "titolo": "Il codice di uscita, e la condizione",
+      "md": "Ogni comando, quando finisce, lascia un numero: **0 se e' andato bene**, diverso da zero se no. Si legge in `$?`, e non si stampa da solo.\n\n```\ngrep ERROR log.txt\necho $?          # 0: ha trovato qualcosa\ngrep XYZ log.txt\necho $?          # 1: non ha trovato niente\n```\n\nÈ il pezzo che mancava a l05: uno script poteva eseguire dei comandi, ma non **guardare com'e' andata**. Da qui in poi puo' decidere.\n\n### test, e le parentesi quadre\n\n```bash\ntest -f log.txt          # il file esiste ed e' un file?\n[ -f log.txt ]           # identico: \"[\" e' un comando, e \"]\" e' il suo ultimo argomento\n```\n\nSembra sintassi e non lo e': `[` e' un **programma**, ed e' il motivo per cui gli spazi dentro le parentesi sono obbligatori. `[-f log.txt]` non funziona, e l'errore che dà non lo spiega.\n\nGli operatori che si usano davvero:\n\n```bash\n[ -f file ]      # esiste ed e' un file\n[ -d cartella ]  # esiste ed e' una directory\n[ -z \"$VAR\" ]    # la variabile e' vuota\n[ -n \"$VAR\" ]    # la variabile NON e' vuota\n[ \"$a\" = \"$b\" ]  # testi uguali\n[ \"$n\" -gt 5 ]   # numeri: -eq -ne -gt -lt -ge -le\n```\n\n**Testi e numeri hanno operatori diversi**: `=` per i primi, `-eq` per i secondi. Usare `=` su due numeri confronta le stringhe, e `010` non e' uguale a `10`.\n\n### if\n\n```bash\nif [ -f log.txt ]; then\n  echo il log c'e'\nelse\n  echo manca il log\nfi\n```\n\nIl punto e virgola prima di `then` serve perche' `if` vuole il comando e poi la parola chiave: sono due cose sulla stessa riga. `fi` e' `if` al contrario, e la chiusura si dimentica sempre.\n\n### Un limite di questo simulatore\n\nQui i blocchi vogliono **righe separate**: `if` su una riga, il corpo sotto, `fi` da solo. La forma compatta `if [ ... ]; then comando; fi` funziona su bash vero ma non qui, ed e' dichiarato invece che nascosto.\n\nSugli script veri conviene comunque la forma estesa: si legge, e si annida senza diventare illeggibile."
+    },
+    {
+      "id": "l20-l2",
+      "titolo": "Cicli, funzioni, e $(...)",
+      "md": "```bash\nfor f in dati/*.csv; do\n  wc -l \"$f\"\ndone\n```\n\n`for` prende un **elenco** e ripete il corpo una volta per elemento. L'elenco puo' venire da un glob, da una variabile, o dall'uscita di un comando.\n\nLe virgolette attorno a `\"$f\"` non sono decorazione: senza, un nome con uno spazio diventa due argomenti — ed e' il guasto piu' comune degli script che «funzionavano».\n\n### La sostituzione di comando\n\n```bash\nerrori=$(grep -c ERROR log.txt)\nif [ \"$errori\" -gt 0 ]; then\n  echo trovati $errori errori\nfi\n```\n\n`$(comando)` esegue e **mette al suo posto quello che ha stampato**. È il ponte fra i comandi che sai gia' e le decisioni: senza, uno script non puo' ragionare su un numero che ha appena calcolato.\n\nLa forma vecchia con gli apici inversi (`` `comando` ``) fa la stessa cosa e non si annida: si trova in molti script, si legge e non si scrive piu'.\n\n### Funzioni\n\n```bash\ncontrolla() {\n  if [ ! -f \"$1\" ]; then\n    echo \"manca $1\"\n    exit 1\n  fi\n}\n\ncontrolla dati/prova1.csv\n```\n\nUna funzione e' un pezzo di script con un nome. Prende argomenti come lo script — `$1`, `$2` — e serve per la stessa ragione per cui servono in Python: **dare un nome a un pezzo di logica che si ripete**.\n\nNello script vero si mettono in cima, prima di essere chiamate."
+    },
+    {
+      "id": "l20-l3",
+      "titolo": "Uscire bene, e quando smettere di usare bash",
+      "md": "```bash\nif [ $# -lt 1 ]; then\n  echo \"uso: $0 FILE_DI_LOG\" >&2\n  exit 2\nfi\n```\n\nLe prime righe di ogni script serio: **controlla gli argomenti, spiega come si usa, esci con un codice diverso da zero**. Chi lo lancia da un altro script guarda quel numero, non il messaggio.\n\nLe convenzioni: **0** tutto bene, **1** errore generico, **2** uso sbagliato. Non e' una regola scritta, e' quello che gli altri si aspettano.\n\n### trap: la pulizia che avviene comunque\n\n```bash\ntrap 'rm -f /tmp/lavoro.$$' EXIT\n```\n\n`trap ... EXIT` esegue quella riga **all'uscita**, sia normale sia per errore. È il modo di non lasciare file temporanei in giro quando lo script muore a meta' — e con `set -e` lo script muore spesso.\n\n### Lo scheletro completo\n\n```bash\n#!/bin/bash\nset -eu\ntrap 'rm -f \"$temporaneo\"' EXIT\n\nif [ $# -lt 1 ]; then echo \"uso: $0 FILE\" >&2; exit 2; fi\n...\n```\n\nQuattro righe che non cambiano mai. Copiarle e' l'abitudine giusta.\n\n### Quando passare a Python\n\nBash e' ottimo per **incollare comandi**: file, processi, testo di passaggio. Diventa una cattiva idea quando servono:\n\n- **strutture dati** — liste di liste, dizionari, oggetti;\n- **conti veri** — bash non ha nemmeno i numeri con la virgola;\n- **parsing serio** — un CSV con virgole dentro le virgolette, un JSON, un XML;\n- **errori da gestire** con precisione, e non solo `set -e`;\n- **piu' di un centinaio di righe** — a quel punto la leggibilita' crolla.\n\nLa regola pratica: se stai per scrivere un `if` dentro un `for` dentro una funzione, o se ti serve `awk` per fare un conto, **e' il momento di Python**. Il ramo Python di questa app e' li' per quello, e i due si chiamano a vicenda: uno script bash che prepara i file e lancia `python analisi.py` e' una divisione del lavoro sana."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l20-if",
+      "comando": "test e if",
+      "titolo": "lo script che decide",
+      "esercizi": [
+        {
+          "id": "l20-if-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Ogni comando lascia un numero che dice com'e' andata. Cerca una parola che c'e' nel log e leggi quel numero, poi ripeti con una che non c'e'.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "grep ERROR log.txt\necho $?\ngrep XYZ log.txt\necho $?",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "grep",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Il numero sta in $?, e si stampa con echo.",
+            "echo $? dopo ogni grep"
+          ],
+          "spiegazione": "`0` quando ha trovato, `1` quando no. Non e' un errore: e' **il risultato della domanda**, e uno script lo usa per decidere.\n\nQuasi tutti i comandi seguono la stessa convenzione: zero se e' andato bene, diverso da zero se no. È l'unico modo in cui i programmi si parlano fra loro senza leggersi l'output."
+        },
+        {
+          "id": "l20-if-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova le due forme del comando che controlla una condizione: `test` e le parentesi quadre. Chiedi se il log esiste, e poi se esiste un file che non c'e'.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "test -f log.txt\necho $?\n[ -f manca.txt ]\necho $?",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "test",
+              "["
+            ]
+          },
+          "hint": [
+            "[ e' un comando, e ] e' il suo ultimo argomento.",
+            "test -f log.txt, poi [ -f manca.txt ]"
+          ],
+          "spiegazione": "Le due righe fanno la stessa cosa: `[` **e' un programma**, non sintassi. È il motivo per cui gli spazi dentro le parentesi sono obbligatori — `[-f log.txt]` sarebbe un comando che si chiama `[-f`.\n\nNessuna delle due stampa niente: la risposta e' nel codice di uscita, ed e' fatto apposta."
+        },
+        {
+          "id": "l20-if-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi `controlla.sh` che dica se il log c'e' oppure no, e lancialo.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'if [ -f log.txt ]; then' > controlla.sh\necho '  echo il log c e' >> controlla.sh\necho 'else' >> controlla.sh\necho '  echo manca il log' >> controlla.sh\necho 'fi' >> controlla.sh\nbash controlla.sh",
+          "verifica": {
+            "esiste": [
+              "controlla.sh"
+            ],
+            "stampa": "il log c e",
+            "usa": [
+              "bash",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Cinque righe: if, corpo, else, corpo, fi.",
+            "echo 'if [ -f log.txt ]; then' > controlla.sh"
+          ],
+          "spiegazione": "Il punto e virgola prima di `then` c'e' perche' `if` vuole prima un comando e poi la parola chiave, e qui stanno sulla stessa riga.\n\n`fi` e' `if` al rovescio, e dimenticarlo e' l'errore piu' comune: lo script finisce senza dire niente, perche' bash sta ancora aspettando la chiusura del blocco."
+        },
+        {
+          "id": "l20-if-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il controllo che sta in cima a ogni script.** Scrivi `uso.sh` che se non riceve argomenti spiega come si usa ed esce con codice 2, e provalo in tutti e due i modi.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'if [ $# -lt 1 ]; then' > uso.sh\necho '  echo uso: $0 FILE' >> uso.sh\necho '  exit 2' >> uso.sh\necho 'fi' >> uso.sh\necho 'echo elaboro $1' >> uso.sh\nbash uso.sh\nbash uso.sh log.txt",
+          "verifica": {
+            "esiste": [
+              "uso.sh"
+            ],
+            "stampa": "elaboro log.txt",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "$# e' il numero di argomenti; -lt vuol dire minore di.",
+            "if [ $# -lt 1 ]; then ... exit 2 ... fi"
+          ],
+          "spiegazione": "Senza argomenti stampa come si usa ed esce; con un argomento lavora. Sono quattro righe, e sono la differenza fra uno script che si puo' dare a qualcun altro e uno che si puo' solo lanciare ricordandosi come.\n\n`exit 2` per «uso sbagliato» e' una convenzione: chi chiama il tuo script da un altro script guarda quel numero."
+        },
+        {
+          "id": "l20-if-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Confronto fra numeri.** Scrivi `soglia.sh` che conti gli errori nel log e dica se sono piu' di uno, usando la sostituzione di comando.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'errori=$(grep -c ERROR log.txt)' > soglia.sh\necho 'if [ $errori -gt 1 ]; then' >> soglia.sh\necho '  echo troppi errori: $errori' >> soglia.sh\necho 'fi' >> soglia.sh\nbash soglia.sh",
+          "verifica": {
+            "stampa": "troppi errori: 2",
+            "usa": [
+              "bash",
+              "grep"
+            ]
+          },
+          "hint": [
+            "$(comando) mette al suo posto quello che il comando ha stampato.",
+            "errori=$(grep -c ERROR log.txt)"
+          ],
+          "spiegazione": "`$(...)` e' il ponte fra i comandi che gia' sai e le decisioni: senza, uno script non potrebbe ragionare su un numero appena calcolato.\n\nNota `-gt` e non `>`: dentro le parentesi quadre il maggiore si scrive a parole, perche' `>` sarebbe una redirezione. È lo stesso motivo per cui PowerShell usa `-gt`."
+        },
+        {
+          "id": "l20-if-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' `[ -f log.txt ]` vuole gli spazi dentro le parentesi?",
+          "opzioni": [
+            "perche' `[` e' un comando e gli spazi separano i suoi argomenti",
+            "perche' bash e' pignolo sulla formattazione",
+            "per compatibilita' con altre shell",
+            "non e' vero: gli spazi sono facoltativi"
+          ],
+          "risposta": "perche' `[` e' un comando e gli spazi separano i suoi argomenti",
+          "spiegazione": "`[` e' un programma vero, sinonimo di `test`, e `]` e' semplicemente il suo ultimo argomento. Scritto `[-f log.txt]`, bash cerca un comando chiamato `[-f`.\n\nSapere che e' un comando spiega anche perche' non ci sono parentesi «intelligenti»: dentro non puoi scrivere espressioni, solo quello che `test` capisce."
+        },
+        {
+          "id": "l20-if-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Vuoi confrontare due **numeri** in un test. Quale forma e' quella giusta?",
+          "opzioni": [
+            "`[ \"$n\" -gt 5 ]`",
+            "`[ $n > 5 ]`",
+            "`[ $n gt 5 ]`",
+            "`[ $n .gt. 5 ]`"
+          ],
+          "risposta": "`[ \"$n\" -gt 5 ]`",
+          "spiegazione": "`-gt`, `-lt`, `-eq`: gli operatori numerici si scrivono a parole. `>` dentro le parentesi sarebbe una **redirezione**, e ti creerebbe un file chiamato `5` senza dire niente.\n\nLe virgolette attorno a `\"$n\"` evitano l'altro guasto: se la variabile e' vuota, `[  -gt 5 ]` e' un errore di sintassi."
+        },
+        {
+          "id": "l20-if-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lo script che decide.** Scrivi `verifica.sh`: se il file dei dati esiste conta le sue righe, altrimenti stampa un messaggio ed esce con 1. Provalo su un file che c'e' e su uno che non c'e'.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'if [ -f $1 ]; then' > verifica.sh\necho '  wc -l $1' >> verifica.sh\necho 'else' >> verifica.sh\necho '  echo manca $1' >> verifica.sh\necho '  exit 1' >> verifica.sh\necho 'fi' >> verifica.sh\nbash verifica.sh dati/prova1.csv\nbash verifica.sh dati/manca.csv",
+          "verifica": {
+            "esiste": [
+              "verifica.sh"
+            ],
+            "stampa": "manca dati/manca.csv",
+            "usa": [
+              "bash",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Un if con else, e l'argomento $1 usato in tutti e due i rami.",
+            "bash verifica.sh dati/prova1.csv, poi su un file che non esiste"
+          ],
+          "spiegazione": "Lo stesso script si comporta in due modi diversi a seconda di quello che trova: **e' la differenza fra un elenco di comandi e uno strumento**.\n\nIl ramo che fallisce esce con `1`, cosi' chi lo lancia dentro un altro script se ne accorge senza leggere il messaggio."
+        }
+      ]
+    },
+    {
+      "id": "l20-for",
+      "comando": "for e funzioni",
+      "titolo": "ripetere, e dare un nome",
+      "esercizi": [
+        {
+          "id": "l20-fo-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi `conta.sh` che conti le righe di ognuno dei tre CSV, con un ciclo, e lancialo.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'for f in dati/prova1.csv dati/prova2.csv dati/prova3.csv; do' > conta.sh\necho '  wc -l $f' >> conta.sh\necho 'done' >> conta.sh\nbash conta.sh",
+          "verifica": {
+            "stampa": "2 dati/prova3.csv",
+            "usa": [
+              "bash",
+              "wc"
+            ]
+          },
+          "hint": [
+            "for NOME in ELENCO; do ... done",
+            "echo 'for f in ...; do' > conta.sh"
+          ],
+          "spiegazione": "Tre file, una riga di comando: il ciclo ripete il corpo una volta per elemento, con `$f` che vale di volta in volta il nome corrente.\n\n`done` chiude il blocco come `fi` chiude l'`if`. Sono parole diverse per non confondere i due blocchi quando sono annidati."
+        },
+        {
+          "id": "l20-fo-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**L'elenco puo' venire da un comando.** Scrivi `elenca.sh` che cicli sui file trovati da `find` e ne stampi il nome insieme al conteggio delle righe.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'for f in $(find dati -name *.csv); do' > elenca.sh\necho '  wc -l $f' >> elenca.sh\necho 'done' >> elenca.sh\nbash elenca.sh",
+          "verifica": {
+            "stampa": "dati/prova2.csv",
+            "usa": [
+              "bash",
+              "find"
+            ]
+          },
+          "hint": [
+            "$(find ...) produce l'elenco su cui ciclare.",
+            "for f in $(find dati -name *.csv); do"
+          ],
+          "spiegazione": "L'elenco non e' scritto a mano: lo produce `find`, quindi lo script funziona anche sulla campagna del mese prossimo, con file che ancora non esistono.\n\n**Il limite**: `$(find ...)` si spezza sugli spazi, quindi un file con lo spazio nel nome diventa due elementi. Sugli script seri si usa `find -print0 | xargs -0` — e su un nome con lo spazio, di nuovo, la risposta migliore e' Python."
+        },
+        {
+          "id": "l20-fo-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Scrivi `riepilogo.sh` che per ogni CSV scriva una riga in `riepilogo.txt`, e poi mostra il file.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'for f in dati/prova1.csv dati/prova2.csv; do' > riepilogo.sh\necho '  wc -l $f >> riepilogo.txt' >> riepilogo.sh\necho 'done' >> riepilogo.sh\nbash riepilogo.sh\ncat riepilogo.txt",
+          "verifica": {
+            "contiene": {
+              "riepilogo.txt": "prova2.csv"
+            },
+            "usa": [
+              "bash",
+              "wc"
+            ]
+          },
+          "hint": [
+            "La redirezione va dentro il ciclo, con la freccia doppia.",
+            "echo '  wc -l $f >> riepilogo.txt' >> riepilogo.sh"
+          ],
+          "spiegazione": "La freccia doppia **dentro** il ciclo aggiunge una riga per file; con `>` ogni giro riscriverebbe il file e resterebbe solo l'ultimo.\n\nÈ l'errore che produce un riepilogo con una riga sola, e non da' nessun messaggio."
+        },
+        {
+          "id": "l20-fu-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Dai un nome a un pezzo di logica.** Scrivi `funzione.sh` con una funzione che controlla se un file esiste, e chiamala due volte.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'controlla() {' > funzione.sh\necho '  if [ -f $1 ]; then' >> funzione.sh\necho '    echo trovato $1' >> funzione.sh\necho '  else' >> funzione.sh\necho '    echo manca $1' >> funzione.sh\necho '  fi' >> funzione.sh\necho '}' >> funzione.sh\necho 'controlla log.txt' >> funzione.sh\necho 'controlla manca.txt' >> funzione.sh\nbash funzione.sh",
+          "verifica": {
+            "stampa": "manca manca.txt",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "nome() { ... } definisce, poi la si chiama per nome.",
+            "echo 'controlla() {' > funzione.sh"
+          ],
+          "spiegazione": "Dentro la funzione `$1` e' **il suo** primo argomento, non quello dello script: e' la stessa regola delle funzioni in Python, e il motivo per cui si possono riusare.\n\nLe funzioni vanno definite prima di chiamarle — bash legge dall'alto — ed e' il motivo per cui negli script veri stanno in cima."
+        },
+        {
+          "id": "l20-fu-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Metti insieme ciclo e funzione: `tutti.sh` deve controllare tutti i CSV chiamando la stessa funzione.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'controlla() {' > tutti.sh\necho '  wc -l $1' >> tutti.sh\necho '}' >> tutti.sh\necho 'for f in dati/prova1.csv dati/prova2.csv dati/prova3.csv; do' >> tutti.sh\necho '  controlla $f' >> tutti.sh\necho 'done' >> tutti.sh\nbash tutti.sh",
+          "verifica": {
+            "stampa": "2 dati/prova1.csv",
+            "usa": [
+              "bash",
+              "wc"
+            ]
+          },
+          "hint": [
+            "La funzione si definisce in cima, il ciclo la chiama.",
+            "echo '  controlla $f' >> tutti.sh"
+          ],
+          "spiegazione": "Il ciclo dice **su cosa**, la funzione dice **cosa fare**: separarli vuol dire poter cambiare uno senza toccare l'altro.\n\nÈ la stessa divisione del lavoro delle funzioni Python, e serve per la stessa ragione: un pezzo con un nome si legge, si prova e si riusa."
+        },
+        {
+          "id": "l20-fo-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' si scrive `wc -l \"$f\"` con le virgolette, dentro un ciclo?",
+          "opzioni": [
+            "perche' un nome con uno spazio diventerebbe due argomenti",
+            "per rendere il codice piu' leggibile",
+            "perche' bash lo richiede sempre",
+            "per evitare che il file venga modificato"
+          ],
+          "risposta": "perche' un nome con uno spazio diventerebbe due argomenti",
+          "spiegazione": "`dati vecchi.csv` senza virgolette diventa `dati` e `vecchi.csv`: due argomenti, e il comando fa la cosa sbagliata su un file che magari esiste.\n\nÈ il guasto piu' comune degli script che «funzionavano»: basta che qualcuno salvi un file con uno spazio nel nome. Le virgolette costano due caratteri."
+        },
+        {
+          "id": "l20-fo-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "A cosa serve `$(comando)` dentro uno script?",
+          "opzioni": [
+            "mette al posto suo quello che il comando ha stampato, cosi' lo script puo' usarlo",
+            "esegue il comando in sottofondo",
+            "controlla se il comando e' andato a buon fine",
+            "definisce una funzione"
+          ],
+          "risposta": "mette al posto suo quello che il comando ha stampato, cosi' lo script puo' usarlo",
+          "spiegazione": "È il ponte fra i comandi e le decisioni: `errori=$(grep -c ERROR log.txt)` mette un **numero** in una variabile, e da li' in poi lo script puo' confrontarlo.\n\nPer sapere se un comando e' andato bene si guarda invece `$?`, che e' un'altra cosa: `$(...)` cattura l'uscita, `$?` il codice."
+        },
+        {
+          "id": "l20-fu-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il riassunto della campagna.** Scrivi `campagna.sh` che, per ogni CSV, scriva nome e numero di righe in `campagna.txt`, e alla fine dica quante prove ha trovato.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'n=0' > campagna.sh\necho 'for f in $(find dati -name *.csv); do' >> campagna.sh\necho '  wc -l $f >> campagna.txt' >> campagna.sh\necho 'done' >> campagna.sh\necho 'echo prove trovate: $(find dati -name *.csv | wc -l)' >> campagna.sh\nbash campagna.sh\ncat campagna.txt",
+          "verifica": {
+            "contiene": {
+              "campagna.txt": "prova3.csv"
+            },
+            "stampa": "prove trovate: 3",
+            "usa": [
+              "bash",
+              "find",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Un ciclo che scrive, e alla fine un conteggio con la sostituzione di comando.",
+            "echo 'echo prove trovate: $(find dati -name *.csv | wc -l)' >> campagna.sh"
+          ],
+          "spiegazione": "Tre prove, un file di riepilogo, un numero finale: lo script fa quello che faresti a mano, ma su qualunque campagna e senza dimenticare un file.\n\nÈ il punto in cui l05 e l02 si incontrano: i comandi di ricerca dentro la struttura di uno script."
+        }
+      ]
+    },
+    {
+      "id": "l20-exit",
+      "comando": "exit e trap",
+      "titolo": "uscire bene",
+      "esercizi": [
+        {
+          "id": "l20-us-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scrivi `esci.sh` che esca con codice 3, lancialo e leggi il codice che ha lasciato.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'echo comincio' > esci.sh\necho 'exit 3' >> esci.sh\necho 'echo non arrivo qui' >> esci.sh\nbash esci.sh\necho $?",
+          "verifica": {
+            "stampa": "3",
+            "usa": [
+              "bash",
+              "echo"
+            ]
+          },
+          "hint": [
+            "exit N termina lo script con quel codice.",
+            "echo 'exit 3' >> esci.sh"
+          ],
+          "spiegazione": "L'ultima riga non e' stata eseguita: `exit` ferma lo script li'. E il codice `3` resta disponibile a chi lo ha lanciato.\n\nLe convenzioni: **0** tutto bene, **1** errore generico, **2** uso sbagliato. Non e' una regola scritta, e' quello che gli altri si aspettano — compresi i gestori di code dei cluster, che guardano quel numero per dire se il job e' riuscito."
+        },
+        {
+          "id": "l20-us-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La pulizia che avviene comunque.** Scrivi `pulizia.sh` che crei un file temporaneo, lo cancelli con `trap` all'uscita, e verifica che non sia rimasto.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'trap \"rm -f temporaneo.txt\" EXIT' > pulizia.sh\necho 'echo lavoro > temporaneo.txt' >> pulizia.sh\necho 'echo ho lavorato' >> pulizia.sh\nbash pulizia.sh\nls",
+          "verifica": {
+            "nonEsiste": [
+              "temporaneo.txt"
+            ],
+            "stampa": "ho lavorato",
+            "usa": [
+              "bash",
+              "ls"
+            ]
+          },
+          "hint": [
+            "trap 'comando' EXIT esegue quel comando all'uscita.",
+            "echo 'trap \"rm -f temporaneo.txt\" EXIT' > pulizia.sh"
+          ],
+          "spiegazione": "Il file temporaneo non c'e' piu': `trap ... EXIT` ha eseguito la pulizia dopo l'ultima riga.\n\nIl vero motivo per cui esiste e' l'altro caso: se lo script muore a meta' — e con `set -e` succede spesso — la pulizia avviene lo stesso. Senza, ogni esecuzione fallita lascia un file in giro, e dopo un mese la cartella e' piena di residui."
+        },
+        {
+          "id": "l20-us-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Dimostra che la pulizia avviene **anche quando lo script fallisce**: aggiungi `set -e` e una riga che sbaglia.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'set -e' > rotto.sh\necho 'trap \"rm -f temporaneo.txt\" EXIT' >> rotto.sh\necho 'echo lavoro > temporaneo.txt' >> rotto.sh\necho 'cat manca.txt' >> rotto.sh\necho 'echo non arrivo qui' >> rotto.sh\nbash rotto.sh\nls",
+          "verifica": {
+            "nonEsiste": [
+              "temporaneo.txt"
+            ],
+            "errore": "non esistente",
+            "usa": [
+              "bash",
+              "ls"
+            ]
+          },
+          "hint": [
+            "set -e ferma allo sbaglio, trap pulisce lo stesso.",
+            "echo 'cat manca.txt' >> rotto.sh"
+          ],
+          "spiegazione": "Lo script si e' fermato sull'errore **e** il file temporaneo e' stato tolto: sono le due cose che servono insieme.\n\nQuesto e' lo scheletro che si copia in ogni script serio: `set -eu` in cima, `trap` subito dopo, e il lavoro sotto. Quattro righe che non cambiano mai."
+        },
+        {
+          "id": "l20-us-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lo scheletro completo.** Scrivi `strumento.sh` con `set -eu`, controllo degli argomenti, e il lavoro vero. Provalo senza argomenti e con il log.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'set -eu' > strumento.sh\necho 'if [ $# -lt 1 ]; then' >> strumento.sh\necho '  echo uso: $0 FILE' >> strumento.sh\necho '  exit 2' >> strumento.sh\necho 'fi' >> strumento.sh\necho 'echo errori: $(grep -c ERROR $1)' >> strumento.sh\nbash strumento.sh\nbash strumento.sh log.txt",
+          "verifica": {
+            "esiste": [
+              "strumento.sh"
+            ],
+            "stampa": "errori: 2",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "set -eu, controllo di $#, poi il lavoro.",
+            "echo 'echo errori: $(grep -c ERROR $1)' >> strumento.sh"
+          ],
+          "spiegazione": "Senza argomenti spiega come si usa ed esce con 2; con il log risponde. È uno strumento che si puo' dare a qualcun altro, e questa e' la differenza che il modulo insegna.\n\n`set -eu` fa la sua parte in silenzio: se `$1` non fosse stato controllato, `-u` avrebbe fermato lo script invece di lasciare `grep` senza argomenti."
+        },
+        {
+          "id": "l20-us-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Uno script che ne chiama un altro deve sapere com'e' andata. Scrivi `chiama.sh` che lanci `strumento.sh` e ne guardi il codice di uscita.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'if [ $# -lt 1 ]; then' > strumento.sh\necho '  exit 2' >> strumento.sh\necho 'fi' >> strumento.sh\necho 'echo elaboro $1' >> strumento.sh\necho 'bash strumento.sh' > chiama.sh\necho 'echo codice: $?' >> chiama.sh\nbash chiama.sh",
+          "verifica": {
+            "stampa": "codice: 2",
+            "usa": [
+              "bash"
+            ]
+          },
+          "hint": [
+            "Dopo la chiamata, $? contiene il codice dello script chiamato.",
+            "echo 'echo codice: $?' >> chiama.sh"
+          ],
+          "spiegazione": "`2` come previsto: il codice di uscita e' **il modo in cui i programmi si parlano**. Il messaggio a schermo serve a te, il numero serve agli altri programmi.\n\nÈ anche il motivo per cui un messaggio d'errore va su `stderr` e non su `stdout`: cosi' non finisce nei dati che qualcun altro sta raccogliendo."
+        },
+        {
+          "id": "l20-us-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quale codice di uscita si usa, per convenzione, quando lo script e' stato lanciato male?",
+          "opzioni": [
+            "2",
+            "0",
+            "1",
+            "255"
+          ],
+          "risposta": "2",
+          "spiegazione": "**0** tutto bene, **1** errore generico durante il lavoro, **2** uso sbagliato — argomenti mancanti o incomprensibili. Non e' imposto da nessuno, ma e' quello che gli altri programmi si aspettano.\n\nSu un cluster il gestore di code guarda proprio quel numero per decidere se il job e' riuscito: uno script che esce con 0 dopo aver fallito fa risultare tutto a posto."
+        },
+        {
+          "id": "l20-us-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quando conviene smettere di scrivere in bash e passare a Python?",
+          "opzioni": [
+            "quando servono strutture dati, conti veri, o il parsing di un formato",
+            "quando lo script supera le dieci righe",
+            "quando bisogna leggere dei file",
+            "mai: bash fa tutto"
+          ],
+          "risposta": "quando servono strutture dati, conti veri, o il parsing di un formato",
+          "spiegazione": "Bash e' ottimo per **incollare comandi**: file, processi, testo di passaggio. Diventa una pessima idea quando servono dizionari, numeri con la virgola, o leggere un CSV con le virgole dentro le virgolette.\n\nLa regola pratica: se stai per scrivere un `if` dentro un `for` dentro una funzione, o ti serve `awk` per fare un conto, e' il momento. Uno script bash che prepara i file e lancia `python analisi.py` e' una divisione sana."
+        },
+        {
+          "id": "l20-us-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lo strumento della campagna, completo.** `set -eu`, pulizia con `trap`, controllo degli argomenti, ciclo sui CSV con conteggio in un file, e il totale alla fine.",
+          "filesystem": {
+            "/home/tu/log.txt": "INFO avvio\nERROR sensore quota\nINFO ripristino\nERROR timeout\nINFO fine\n",
+            "/home/tu/dati/prova1.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/dati/prova2.csv": "quota,mach\n3000,0.40\n",
+            "/home/tu/dati/prova3.csv": "quota,mach\n12000,0.91\n",
+            "/home/tu/analisi.conf": "soglia=10\n"
+          },
+          "soluzione": "echo 'set -eu' > campagna.sh\necho 'trap \"rm -f parziale.txt\" EXIT' >> campagna.sh\necho 'if [ $# -lt 1 ]; then' >> campagna.sh\necho '  echo uso: $0 CARTELLA' >> campagna.sh\necho '  exit 2' >> campagna.sh\necho 'fi' >> campagna.sh\necho 'for f in $(find $1 -name *.csv); do' >> campagna.sh\necho '  wc -l $f >> riepilogo.txt' >> campagna.sh\necho 'done' >> campagna.sh\necho 'echo prove: $(find $1 -name *.csv | wc -l)' >> campagna.sh\nbash campagna.sh dati\ncat riepilogo.txt",
+          "verifica": {
+            "contiene": {
+              "riepilogo.txt": "prova1.csv"
+            },
+            "nonEsiste": [
+              "parziale.txt"
+            ],
+            "stampa": "prove: 3",
+            "usa": [
+              "bash",
+              "find",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Scheletro in cima, ciclo in mezzo, totale alla fine.",
+            "bash campagna.sh dati"
+          ],
+          "spiegazione": "Dieci righe che contengono tutto quello che il modulo insegna: **si ferma se qualcosa fallisce**, **pulisce comunque**, **si rifiuta di partire senza argomenti**, **funziona su qualunque cartella**.\n\nÈ anche il punto in cui vale la pena fermarsi: se domani questo script dovesse calcolare medie, leggere CSV con campi quotati o produrre un grafico, la risposta non e' aggiungere righe qui — e' `python analisi.py`, chiamato proprio da qui."
+        }
+      ]
+    }
+  ]
+}

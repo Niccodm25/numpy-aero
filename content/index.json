@@ -392,9 +392,9 @@
     },
     {
       "id": "l20",
-      "file": "",
-      "titolo": "Script operativi: Bash e Python",
-      "disponibile": false
+      "file": "l20-script-operativi.json",
+      "titolo": "Script operativi: condizioni, cicli, funzioni",
+      "disponibile": true
     },
     {
       "id": "l11",

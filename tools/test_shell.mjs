@@ -225,6 +225,70 @@ caso("la variabile si espande anche nella redirezione e negli argomenti", () => 
   assert.equal(esegui(sh, "cat $FILE").out, "ciao");
 });
 
+caso("il codice di uscita viene dal comando, non dall'assenza di errore", () => {
+  const sh = shell({ "/home/tu/log.txt": "INFO a" + CAPO + "ERROR b" + CAPO });
+  esegui(sh, "grep ERROR log.txt");
+  assert.equal(esegui(sh, "echo $?").out, "0");
+  esegui(sh, "grep XYZ log.txt");
+  assert.equal(esegui(sh, "echo $?").out, "1", "grep che non trova esce con 1, e non e' un errore");
+  esegui(sh, "test -f log.txt");
+  assert.equal(esegui(sh, "echo $?").out, "0");
+  esegui(sh, "[ -f manca.txt ]");
+  assert.equal(esegui(sh, "echo $?").out, "1");
+});
+
+caso("$(comando) mette l'uscita dentro la riga, anche in un'assegnazione", () => {
+  const sh = shell({ "/home/tu/log.txt": "INFO a" + CAPO + "ERROR b" + CAPO + "ERROR c" + CAPO });
+  assert.equal(esegui(sh, "echo errori: $(grep -c ERROR log.txt)").out, "errori: 2");
+  esegui(sh, "n=$(grep -c ERROR log.txt)");
+  assert.equal(esegui(sh, "echo $n").out, "2");
+  assert.equal(esegui(sh, "echo '$(grep -c ERROR log.txt)'").out, "$(grep -c ERROR log.txt)", "gli apici singoli lo proteggono");
+});
+
+caso("if, else e test dentro uno script", () => {
+  const sh = shell({ "/home/tu/log.txt": "x" + CAPO });
+  esegui(sh, "echo 'if [ -f log.txt ]; then' > c.sh");
+  esegui(sh, "echo '  echo trovato' >> c.sh");
+  esegui(sh, "echo 'else' >> c.sh");
+  esegui(sh, "echo '  echo manca' >> c.sh");
+  esegui(sh, "echo 'fi' >> c.sh");
+  assert.equal(esegui(sh, "bash c.sh").out, "trovato");
+  esegui(sh, "rm log.txt");
+  assert.equal(esegui(sh, "bash c.sh").out, "manca", "il ramo else parte quando la condizione e' falsa");
+});
+
+caso("for cicla su un elenco, anche prodotto da un comando", () => {
+  const sh = shell({ "/home/tu/dati/a.csv": "1" + CAPO, "/home/tu/dati/b.csv": "1" + CAPO });
+  esegui(sh, "echo 'for f in $(find dati -name *.csv); do' > ciclo.sh");
+  esegui(sh, "echo '  wc -l $f' >> ciclo.sh");
+  esegui(sh, "echo 'done' >> ciclo.sh");
+  const r = esegui(sh, "bash ciclo.sh").out;
+  assert.match(r, /dati\/a\.csv/);
+  assert.match(r, /dati\/b\.csv/, "il ciclo ha visto tutti e due i file");
+});
+
+caso("una funzione riceve i suoi argomenti, e exit ferma lo script", () => {
+  const sh = shell();
+  esegui(sh, "echo 'saluta() {' > f.sh");
+  esegui(sh, "echo '  echo ciao $1' >> f.sh");
+  esegui(sh, "echo '}' >> f.sh");
+  esegui(sh, "echo 'saluta mondo' >> f.sh");
+  esegui(sh, "echo 'exit 3' >> f.sh");
+  esegui(sh, "echo 'echo non arrivo qui' >> f.sh");
+  assert.equal(esegui(sh, "bash f.sh").out, "ciao mondo");
+  assert.equal(esegui(sh, "echo $?").out, "3", "il codice dello script arriva a chi lo ha lanciato");
+});
+
+caso("trap EXIT pulisce anche quando lo script fallisce", () => {
+  const sh = shell();
+  esegui(sh, "echo 'set -e' > t.sh");
+  esegui(sh, "echo 'trap \"rm -f temp.txt\" EXIT' >> t.sh");
+  esegui(sh, "echo 'echo lavoro > temp.txt' >> t.sh");
+  esegui(sh, "echo 'cat manca.txt' >> t.sh");
+  assert.match(esegui(sh, "bash t.sh").errore, /non esistente/);
+  assert.equal(V.esiste(sh.fs, "/home/tu/temp.txt"), false, "il file temporaneo e' stato tolto lo stesso");
+});
+
 caso("gli apici singoli tengono fuori dollaro, pipe e redirezione", () => {
   const sh = shell();
   esegui(sh, "NOME=fuori");

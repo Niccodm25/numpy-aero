@@ -90,13 +90,17 @@ export function esegui(sh, riga) {
   // Assegnazione di variabile: NOME=valore, senza spazi attorno all'uguale.
   // E' una riga a se' e non un comando, ed e' il motivo per cui in bash
   // "NOME = valore" con gli spazi non funziona — diventa il comando NOME.
-  const assegnazione = testo.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
+  const primaDelleSostituzioni = sostituisciComandi(sh, testo);
+  if (primaDelleSostituzioni.errore) return { out: "", errore: primaDelleSostituzioni.errore };
+  const conComandi = primaDelleSostituzioni.riga;
+
+  const assegnazione = conComandi.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/);
   if (assegnazione) {
     sh.env[assegnazione[1]] = espandi(sh, assegnazione[2].replace(/^["']|["']$/g, ""));
     return { out: "", errore: null };
   }
 
-  const pezzi = spezzaSuPipe(testo);
+  const pezzi = spezzaSuPipe(conComandi);
   let ingresso = null;
   let ultimo = { out: "", errore: null };
 
@@ -158,13 +162,239 @@ export function esegui(sh, riga) {
       }
       ingresso = valore;
     } catch (e) {
-      if (e instanceof V.ErroreFs) return { out: "", errore: `${nome}: ${e.message}` };
+      if (e instanceof V.ErroreFs) {
+        // Il codice di uscita si aggiorna anche qui, non solo dentro gli script:
+        // "$?" deve rispondere pure quando provi un comando a mano.
+        sh.env["?"] = "1";
+        sh.esito = null;
+        return { out: "", errore: `${nome}: ${e.message}` };
+      }
       throw e;
     } finally {
       sh.stdin = null;
     }
   }
+  // Un comando puo' dichiarare il proprio codice di uscita in sh.esito: e' cosi'
+  // che "test" risponde, e che "grep" dice "non ho trovato niente" senza che
+  // sia un errore.
+  sh.env["?"] = String(sh.esito ?? 0);
+  sh.esito = null;
   return ultimo;
+}
+
+/**
+ * $(comando) sostituito con la sua uscita. Si fa sulla riga intera perche' il
+ * comando dentro contiene spazi; gli apici singoli lo proteggono, come in bash.
+ */
+function sostituisciComandi(sh, riga) {
+  if (!riga.includes("$(")) return { riga };
+  let fuori = "";
+  let virgoletta = null;
+  for (let i = 0; i < riga.length; i++) {
+    const c = riga[i];
+    if (virgoletta) {
+      if (c === virgoletta) virgoletta = null;
+      fuori += c;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      virgoletta = c;
+      fuori += c;
+      continue;
+    }
+    if (c === "$" && riga[i + 1] === "(") {
+      let profondita = 1;
+      let dentro = "";
+      let j = i + 2;
+      for (; j < riga.length && profondita > 0; j++) {
+        if (riga[j] === "(") profondita++;
+        else if (riga[j] === ")") profondita--;
+        if (profondita > 0) dentro += riga[j];
+      }
+      if (profondita > 0) return { errore: "manca la parentesi di chiusura in $(" };
+      const r = esegui(sh, dentro);
+      if (r.errore) return { errore: r.errore };
+      fuori += (r.out ?? "").trimEnd().split("\n").join(" ");
+      i = j - 1;
+      continue;
+    }
+    fuori += c;
+  }
+  return { riga: fuori };
+}
+
+/**
+ * Il corpo di uno script: righe normali, blocchi if/for e definizioni di
+ * funzione. Torna quando il blocco finisce o quando lo script esce.
+ */
+function eseguiBlocco(sh, righe, stato) {
+  for (let i = 0; i < righe.length; i++) {
+    if (stato.uscito) return;
+    const riga = righe[i].trim();
+    if (!riga || riga.startsWith("#")) continue;
+
+    if (riga.startsWith("set ")) {
+      const opz = riga.slice(4).replace(/-/g, "");
+      if (opz.includes("e")) stato.fermaSuErrore = true;
+      if (opz.includes("u")) sh.severo = true;
+      continue;
+    }
+
+    // trap 'comando' EXIT
+    const trap = riga.match(/^trap\s+(.+)\s+EXIT$/);
+    if (trap) {
+      stato.trap = trap[1].replace(/^["']|["']$/g, "");
+      continue;
+    }
+
+    // nome() { ... }  — la definizione si registra, non si esegue
+    const definizione = riga.match(/^(\w+)\s*\(\)\s*\{?$/);
+    if (definizione) {
+      const [corpo, fine] = raccogliFino(righe, i + 1, ["}"], []);
+      sh.funzioni[definizione[1]] = corpo;
+      i = fine;
+      continue;
+    }
+
+    if (riga.startsWith("if ")) {
+      i = eseguiSe(sh, righe, i, stato);
+      continue;
+    }
+
+    if (riga.startsWith("for ")) {
+      i = eseguiPer(sh, righe, i, stato);
+      continue;
+    }
+
+    esegiRigaScript(sh, riga, stato);
+  }
+}
+
+/** Raccoglie le righe fino a una delle parole di chiusura, contando i blocchi
+ *  annidati: senza, un if dentro un for chiuderebbe quello sbagliato. */
+function raccogliFino(righe, da, chiusure, intermedie) {
+  const corpo = [];
+  const sezioni = { corpo };
+  let attuale = corpo;
+  let profondita = 0;
+  for (let i = da; i < righe.length; i++) {
+    const riga = righe[i].trim();
+    const apre = /^(if |for |while )/.test(riga) || /^\w+\s*\(\)\s*\{?$/.test(riga);
+    const chiude = ["fi", "done", "}"].includes(riga);
+    if (profondita === 0 && chiusure.includes(riga)) return [sezioni, i, attuale === corpo ? null : attuale];
+    if (profondita === 0 && intermedie.includes(riga)) {
+      attuale = sezioni[riga] = [];
+      continue;
+    }
+    if (apre) profondita++;
+    if (chiude) profondita--;
+    attuale.push(righe[i]);
+  }
+  throw new V.ErroreFs(`manca ${chiusure.join(" o ")}`);
+}
+
+function eseguiSe(sh, righe, i, stato) {
+  const condizione = righe[i].trim().replace(/^if\s+/, "").replace(/;\s*then$/, "").trim();
+  const [sezioni, fine] = raccogliFino(righe, i + 1, ["fi"], ["else"]);
+  esegiRigaScript(sh, condizione, stato, true);
+  const vero = sh.env["?"] === "0";
+  const ramo = vero ? sezioni.corpo : sezioni.else || [];
+  eseguiBlocco(sh, ramo, stato);
+  return fine;
+}
+
+function eseguiPer(sh, righe, i, stato) {
+  const testa = righe[i].trim().match(/^for\s+(\w+)\s+in\s+(.+?)(?:;\s*do)?$/);
+  if (!testa) throw new V.ErroreFs("usa: for NOME in ELENCO; do");
+  const [sezioni, fine] = raccogliFino(righe, i + 1, ["done"], []);
+  const conComandi = sostituisciComandi(sh, testa[2]);
+  if (conComandi.errore) throw new V.ErroreFs(conComandi.errore);
+  const elenco = espandi(sh, conComandi.riga).split(/\s+/).filter(Boolean);
+  for (const valore of elenco) {
+    if (stato.uscito) break;
+    sh.env[testa[1]] = valore;
+    eseguiBlocco(sh, sezioni.corpo, stato);
+  }
+  return fine;
+}
+
+/** Una riga dentro uno script: funzione, exit, oppure un comando normale. */
+function esegiRigaScript(sh, riga, stato, condizione = false) {
+  const { parole: grezze, letterali } = dividi(riga);
+  const parole = grezze.map((x, k) => (letterali[k] ? x : espandi(sh, x)));
+  const nome = parole[0];
+
+  if (nome === "exit") {
+    stato.uscito = true;
+    stato.codice = Number(parole[1] ?? 0);
+    sh.env["?"] = String(stato.codice);
+    return;
+  }
+
+  if (sh.funzioni && sh.funzioni[nome]) {
+    // Gli argomenti della funzione coprono $1..$n per la durata della chiamata.
+    const prima = { ...sh.env };
+    parole.slice(1).forEach((a, n) => (sh.env[String(n + 1)] = a));
+    sh.env["#"] = String(parole.length - 1);
+    eseguiBlocco(sh, sh.funzioni[nome].corpo ?? sh.funzioni[nome], stato);
+    sh.env = { ...sh.env, ...Object.fromEntries(Object.entries(prima).filter(([k]) => /^\d+$|^#$/.test(k))) };
+    return;
+  }
+
+  const r = esegui(sh, riga);
+  if (r.errore) {
+    sh.env["?"] = "1";
+    if (stato.fermaSuErrore) {
+      stato.codice = 1;
+      if (stato.trap) {
+        const t = stato.trap;
+        stato.trap = null;
+        esegiRigaScript(sh, t, stato);
+      }
+      throw new V.ErroreFs(`${stato.file}: ${r.errore}`);
+    }
+    stato.uscite.push(`${stato.file}: ${r.errore}`);
+  }
+  if (r.out) stato.uscite.push(r.out);
+}
+
+/** Gli operatori di test che si usano davvero. */
+function valutaTest(sh, args) {
+  const vero = () => {
+    sh.esito = 0;
+    return "";
+  };
+  const falso = () => {
+    sh.esito = 1;
+    return "";
+  };
+  const [a, b, c] = args;
+
+  if (args.length === 2) {
+    if (a === "-f") return V.eFile(sh.fs, b) ? vero() : falso();
+    if (a === "-d") return V.eDir(sh.fs, b) ? vero() : falso();
+    if (a === "-e") return V.esiste(sh.fs, b) ? vero() : falso();
+    if (a === "-z") return (b ?? "") === "" ? vero() : falso();
+    if (a === "-n") return (b ?? "") !== "" ? vero() : falso();
+    throw new V.ErroreFs(`operatore non supportato: ${a}`);
+  }
+  if (args.length === 3) {
+    const numerico = (x) => Number(x);
+    switch (b) {
+      case "=":
+      case "==": return a === c ? vero() : falso();
+      case "!=": return a !== c ? vero() : falso();
+      case "-eq": return numerico(a) === numerico(c) ? vero() : falso();
+      case "-ne": return numerico(a) !== numerico(c) ? vero() : falso();
+      case "-gt": return numerico(a) > numerico(c) ? vero() : falso();
+      case "-lt": return numerico(a) < numerico(c) ? vero() : falso();
+      case "-ge": return numerico(a) >= numerico(c) ? vero() : falso();
+      case "-le": return numerico(a) <= numerico(c) ? vero() : falso();
+      default: throw new V.ErroreFs(`operatore non supportato: ${b}`);
+    }
+  }
+  if (args.length === 1) return (a ?? "") !== "" ? vero() : falso();
+  throw new V.ErroreFs("test vuole due o tre argomenti");
 }
 
 /**
@@ -203,7 +433,7 @@ function espandi(sh, testo) {
   // $# e' il numero di argomenti dello script, e non e' un nome come gli altri:
   // va riconosciuto a parte, altrimenti il cancelletto verrebbe letto come
   // l'inizio di un commento.
-  return testo.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$(#|[A-Za-z_0-9][A-Za-z0-9_]*)/g,
+  return testo.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$(#|\?|[A-Za-z_0-9][A-Za-z0-9_]*)/g,
     (_, a, b) => {
       const nome = a ?? b;
       // Con "set -u" una variabile non definita e' un errore invece della
@@ -451,6 +681,9 @@ export const POSIX = {
         const c = flag.has("i") ? r.toLowerCase() : r;
         return c.includes(soloTesto) !== flag.has("v");
       });
+      // grep esce con 1 quando non trova niente: non e' un errore, e' la
+      // risposta — ed e' esattamente quello che un "if" gli chiede.
+      sh.esito = trovate.length ? 0 : 1;
       return flag.has("c") ? String(trovate.length) : trovate.join("\n");
     }
     const cerca = flag.has("i") ? motivo.toLowerCase() : motivo;
@@ -462,6 +695,7 @@ export const POSIX = {
         if (dentro !== flag.has("v")) out.push(file.length > 1 ? `${f}:${riga}` : riga);
       }
     }
+    sh.esito = out.length ? 0 : 1;
     if (flag.has("c")) return String(out.length);
     return out.join("\n");
   },
@@ -493,43 +727,47 @@ export const POSIX = {
    * un secondo interprete per insegnare una riga di teoria.
    */
   bash(sh, args) {
-    const { flag, resto } = opzioni(args);
+    const { resto } = opzioni(args);
     const file = resto[0];
     if (!file) throw new V.ErroreFs("manca il nome dello script");
     if (!V.esiste(sh.fs, file)) throw new V.ErroreFs(`${file}: file non esistente`);
+
     // Gli argomenti dello script diventano $1, $2, ... e $# il loro numero.
     const argomenti = resto.slice(1);
     argomenti.forEach((a, i) => (sh.env[String(i + 1)] = a));
     sh.env["#"] = String(argomenti.length);
     sh.env["0"] = file;
 
-    // Senza "set -e" uno script che fallisce a meta' PROSEGUE: l'errore si
-    // stampa e la riga dopo viene eseguita lo stesso. E' il comportamento che
-    // rovina i dati, ed e' la ragione per cui quelle due righe stanno in cima.
     const severoPrima = sh.severo;
-    let fermaSuErrore = false;
-    const uscite = [];
+    const funzioniPrima = sh.funzioni;
+    sh.funzioni = { ...(sh.funzioni || {}) };
+    const stato = { fermaSuErrore: false, uscite: [], file, trap: null, uscito: false, codice: 0 };
     try {
-      for (const riga of V.leggi(sh.fs, file).split("\n")) {
-        const pulita = riga.trim();
-        if (!pulita || pulita.startsWith("#")) continue;
-        if (pulita.startsWith("set ")) {
-          const opz = pulita.slice(4).replace(/-/g, "");
-          if (opz.includes("e")) fermaSuErrore = true;
-          if (opz.includes("u")) sh.severo = true;
-          continue;
-        }
-        const r = esegui(sh, pulita);
-        if (r.errore) {
-          if (fermaSuErrore) throw new V.ErroreFs(`${file}: ${r.errore}`);
-          uscite.push(`${file}: ${r.errore}`);
-        }
-        if (r.out) uscite.push(r.out);
-      }
+      const righe = V.leggi(sh.fs, file).split("\n");
+      eseguiBlocco(sh, righe, stato);
+      // trap ... EXIT: la riga che si esegue comunque, anche uscendo per un
+      // errore. E' il modo di cancellare i file temporanei senza dimenticarsene.
+      if (stato.trap) esegiRigaScript(sh, stato.trap, stato);
     } finally {
       sh.severo = severoPrima;
+      sh.funzioni = funzioniPrima;
+      sh.env["?"] = String(stato.codice);
+      // "bash script.sh" riporta il codice dello script: e' cosi' che uno
+      // script sa com'e' andato quello che ha chiamato.
+      sh.esito = stato.codice;
     }
-    return uscite.join("\n");
+    return stato.uscite.join("\n");
+  },
+
+  /** test / [ ... ] : la condizione di uno script. Restituisce testo vuoto e
+   *  imposta $?, come fa il comando vero. */
+  test(sh, args) {
+    return valutaTest(sh, args);
+  },
+  "["(sh, args) {
+    const chiuse = args.at(-1) === "]" ? args.slice(0, -1) : args;
+    if (chiuse.length === args.length) throw new V.ErroreFs("manca la parentesi quadra di chiusura");
+    return valutaTest(sh, chiuse);
   },
 
   /**
