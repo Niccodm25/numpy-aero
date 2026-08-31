@@ -7,6 +7,11 @@
 // niente del filesystem virtuale.
 
 import assert from "node:assert";
+
+// L'a capo come costante: gli script che generano questo file mangiano le
+// sequenze di escape, e una stringa spezzata a meta' non si vede finche' non
+// esplode.
+const CAPO = String.fromCharCode(10);
 import * as V from "../js/vfs.js";
 import { creaShell, esegui, eseguiTutto, dividi, verifica, POSIX } from "../js/shell.js";
 import { AMBIENTI, AMBIENTI_CONDA, statoAmbienti } from "../js/ambienti.js";
@@ -21,7 +26,7 @@ import { REMOTO, statoRemoto } from "../js/remoto.js";
 import { SERVIZI, statoServizi } from "../js/servizi.js";
 import { HARDWARE, statoHardware } from "../js/hardware.js";
 import { PRESTAZIONI, statoPrestazioni } from "../js/prestazioni.js";
-import { STORAGE, statoStorage } from "../js/dischi.js";
+import { DISCHI, statoDischi } from "../js/dischi.js";
 import { CONTAINER, statoContainer } from "../js/container.js";
 import { SICUREZZA, statoSicurezza } from "../js/sicurezza.js";
 import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
@@ -690,7 +695,103 @@ caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
   esegui(sh,"modprobe sdr"); assert.match(esegui(sh,"lsmod").out,/sdr/);
   assert.match(esegui(sh,"sysctl -w vm.swappiness=10").out,/10/);
 });
-caso("prestazioni e storage mostrano uno stato interrogabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...PRESTAZIONI,...STORAGE}});statoPrestazioni(sh);statoStorage(sh);assert.match(esegui(sh,"iostat").out,/nvme/);esegui(sh,"mount /dev/sdb /dati");assert.match(esegui(sh,"mount").out,/\/dati/);});
+function conDischi(scenario) {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...PRESTAZIONI, ...DISCHI } });
+  statoPrestazioni(sh);
+  statoDischi(sh, scenario);
+  return sh;
+}
+
+caso("un disco si monta solo se e' formattato e il punto di mount esiste", () => {
+  const sh = conDischi();
+  assert.match(esegui(sh, "iostat").out, /nvme/);
+  assert.match(esegui(sh, "mount /dev/sdb1 /dati").errore, /non esiste/, "manca il punto di mount");
+  esegui(sh, "mkdir /dati");
+  assert.match(esegui(sh, "mount /dev/sdb1 /dati").errore, /filesystem sconosciuto/, "disco non formattato");
+  esegui(sh, "mkfs.ext4 /dev/sdb1");
+  esegui(sh, "mount /dev/sdb1 /dati");
+  assert.match(esegui(sh, "mount").out, /\/dati/);
+});
+
+caso("montare copre quello che c'era, smontare lo restituisce", () => {
+  const sh = conDischi({
+    dispositivi: {
+      "/dev/nvme0n1p1": { size: 200, fs: "ext4", usatoGB: 40 },
+      "/dev/sdb1": { size: 1000, fs: "ext4", usatoGB: 10 },
+    },
+    montati: { "/dev/nvme0n1p1": "/" },
+    contenuti: { "/dev/sdb1": { "campagna/quota.csv": "1000" + CAPO } },
+  });
+  esegui(sh, "mkdir /dati");
+  esegui(sh, "echo nota > /dati/nota.txt");
+  esegui(sh, "mount /dev/sdb1 /dati");
+  assert.equal(V.esiste(sh.fs, "/dati/nota.txt"), false, "il file di prima e' coperto");
+  assert.equal(V.leggi(sh.fs, "/dati/campagna/quota.csv"), "1000" + CAPO);
+  esegui(sh, "umount /dati");
+  assert.equal(V.leggi(sh.fs, "/dati/nota.txt"), "nota" + CAPO, "e torna quando smonti");
+});
+
+caso("non si smonta il filesystem in cui sei dentro", () => {
+  const sh = conDischi({
+    dispositivi: {
+      "/dev/nvme0n1p1": { size: 200, fs: "ext4", usatoGB: 40 },
+      "/dev/sdb1": { size: 1000, fs: "ext4", usatoGB: 10 },
+    },
+    montati: { "/dev/nvme0n1p1": "/" },
+    contenuti: {},
+  });
+  esegui(sh, "mkdir /dati");
+  esegui(sh, "mount /dev/sdb1 /dati");
+  esegui(sh, "cd /dati");
+  assert.match(esegui(sh, "umount /dati").errore, /busy/);
+  esegui(sh, "cd /");
+  assert.equal(esegui(sh, "umount /dati").errore, null);
+});
+
+caso("lvextend allarga il volume, resize2fs il filesystem", () => {
+  const sh = conDischi({
+    dispositivi: {
+      "/dev/nvme0n1p1": { size: 200, fs: "ext4", usatoGB: 40 },
+      "/dev/dati/misure": { size: 200, fs: "ext4", usatoGB: 190 },
+    },
+    montati: { "/dev/nvme0n1p1": "/", "/dev/dati/misure": "/misure" },
+    contenuti: {},
+    vg: { dati: { libero: 800, lv: { misure: { size: 200 } } } },
+  });
+  esegui(sh, "lvextend -L +300G /dev/dati/misure");
+  assert.equal(sh.dischi.dispositivi["/dev/dati/misure"].daEspandere, true, "il filesystem non e' ancora cresciuto");
+  esegui(sh, "resize2fs /dev/dati/misure");
+  assert.match(esegui(sh, "df -h").out, /500G/);
+  assert.match(esegui(sh, "lvcreate -L 900G -n troppo dati").errore, /spazio insufficiente/);
+});
+
+caso("il RAID resta leggibile con un disco guasto, un LUKS chiuso non si monta", () => {
+  const sh = conDischi({
+    dispositivi: {
+      "/dev/nvme0n1p1": { size: 200, fs: "ext4", usatoGB: 40 },
+      "/dev/sdb1": { size: 1000, fs: null, usatoGB: 0 },
+      "/dev/sdc": { size: 1000, fs: null, usatoGB: 0 },
+    },
+    montati: { "/dev/nvme0n1p1": "/" },
+    contenuti: {},
+  });
+  esegui(sh, "mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc");
+  esegui(sh, "mkfs.ext4 /dev/md0");
+  esegui(sh, "mkdir /dati");
+  esegui(sh, "mount /dev/md0 /dati");
+  esegui(sh, "echo misura > /dati/quota.csv");
+  esegui(sh, "mdadm --fail /dev/md0 /dev/sdb1");
+  assert.match(esegui(sh, "mdadm --detail /dev/md0").out, /degraded/);
+  assert.equal(V.leggi(sh.fs, "/dati/quota.csv"), "misura" + CAPO, "i dati si leggono ancora");
+
+  esegui(sh, "cryptsetup luksFormat /dev/sdc");
+  esegui(sh, "mkdir /sicuro");
+  assert.match(esegui(sh, "mount /dev/sdc /sicuro").errore, /LUKS non e' aperto/);
+  esegui(sh, "cryptsetup luksOpen /dev/sdc sicuro");
+  esegui(sh, "mkfs.ext4 /dev/mapper/sicuro");
+  esegui(sh, "mount /dev/mapper/sicuro /sicuro");
+  assert.match(esegui(sh, "mount").out, /\/sicuro/);
+});
 caso("docker simulato costruisce e avvia immagini",()=>{const sh=creaShell({}, {comandi:{...POSIX,...CONTAINER}});statoContainer(sh);esegui(sh,"docker build -t analisi:1 .");assert.match(esegui(sh,"docker run analisi:1").out,/isolamento/);});
 caso("ufw conserva una policy difensiva verificabile",()=>{const sh=creaShell({}, {comandi:{...POSIX,...SICUREZZA}});statoSicurezza(sh);esegui(sh,"ufw enable");esegui(sh,"ufw allow 443");assert.match(esegui(sh,"ufw status").out,/443\/tcp/);});
 caso("playbook idempotente cambia solo alla prima esecuzione",()=>{const sh=creaShell({}, {comandi:{...POSIX,...AUTOMAZIONE}});statoAutomazione(sh);esegui(sh,"ansible-playbook sito.yml");assert.match(esegui(sh,"ansible-playbook sito.yml").out,/changed=0/);});
@@ -1171,7 +1272,7 @@ for (const meta of indice.moduli) {
         if (es.hardware)
           comandi = { ...(comandi ?? POSIX), ...HARDWARE };
         if (es.prestazioni) comandi = { ...(comandi ?? POSIX), ...PRESTAZIONI };
-        if (es.storage) comandi = { ...(comandi ?? POSIX), ...STORAGE };
+        if (es.storage) comandi = { ...(comandi ?? POSIX), ...DISCHI };
         if (es.container) comandi = { ...(comandi ?? POSIX), ...CONTAINER };
         if (es.sicurezza) comandi = { ...(comandi ?? POSIX), ...SICUREZZA };
         if (es.automazione) comandi = { ...(comandi ?? POSIX), ...AUTOMAZIONE };
@@ -1185,7 +1286,7 @@ for (const meta of indice.moduli) {
         if (es.servizi) statoServizi(sh, es.servizi === true ? undefined : es.servizi);
         if (es.hardware) statoHardware(sh, es.hardware === true ? undefined : es.hardware);
         if (es.prestazioni) statoPrestazioni(sh, es.prestazioni === true ? undefined : es.prestazioni);
-        if (es.storage) statoStorage(sh, es.storage === true ? undefined : es.storage);
+        if (es.storage) statoDischi(sh, es.storage === true ? undefined : es.storage);
         if (es.container) statoContainer(sh, es.container === true ? undefined : es.container);
         if (es.sicurezza) statoSicurezza(sh, es.sicurezza === true ? undefined : es.sicurezza);
         if (es.automazione) statoAutomazione(sh);

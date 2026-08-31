@@ -1,1 +1,927 @@
-{"id":"l16","titolo":"Dischi, filesystem e volumi","perche":"Un disco non e' un backup e un mount non e' una cartella qualsiasi. Questo modulo distingue device, filesystem, punto di mount, ridondanza e cifratura.","funzioni":["lsblk","mount","umount","/etc/fstab","fdisk","mkfs","ext4","xfs","btrfs","zfs","LVM","mdadm","LUKS","dm-crypt"],"lezioni":[{"id":"l16-l1","titolo":"Dal disco ai file","md":"`lsblk` mostra dischi, partizioni e mountpoint. `mount /dev/sdb /dati` collega un filesystem a un punto dell'albero; `/etc/fstab` lo rende persistente al boot, ma un errore li' puo' impedire l'avvio. `fdisk` partiziona e `mkfs` crea un filesystem: sono operazioni distruttive, da fare solo sul device verificato."},{"id":"l16-l2","titolo":"Ridondanza non e' backup","md":"ext4 e xfs sono filesystem comuni; btrfs e ZFS aggiungono funzioni di gestione. LVM rende flessibili volumi e dimensioni. `mdadm` costruisce RAID: migliora disponibilita', non protegge da cancellazione o corruzione. LUKS/dm-crypt cifra il disco a riposo; serve comunque una chiave gestita bene."}],"raccolte":[{"id":"l16-volumi","comando":"lsblk, mount, mdadm","titolo":"progettare dati persistenti","esercizi":[{"id":"l16-1","tipo":"terminale","testo":"Elenca dischi, partizioni e mountpoint.","storage":true,"soluzione":"lsblk","verifica":{"stampa":"nvme0n1","usa":["lsblk"]},"hint":["lsblk"],"spiegazione":"Prima identifica il device."},{"id":"l16-2","tipo":"terminale","testo":"Monta il disco dati su /dati e controlla l'elenco dei mount.","storage":true,"soluzione":"mount /dev/sdb /dati\nmount","verifica":{"stampa":"/dati","usa":["mount"]},"hint":["device, poi punto di mount."],"spiegazione":"Montare collega un filesystem all'albero."},{"id":"l16-3","tipo":"terminale","testo":"Smonta /dati.","storage":true,"soluzione":"mount /dev/sdb /dati\numount /dati","verifica":{"usa":["umount"]},"hint":["umount punto."],"spiegazione":"Smontare serve prima di rimuovere o riparare un volume."},{"id":"l16-4","tipo":"predict","testo":"RAID sostituisce un backup?","opzioni":["no, non protegge da cancellazione o corruzione","si","solo con ext4","solo con LUKS"],"risposta":"no, non protegge da cancellazione o corruzione","spiegazione":"Replica anche gli errori."},{"id":"l16-5","tipo":"predict","testo":"A cosa serve LUKS?","opzioni":["a cifrare dati a riposo","a montare rete","a misurare CPU","a ruotare log"],"risposta":"a cifrare dati a riposo","spiegazione":"La cifratura richiede gestione delle chiavi."}]}]}
+{
+  "id": "l16",
+  "titolo": "Dischi, filesystem e volumi",
+  "perche": "Terabyte di acquisizione da tenere, proteggere e far crescere senza spegnere niente. Qui impari cosa vuol dire davvero montare un disco, perche' lo spazio sparisce dove non lo cerchi, come si aggiunge spazio a caldo, e perche' il RAID non e' un backup.",
+  "funzioni": [
+    "lsblk",
+    "lsblk -f",
+    "mount",
+    "mount -a",
+    "umount",
+    "/etc/fstab",
+    "mkfs.ext4",
+    "mkfs.xfs",
+    "df -h",
+    "pvcreate",
+    "vgcreate",
+    "vgs",
+    "lvcreate",
+    "lvextend",
+    "resize2fs",
+    "mdadm",
+    "cryptsetup"
+  ],
+  "lezioni": [
+    {
+      "id": "l16-l1",
+      "titolo": "Montare: far comparire un disco dentro l'albero",
+      "md": "```\nlsblk                     # quali dischi ci sono, e dove sono montati\nlsblk -f                  # con filesystem ed etichette\nmkdir /dati               # il punto di mount deve esistere\nmount /dev/sdb1 /dati     # da qui in poi /dati E' quel disco\ndf -h                     # quanto spazio, e quanto ne resta\numount /dati\n```\n\nSu Linux non ci sono lettere di unita': un disco **compare dentro l'albero**, in una cartella che scegli tu. Da quel momento tutto quello che scrivi sotto `/dati` finisce su quel disco.\n\n### Le due cose che sorprendono la prima volta\n\n**Il punto di mount deve esistere gia'**: `mount` non crea la cartella, e se non c'e' fallisce.\n\n**Quello che c'era prima nella cartella viene coperto.** Non cancellato: nascosto. Se avevi scritto dei file in `/dati` mentre il disco non era montato, quei file sono sul disco di sistema, e dopo il `mount` sembrano spariti — tornano smontando.\n\nÈ il guasto piu' comune dello storage: **il disco pieno che non capisci** e' quasi sempre roba scritta nel punto di mount mentre il disco era smontato.\n\n### Perche' fstab\n\n`mount` a mano vale fino al riavvio. La configurazione permanente sta in `/etc/fstab`:\n\n```\n/dev/sdb1  /dati  ext4  defaults  0 2\n```\n\n`mount -a` monta tutto quello che c'e' scritto: e' il modo di provare la riga **prima** del riavvio. Una riga sbagliata in `fstab` puo' impedire alla macchina di avviarsi, e provarla dopo e' tardi."
+    },
+    {
+      "id": "l16-l2",
+      "titolo": "Formattare, e scegliere il filesystem",
+      "md": "```\nmkfs.ext4 /dev/sdb1       # formatta: quello che c'era non c'e' piu'\nmkfs.xfs /dev/sdb1\n```\n\nUn disco nuovo arriva senza filesystem: `mount` fallisce con `tipo di filesystem sconosciuto` finche' non lo formatti. Ed e' un'operazione **senza conferma**: `mkfs` sul dispositivo sbagliato e' uno dei modi piu' rapidi di perdere dei dati.\n\nControlla sempre `lsblk` prima: il nome del disco appena collegato non e' sempre quello che credi, e su una macchina con quattro dischi `/dev/sdb` di ieri puo' essere `/dev/sdc` oggi.\n\n### Quale filesystem\n\n- **ext4** — il default di quasi tutte le distribuzioni. Robusto, conosciuto, va bene per tutto. In dubbio, questo.\n- **XFS** — regge meglio file molto grandi e scritture parallele: e' il default di RHEL, e la scelta tipica per acquisizione continua.\n- **Btrfs / ZFS** — snapshot, checksum sui dati, compressione. Danno di piu' e chiedono di piu': su un archivio di campagne valgono la pena, su una macchina che devi solo far funzionare sono complessita' in piu'.\n\n### Etichette invece di nomi\n\n`/dev/sdb1` puo' cambiare fra un avvio e l'altro. Nei sistemi seri `fstab` usa `UUID=` o `LABEL=`, che restano attaccati al disco e non all'ordine con cui il kernel lo trova."
+    },
+    {
+      "id": "l16-l3",
+      "titolo": "Crescere, ridondare, cifrare",
+      "md": "### LVM: aggiungere spazio senza spegnere\n\n```\npvcreate /dev/sdc                     # il disco entra nel gioco\nvgcreate dati /dev/sdc                # gruppo di volumi\nlvcreate -L 200G -n misure dati       # volume logico\nlvextend -L +100G /dev/dati/misure    # piu' grande\nresize2fs /dev/dati/misure            # e ora anche il filesystem\n```\n\nSenza LVM, un disco pieno vuol dire spegnere, copiare, ripartire. Con LVM si aggiunge spazio mentre l'acquisizione sta girando.\n\n**I due passi sono due davvero**: `lvextend` allarga il volume, `resize2fs` allarga il filesystem che ci sta sopra. Fermarsi al primo e' l'errore classico — `df` continua a dire che sei pieno, e sembra che il comando non abbia funzionato.\n\n### RAID: ridondanza, non backup\n\n```\nmdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb /dev/sdc\nmdadm --detail /dev/md0\n```\n\nRAID 1 tiene due copie: se un disco muore, il sistema continua e tu sostituisci il disco.\n\n**Non e' un backup.** Il RAID copia fedelmente anche `rm -rf` sbagliato, il file corrotto dall'applicazione, il ransomware. Protegge da **un disco che si rompe**, non da te. Un backup e' una copia separata, in un altro posto, da cui hai **provato** a ripristinare.\n\n### LUKS: il disco che esce dal laboratorio\n\n```\ncryptsetup luksFormat /dev/sdb1\ncryptsetup luksOpen /dev/sdb1 dati    # ora esiste /dev/mapper/dati\nmount /dev/mapper/dati /dati\n```\n\nFinche' non lo apri, il disco e' rumore. Serve a ogni disco che viaggia: un archivio di campagne che va da un dipartimento all'altro, un disco di backup che sta in un cassetto.\n\nLa passphrase **non si recupera**. Se la perdi, hai perso i dati — ed e' il punto di tutto."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l16-mount",
+      "comando": "lsblk, mount, fstab",
+      "titolo": "far comparire un disco",
+      "esercizi": [
+        {
+          "id": "l16-mo-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Hanno collegato un disco nuovo al banco. Guarda cosa c'e' e come e' messo, filesystem compresi.",
+          "storage": true,
+          "filesystem": {},
+          "soluzione": "lsblk -f",
+          "verifica": {
+            "stampa": "sdb1",
+            "usa": [
+              "lsblk"
+            ]
+          },
+          "hint": [
+            "-f aggiunge filesystem ed etichetta.",
+            "lsblk -f"
+          ],
+          "spiegazione": "`/dev/sdb1` c'e' ma la colonna del filesystem e' vuota: il disco e' nuovo e non e' ancora formattato. `MOUNTPOINT` vuoto vuol dire che non e' agganciato da nessuna parte.\n\nSu Linux non ci sono lettere di unita': finche' non lo monti, quel disco non e' raggiungibile da nessun percorso."
+        },
+        {
+          "id": "l16-mo-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a montare il disco nuovo su `/dati` cosi' com'e', e leggi perche' non funziona.",
+          "storage": true,
+          "filesystem": {},
+          "soluzione": "mkdir /dati\nmount /dev/sdb1 /dati",
+          "verifica": {
+            "dir": [
+              "/dati"
+            ],
+            "errore": "filesystem sconosciuto",
+            "usa": [
+              "mount",
+              "mkdir"
+            ]
+          },
+          "hint": [
+            "Il punto di mount va creato prima; poi prova a montare.",
+            "mkdir /dati, poi mount /dev/sdb1 /dati"
+          ],
+          "spiegazione": "Due cose in un colpo: il punto di mount **deve esistere** — `mount` non crea la cartella — e un disco senza filesystem non si monta.\n\n`tipo di filesystem sconosciuto` su un disco appena arrivato vuol dire quasi sempre questo, non un guasto."
+        },
+        {
+          "id": "l16-mo-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Formatta il disco dati in ext4 e montalo su `/dati`, poi verifica che ci sia.",
+          "storage": true,
+          "filesystem": {},
+          "soluzione": "mkdir /dati\nmkfs.ext4 /dev/sdb1\nmount /dev/sdb1 /dati\nlsblk -f",
+          "verifica": {
+            "stampa": "/dati",
+            "usa": [
+              "mkfs.ext4",
+              "mount"
+            ]
+          },
+          "hint": [
+            "Formatta, poi monta, poi controlla con lsblk -f.",
+            "mkfs.ext4 /dev/sdb1, poi mount /dev/sdb1 /dati"
+          ],
+          "spiegazione": "`mkfs` non chiede conferma: scrive un filesystem nuovo e quello che c'era sopra non c'e' piu'. Su una macchina con quattro dischi, controllare `lsblk` prima non e' pignoleria — i nomi `/dev/sdX` possono cambiare fra un avvio e l'altro.\n\nDopo il mount, `lsblk -f` mostra il punto: da adesso `/dati` **e'** quel disco."
+        },
+        {
+          "id": "l16-mo-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il disco della campagna e' gia' formattato e contiene dei dati. Montalo su `/dati` e guarda cosa e' comparso.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "ext4",
+                "usatoGB": 180,
+                "etichetta": "dati"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {
+              "/dev/sdb1": {
+                "campagna/quota.csv": "t,quota\n0,1000\n120,8400\n",
+                "campagna/log.txt": "INFO avvio\nERROR sensore\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "mkdir /dati\nmount /dev/sdb1 /dati\nls /dati/campagna",
+          "verifica": {
+            "esiste": [
+              "/dati/campagna/quota.csv"
+            ],
+            "stampa": "quota.csv",
+            "usa": [
+              "mount"
+            ]
+          },
+          "hint": [
+            "Crea il punto di mount, monta, poi guarda dentro.",
+            "mount /dev/sdb1 /dati, poi ls /dati/campagna"
+          ],
+          "spiegazione": "Montare non accende una spia: fa **comparire dei file**. Quelli erano gia' sul disco, e da questo momento si raggiungono da `/dati`.\n\nSe lo smontassi adesso, `/dati` tornerebbe una cartella vuota — i file non sono spariti, e' il disco che non e' piu' agganciato li'."
+        },
+        {
+          "id": "l16-mo-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**I file spariti.** Scrivi una nota in `/dati` **prima** di montare il disco, poi monta e guarda cosa succede. Poi smonta e ritrova la nota.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "ext4",
+                "usatoGB": 180,
+                "etichetta": "dati"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {
+              "/dev/sdb1": {
+                "campagna/quota.csv": "t,quota\n0,1000\n120,8400\n",
+                "campagna/log.txt": "INFO avvio\nERROR sensore\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "mkdir /dati\necho misura di prova > /dati/nota.txt\nmount /dev/sdb1 /dati\nls /dati\numount /dati\ncat /dati/nota.txt",
+          "verifica": {
+            "stampa": "misura di prova",
+            "usa": [
+              "mount",
+              "umount"
+            ]
+          },
+          "hint": [
+            "Scrivi prima del mount, guarda dopo il mount, poi smonta.",
+            "echo ... > /dati/nota.txt, mount, ls /dati, umount /dati, cat /dati/nota.txt"
+          ],
+          "spiegazione": "Dopo il `mount` la nota non si vede: e' **coperta**, non cancellata. Sta sul disco di sistema, sotto il punto di mount, e riappare appena smonti.\n\nQuesto e' il guasto piu' comune dello storage, e si presenta al contrario: il disco di sistema si riempie e nessuno capisce di cosa. Sono i dati scritti in `/dati` mentre il disco non era montato — invisibili finche' il disco resta agganciato."
+        },
+        {
+          "id": "l16-mo-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Smontare non riesce sempre: mettiti dentro `/dati`, prova a smontare, leggi l'errore e risolvilo.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "ext4",
+                "usatoGB": 180,
+                "etichetta": "dati"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {
+              "/dev/sdb1": {
+                "campagna/quota.csv": "t,quota\n0,1000\n120,8400\n",
+                "campagna/log.txt": "INFO avvio\nERROR sensore\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "mkdir /dati\nmount /dev/sdb1 /dati\ncd /dati\numount /dati\ncd /\numount /dati",
+          "verifica": {
+            "cwd": "/",
+            "errore": "busy",
+            "usa": [
+              "umount",
+              "cd"
+            ]
+          },
+          "hint": [
+            "Non si smonta il filesystem in cui sei dentro.",
+            "cd / prima di umount /dati"
+          ],
+          "spiegazione": "`target is busy` vuol dire che qualcuno sta usando quel filesystem — e la prima volta quel qualcuno sei tu, con la shell dentro la cartella.\n\nSu una macchina vera puo' essere anche un processo: `lsof /dati` o `fuser -m /dati` dicono chi. Smontare a forza mentre un'acquisizione sta scrivendo e' il modo di corrompere il filesystem."
+        },
+        {
+          "id": "l16-mo-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il mount a mano non sopravvive al riavvio. Scrivi la riga in `/etc/fstab` e provala con `mount -a` senza riavviare.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "ext4",
+                "usatoGB": 180,
+                "etichetta": "dati"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {
+              "/dev/sdb1": {
+                "campagna/quota.csv": "t,quota\n0,1000\n120,8400\n",
+                "campagna/log.txt": "INFO avvio\nERROR sensore\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "mkdir /dati\necho '/dev/sdb1  /dati  ext4  defaults  0 2' >> /etc/fstab\nmount -a\nmount",
+          "verifica": {
+            "contiene": {
+              "/etc/fstab": "/dev/sdb1"
+            },
+            "stampa": "/dati",
+            "usa": [
+              "mount"
+            ]
+          },
+          "hint": [
+            "Aggiungi la riga in coda a /etc/fstab, poi mount -a.",
+            "echo '/dev/sdb1  /dati  ext4  defaults  0 2' >> /etc/fstab, poi mount -a"
+          ],
+          "spiegazione": "Cinque campi: dispositivo, punto di mount, tipo, opzioni, e due numeri per dump e controllo all'avvio.\n\n`mount -a` monta tutto quello che c'e' in `fstab`, ed e' il modo di **provare la riga prima del riavvio**. Una riga sbagliata puo' impedire alla macchina di avviarsi del tutto: scoprirlo con la macchina accesa e' un conto, scoprirlo davanti a un banco che non parte e' un altro.\n\nSu una macchina vera si scrive `UUID=...` invece di `/dev/sdb1`: i nomi dei dispositivi possono cambiare fra un avvio e l'altro, gli UUID no."
+        },
+        {
+          "id": "l16-mo-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Il disco di sistema e' pieno, ma `du` sulle cartelle non trova niente di grosso. Cosa sospetti?",
+          "opzioni": [
+            "dati scritti nel punto di mount mentre il disco non era montato: sono nascosti sotto il mount",
+            "un errore di df, che conta male",
+            "il RAID che duplica i file",
+            "il journal di systemd"
+          ],
+          "risposta": "dati scritti nel punto di mount mentre il disco non era montato: sono nascosti sotto il mount",
+          "spiegazione": "Finche' il disco e' montato, quei file non si vedono e `du` non li conta — ma occupano spazio sul disco di sistema.\n\nLa verifica e' smontare e guardare: se sotto il punto di mount c'e' roba, l'hai trovata. È anche il motivo per cui uno script di acquisizione serio controlla che il disco sia montato **prima** di cominciare a scrivere."
+        }
+      ]
+    },
+    {
+      "id": "l16-lvm",
+      "comando": "LVM: lvcreate, lvextend",
+      "titolo": "crescere senza spegnere",
+      "esercizi": [
+        {
+          "id": "l16-lv-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il disco `/dev/sdc` e' libero: preparalo per LVM e crea il gruppo di volumi `dati`.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdc": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "libero"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {}
+          },
+          "filesystem": {},
+          "soluzione": "pvcreate /dev/sdc\nvgcreate dati /dev/sdc\nvgs",
+          "verifica": {
+            "stampa": "dati",
+            "usa": [
+              "pvcreate",
+              "vgcreate"
+            ]
+          },
+          "hint": [
+            "Prima il volume fisico, poi il gruppo.",
+            "pvcreate /dev/sdc, poi vgcreate dati /dev/sdc"
+          ],
+          "spiegazione": "Tre livelli, sempre in quest'ordine: il **volume fisico** (il disco), il **gruppo** (uno o piu' dischi messi insieme), il **volume logico** (quello che poi formatti e monti).\n\nIl vantaggio arriva dopo: un gruppo puo' crescere aggiungendo dischi, e i volumi dentro possono essere allargati senza spegnere niente."
+        },
+        {
+          "id": "l16-lv-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Dentro il gruppo `dati`, crea un volume da 200G chiamato `misure`, formattalo e montalo su `/misure`.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {},
+            "vg": {
+              "dati": {
+                "libero": 1000,
+                "lv": {}
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "lvcreate -L 200G -n misure dati\nmkfs.ext4 /dev/dati/misure\nmkdir /misure\nmount /dev/dati/misure /misure\ndf -h",
+          "verifica": {
+            "stampa": "/misure",
+            "usa": [
+              "lvcreate",
+              "mkfs.ext4",
+              "mount"
+            ]
+          },
+          "hint": [
+            "lvcreate -L dimensione -n nome gruppo, poi si formatta e si monta come un disco.",
+            "lvcreate -L 200G -n misure dati"
+          ],
+          "spiegazione": "Un volume logico si usa come un disco qualunque: si formatta e si monta. La differenza si vede solo quando lo spazio finisce.\n\nNota il nome del dispositivo: `/dev/dati/misure`, cioe' gruppo e volume. È piu' esplicito di `/dev/sdb1` e non cambia se aggiungi dischi."
+        },
+        {
+          "id": "l16-lv-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La campagna sta finendo lo spazio** e l'acquisizione non si puo' fermare. Allarga il volume di 300G e fai in modo che `df` lo veda.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/dati/misure": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 190,
+                "etichetta": "misure"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/",
+              "/dev/dati/misure": "/misure"
+            },
+            "contenuti": {
+              "/dev/dati/misure": {}
+            },
+            "vg": {
+              "dati": {
+                "libero": 800,
+                "lv": {
+                  "misure": {
+                    "size": 200
+                  }
+                }
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "df -h\nlvextend -L +300G /dev/dati/misure\nresize2fs /dev/dati/misure\ndf -h",
+          "verifica": {
+            "stampa": "500G",
+            "usa": [
+              "lvextend",
+              "resize2fs"
+            ]
+          },
+          "hint": [
+            "Sono due passi: prima il volume, poi il filesystem.",
+            "lvextend -L +300G /dev/dati/misure, poi resize2fs /dev/dati/misure"
+          ],
+          "spiegazione": "**Due comandi, due livelli.** `lvextend` allarga il contenitore, `resize2fs` allarga il filesystem che ci sta dentro. Fermarsi al primo e' l'errore classico: `df` continua a dire che sei pieno, e sembra che LVM non abbia funzionato.\n\nTutto questo con l'acquisizione che continua a scrivere: e' esattamente il motivo per cui LVM esiste."
+        },
+        {
+          "id": "l16-lv-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Quanto spazio resta nel gruppo, e quanto ne usa ogni filesystem montato? Salva la risposta in `spazio.txt`.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/dati/misure": {
+                "size": 500,
+                "fs": "ext4",
+                "usatoGB": 190,
+                "etichetta": "misure"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/",
+              "/dev/dati/misure": "/misure"
+            },
+            "contenuti": {
+              "/dev/dati/misure": {}
+            },
+            "vg": {
+              "dati": {
+                "libero": 500,
+                "lv": {
+                  "misure": {
+                    "size": 500
+                  }
+                }
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "df -h > spazio.txt\nvgs >> spazio.txt\ncat spazio.txt",
+          "verifica": {
+            "contiene": {
+              "spazio.txt": "VFree"
+            },
+            "usa": [
+              "df",
+              "vgs"
+            ]
+          },
+          "hint": [
+            "df per i filesystem, vgs per lo spazio libero nel gruppo.",
+            "df -h > spazio.txt, poi vgs >> spazio.txt"
+          ],
+          "spiegazione": "Sono due numeri diversi e servono tutti e due: `df` dice quanto e' pieno un filesystem, `vgs` dice quanto spazio non ancora assegnato resta nel gruppo — cioe' di quanto puoi ancora crescere prima di dover comprare un disco.\n\nUn gruppo senza spazio libero e' una brutta sorpresa nel mezzo di una campagna."
+        },
+        {
+          "id": "l16-lv-5",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Dopo `lvextend`, `df -h` mostra ancora la dimensione vecchia. Perche'?",
+          "opzioni": [
+            "il filesystem non e' stato allargato: manca resize2fs",
+            "serve smontare e rimontare",
+            "df ha una cache da svuotare",
+            "lvextend ha fallito in silenzio"
+          ],
+          "risposta": "il filesystem non e' stato allargato: manca resize2fs",
+          "spiegazione": "Il volume e il filesystem sono due cose sovrapposte: allargare il contenitore non allarga quello che ci sta dentro. `df` guarda il filesystem, quindi finche' non lanci `resize2fs` (o `xfs_growfs` su XFS) continua a dire il vecchio numero.\n\nÈ l'errore piu' comune nelle guide seguite a meta'."
+        },
+        {
+          "id": "l16-lv-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a creare un volume piu' grande dello spazio libero nel gruppo, e leggi come te lo dice.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {},
+            "vg": {
+              "dati": {
+                "libero": 500,
+                "lv": {}
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "vgs\nlvcreate -L 900G -n troppo dati",
+          "verifica": {
+            "errore": "spazio insufficiente",
+            "usa": [
+              "lvcreate",
+              "vgs"
+            ]
+          },
+          "hint": [
+            "Guarda prima quanto e' libero, poi chiedi di piu'.",
+            "lvcreate -L 900G -n troppo dati"
+          ],
+          "spiegazione": "LVM non fa magie: lo spazio deve esserci nel gruppo. Il messaggio dice quanto ne resta davvero, e la soluzione e' aggiungere un disco al gruppo (`vgextend`) — che si fa a caldo, senza spegnere.\n\nControllare `vgs` prima di chiedere e' l'abitudine che evita il messaggio."
+        },
+        {
+          "id": "l16-lv-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quale filesystem sceglieresti per un disco che raccoglie file molto grandi di acquisizione continua?",
+          "opzioni": [
+            "XFS: regge bene i file grandi e le scritture parallele",
+            "FAT32, perche' lo leggono tutti",
+            "ext4 e' l'unico possibile su Linux",
+            "nessuna differenza pratica"
+          ],
+          "risposta": "XFS: regge bene i file grandi e le scritture parallele",
+          "spiegazione": "**ext4** e' il default ragionevole per quasi tutto, e in dubbio si sceglie quello. **XFS** e' il default di RHEL e regge meglio file molto grandi e scritture parallele — il profilo tipico di un'acquisizione continua.\n\n**Btrfs** e **ZFS** danno snapshot e checksum sui dati, e li vale la pena su un archivio; chiedono pero' di sapere cosa si sta facendo. **FAT32** non ha permessi Unix e si ferma a 4 GB per file: va bene solo per una chiavetta da leggere anche su Windows."
+        },
+        {
+          "id": "l16-lv-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Un disco nuovo dentro il gruppo, a caldo.** Aggiungi `/dev/sdd` allo spazio disponibile, poi allarga `misure` di 400G, filesystem compreso.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/dati/misure": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 190,
+                "etichetta": "misure"
+              },
+              "/dev/sdd": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "nuovo"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/",
+              "/dev/dati/misure": "/misure"
+            },
+            "contenuti": {
+              "/dev/dati/misure": {}
+            },
+            "vg": {
+              "dati": {
+                "libero": 800,
+                "lv": {
+                  "misure": {
+                    "size": 200
+                  }
+                }
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "vgs\npvcreate /dev/sdd\nvgcreate archivio /dev/sdd\nlvextend -L +400G /dev/dati/misure\nresize2fs /dev/dati/misure\ndf -h",
+          "verifica": {
+            "stampa": "600G",
+            "usa": [
+              "pvcreate",
+              "lvextend",
+              "resize2fs"
+            ]
+          },
+          "hint": [
+            "Prepara il disco nuovo, poi allarga volume e filesystem.",
+            "pvcreate /dev/sdd, poi lvextend -L +400G e resize2fs"
+          ],
+          "spiegazione": "Tutta la sequenza senza spegnere niente e senza interrompere l'acquisizione: e' la promessa di LVM, ed e' il motivo per cui su una macchina che raccoglie dati conviene metterlo dal primo giorno.\n\nRimetterlo dopo, quando il disco e' gia' pieno, richiede di spostare i dati altrove: cioe' esattamente quello che volevi evitare."
+        }
+      ]
+    },
+    {
+      "id": "l16-raid",
+      "comando": "mdadm e cryptsetup",
+      "titolo": "ridondanza e cifratura",
+      "esercizi": [
+        {
+          "id": "l16-ra-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "I dati della campagna non devono sparire se si rompe un disco. Metti `/dev/sdb1` e `/dev/sdc` in RAID 1 e guarda com'e' messo l'array.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati1"
+              },
+              "/dev/sdc": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati2"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {}
+          },
+          "filesystem": {},
+          "soluzione": "mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc\nmdadm --detail /dev/md0",
+          "verifica": {
+            "stampa": "clean",
+            "usa": [
+              "mdadm"
+            ]
+          },
+          "hint": [
+            "--create, --level=1, i due dischi; poi --detail.",
+            "mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc"
+          ],
+          "spiegazione": "RAID 1 e' la specchiatura: tutto quello che scrivi finisce su tutti e due i dischi. Lo spazio utile e' quello di uno solo — paghi il doppio in dischi per non fermarti quando uno muore.\n\n`clean` vuol dire che i dischi sono allineati. `/dev/md0` da qui in avanti si usa come un disco qualunque: si formatta e si monta."
+        },
+        {
+          "id": "l16-ra-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Un disco si e' rotto.** Segnala `/dev/sdb1` come guasto e verifica che i dati siano ancora raggiungibili.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati1"
+              },
+              "/dev/sdc": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati2"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {}
+          },
+          "filesystem": {},
+          "soluzione": "mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc\nmkfs.ext4 /dev/md0\nmkdir /dati\nmount /dev/md0 /dati\necho misura > /dati/quota.csv\nmdadm --fail /dev/md0 /dev/sdb1\nmdadm --detail /dev/md0\ncat /dati/quota.csv",
+          "verifica": {
+            "stampa": "degraded",
+            "contiene": {
+              "/dati/quota.csv": "misura"
+            },
+            "usa": [
+              "mdadm",
+              "mount"
+            ]
+          },
+          "hint": [
+            "Crea l'array, montalo, scrivici, poi segnala il guasto.",
+            "mdadm --fail /dev/md0 /dev/sdb1, poi mdadm --detail /dev/md0"
+          ],
+          "spiegazione": "`clean, degraded`: l'array continua a funzionare con un disco solo, e i dati si leggono e si scrivono come prima. Questo e' tutto quello che il RAID promette — **tempo per sostituire il disco senza fermarsi**.\n\nDa qui in poi sei senza rete: se muore anche il secondo, hai perso tutto. Un disco guasto in RAID e' una cosa urgente, non una cosa risolta."
+        },
+        {
+          "id": "l16-ra-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Il RAID 1 sostituisce un backup?",
+          "opzioni": [
+            "no: copia fedelmente anche una cancellazione sbagliata o un file corrotto",
+            "si', tiene due copie di tutto",
+            "si', se i dischi sono di marche diverse",
+            "solo per i dati, non per il sistema"
+          ],
+          "risposta": "no: copia fedelmente anche una cancellazione sbagliata o un file corrotto",
+          "spiegazione": "Il RAID protegge da **un disco che si rompe**. Non protegge da `rm -rf` sbagliato, da un'applicazione che scrive dati corrotti, da un ransomware, da un incendio nella stanza.\n\nUn backup e' una copia **separata**, in un altro posto, e — la parte che tutti saltano — da cui hai **provato a ripristinare**. Un backup mai verificato e' una speranza, non un backup."
+        },
+        {
+          "id": "l16-ra-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il disco dei risultati esce dal laboratorio: cifralo, aprilo, formattalo e montalo su `/sicuro`.",
+          "storage": true,
+          "filesystem": {},
+          "soluzione": "cryptsetup luksFormat /dev/sdb1\ncryptsetup luksOpen /dev/sdb1 sicuro\nmkfs.ext4 /dev/mapper/sicuro\nmkdir /sicuro\nmount /dev/mapper/sicuro /sicuro\nlsblk -f",
+          "verifica": {
+            "stampa": "/sicuro",
+            "usa": [
+              "cryptsetup",
+              "mount"
+            ]
+          },
+          "hint": [
+            "luksFormat, luksOpen con un nome, poi si usa /dev/mapper/NOME come un disco.",
+            "cryptsetup luksOpen /dev/sdb1 sicuro"
+          ],
+          "spiegazione": "Dopo `luksOpen` compare `/dev/mapper/sicuro`: e' il disco decifrato, e da li' in poi si tratta come un disco qualunque.\n\nFinche' non lo apri, il contenuto e' rumore: un disco perso o rubato non dice niente a nessuno. La passphrase pero' non si recupera — se la perdi, i dati sono persi, ed e' esattamente il punto."
+        },
+        {
+          "id": "l16-ra-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a montare il disco cifrato **senza** aprirlo, e leggi cosa risponde il sistema.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "crypto_LUKS",
+                "usatoGB": 0,
+                "etichetta": "sicuro"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {},
+            "luks": {
+              "/dev/sdb1": {
+                "aperto": false
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "mkdir /sicuro\nmount /dev/sdb1 /sicuro",
+          "verifica": {
+            "errore": "filesystem sconosciuto",
+            "usa": [
+              "mount"
+            ]
+          },
+          "hint": [
+            "Prova a montare direttamente il dispositivo cifrato.",
+            "mount /dev/sdb1 /sicuro"
+          ],
+          "spiegazione": "Per il sistema un volume LUKS chiuso non ha un filesystem: e' rumore. Il messaggio e' lo stesso di un disco non formattato, e la prima volta manda fuori strada.\n\n`lsblk -f` lo distingue: mostra `crypto_LUKS` come tipo, che vuol dire «c'e' qualcosa, ma e' chiuso»."
+        },
+        {
+          "id": "l16-ra-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa rende un backup credibile?",
+          "opzioni": [
+            "averlo ripristinato almeno una volta, in un posto diverso dall'originale",
+            "che sia automatico",
+            "che sia su un disco RAID",
+            "che sia cifrato"
+          ],
+          "risposta": "averlo ripristinato almeno una volta, in un posto diverso dall'originale",
+          "spiegazione": "Un backup che non hai mai provato a ripristinare non e' un backup: e' un file di cui speri qualcosa. Le prove di ripristino trovano archivi corrotti, chiavi di cifratura perse e cartelle che nessuno aveva incluso.\n\nLa regola che si cita e' 3-2-1: **tre** copie, su **due** supporti diversi, di cui **una** fuori sede. E una prova di ripristino ogni tanto."
+        },
+        {
+          "id": "l16-ra-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Chiudi la giornata: smonta il disco cifrato e chiudilo, poi verifica che non compaia piu' fra i montati.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": "crypto_LUKS",
+                "usatoGB": 0,
+                "etichetta": "sicuro"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {},
+            "luks": {
+              "/dev/sdb1": {
+                "aperto": false
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cryptsetup luksOpen /dev/sdb1 sicuro\nmkdir /sicuro\nmkfs.ext4 /dev/mapper/sicuro\nmount /dev/mapper/sicuro /sicuro\numount /sicuro\ncryptsetup luksClose sicuro\nmount",
+          "verifica": {
+            "stampa": "/dev/nvme0n1p1 on /",
+            "usa": [
+              "cryptsetup",
+              "umount"
+            ]
+          },
+          "hint": [
+            "Prima si smonta, poi si chiude il volume.",
+            "umount /sicuro, poi cryptsetup luksClose sicuro"
+          ],
+          "spiegazione": "L'ordine conta: `luksClose` su un volume ancora montato fallisce, ed e' giusto cosi' — chiuderlo mentre qualcuno ci scrive corromperebbe il filesystem.\n\nÈ la stessa logica di `umount`: prima si stacca chi lo sta usando, poi si stacca il dispositivo."
+        },
+        {
+          "id": "l16-ra-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lo storage della campagna, dall'inizio.** Metti in RAID 1 i due dischi, formattali, monta su `/dati`, mettilo in fstab e verifica che `mount -a` funzioni.",
+          "storage": {
+            "dispositivi": {
+              "/dev/nvme0n1p1": {
+                "size": 200,
+                "fs": "ext4",
+                "usatoGB": 40,
+                "etichetta": "sistema"
+              },
+              "/dev/sdb1": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati1"
+              },
+              "/dev/sdc": {
+                "size": 1000,
+                "fs": null,
+                "usatoGB": 0,
+                "etichetta": "dati2"
+              }
+            },
+            "montati": {
+              "/dev/nvme0n1p1": "/"
+            },
+            "contenuti": {}
+          },
+          "filesystem": {},
+          "soluzione": "mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb1 /dev/sdc\nmkfs.ext4 /dev/md0\nmkdir /dati\necho '/dev/md0  /dati  ext4  defaults  0 2' >> /etc/fstab\nmount -a\ndf -h\nmdadm --detail /dev/md0",
+          "verifica": {
+            "contiene": {
+              "/etc/fstab": "/dev/md0"
+            },
+            "stampa": "/dati",
+            "usa": [
+              "mdadm",
+              "mkfs.ext4",
+              "mount"
+            ]
+          },
+          "hint": [
+            "RAID, filesystem, punto di mount, riga in fstab, mount -a.",
+            "echo '/dev/md0  /dati  ext4  defaults  0 2' >> /etc/fstab, poi mount -a"
+          ],
+          "spiegazione": "Cinque passaggi e la macchina e' pronta a raccogliere dati per mesi: ridondanza contro il guasto di un disco, filesystem, mount automatico all'avvio.\n\nQuello che **non** hai fatto e va fatto lo stesso: un backup su un supporto separato. Il RAID ti protegge dal disco che si rompe, non dal comando sbagliato — e i comandi sbagliati sono piu' frequenti dei dischi rotti."
+        }
+      ]
+    }
+  ]
+}

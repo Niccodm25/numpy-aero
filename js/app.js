@@ -332,7 +332,7 @@ function montaTerminale(zona, es) {
   if (es.hardware)
     comandi = { ...(comandi ?? SH.POSIX), ...HW.HARDWARE };
   if (es.prestazioni) comandi = { ...(comandi ?? SH.POSIX), ...PF.PRESTAZIONI };
-  if (es.storage) comandi = { ...(comandi ?? SH.POSIX), ...ST.STORAGE };
+  if (es.storage) comandi = { ...(comandi ?? SH.POSIX), ...ST.DISCHI };
   if (es.container) comandi = { ...(comandi ?? SH.POSIX), ...CT.CONTAINER };
   if (es.sicurezza) comandi = { ...(comandi ?? SH.POSIX), ...SC.SICUREZZA };
   if (es.automazione) comandi = { ...(comandi ?? SH.POSIX), ...AU.AUTOMAZIONE };
@@ -346,7 +346,7 @@ function montaTerminale(zona, es) {
   if (es.servizi) SV.statoServizi(sh, es.servizi === true ? undefined : es.servizi);
   if (es.hardware) HW.statoHardware(sh, es.hardware === true ? undefined : es.hardware);
   if (es.prestazioni) PF.statoPrestazioni(sh, es.prestazioni === true ? undefined : es.prestazioni);
-  if (es.storage) ST.statoStorage(sh, es.storage === true ? undefined : es.storage);
+  if (es.storage) ST.statoDischi(sh, es.storage === true ? undefined : es.storage);
   if (es.container) CT.statoContainer(sh, es.container === true ? undefined : es.container);
   if (es.sicurezza) SC.statoSicurezza(sh, es.sicurezza === true ? undefined : es.sicurezza);
   if (es.automazione) AU.statoAutomazione(sh);
