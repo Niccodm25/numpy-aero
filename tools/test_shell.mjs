@@ -690,10 +690,27 @@ caso("logrotate archivia il log e ne ricomincia uno vuoto", () => {
   assert.equal(V.leggi(sh.fs, "misure.log"), "");
 });
 
-caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
-  const sh=creaShell({}, {comandi:{...POSIX,...HARDWARE}}); statoHardware(sh);
-  esegui(sh,"modprobe sdr"); assert.match(esegui(sh,"lsmod").out,/sdr/);
-  assert.match(esegui(sh,"sysctl -w vm.swappiness=10").out,/10/);
+caso("un dispositivo senza driver si vede, e modprobe lo fa comparire in /dev", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...HARDWARE } });
+  statoHardware(sh);
+  assert.match(esegui(sh, "lsusb -t").out, /\(nessuno\)/, "il kernel lo vede ma non lo gestisce");
+  assert.equal(V.esiste(sh.fs, "/dev/swradio0"), false);
+  esegui(sh, "modprobe dvb_usb_rtl28xxu");
+  assert.match(esegui(sh, "lsusb -t").out, /dvb_usb_rtl28xxu/);
+  assert.equal(V.esiste(sh.fs, "/dev/swradio0"), true, "il file di dispositivo compare col driver");
+  assert.match(esegui(sh, "modprobe inventato").errore, /non trovato/);
+  assert.match(esegui(sh, "modprobe -r nvme").errore, /in uso/, "un modulo usato non si toglie");
+});
+
+caso("sysctl e /proc/sys sono lo stesso valore, e -p rilegge il file", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...HARDWARE } });
+  statoHardware(sh);
+  assert.equal(V.leggi(sh.fs, "/proc/sys/vm/swappiness").trim(), "60");
+  esegui(sh, "sysctl -w vm.swappiness=10");
+  assert.equal(V.leggi(sh.fs, "/proc/sys/vm/swappiness").trim(), "10", "il file segue il comando");
+  esegui(sh, "echo 'vm.swappiness = 5' > /etc/sysctl.conf");
+  esegui(sh, "sysctl -p /etc/sysctl.conf");
+  assert.match(esegui(sh, "sysctl vm.swappiness").out, /= 5/, "-p applica la configurazione permanente");
 });
 function conDischi(scenario) {
   const sh = creaShell({}, { comandi: { ...POSIX, ...PRESTAZIONI, ...DISCHI } });

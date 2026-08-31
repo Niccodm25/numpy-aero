@@ -1,129 +1,563 @@
 {
   "id": "l14",
-  "titolo": "Hardware e kernel",
-  "perche": "Quando una GPU, una radio SDR o una scheda di acquisizione non compare, non si risolve reinstallando tutto: si separano bus, driver, modulo e parametro del kernel.",
+  "titolo": "Hardware e kernel: dispositivi, moduli, /proc",
+  "perche": "Hai collegato l'acquisizione, la GPU o il ricevitore radio, e il sistema fa finta di niente. Qui impari a distinguere un problema fisico da un driver mancante, a caricare un modulo, e a leggere il kernel attraverso i file di /proc — dove si capisce davvero cosa vuol dire che in Unix tutto e' un file.",
   "funzioni": [
     "lspci",
+    "lspci -k",
+    "lsusb",
+    "lsusb -t",
     "lshw",
     "dmidecode",
+    "dmesg",
     "lsmod",
     "modprobe",
-    "/proc",
-    "/sys",
-    "sysctl"
+    "modprobe -r",
+    "/proc/cpuinfo",
+    "/proc/meminfo",
+    "/proc/modules",
+    "/proc/sys",
+    "sysctl",
+    "sysctl -w",
+    "sysctl -p",
+    "uname -r"
   ],
   "lezioni": [
     {
       "id": "l14-l1",
-      "titolo": "Vedere prima di cambiare",
-      "md": "`lspci` elenca dispositivi sul bus PCI; `lshw` riassume hardware e configurazione; `dmidecode` legge le tabelle firmware per macchina e memoria. Se un dispositivo non compare qui, il problema e' prima del driver. `/proc` e `/sys` sono filesystem virtuali: il kernel espone stato come file, non log normali.\n\n### Da dove viene il nome\n\n- `lspci` — *list PCI* — i dispositivi sul bus PCI\n- `lsmod` — *list modules* — i moduli del kernel caricati\n- `modprobe` — *module probe* — carica un modulo e le sue dipendenze\n- `sysctl` — *system control* — i parametri del kernel\n- `/proc` — *processes*: una finestra sul kernel che ha la forma di file, ma non sta su nessun disco\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
+      "titolo": "Il dispositivo c'e', il driver no",
+      "md": "```\nlspci            # cosa c'e' sul bus PCI: schede video, di rete, controller\nlspci -k         # ...e quale modulo del kernel lo sta gestendo\nlsusb            # i dispositivi USB\nlsusb -t         # ...con il driver che li governa\nlshw             # il riassunto generale\ndmesg            # cosa ha detto il kernel quando li ha visti\n```\n\nQuando una scheda di acquisizione o un ricevitore SDR «non viene visto», i casi sono due e si distinguono in un comando:\n\n1. **non compare affatto** in `lspci`/`lsusb` → e' un problema fisico: cavo, alimentazione, connettore. Nessun comando lo risolve.\n2. **compare, ma senza driver** (`Kernel driver in use: none`) → il kernel lo vede e non sa cosa farsene. Manca il modulo, e quello si carica.\n\n`dmesg` racconta il momento in cui il dispositivo e' stato collegato: e' la prima cosa da guardare dopo aver infilato un cavo USB.\n\n### Il file di dispositivo\n\nQuando un driver si lega a un dispositivo, compare un file in `/dev`: `/dev/swradio0` per un ricevitore, `/dev/ttyUSB0` per una seriale, `/dev/video0` per una telecamera.\n\n**Finche' in `/dev` non c'e' niente, nessun programma potra' usarlo** — e' li' che si vede se il driver ha funzionato, non nella documentazione del produttore."
     },
     {
       "id": "l14-l2",
-      "titolo": "Moduli e parametri",
-      "md": "`lsmod` mostra moduli caricati; `modprobe nome` carica un driver e le dipendenze. `sysctl vm.swappiness` legge un parametro; `sysctl -w vm.swappiness=10` lo cambia fino al riavvio. Non copiare parametri trovati online: prima misura il problema, annota il valore iniziale e rendi persistente una modifica solo dopo averla verificata."
+      "titolo": "Moduli: il kernel si estende mentre gira",
+      "md": "```\nlsmod                        # i moduli caricati, e da quanti sono usati\nmodprobe dvb_usb_rtl28xxu    # carica un modulo (e le sue dipendenze)\nmodprobe -r e1000e           # toglilo\n```\n\nUn modulo e' un pezzo di kernel che si carica **senza riavviare**: driver di dispositivi, filesystem, protocolli. È il motivo per cui colleghi una chiavetta e funziona.\n\nLa terza colonna di `lsmod` — *Used by* — e' un contatore: **un modulo in uso non si puo' togliere**. Se provi a rimuovere il driver del disco su cui sta il sistema, il kernel dice di no, e ha ragione.\n\n```\nModule            Size  Used by\nnvme             61440  2        <- due cose lo stanno usando\ne1000e          286720  0        <- questo si puo' togliere\n```\n\n### Caricare non basta\n\n`modprobe` carica il modulo per **adesso**. Al riavvio non c'e' piu', esattamente come `ip addr add` del modulo sulla rete e come `systemctl start` senza `enable`.\n\nLa configurazione permanente sta in `/etc/modules-load.d/`, ed e' lo stesso schema che hai gia' visto tre volte: **una cosa vale adesso, un'altra vale da domani**."
+    },
+    {
+      "id": "l14-l3",
+      "titolo": "/proc e /sys: quando tutto e' davvero un file",
+      "md": "```\ncat /proc/cpuinfo            # che processore c'e'\ncat /proc/meminfo            # quanta memoria, e quanta libera\ncat /proc/uptime             # da quanto e' accesa\ncat /proc/modules            # gli stessi dati di lsmod, grezzi\ncat /proc/sys/vm/swappiness  # un parametro del kernel\n```\n\n`/proc` **non sta su nessun disco**. È una finestra sul kernel che ha la forma di file: quando li leggi, il kernel genera il contenuto sul momento. Per questo `ls -l /proc` mostra file di dimensione zero che pero' contengono qualcosa.\n\nÈ l'esempio piu' puro della frase «in Unix tutto e' un file»: nessuna API, nessuna libreria — `cat`, `grep` e le pipe che gia' conosci.\n\n### Due nomi per la stessa cosa\n\n```\ncat /proc/sys/vm/swappiness     # 60\nsysctl vm.swappiness            # vm.swappiness = 60\n```\n\n`sysctl` e' un'interfaccia piu' comoda sopra `/proc/sys`: i punti diventano barre. Sono lo stesso valore, e cambiarne uno cambia l'altro.\n\n```\nsudo sysctl -w vm.swappiness=10           # cambia adesso\necho 10 | sudo tee /proc/sys/vm/swappiness # identico, alla vecchia maniera\n```\n\n**Attenzione a `sudo` con le frecce:** `sudo echo 10 > /proc/...` **non funziona**, perche' la redirezione la fa la tua shell, che root non e'. Per questo esiste la forma con `tee`.\n\n### Adesso, e da domani\n\n```\nsudo sysctl -w vm.swappiness=10        # fino al riavvio\necho 'vm.swappiness = 10' | sudo tee -a /etc/sysctl.conf\nsudo sysctl -p                          # rilegge il file e applica\n```\n\nCambiare un parametro senza sapere cosa fa e' il modo piu' rapido di rendere una macchina lenta in modi difficili da diagnosticare. Si cambia **un parametro alla volta**, si misura, e si scrive perche'."
     }
   ],
   "raccolte": [
     {
-      "id": "l14-hw",
-      "comando": "lspci, lsmod, modprobe, sysctl",
-      "titolo": "diagnosticare dispositivo e kernel",
+      "id": "l14-dispositivi",
+      "comando": "lspci, lsusb, dmesg",
+      "titolo": "il dispositivo c'e', il driver no",
       "esercizi": [
         {
-          "id": "l14-hw-1",
+          "id": "l14-di-1",
           "tipo": "terminale",
-          "testo": "Elenca i dispositivi PCI e cerca la scheda di rete.",
+          "difficolta": 2,
+          "testo": "Sul banco: elenca i dispositivi sul bus PCI e guarda cosa c'e'.",
           "hardware": true,
+          "filesystem": {},
           "soluzione": "lspci",
           "verifica": {
-            "stampa": "Network controller",
+            "stampa": "Ethernet controller",
             "usa": [
               "lspci"
             ]
           },
           "hint": [
+            "Sei lettere: list PCI.",
             "lspci"
           ],
-          "spiegazione": "Prima domanda: il bus vede il dispositivo?"
+          "spiegazione": "Scheda video, controller USB, scheda di rete: e' l'inventario di quello che il kernel **vede** sul bus. Se un dispositivo non compare qui, il problema e' fisico e nessun comando lo risolve.\n\n`lspci` non dice se il dispositivo funziona: dice che c'e'. La differenza e' il prossimo esercizio."
         },
         {
-          "id": "l14-hw-2",
+          "id": "l14-di-2",
           "tipo": "terminale",
-          "testo": "Guarda i moduli caricati.",
+          "difficolta": 3,
+          "testo": "Hai collegato un ricevitore SDR via USB. Verifica che il sistema lo veda, e guarda se qualche driver lo sta gestendo.",
           "hardware": true,
+          "filesystem": {},
+          "soluzione": "lsusb\nlsusb -t",
+          "verifica": {
+            "stampa": "(nessuno)",
+            "usa": [
+              "lsusb"
+            ]
+          },
+          "hint": [
+            "-t aggiunge il driver in uso.",
+            "lsusb, poi lsusb -t"
+          ],
+          "spiegazione": "Il dispositivo c'e' — `RTL2838 DVB-T` — ma il driver e' `(nessuno)`: il kernel lo vede e non sa cosa farsene.\n\nQuesta e' la diagnosi che separa «non e' collegato» da «manca il modulo», e sono due giornate diverse: la prima si risolve con un cavo, la seconda con un comando."
+        },
+        {
+          "id": "l14-di-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda cosa ha detto il kernel quando hai infilato il cavo: le ultime righe del suo registro.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "dmesg -n 3",
+          "verifica": {
+            "stampa": "RTL2838UHIDIR",
+            "usa": [
+              "dmesg"
+            ]
+          },
+          "hint": [
+            "-n limita alle ultime righe.",
+            "dmesg -n 3"
+          ],
+          "spiegazione": "`dmesg` (*display message*) e' il registro del **kernel**, non dei servizi: hardware, driver, dischi. Il momento in cui un dispositivo viene collegato compare qui, con il nome che il dispositivo dichiara di avere.\n\nÈ la prima cosa da guardare dopo aver collegato qualcosa: se in `dmesg` non compare niente, il cavo non sta comunicando."
+        },
+        {
+          "id": "l14-di-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Fai riconoscere l'SDR.** Carica il modulo `dvb_usb_rtl28xxu`, verifica che il driver si sia legato, e controlla che sia comparso il file di dispositivo.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "modprobe dvb_usb_rtl28xxu\nlsusb -t\nls /dev",
+          "verifica": {
+            "stampa": "swradio0",
+            "esiste": [
+              "/dev/swradio0"
+            ],
+            "usa": [
+              "modprobe"
+            ]
+          },
+          "hint": [
+            "modprobe NOME carica il modulo; poi guarda /dev.",
+            "modprobe dvb_usb_rtl28xxu, poi ls /dev"
+          ],
+          "spiegazione": "Il driver si e' legato e in `/dev` e' comparso `swradio0`: **da adesso un programma puo' aprirlo**. Prima, qualunque software di ricezione avrebbe detto «dispositivo non trovato» senza spiegare perche'.\n\nÈ la catena completa: dispositivo fisico → modulo del kernel → file in `/dev` → programma che lo usa. Quando qualcosa non funziona, si controlla in quest'ordine."
+        },
+        {
+          "id": "l14-di-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Verifica anche dal lato del registro del kernel che il driver si sia legato, e salva la prova in `driver.txt`.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "modprobe dvb_usb_rtl28xxu\ndmesg -n 2 > driver.txt\ncat driver.txt",
+          "verifica": {
+            "contiene": {
+              "driver.txt": "swradio0"
+            },
+            "usa": [
+              "modprobe",
+              "dmesg"
+            ]
+          },
+          "hint": [
+            "Carica il modulo, poi salva le ultime righe di dmesg.",
+            "dmesg -n 2 > driver.txt"
+          ],
+          "spiegazione": "Il registro conserva la sequenza: dispositivo collegato, driver legato, file creato. Allegare queste righe a una segnalazione vale piu' di «non funziona» — e se il produttore chiede il modello esatto, sta scritto li'."
+        },
+        {
+          "id": "l14-di-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Un collega dice che la scheda di rete non ha driver. Verifica con `lspci -k` e salva la risposta.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "lspci -k > schede.txt\ngrep -A1 Ethernet schede.txt",
+          "verifica": {
+            "contiene": {
+              "schede.txt": "e1000e"
+            },
+            "usa": [
+              "lspci",
+              "grep"
+            ]
+          },
+          "hint": [
+            "-k mostra il driver; poi filtra la parte che ti interessa.",
+            "lspci -k > schede.txt, poi grep -A1 Ethernet schede.txt"
+          ],
+          "spiegazione": "`Kernel driver in use: e1000e`: il driver c'e' e sta lavorando. Se il problema esiste, non e' qui — e a quel punto si passa alla scaletta del modulo sulla rete: interfaccia, indirizzo, rotta.\n\nEscludere e' meta' della diagnosi, e costa un comando."
+        },
+        {
+          "id": "l14-di-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Colleghi una scheda di acquisizione e in `lspci` **non compare affatto**. Cosa concludi?",
+          "opzioni": [
+            "e' un problema fisico o di alimentazione: il kernel non la vede proprio",
+            "manca il driver: basta modprobe",
+            "serve riavviare per forza",
+            "il dispositivo e' rotto"
+          ],
+          "risposta": "e' un problema fisico o di alimentazione: il kernel non la vede proprio",
+          "spiegazione": "`lspci` elenca cosa c'e' **sul bus**: se non compare, non e' un problema di software. Cavo, alimentazione, connettore, slot — o, sulle schede interne, una scheda non inserita bene.\n\nSe invece compare senza driver, il kernel la vede e manca il modulo: e' il caso opposto, e si risolve senza alzarsi."
+        },
+        {
+          "id": "l14-di-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Inventario completo per la scheda del banco.** Metti in `hardware.txt` i dispositivi PCI con i loro driver, quelli USB, e la versione del kernel.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "lspci -k > hardware.txt\nlsusb -t >> hardware.txt\nuname -r >> hardware.txt\ncat hardware.txt",
+          "verifica": {
+            "contiene": {
+              "hardware.txt": "6.8.0"
+            },
+            "stampa": "RTL2838",
+            "usa": [
+              "lspci",
+              "lsusb",
+              "uname"
+            ]
+          },
+          "hint": [
+            "Tre comandi, un file, le frecce giuste.",
+            "lspci -k > hardware.txt, poi lsusb -t >> e uname -r >>"
+          ],
+          "spiegazione": "La versione del kernel non e' un dettaglio: i driver si compilano **per una versione precisa**, e la prima domanda di qualunque supporto tecnico e' quella.\n\nQuesto file e' la scheda della macchina: si allega a una richiesta di aiuto, e si guarda quando fra un anno qualcuno chiede «che ricevitore c'era su quel banco?»."
+        }
+      ]
+    },
+    {
+      "id": "l14-moduli",
+      "comando": "lsmod e modprobe",
+      "titolo": "il kernel si estende mentre gira",
+      "esercizi": [
+        {
+          "id": "l14-mo-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda quali moduli sono caricati, e quanti li stanno usando.",
+          "hardware": true,
+          "filesystem": {},
           "soluzione": "lsmod",
           "verifica": {
-            "stampa": "nvme",
+            "stampa": "Used by",
             "usa": [
               "lsmod"
             ]
           },
           "hint": [
+            "Cinque lettere: list modules.",
             "lsmod"
           ],
-          "spiegazione": "Un driver del kernel e' spesso un modulo."
+          "spiegazione": "La terza colonna e' un contatore: `nvme` e' usato da due cose — il filesystem di sistema, per esempio — mentre `e1000e` e' a zero.\n\nQuel numero non e' decorativo: decide se il modulo si puo' togliere, ed e' il prossimo esercizio."
         },
         {
-          "id": "l14-hw-3",
+          "id": "l14-mo-2",
           "tipo": "terminale",
-          "testo": "Carica il modulo sdr e verifica che sia presente.",
+          "difficolta": 3,
+          "testo": "Prova a togliere il modulo del disco NVMe, quello su cui gira il sistema, e leggi la risposta.",
           "hardware": true,
-          "soluzione": "modprobe sdr\nlsmod",
+          "filesystem": {},
+          "soluzione": "lsmod\nmodprobe -r nvme",
           "verifica": {
-            "stampa": "sdr",
+            "errore": "in uso",
+            "usa": [
+              "modprobe"
+            ]
+          },
+          "hint": [
+            "-r rimuove; provaci sul modulo con Used by diverso da zero.",
+            "modprobe -r nvme"
+          ],
+          "spiegazione": "Il kernel dice di no, e ha ragione: togliere il driver del disco su cui sta il sistema vorrebbe dire spegnere la macchina a meta' di una frase.\n\nIl contatore *Used by* e' esattamente questa protezione. Quando invece e' a zero, il modulo si toglie senza conseguenze."
+        },
+        {
+          "id": "l14-mo-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Togli un modulo che nessuno sta usando e verifica che sia sparito dall'elenco.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "modprobe -r e1000e\nlsmod",
+          "verifica": {
+            "stampa": "Used by",
             "usa": [
               "modprobe",
               "lsmod"
             ]
           },
           "hint": [
-            "modprobe sdr"
+            "Quello con Used by a zero.",
+            "modprobe -r e1000e"
           ],
-          "spiegazione": "Modprobe carica il modulo e, su un sistema vero, le dipendenze."
+          "spiegazione": "Sparito. Attenzione a cosa hai appena fatto su una macchina vera: `e1000e` e' il driver della **scheda di rete**, e toglierlo su una macchina remota vuol dire perdere la connessione all'istante.\n\nÈ un errore che si fa una volta sola, e assomiglia a quello del firewall attivato senza permettere la 22."
         },
         {
-          "id": "l14-hw-4",
+          "id": "l14-mo-4",
           "tipo": "terminale",
-          "testo": "Riduci swappiness a 10 e leggi la risposta.",
+          "difficolta": 3,
+          "testo": "Rimetti a posto: ricarica il driver di rete e verifica che il collegamento risulti di nuovo attivo.",
           "hardware": true,
-          "soluzione": "sysctl -w vm.swappiness=10",
+          "filesystem": {},
+          "soluzione": "modprobe -r e1000e\nlshw\nmodprobe e1000e\nlshw",
           "verifica": {
-            "stampa": "10",
+            "stampa": "link=yes",
             "usa": [
+              "modprobe",
+              "lshw"
+            ]
+          },
+          "hint": [
+            "Ricarica il modulo e riguarda lshw.",
+            "modprobe e1000e"
+          ],
+          "spiegazione": "`link=yes` torna dopo il caricamento: il driver e' quello che collega il dispositivo fisico all'interfaccia di rete che poi configuri con `ip`.\n\nÈ anche la spiegazione di un caso che sembra assurdo — l'interfaccia sparita da `ip addr`: se il modulo non e' caricato, per il sistema quella scheda non esiste."
+        },
+        {
+          "id": "l14-mo-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a caricare un modulo che non esiste e leggi come lo dice il kernel.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "modprobe sdr_inesistente",
+          "verifica": {
+            "errore": "non trovato",
+            "usa": [
+              "modprobe"
+            ]
+          },
+          "hint": [
+            "Un nome inventato.",
+            "modprobe sdr_inesistente"
+          ],
+          "spiegazione": "Il messaggio nomina la cartella dove ha cercato: `/lib/modules/<versione del kernel>`. È il dettaglio che conta, perche' i moduli sono legati **a una versione precisa** del kernel.\n\nDopo un aggiornamento del kernel, un driver compilato a mano smette di essere trovato: non e' sparito, e' nella cartella della versione vecchia. È il guasto tipico delle schede di acquisizione con driver del produttore."
+        },
+        {
+          "id": "l14-mo-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Verifica che i dati di `lsmod` e quelli grezzi del kernel raccontino la stessa cosa: confronta con `/proc/modules`.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "modprobe dvb_usb_rtl28xxu\nlsmod\ngrep rtl /proc/modules",
+          "verifica": {
+            "stampa": "dvb_usb_rtl28xxu",
+            "usa": [
+              "lsmod",
+              "grep"
+            ]
+          },
+          "hint": [
+            "/proc/modules e' la stessa informazione, senza intestazioni.",
+            "grep rtl /proc/modules"
+          ],
+          "spiegazione": "`lsmod` non fa altro che **leggere `/proc/modules`** e incolonnarlo. Sono la stessa informazione: uno per gli occhi, l'altro per gli script.\n\nÈ il primo assaggio della raccolta successiva: quasi tutti i comandi che ti dicono qualcosa sul sistema stanno leggendo un file sotto `/proc`."
+        },
+        {
+          "id": "l14-mo-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Hai caricato un modulo con `modprobe`. Dopo un riavvio, c'e' ancora?",
+          "opzioni": [
+            "no: `modprobe` vale per adesso, la persistenza si configura in /etc/modules-load.d",
+            "si', modprobe e' permanente",
+            "si', ma solo se lanciato con sudo",
+            "dipende dalla distribuzione"
+          ],
+          "risposta": "no: `modprobe` vale per adesso, la persistenza si configura in /etc/modules-load.d",
+          "spiegazione": "È lo stesso schema che hai gia' incontrato tre volte: `ip addr add` sparisce al riavvio, `systemctl start` senza `enable` non torna, `sysctl -w` si azzera.\n\n**Una cosa vale adesso, un'altra vale da domani**, e sono sempre due comandi diversi. Quando qualcosa «funzionava venerdi'», questa e' la prima ipotesi."
+        },
+        {
+          "id": "l14-mo-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il ricevitore, dall'inizio.** Verifica che il dispositivo ci sia, che non abbia driver, carica il modulo, e dimostra che ora esiste il file di dispositivo — salvando la prova.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "lsusb -t\nmodprobe dvb_usb_rtl28xxu\nlsusb -t\nls /dev > dispositivi.txt\nlsmod | grep rtl >> dispositivi.txt\ncat dispositivi.txt",
+          "verifica": {
+            "contiene": {
+              "dispositivi.txt": "swradio0"
+            },
+            "esiste": [
+              "/dev/swradio0"
+            ],
+            "usa": [
+              "lsusb",
+              "modprobe",
+              "lsmod"
+            ]
+          },
+          "hint": [
+            "Guarda prima, carica, guarda dopo, salva la prova.",
+            "ls /dev > dispositivi.txt, poi lsmod | grep rtl >> dispositivi.txt"
+          ],
+          "spiegazione": "Prima e dopo nello stesso file: e' cosi' che si documenta un intervento su una macchina che non e' tua.\n\nLa catena vale per qualunque dispositivo: **c'e' sul bus** (`lsusb`), **ha un driver** (`-t`), **esiste in /dev** (`ls`). Se una delle tre manca, il programma che deve usarlo non partira', e il suo messaggio di errore non ti dira' quale delle tre."
+        }
+      ]
+    },
+    {
+      "id": "l14-proc",
+      "comando": "/proc e sysctl",
+      "titolo": "quando tutto e' davvero un file",
+      "esercizi": [
+        {
+          "id": "l14-pr-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Chiedi al kernel che processore ha questa macchina, leggendo il file che lo dice.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "cat /proc/cpuinfo",
+          "verifica": {
+            "stampa": "model name",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "È un file, si legge con cat.",
+            "cat /proc/cpuinfo"
+          ],
+          "spiegazione": "Nessun comando speciale: **e' un file**, e `cat` basta. `/proc` non sta su nessun disco — quando lo leggi, il kernel genera il contenuto sul momento.\n\nÈ l'esempio piu' puro di «in Unix tutto e' un file»: per sapere che processore c'e' non serve una libreria, serve `cat`."
+        },
+        {
+          "id": "l14-pr-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Quanta memoria ha la macchina, e quanta ne resta? Tira fuori solo le due righe che contano.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "grep Mem /proc/meminfo",
+          "verifica": {
+            "stampa": "MemAvailable",
+            "usa": [
+              "grep"
+            ]
+          },
+          "hint": [
+            "/proc/meminfo e' testo: filtralo con grep.",
+            "grep Mem /proc/meminfo"
+          ],
+          "spiegazione": "`free` e `top` non fanno niente di piu': leggono questo file e lo incolonnano. Saperlo serve quando devi mettere un numero dentro uno script — un file di testo si legge senza dipendere dal formato di uscita di un comando.\n\n`MemAvailable` e' il numero che conta davvero: la memoria che il sistema puo' dare a un programma nuovo, cache riutilizzabile compresa."
+        },
+        {
+          "id": "l14-pr-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Leggi il parametro `vm.swappiness` in due modi diversi: dal file e con il comando dedicato.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "cat /proc/sys/vm/swappiness\nsysctl vm.swappiness",
+          "verifica": {
+            "stampa": "vm.swappiness = 60",
+            "usa": [
+              "cat",
               "sysctl"
             ]
           },
           "hint": [
-            "nome=valore dopo -w."
+            "I punti del nome diventano barre nel percorso.",
+            "cat /proc/sys/vm/swappiness, poi sysctl vm.swappiness"
           ],
-          "spiegazione": "La modifica e' temporanea finche' non viene configurata in modo persistente."
+          "spiegazione": "Stesso valore, due strade: `sysctl` e' un'interfaccia piu' comoda sopra `/proc/sys`, e la traduzione e' meccanica — i punti diventano barre.\n\n`vm.swappiness` dice quanto volentieri il kernel sposta memoria su disco: 60 e' il default, valori bassi convengono su una macchina con molta RAM che fa calcolo."
         },
         {
-          "id": "l14-hw-5",
-          "tipo": "predict",
-          "testo": "Un dispositivo non appare in lspci: qual e' la conclusione prudente?",
-          "opzioni": [
-            "il problema e' prima del driver o del modulo",
-            "basta modprobe",
-            "il DNS e' errato",
-            "serve chmod"
+          "id": "l14-pr-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La freccia e sudo.** Prova a cambiare `vm.swappiness` scrivendo direttamente nel file, leggi l'errore, e poi fallo nel modo giusto.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "echo 10 > /proc/sys/vm/swappiness\necho 10 | sudo tee /proc/sys/vm/swappiness\nsysctl vm.swappiness",
+          "verifica": {
+            "errore": "permesso negato",
+            "stampa": "vm.swappiness = 10",
+            "usa": [
+              "tee",
+              "sudo"
+            ]
+          },
+          "hint": [
+            "La redirezione la fa la tua shell, non sudo: serve tee.",
+            "echo 10 | sudo tee /proc/sys/vm/swappiness"
           ],
-          "risposta": "il problema e' prima del driver o del modulo",
-          "spiegazione": "Il kernel non puo' associare un driver a un hardware che il bus non rileva."
+          "spiegazione": "Questo e' il tranello piu' noto di `sudo`: `sudo echo 10 > file` **non funziona**, perche' `sudo` riguarda `echo`, mentre il file lo apre **la tua shell**, che root non e'.\n\n`echo 10 | sudo tee file` risolve: `tee` gira come root e scrive lui. È il motivo per cui vedi quella forma in mezzo mondo di guide, e ora sai perche'.",
+          "testoAvanzato": true
         },
         {
-          "id": "l14-hw-6",
-          "tipo": "predict",
-          "testo": "Perche' non cambiare sysctl a caso?",
-          "opzioni": [
-            "un parametro cambia il comportamento globale del sistema",
-            "perche' sysctl non funziona",
-            "perche' serve sempre Internet",
-            "perche' modifica solo un file CSV"
+          "id": "l14-pr-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Cambia lo stesso parametro con il comando dedicato, e verifica che il file lo rifletta.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "sudo sysctl -w vm.swappiness=20\ncat /proc/sys/vm/swappiness",
+          "verifica": {
+            "stampa": "20",
+            "usa": [
+              "sysctl",
+              "cat"
+            ]
+          },
+          "hint": [
+            "-w scrive.",
+            "sudo sysctl -w vm.swappiness=20"
           ],
-          "risposta": "un parametro cambia il comportamento globale del sistema",
-          "spiegazione": "Misura, annota e verifica prima di rendere persistente una scelta."
+          "spiegazione": "Il file cambia insieme al parametro, perche' **sono la stessa cosa**. `sysctl -w` e' solo un modo piu' leggibile di scrivere in `/proc/sys`.\n\nE come tutto quello che sta in `/proc`, vale fino al riavvio."
+        },
+        {
+          "id": "l14-pr-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Rendi la modifica permanente: scrivila in `/etc/sysctl.conf`, applicala senza riavviare, e verifica.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "echo 'vm.swappiness = 10' > /etc/sysctl.conf\nsudo sysctl -p /etc/sysctl.conf\ncat /proc/sys/vm/swappiness",
+          "verifica": {
+            "contiene": {
+              "/etc/sysctl.conf": "vm.swappiness"
+            },
+            "stampa": "10",
+            "usa": [
+              "sysctl",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Scrivi la riga nel file, poi sysctl -p per rileggerlo.",
+            "sudo sysctl -p /etc/sysctl.conf"
+          ],
+          "spiegazione": "`sysctl -p` rilegge il file e applica: e' il modo di **provare la configurazione permanente senza riavviare**, e di scoprire subito se hai scritto male una riga.\n\nÈ lo stesso schema di `mount -a` per `fstab` e di `sshd -t` per la configurazione di ssh: prima si prova, poi ci si fida."
+        },
+        {
+          "id": "l14-pr-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' `ls -l /proc/cpuinfo` mostra dimensione 0 anche se il file contiene testo?",
+          "opzioni": [
+            "/proc non sta su un disco: il contenuto lo genera il kernel quando lo leggi",
+            "il file e' compresso",
+            "e' un collegamento simbolico",
+            "e' un errore di ls"
+          ],
+          "risposta": "/proc non sta su un disco: il contenuto lo genera il kernel quando lo leggi",
+          "spiegazione": "`/proc` e' un filesystem **virtuale**: non ci sono blocchi su disco da contare, quindi la dimensione dichiarata e' zero. Il contenuto viene prodotto al momento della lettura, ed e' sempre aggiornato.\n\nPer questo non ha senso copiare `/proc` in un backup, e per questo un `cat` di due secondi fa puo' dare un risultato diverso da quello di adesso."
+        },
+        {
+          "id": "l14-pr-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La scheda del kernel.** Metti in `kernel.txt` la versione, il modello di processore, la memoria totale, e il valore corrente di `vm.swappiness`.",
+          "hardware": true,
+          "filesystem": {},
+          "soluzione": "uname -r > kernel.txt\ngrep model /proc/cpuinfo >> kernel.txt\ngrep MemTotal /proc/meminfo >> kernel.txt\nsysctl vm.swappiness >> kernel.txt\ncat kernel.txt",
+          "verifica": {
+            "contiene": {
+              "kernel.txt": "vm.swappiness"
+            },
+            "stampa": "MemTotal",
+            "usa": [
+              "uname",
+              "grep",
+              "sysctl"
+            ]
+          },
+          "hint": [
+            "Quattro comandi, un file, la prima freccia singola e le altre doppie.",
+            "uname -r > kernel.txt, poi le altre con >>"
+          ],
+          "spiegazione": "Quattro righe che dicono su che macchina stanno girando i tuoi calcoli. Allegate a una relazione, rispondono alla domanda «con che hardware sono stati ottenuti questi tempi?» — che e' una domanda seria quando si pubblicano prestazioni.\n\nNota che tre informazioni su quattro vengono da file di testo sotto `/proc`: il sistema si racconta da solo, e basta saper leggere."
         }
       ]
     }

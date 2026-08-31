@@ -424,7 +424,7 @@
     {
       "id": "l14",
       "file": "l14-hardware-kernel.json",
-      "titolo": "Hardware e kernel",
+      "titolo": "Hardware e kernel: dispositivi, moduli, /proc",
       "disponibile": true
     },
     {
