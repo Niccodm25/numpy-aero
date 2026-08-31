@@ -1,0 +1,229 @@
+{
+  "id": "c06",
+  "cantiere": true,
+  "titolo": "Cantiere — Il cluster in miniatura",
+  "perche": "Un nodo di calcolo, una campagna da ridurre e un portatile che si chiude alle sette. In sei fasi: la chiave autorizzata, il lavoro portato di la', un calcolo che sopravvive alla disconnessione, e i risultati riportati a casa con la prova che sono integri.",
+  "funzioni": [
+    "ssh",
+    "ssh-copy-id",
+    "ssh comando",
+    "scp",
+    "rsync -av",
+    "tmux",
+    "grep -c",
+    "wc -l"
+  ],
+  "lezioni": [
+    {
+      "id": "c06-b",
+      "titolo": "Briefing",
+      "md": "## La situazione\n\nIl dipartimento ti da' accesso a un nodo di calcolo. Hai una campagna da ridurre, un portatile che si chiude alle sette di sera, e nessuna voglia di rifare tutto due volte.\n\nSul tuo portatile:\n\n```\n~/.ssh/id_ed25519        la tua chiave, gia' generata\nriduci.sh                lo script che conta gli errori di un log\ndati/log.txt             la campagna di oggi\n```\n\nSul nodo, come utente `anna`:\n\n```\nrisultati/quota.csv      l'uscita del calcolo di ieri\nrisultati/log.txt        il suo log\nsimula.py                il programma che gira di la'\n```\n\n## Cosa devi produrre\n\nSei fasi, ciascuna costruita sul risultato della precedente:\n\n1. **Entrare** — la chiave autorizzata, e la prova che la strada c'e'\n2. **Guardare di la'** — cosa c'e' gia' sul nodo, senza aprire una sessione\n3. **Portare il lavoro** — lo script di riduzione dalla tua parte alla loro\n4. **Il calcolo che sopravvive** — dentro una sessione che regge la disconnessione\n5. **Riportare i risultati** — in modo incrementale, e verificarli\n6. **Il giro completo** — dall'inizio alla fine, con il conteggio che torna\n\n## La regola di questo cantiere\n\n**Il risultato non e' «il comando ha risposto».** È: il job e' rintracciabile, i dati sono integri, e quello che hai riportato a casa contiene davvero quello che credi.\n\nOgni fase finisce con una verifica che qualcun altro potrebbe rifare."
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c06-f1",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 1 - Entrare.**\n\nIl nodo non ti conosce ancora. Prova a entrare e leggi il rifiuto, autorizza la tua chiave, e rientra chiedendo in che cartella ti trovi.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "ssh anna@cluster pwd\nssh-copy-id anna@cluster\nssh anna@cluster pwd",
+      "verifica": {
+        "stampa": "/home/anna",
+        "errore": "Permission denied",
+        "usa": [
+          "ssh",
+          "ssh-copy-id"
+        ]
+      },
+      "spiegazione": "`Permission denied (publickey)` non vuol dire «password sbagliata»: il nodo accetta **solo** chiavi, e la tua non era fra quelle autorizzate.\n\nDa questo momento entri senza digitare niente, ed e' la condizione perche' tutto il resto — `scp`, `rsync`, gli script — funzioni senza fermarsi a chiedere.",
+      "remoto": {
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    },
+    {
+      "id": "c06-f2",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 2 - Guardare di la'.**\n\nPrima di mandare qualcosa, guarda cosa c'e' gia': elenca la cartella dei risultati sul nodo e conta le righe del CSV, **senza aprire una sessione interattiva**.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "ssh anna@cluster \"ls risultati\"\nssh anna@cluster \"wc -l risultati/quota.csv\"",
+      "verifica": {
+        "stampa": "4 risultati/quota.csv",
+        "usa": [
+          "ssh"
+        ]
+      },
+      "spiegazione": "Un comando dopo l'host viene eseguito **di la'** e l'uscita torna qui: nessuna sessione da aprire e chiudere, e la stessa forma si usa negli script.\n\nContare di la' invece di scaricare e' l'abitudine giusta: su un file da un giga, `ssh nodo \"wc -l file\"` ti manda un numero, `scp` ti manda un giga.",
+      "remoto": {
+        "autorizzata": true,
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    },
+    {
+      "id": "c06-f3",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 3 - Portare il lavoro.**\n\nManda `riduci.sh` sul nodo, verifica che sia arrivato, e provalo di la' sul log che c'e' gia' nei risultati.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "scp riduci.sh anna@cluster:riduci.sh\nssh anna@cluster ls\nssh anna@cluster \"grep -c ERROR risultati/log.txt\"",
+      "verifica": {
+        "stampa": "2",
+        "usa": [
+          "scp",
+          "ssh"
+        ]
+      },
+      "spiegazione": "Lo script viaggia, i dati restano dove sono. È la divisione che regge su qualunque cluster: **il codice si porta, i dati si raggiungono**.\n\nLa verifica con `ls` non e' pignoleria — un `scp` interrotto a meta' lascia un file incompleto, e te ne accorgi solo quando lo lanci.",
+      "remoto": {
+        "autorizzata": true,
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    },
+    {
+      "id": "c06-f4",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 4 - Il calcolo che sopravvive.**\n\nApri sul nodo una sessione chiamata `notte`, avvia dentro la simulazione, e verifica dall'elenco che stia girando li' dentro.\n\nPoi riattaccati, come faresti domani mattina da un altro computer.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "tmux new -s notte\ntmux send-keys -t notte 'python simula.py'\ntmux ls\ntmux attach -t notte",
+      "verifica": {
+        "stampa": "sta ancora girando",
+        "usa": [
+          "tmux"
+        ]
+      },
+      "spiegazione": "La sessione vive **sul nodo**: non le interessa che il tuo portatile si chiuda, ne' che la linea cada. Ci si riattacca il giorno dopo e si trova tutto dov'era, output compreso.\n\nSenza `tmux`, un calcolo lanciato via `ssh` muore con la sessione — e sei ore di lavoro con lui. Con `nohup` sopravviverebbe, ma non potresti piu' guardarlo mentre gira.",
+      "remoto": {
+        "autorizzata": true,
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    },
+    {
+      "id": "c06-f5",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 5 - Riportare i risultati.**\n\nPorta a casa la cartella `risultati` in modo incrementale, verifica che il CSV sia completo, e **rilancia lo stesso comando** per dimostrare che la seconda volta non trasferisce niente.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "rsync -av anna@cluster:risultati .\nwc -l risultati/quota.csv\nrsync -av anna@cluster:risultati .",
+      "verifica": {
+        "esiste": [
+          "/home/tu/risultati/quota.csv"
+        ],
+        "stampa": "0 file",
+        "usa": [
+          "rsync",
+          "wc"
+        ]
+      },
+      "spiegazione": "`inviati 0 file`: `rsync` confronta prima e manda solo quello che manca. Su una cartella di uscita che cresce di un file al giorno, la differenza con `scp` e' fra pochi secondi e mezz'ora.\n\nIl conteggio delle righe e' il controllo che conta: un job ucciso dal gestore di code per tempo scaduto lascia file troncati che **sembrano validi**.",
+      "remoto": {
+        "autorizzata": true,
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    },
+    {
+      "id": "c06-f6",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 6 - Il giro completo.**\n\nRifallo dall'inizio come lo faresti ogni mattina: guarda cosa c'e' sul nodo, sincronizza, conta gli errori del log riportato, e salva il riepilogo in `mattina.txt`.",
+      "filesystem": {
+        "/home/tu/.ssh/id_ed25519": {
+          "contenuto": "PRIVATE KEY\n",
+          "modo": 384
+        },
+        "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n",
+        "/home/tu/riduci.sh": "grep ERROR $1 | wc -l\n",
+        "/home/tu/dati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n"
+      },
+      "soluzione": "ssh anna@cluster \"ls risultati\"\nrsync -av anna@cluster:risultati .\ngrep -c ERROR risultati/log.txt > mattina.txt\nwc -l risultati/quota.csv >> mattina.txt\ncat mattina.txt",
+      "verifica": {
+        "contiene": {
+          "mattina.txt": "2"
+        },
+        "stampa": "4 risultati/quota.csv",
+        "usa": [
+          "ssh",
+          "rsync",
+          "grep",
+          "wc"
+        ]
+      },
+      "spiegazione": "Quattro comandi e la giornata comincia: **guarda di la'**, **porta di qua**, **conta**, **conserva**.\n\nDue errori nel log e quattro righe nel CSV: gli stessi numeri che avresti ottenuto contando di la' nella fase 2. Quando i due conti coincidono, il trasferimento e' integro — ed e' l'unica verifica che vale davvero qualcosa.\n\nQuello che manca per un cluster vero e' il gestore di code: `sbatch` al posto di `tmux`, e il job lo tiene in vita SLURM. Ma la struttura della giornata e' questa, e non cambia.",
+      "remoto": {
+        "autorizzata": true,
+        "utente": "anna",
+        "files": {
+          "/home/anna/risultati/quota.csv": "t,quota\n0,1000\n60,4200\n120,8400\n",
+          "/home/anna/risultati/log.txt": "INFO avvio\nERROR sensore quota\nINFO fine\nERROR timeout\n",
+          "/home/anna/simula.py": "print('simulazione')\n"
+        }
+      }
+    }
+  ]
+}

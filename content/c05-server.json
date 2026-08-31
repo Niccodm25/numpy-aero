@@ -1,0 +1,333 @@
+{
+  "id": "c05",
+  "cantiere": true,
+  "titolo": "Cantiere — Il server che regge",
+  "perche": "Un PC di acquisizione che deve stare in piedi tre mesi da solo, e che dopo un blackout non riparte. In sei fasi: diagnosi dal journal, riparazione della unit, avvio automatico verificato con un riavvio, rotazione dei log, e uno script di controllo che dice in un colpo se il banco e' a posto.",
+  "funzioni": [
+    "systemctl status",
+    "systemctl enable",
+    "journalctl -u",
+    "daemon-reload",
+    "sed -i",
+    "logrotate",
+    "crontab",
+    "riavvia",
+    "if",
+    "exit",
+    "$(comando)"
+  ],
+  "lezioni": [
+    {
+      "id": "c05-b",
+      "titolo": "Briefing",
+      "md": "## La situazione\n\nIl banco prova acquisisce dati per tre mesi, giorno e notte. Il PC che li raccoglie sta in laboratorio, nessuno lo guarda, e a Natale l'edificio resta senza corrente per due ore.\n\nAdesso il servizio di acquisizione **non parte**, e nessuno sa da quanto.\n\nSul disco trovi:\n\n```\n/etc/systemd/system/acquisizione.service   la unit, scritta da qualcuno mesi fa\n/opt/acq/acquisisci.sh                     lo script che campiona\n/home/tu/misure.log                        il log, che cresce da solo\n```\n\n## Cosa devi produrre\n\nSei fasi, ciascuna costruita sul risultato della precedente:\n\n1. **Diagnosi** — perche' il servizio non parte, letta dal journal\n2. **Riparazione** — la unit corretta e il servizio in piedi\n3. **Il blackout** — che riparta da solo, e la prova con un riavvio\n4. **Il disco** — un log che non cresca all'infinito\n5. **Il controllo** — uno script che dica in un colpo se e' tutto a posto\n6. **La prova finale** — riavvio, e il controllo che risponde da solo\n\n## La regola di questo cantiere\n\n**Ogni correzione va verificata come la verificherebbe qualcun altro.** Dire «adesso funziona» dopo un `systemctl start` non basta: la domanda vera e' «funzionera' ancora dopo il prossimo blackout, quando in laboratorio non ci sara' nessuno?».\n\nLa verifica guarda lo stato del sistema e i file che restano, non i comandi che hai usato."
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c05-f1",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 1 - Diagnosi.**\n\nIl servizio non parte. Prova ad avviarlo, guarda com'e' messo e leggi il journal: devi arrivare a dire **quale file** systemd non riesce a eseguire.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/vecchio.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/vecchio.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "systemctl start acquisizione\nsystemctl status acquisizione\njournalctl -u acquisizione -n 3",
+      "verifica": {
+        "stampa": "203/EXEC",
+        "errore": "failed",
+        "usa": [
+          "systemctl",
+          "journalctl"
+        ]
+      },
+      "spiegazione": "`203/EXEC` con il percorso `/opt/acq/vecchio.sh`: systemd non riesce a **eseguire** il comando di `ExecStart`. Le cause sono due — il file non esiste, oppure non e' eseguibile — e qui il journal dice la prima.\n\nLo script c'e' ma si chiama `acquisisci.sh`: qualcuno lo ha rinominato mesi fa e la unit e' rimasta indietro. Il servizio ha continuato a girare finche' nessuno lo ha riavviato, e il blackout lo ha riavviato.",
+      "testoAvanzato": true
+    },
+    {
+      "id": "c05-f2",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 2 - Riparazione.**\n\nCorreggi la riga `ExecStart` nel file di unit perche' punti allo script che esiste davvero, fai rileggere la configurazione a systemd, e avvia il servizio.\n\nAlla fine `systemctl status` deve dire `active (running)`.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/vecchio.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/vecchio.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "cat /etc/systemd/system/acquisizione.service\nsed -i 's|/opt/acq/vecchio.sh|/opt/acq/acquisisci.sh|' /etc/systemd/system/acquisizione.service\nsystemctl daemon-reload\nsystemctl start acquisizione\nsystemctl status acquisizione",
+      "verifica": {
+        "contiene": {
+          "/etc/systemd/system/acquisizione.service": "acquisisci.sh"
+        },
+        "stampa": "active (running)",
+        "usa": [
+          "sed",
+          "systemctl"
+        ]
+      },
+      "spiegazione": "**`daemon-reload` non e' facoltativo**: senza, systemd continua a usare la versione che ha in memoria, e tu guardi un file corretto mentre il servizio riparte sbagliato. È l'errore piu' frustrante di tutta la faccenda, perche' sembra che la modifica non abbia effetto.\n\nIl delimitatore `|` in `sed` evita di dover proteggere ogni barra dei percorsi: la riga resta leggibile.",
+      "testoAvanzato": true
+    },
+    {
+      "id": "c05-f3",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 3 - Il blackout.**\n\nIl servizio adesso gira, ma la domanda vera e' un'altra: **ripartira' da solo?**\n\nAbilitalo, riavvia la macchina con `riavvia`, e dimostra che dopo il riavvio e' attivo.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/acquisisci.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/acquisisci.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "systemctl enable acquisizione\nsystemctl is-enabled acquisizione\nsystemctl start acquisizione\nriavvia\nsystemctl is-active acquisizione",
+      "verifica": {
+        "stampa": "active",
+        "usa": [
+          "systemctl",
+          "riavvia"
+        ]
+      },
+      "spiegazione": "`start` vale per adesso, `enable` vale da domani. Il servizio del banco era stato avviato a mano da qualcuno, mesi fa, e non era mai stato abilitato: ha funzionato finche' la macchina non si e' spenta.\n\nLa verifica con `riavvia` e' la parte che non si salta: dire «adesso funziona» dopo uno `start` non risponde alla domanda che conta.",
+      "testoAvanzato": true
+    },
+    {
+      "id": "c05-f4",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 4 - Il disco.**\n\nIl log dell'acquisizione cresce da tre mesi e nessuno lo tocca. Un disco pieno ferma **tutto**, acquisizione compresa.\n\nRuota il log, verifica che il vecchio contenuto sia al sicuro e che quello corrente riparta vuoto, e programma un backup notturno alle 3 installando la riga di cron.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/acquisisci.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/acquisisci.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "wc -l misure.log\nlogrotate misure.log\nwc -l misure.log\ncat misure.log.1\necho '0 3 * * * /opt/acq/backup.sh' > lavori.cron\ncrontab lavori.cron\ncrontab -l",
+      "verifica": {
+        "esiste": [
+          "misure.log.1"
+        ],
+        "contenuto": {
+          "misure.log": ""
+        },
+        "stampa": "0 3 * * * /opt/acq/backup.sh",
+        "usa": [
+          "logrotate",
+          "crontab"
+        ]
+      },
+      "spiegazione": "Il vecchio contenuto e' in `misure.log.1`, il file corrente riparte da zero, e il backup e' programmato per le tre di notte quando la macchina e' scarica.\n\n«Ogni tanto lo cancello io» e' un piano che funziona finche' la persona che lo faceva cambia gruppo. La rotazione automatica no — ed e' il motivo per cui `logrotate` esiste su ogni macchina che scrive log.",
+      "testoAvanzato": true
+    },
+    {
+      "id": "c05-f5",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 5 - Il controllo.**\n\nScrivi `controlla.sh`, uno script che in un colpo dica se il banco e' a posto:\n\n- se il servizio **non** e' attivo, deve stampare un messaggio ed uscire con codice 1;\n- se e' attivo, deve stampare `tutto a posto`.\n\nPoi lancialo a servizio fermo e a servizio avviato, per vedere tutti e due i rami.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/acquisisci.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/acquisisci.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "echo 'stato=$(systemctl is-active acquisizione)' > controlla.sh\necho 'if [ $stato = active ]; then' >> controlla.sh\necho '  echo tutto a posto' >> controlla.sh\necho 'else' >> controlla.sh\necho '  echo acquisizione ferma' >> controlla.sh\necho '  exit 1' >> controlla.sh\necho 'fi' >> controlla.sh\nbash controlla.sh\nsystemctl start acquisizione\nbash controlla.sh",
+      "verifica": {
+        "esiste": [
+          "controlla.sh"
+        ],
+        "stampa": "tutto a posto",
+        "usa": [
+          "bash",
+          "systemctl"
+        ]
+      },
+      "spiegazione": "Lo script **guarda** invece di limitarsi a fare: `$(systemctl is-active ...)` cattura la risposta, il confronto decide, e `exit 1` la comunica a chi lo ha lanciato.\n\nÈ la differenza fra un elenco di comandi e uno strumento — e da qui in poi questo script puo' finire in un lavoro periodico, che ti scriva solo quando qualcosa non va invece di farti collegare ogni mattina.",
+      "testoAvanzato": true
+    },
+    {
+      "id": "c05-f6",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 6 - La prova finale.**\n\nRimetti tutto insieme: servizio abilitato, macchina riavviata come dopo un blackout, e il controllo che risponde da solo.\n\nSalva l'esito in `stato_banco.txt`, con la riga del controllo e quella dell'abilitazione.",
+      "servizi": {
+        "unita": {
+          "acquisizione.service": {
+            "descrizione": "Acquisizione banco prova",
+            "exec": "/opt/acq/acquisisci.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      },
+      "filesystem": {
+        "/opt/acq/acquisisci.sh": {
+          "contenuto": "echo campione\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/acquisisci.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/misure.log": "10:00 campione 1\n10:01 campione 2\n10:02 campione 3\n"
+      },
+      "soluzione": "systemctl enable acquisizione\nriavvia\necho 'stato=$(systemctl is-active acquisizione)' > controlla.sh\necho 'if [ $stato = active ]; then' >> controlla.sh\necho '  echo tutto a posto' >> controlla.sh\necho 'else' >> controlla.sh\necho '  echo acquisizione ferma' >> controlla.sh\necho '  exit 1' >> controlla.sh\necho 'fi' >> controlla.sh\nbash controlla.sh > stato_banco.txt\nsystemctl is-enabled acquisizione >> stato_banco.txt\ncat stato_banco.txt",
+      "verifica": {
+        "contiene": {
+          "stato_banco.txt": "enabled"
+        },
+        "stampa": "tutto a posto",
+        "usa": [
+          "systemctl",
+          "riavvia",
+          "bash"
+        ]
+      },
+      "spiegazione": "Due righe in un file: **il servizio gira** e **ripartira' da solo**. Sono le due domande che un revisore fa, e adesso hanno una risposta scritta invece di una promessa.\n\nQuello che resta da fare su una macchina vera, e che questo cantiere non simula: mandare quel file a qualcuno — una mail, un messaggio, una riga in un cruscotto. Un controllo che nessuno legge e' un controllo che non esiste.\n\nE la cosa piu' importante che hai fatto non e' la riparazione: e' aver reso il guasto **irripetibile**. Il prossimo blackout non fara' danni.",
+      "testoAvanzato": true
+    }
+  ]
+}

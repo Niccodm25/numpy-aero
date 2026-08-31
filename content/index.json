@@ -452,16 +452,16 @@
     },
     {
       "id": "c05",
-      "file": "",
+      "file": "c05-server.json",
       "titolo": "Cantiere — Il server che regge",
-      "disponibile": false,
+      "disponibile": true,
       "cantiere": true
     },
     {
       "id": "c06",
-      "file": "",
+      "file": "c06-cluster.json",
       "titolo": "Cantiere — Il cluster in miniatura",
-      "disponibile": false,
+      "disponibile": true,
       "cantiere": true
     },
     {
