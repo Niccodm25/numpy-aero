@@ -1,1 +1,658 @@
-{"id":"l13","titolo":"Servizi, log e lavori periodici","perche":"Un programma che deve restare acceso non va lanciato a mano: systemd lo avvia, lo osserva e lo riavvia. Quando fallisce, i log sono la prova; i backup valgono solo dopo un ripristino riuscito.","funzioni":["systemctl status","systemctl start","systemctl enable","journalctl -u","dmesg","cron","systemd timer","logrotate"],"lezioni":[{"id":"l13-l1","titolo":"Unita' e log","md":"`systemctl status acquisizione.service` dice se una unit e' attiva; `start`, `stop` e `restart` ne cambiano lo stato; `enable` la abilita al boot. Non confondere attivo con abilitato. `journalctl -u acquisizione.service` filtra i log di una sola unit; `dmesg` contiene messaggi del kernel e dei driver. Leggi il log prima di riavviare: il riavvio puo' cancellare la causa."},{"id":"l13-l2","titolo":"Periodico, rotazione, backup","md":"Cron e systemd timer eseguono lavori periodici; per servizi moderni i timer hanno log e dipendenze migliori. `logrotate` evita che un log cresca senza limite. Un backup non e' finito quando la copia termina: va ripristinato in un posto separato e confrontato. RAID non sostituisce il backup."}],"raccolte":[{"id":"l13-service","comando":"systemctl e journalctl","titolo":"far restare vivo un servizio","esercizi":[{"id":"l13-se-1","tipo":"terminale","testo":"Controlla lo stato del servizio di acquisizione.","servizi":true,"soluzione":"systemctl status acquisizione.service","verifica":{"stampa":"inactive","usa":["systemctl"]},"hint":["systemctl status nome."],"spiegazione":"Prima osserva, poi agisci."},{"id":"l13-se-2","tipo":"terminale","testo":"Avvia acquisizione e verifica che sia attiva.","servizi":true,"soluzione":"systemctl start acquisizione.service\nsystemctl status acquisizione.service","verifica":{"stampa":"active (running)","usa":["systemctl"]},"hint":["start, poi status."],"spiegazione":"Lo stato e' del servizio, non della finestra di terminale."},{"id":"l13-se-3","tipo":"terminale","testo":"Leggi il log dell'unita' dopo l'avvio.","servizi":true,"soluzione":"systemctl start acquisizione.service\njournalctl -u acquisizione.service","verifica":{"stampa":"servizio avviato","usa":["journalctl"]},"hint":["journalctl -u nome."],"spiegazione":"Il log collega un evento allo stato osservato."},{"id":"l13-se-4","tipo":"predict","testo":"Cosa fa systemctl enable?","opzioni":["abilita l'avvio al boot","avvia subito il processo","cancella il log","comprime la unit"],"risposta":"abilita l'avvio al boot","spiegazione":"Enable e start sono azioni diverse."},{"id":"l13-se-5","tipo":"predict","testo":"Perche' usare logrotate?","opzioni":["per impedire che i log riempiano il disco","per cifrare il kernel","per creare utenti","per aprire SSH"],"risposta":"per impedire che i log riempiano il disco","spiegazione":"Un servizio sano puo' comunque esaurire lo spazio con un log."},{"id":"l13-se-6","tipo":"predict","testo":"Quale prova rende un backup credibile?","opzioni":["un ripristino verificato","un file con nome backup","RAID attivo","un cron configurato"],"risposta":"un ripristino verificato","spiegazione":"Una copia non letta potrebbe essere incompleta o inutilizzabile."}]}]}
+{
+  "id": "l13",
+  "titolo": "Servizi, log e lavori periodici",
+  "perche": "Un programma che deve girare sempre non si lancia a mano: diventa un servizio, che parte da solo dopo un blackout e lascia tracce leggibili. Qui impari a scriverlo, ad abilitarlo, a capire perche' non parte, e a impedire che i suoi log riempiano il disco.",
+  "funzioni": [
+    "systemctl status",
+    "systemctl start",
+    "systemctl stop",
+    "systemctl restart",
+    "systemctl enable",
+    "systemctl disable",
+    "systemctl is-active",
+    "systemctl is-enabled",
+    "systemctl daemon-reload",
+    "systemctl list-units",
+    "journalctl -u",
+    "journalctl -n",
+    "dmesg",
+    "crontab",
+    "logrotate",
+    "unit file",
+    "ExecStart"
+  ],
+  "lezioni": [
+    {
+      "id": "l13-l1",
+      "titolo": "Attivo adesso, oppure anche domani",
+      "md": "```\nsystemctl status acquisizione      # com'e' messo adesso\nsystemctl start acquisizione       # accendilo ORA\nsystemctl enable acquisizione      # accendilo a OGNI AVVIO\nsystemctl restart acquisizione     # dopo aver cambiato la configurazione\nsystemctl stop acquisizione\n```\n\nSono due cose diverse, ed e' il malinteso numero uno di systemd:\n\n- **`start`** riguarda adesso. Al prossimo riavvio non ne resta traccia.\n- **`enable`** riguarda il futuro. Non avvia niente oggi: crea il collegamento che fa partire il servizio al boot.\n\nIl servizio che «funzionava, poi ho riavviato e non c'era piu'» e' sempre questo: qualcuno ha fatto `start` e non `enable`.\n\nPer averle tutte e due: `systemctl enable --now acquisizione`.\n\n### Leggere lo status\n\n```\n● acquisizione.service - Acquisizione banco prova\n     Loaded: loaded (/etc/systemd/system/acquisizione.service; disabled)\n     Active: failed (Result: exit-code)\n```\n\nDue righe, due informazioni indipendenti: `Loaded ... enabled/disabled` dice cosa succedera' al riavvio, `Active` dice cosa sta succedendo adesso. `failed` non e' `inactive`: vuol dire che ha **provato** e non ce l'ha fatta.\n\n### 203/EXEC\n\nÈ l'errore che vedrai piu' spesso all'inizio, e dice una cosa sola: `systemd` non e' riuscito a eseguire il file di `ExecStart`. Le cause sono due, e si controllano in questo ordine:\n\n1. il percorso e' sbagliato o il file non esiste\n2. il file non ha il bit di esecuzione — `chmod +x`\n\nNessuna delle due e' un problema di systemd."
+    },
+    {
+      "id": "l13-l2",
+      "titolo": "Il journal: dove il sistema dice cosa e' andato storto",
+      "md": "```\njournalctl -u acquisizione          # tutto quello che ha detto quell'unita'\njournalctl -u acquisizione -n 20    # solo le ultime 20 righe\njournalctl -u acquisizione -f       # e restaci attaccato mentre scrive\njournalctl -xeu acquisizione        # con le spiegazioni, saltando alla fine\n```\n\nIl journal e' un archivio unico per tutto il sistema, con dentro l'output di ogni servizio. `-u` seleziona l'unita', ed e' quasi sempre la prima cosa da scrivere.\n\nIl flusso quando qualcosa non parte e' sempre lo stesso, tre comandi:\n\n```\nsystemctl status acquisizione       # com'e' messo\njournalctl -u acquisizione -n 20    # cosa ha detto\nsystemctl restart acquisizione      # riprova dopo aver corretto\n```\n\n### dmesg e' un'altra cosa\n\n`dmesg` e' il registro del **kernel**: hardware, driver, dischi, schede di rete. Quando un disco USB non compare o una scheda di acquisizione non viene vista, la risposta e' li' e non nel journal dei servizi.\n\n### Il journal si legge come qualunque testo\n\n```\njournalctl -u acquisizione | grep -i fail | wc -l\njournalctl -u acquisizione > diagnosi.txt\n```\n\nNon e' un formato speciale: e' testo, e tutti gli strumenti dei moduli precedenti funzionano. Una diagnosi salvata in un file e allegata alla segnalazione vale piu' di «non parte»."
+    },
+    {
+      "id": "l13-l3",
+      "titolo": "Scrivere una unit, e i lavori che tornano da soli",
+      "md": "Una unit e' un file di testo in `/etc/systemd/system`:\n\n```\n[Unit]\nDescription=Stazione meteo\n\n[Service]\nExecStart=/opt/meteo/leggi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n```\n\nTre sezioni: cos'e', come si avvia, quando va abilitata. `Restart=always` la fa ripartire da sola se muore — che e' il motivo per cui un servizio e' meglio di un `nohup`.\n\n**Dopo aver scritto o modificato il file serve `systemctl daemon-reload`**: senza, systemd continua a usare la versione che aveva in memoria, e tu guardi un file che nessuno sta leggendo.\n\n### cron: quello che va fatto ogni tanto\n\n```\ncrontab -l                          # cosa e' programmato adesso\ncrontab lavori.cron                 # installa il file\n0 3 * * * /opt/backup.sh            # ogni giorno alle 3:00\n*/15 * * * * /opt/controlla.sh      # ogni 15 minuti\n```\n\nI cinque campi sono minuto, ora, giorno del mese, mese, giorno della settimana. Si leggono da sinistra a destra e non si imparano a memoria: si guarda un promemoria e si controlla due volte.\n\nI timer di systemd fanno la stessa cosa in modo piu' verboso, ma finiscono nel journal come tutto il resto — e su una macchina che gia' usa systemd sono la scelta piu' coerente.\n\n### logrotate: perche' il disco non si riempie\n\nUn log che cresce senza limite riempie il disco, e un disco pieno ferma **tutto**, acquisizione compresa. `logrotate` archivia il file corrente e ne comincia uno nuovo:\n\n```\nlogrotate /etc/logrotate.d/acquisizione\nmisure.log -> misure.log.1, e misure.log riparte da zero\n```\n\nÈ il lavoro periodico piu' noioso e quello che salva piu' spesso la giornata."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l13-systemctl",
+      "comando": "systemctl",
+      "titolo": "attivo adesso, o anche domani",
+      "esercizi": [
+        {
+          "id": "l13-sy-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei appena arrivato sul PC del banco: guarda quali servizi ci sono e come stanno messi.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl list-units",
+          "verifica": {
+            "stampa": "sshd.service",
+            "usa": [
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "list-units elenca tutto con stato e abilitazione.",
+            "systemctl list-units"
+          ],
+          "spiegazione": "Due colonne che contano: lo stato (`active`, `inactive`, `failed`) e l'abilitazione (`enabled`, `disabled`). Il primo dice cosa sta succedendo adesso, il secondo cosa succedera' al prossimo riavvio.\n\n`sshd` e' attivo e abilitato — ed e' il motivo per cui puoi collegarti da remoto anche dopo un riavvio."
+        },
+        {
+          "id": "l13-sy-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "L'acquisizione dovrebbe partire ma non parte. Prova ad avviarla e leggi cosa dice lo stato.",
+          "servizi": true,
+          "filesystem": {},
+          "soluzione": "systemctl start acquisizione\nsystemctl status acquisizione",
+          "verifica": {
+            "stampa": "203/EXEC",
+            "errore": "failed",
+            "usa": [
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Prima prova ad avviarla, poi chiedi lo stato.",
+            "systemctl start acquisizione, poi systemctl status acquisizione"
+          ],
+          "spiegazione": "`failed` non e' `inactive`: vuol dire che systemd ci ha provato e il comando e' morto subito. Il codice `203/EXEC` e' preciso — non e' riuscito nemmeno a **eseguire** il file indicato in `ExecStart`.\n\nQui il file `/opt/acq/acquisisci.sh` non esiste proprio: il servizio e' configurato per lanciare qualcosa che nessuno ha ancora scritto."
+        },
+        {
+          "id": "l13-sy-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Lo script c'e', ma il servizio continua a fallire con `203/EXEC`. Guarda i permessi, sistemali e fai partire il servizio.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 420
+            }
+          },
+          "soluzione": "systemctl start acquisizione\nls -l /opt/acq/acquisisci.sh\nchmod +x /opt/acq/acquisisci.sh\nsystemctl start acquisizione\nsystemctl status acquisizione",
+          "verifica": {
+            "stampa": "active (running)",
+            "usa": [
+              "chmod",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "203/EXEC ha due cause: il file non c'e', oppure non e' eseguibile.",
+            "chmod +x /opt/acq/acquisisci.sh"
+          ],
+          "spiegazione": "Stesso codice di errore, causa diversa: il file c'e' ma nessuno puo' eseguirlo. Nemmeno root esegue un file senza bit `x` — non e' una questione di privilegi, e' che il file non e' dichiarato eseguibile.\n\nÈ il `chmod +x` del modulo sui permessi, e qui si vede perche' serviva: uno script copiato o scaricato arriva quasi sempre senza quel bit."
+        },
+        {
+          "id": "l13-sy-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai cambiato la configurazione dell'acquisizione. Falla ripartire e verifica nel journal che il riavvio ci sia stato.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl start acquisizione\nsystemctl restart acquisizione\njournalctl -u acquisizione -n 3",
+          "verifica": {
+            "stampa": "restart",
+            "usa": [
+              "systemctl",
+              "journalctl"
+            ]
+          },
+          "hint": [
+            "restart ferma e riavvia; poi guarda le ultime righe del journal.",
+            "systemctl restart acquisizione, poi journalctl -u acquisizione -n 3"
+          ],
+          "spiegazione": "`restart` e' `stop` piu' `start`, e serve ogni volta che cambi qualcosa che il servizio legge all'avvio. Un servizio che «non vede» la configurazione nuova quasi sempre non e' stato riavviato.\n\nIl journal conserva la sequenza: chi guarda dopo di te capisce cosa e' successo e quando."
+        },
+        {
+          "id": "l13-sy-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La prova che conta.** Avvia l'acquisizione, riavvia la macchina con `riavvia`, e guarda se il servizio e' tornato su.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl start acquisizione\nsystemctl is-active acquisizione\nriavvia\nsystemctl is-active acquisizione",
+          "verifica": {
+            "stampa": "inactive",
+            "usa": [
+              "systemctl",
+              "riavvia"
+            ]
+          },
+          "hint": [
+            "Avvialo, riavvia la macchina, e ricontrolla lo stato.",
+            "systemctl start acquisizione, riavvia, systemctl is-active acquisizione"
+          ],
+          "spiegazione": "Sparito. `start` vale per adesso e basta: dopo il riavvio il servizio non c'e' piu', e questa e' esattamente la storia del banco che «funzionava venerdi'».\n\nLa riga che manca e' `systemctl enable`, ed e' il prossimo esercizio. Nota che `sshd` invece e' tornato su da solo: quello era abilitato."
+        },
+        {
+          "id": "l13-sy-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Adesso fai in modo che l'acquisizione riparta da sola. Abilitala, riavvia, e dimostra che stavolta c'e'.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl enable acquisizione\nsystemctl is-enabled acquisizione\nriavvia\nsystemctl is-active acquisizione",
+          "verifica": {
+            "stampa": "active",
+            "usa": [
+              "systemctl",
+              "riavvia"
+            ]
+          },
+          "hint": [
+            "enable non avvia niente adesso: decide cosa succede al boot.",
+            "systemctl enable acquisizione, poi riavvia"
+          ],
+          "spiegazione": "`enable` crea il collegamento che systemd guarda all'avvio. Non ha acceso niente sul momento — se ti serve anche adesso, `systemctl enable --now`.\n\nSu una macchina di acquisizione questa e' la differenza fra un banco che riprende a lavorare dopo un blackout e uno che aspetta che qualcuno arrivi in laboratorio."
+        },
+        {
+          "id": "l13-sy-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`systemctl start X` e `systemctl enable X`: qual e' la differenza?",
+          "opzioni": [
+            "start avvia adesso, enable lo fa partire a ogni avvio della macchina",
+            "sono sinonimi, enable e' la forma nuova",
+            "start avvia per tutti gli utenti, enable solo per te",
+            "enable avvia subito, start prepara e basta"
+          ],
+          "risposta": "start avvia adesso, enable lo fa partire a ogni avvio della macchina",
+          "spiegazione": "Le due domande — «gira adesso?» e «ripartira' da solo?» — hanno due risposte indipendenti, ed e' per questo che `systemctl status` le mostra su due righe diverse: `Active` e `Loaded ... enabled/disabled`.\n\nUn servizio puo' essere attivo e disabilitato (finche' non riavvii), oppure fermo e abilitato (partira' al prossimo boot)."
+        },
+        {
+          "id": "l13-sy-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Lunedi' mattina, dopo un blackout.** L'acquisizione non sta girando. Trova perche', fai in modo che non succeda piu', e dimostralo con un riavvio.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl status acquisizione\nsystemctl is-enabled acquisizione\nsystemctl enable acquisizione\nsystemctl start acquisizione\nriavvia\nsystemctl status acquisizione",
+          "verifica": {
+            "stampa": "active (running)",
+            "usa": [
+              "systemctl",
+              "riavvia"
+            ]
+          },
+          "hint": [
+            "Guarda la riga Loaded dello status: dice enabled o disabled.",
+            "systemctl enable acquisizione, poi start, poi riavvia per verificare"
+          ],
+          "spiegazione": "La diagnosi sta nella riga `Loaded: ... disabled`: il servizio era stato avviato a mano da qualcuno, mesi fa, e nessuno lo aveva mai abilitato. Ha funzionato finche' la macchina non si e' spenta.\n\nLa verifica finale con `riavvia` non e' pignoleria: e' l'unica prova che la correzione regge. Dire «ora e' a posto» dopo aver solo fatto `start` e' come non aver fatto niente."
+        }
+      ]
+    },
+    {
+      "id": "l13-journal",
+      "comando": "journalctl e dmesg",
+      "titolo": "cosa e' andato storto",
+      "esercizi": [
+        {
+          "id": "l13-jo-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il servizio dell'acquisizione e' partito. Guarda cosa ha scritto nel journal.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl start acquisizione\njournalctl -u acquisizione",
+          "verifica": {
+            "stampa": "avviato",
+            "usa": [
+              "journalctl"
+            ]
+          },
+          "hint": [
+            "-u seleziona l'unita'.",
+            "journalctl -u acquisizione"
+          ],
+          "spiegazione": "`-u` e' quasi sempre la prima cosa da scrivere: senza, il journal ti da' tutto il sistema, che su una macchina vera sono migliaia di righe.\n\nOgni riga ha ora, macchina e processo che l'ha scritta: e' il formato standard di tutti i log di sistema."
+        },
+        {
+          "id": "l13-jo-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il log e' lungo. Guarda solo le ultime due righe, quelle appena successe.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl start acquisizione\nsystemctl restart acquisizione\njournalctl -u acquisizione -n 2",
+          "verifica": {
+            "stampa": "restart",
+            "usa": [
+              "journalctl"
+            ]
+          },
+          "hint": [
+            "-n N limita alle ultime N righe.",
+            "journalctl -u acquisizione -n 2"
+          ],
+          "spiegazione": "Su un servizio che gira da settimane, `journalctl -u X` senza limiti ti seppellisce. `-n 20` e' il modo normale di cominciare, e `-f` resta attaccato mentre il servizio scrive — l'equivalente di `tail -f` del modulo sui filtri."
+        },
+        {
+          "id": "l13-jo-3",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Quante volte il servizio ha fallito? Conta le righe di fallimento nel journal.",
+          "servizi": true,
+          "filesystem": {},
+          "soluzione": "systemctl start acquisizione\nsystemctl start acquisizione\njournalctl -u acquisizione | grep Failed | wc -l",
+          "verifica": {
+            "stampa": "4",
+            "usa": [
+              "journalctl",
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Il journal e' testo: filtralo e contalo come qualunque log.",
+            "journalctl -u acquisizione | grep Failed | wc -l"
+          ],
+          "spiegazione": "Due tentativi, due righe di fallimento ciascuno: `Failed to execute` e `Failed with result`. Il conteggio dice subito se il servizio sta rientrando in un ciclo di riavvii — il sintomo classico di un `Restart=always` su un comando che non partira' mai.\n\nIl journal e' testo, e tutto quello che sai dal modulo sui log continua a valere."
+        },
+        {
+          "id": "l13-jo-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il servizio non parte e devi chiedere aiuto a chi l'ha configurato. Salva la diagnosi completa in `diagnosi.txt`.",
+          "servizi": true,
+          "filesystem": {},
+          "soluzione": "systemctl start acquisizione\nsystemctl status acquisizione > diagnosi.txt\njournalctl -u acquisizione >> diagnosi.txt\ncat diagnosi.txt",
+          "verifica": {
+            "contiene": {
+              "diagnosi.txt": "203/EXEC"
+            },
+            "usa": [
+              "systemctl",
+              "journalctl"
+            ]
+          },
+          "hint": [
+            "Prima lo status, poi il journal in coda allo stesso file.",
+            "systemctl status ... > diagnosi.txt, poi journalctl ... >> diagnosi.txt"
+          ],
+          "spiegazione": "Stato **e** log: il primo dice com'e' messo il servizio, il secondo cosa e' successo. Insieme sono la segnalazione utile; «non parte» non lo e'.\n\nLa freccia doppia sulla seconda riga e' obbligatoria, come sempre: con `>` avresti buttato via lo status."
+        },
+        {
+          "id": "l13-jo-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "La scheda di rete del banco sembra non essere stata vista all'avvio. Cerca nel registro del kernel.",
+          "servizi": true,
+          "filesystem": {},
+          "soluzione": "dmesg | grep link",
+          "verifica": {
+            "stampa": "link becomes ready",
+            "usa": [
+              "dmesg",
+              "grep"
+            ]
+          },
+          "hint": [
+            "dmesg e' il log del kernel: filtralo con grep.",
+            "dmesg | grep link"
+          ],
+          "spiegazione": "`dmesg` e' il registro del **kernel**: hardware, driver, dischi, schede di rete. Il journal dei servizi non ne sa niente.\n\nQuando una scheda di acquisizione, un SDR o un disco USB non compaiono, la risposta e' qui — ed e' anche il posto dove si vede se il kernel ha espulso un dispositivo perche' si comportava male."
+        },
+        {
+          "id": "l13-jo-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il percorso sbagliato.** Il servizio fallisce: leggi il journal, correggi `ExecStart` nel file di unit, ricarica e riavvia il servizio.",
+          "servizi": {
+            "unita": {
+              "acquisizione.service": {
+                "descrizione": "Acquisizione banco prova",
+                "exec": "/opt/acq/vecchio.sh",
+                "attivo": false,
+                "abilitato": false,
+                "stato": "inactive",
+                "log": [
+                  "systemd[1]: unit caricata"
+                ]
+              }
+            }
+          },
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            },
+            "/etc/systemd/system/acquisizione.service": "[Unit]\nDescription=Acquisizione banco prova\n\n[Service]\nExecStart=/opt/acq/vecchio.sh\n"
+          },
+          "soluzione": "systemctl start acquisizione\njournalctl -u acquisizione -n 2\ncat /etc/systemd/system/acquisizione.service\nsed -i 's|/opt/acq/vecchio.sh|/opt/acq/acquisisci.sh|' /etc/systemd/system/acquisizione.service\nsystemctl daemon-reload\nsystemctl start acquisizione\nsystemctl status acquisizione",
+          "verifica": {
+            "stampa": "active (running)",
+            "contiene": {
+              "/etc/systemd/system/acquisizione.service": "acquisisci.sh"
+            },
+            "usa": [
+              "sed",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Il journal dice quale file non trova; correggi la riga ExecStart con sed -i.",
+            "sed -i 's|/opt/acq/vecchio.sh|/opt/acq/acquisisci.sh|' /etc/systemd/system/acquisizione.service, poi daemon-reload"
+          ],
+          "spiegazione": "Tre pezzi di tre moduli diversi in una riga sola: il journal che dice cosa manca, `sed -i` per correggere il file, `daemon-reload` perche' systemd rilegga.\n\n**Senza `daemon-reload` non succede niente**: systemd continua a usare la versione che ha in memoria, e tu guardi un file corretto mentre il servizio riparte sbagliato. È l'errore piu' frustrante di tutta la faccenda, perche' sembra che la modifica non abbia effetto.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l13-jo-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`systemctl status` dice `status=203/EXEC`. Cosa controlli, in ordine?",
+          "opzioni": [
+            "che il file di ExecStart esista, e che sia eseguibile",
+            "che ci sia abbastanza memoria",
+            "che il servizio sia abilitato",
+            "che la rete funzioni"
+          ],
+          "risposta": "che il file di ExecStart esista, e che sia eseguibile",
+          "spiegazione": "203/EXEC vuol dire che systemd non e' riuscito nemmeno a lanciare il comando: il problema e' il percorso o il bit di esecuzione, e nient'altro. Due controlli, dieci secondi: `ls -l` sul percorso di `ExecStart`.\n\nGli altri codici hanno significati diversi: un servizio che parte e muore subito da' `exit-code` con il numero restituito dal programma, e li' il colpevole e' il tuo script, non systemd."
+        },
+        {
+          "id": "l13-jo-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Riassunto per il registro di laboratorio.** Fai partire il servizio, e salva in `stato.txt` l'ultima riga del journal insieme allo stato di abilitazione.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/acq/acquisisci.sh": {
+              "contenuto": "echo acquisisco\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "systemctl start acquisizione\njournalctl -u acquisizione -n 1 > stato.txt\nsystemctl is-enabled acquisizione >> stato.txt\ncat stato.txt",
+          "verifica": {
+            "contiene": {
+              "stato.txt": "disabled"
+            },
+            "stampa": "avviato",
+            "usa": [
+              "journalctl",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Ultima riga del journal in un file, poi l'abilitazione in coda.",
+            "journalctl -u acquisizione -n 1 > stato.txt, poi systemctl is-enabled ... >> stato.txt"
+          ],
+          "spiegazione": "Due righe che dicono tutto quello che serve a chi legge il registro fra sei mesi: cosa ha fatto il servizio l'ultima volta, e se ripartira' da solo.\n\n`disabled` in fondo al file e' un promemoria scomodo, ed e' esattamente il suo scopo."
+        }
+      ]
+    },
+    {
+      "id": "l13-unit",
+      "comando": "unit, crontab, logrotate",
+      "titolo": "scrivere il servizio, e tenerlo in piedi",
+      "esercizi": [
+        {
+          "id": "l13-un-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "La stazione meteo deve diventare un servizio. Scrivi `/etc/systemd/system/meteo.service` con descrizione e `ExecStart=/opt/meteo.sh`, poi falla vedere a systemd.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/meteo.sh": {
+              "contenuto": "echo meteo\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "echo '[Unit]' > /etc/systemd/system/meteo.service\necho 'Description=Stazione meteo' >> /etc/systemd/system/meteo.service\necho '[Service]' >> /etc/systemd/system/meteo.service\necho 'ExecStart=/opt/meteo.sh' >> /etc/systemd/system/meteo.service\nsystemctl daemon-reload\nsystemctl status meteo",
+          "verifica": {
+            "contiene": {
+              "/etc/systemd/system/meteo.service": "ExecStart=/opt/meteo.sh"
+            },
+            "stampa": "Stazione meteo",
+            "usa": [
+              "systemctl",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Quattro righe con echo, poi daemon-reload.",
+            "echo '[Unit]' > /etc/systemd/system/meteo.service, e le altre con >>"
+          ],
+          "spiegazione": "Una unit e' un file di testo, niente di piu'. `daemon-reload` e' il passo che tutti dimenticano: senza, `systemctl status meteo` risponde che l'unita' non esiste, perche' systemd non ha riletto la cartella.\n\nGli apici singoli servono: dentro ci sono parentesi quadre e uguali, e senza apici la shell farebbe di testa sua."
+        },
+        {
+          "id": "l13-un-2",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Adesso fai in modo che la stazione meteo parta da sola all'accensione, e verificalo con un riavvio.",
+          "servizi": true,
+          "filesystem": {
+            "/opt/meteo.sh": {
+              "contenuto": "echo meteo\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "echo '[Unit]' > /etc/systemd/system/meteo.service\necho 'Description=Stazione meteo' >> /etc/systemd/system/meteo.service\necho '[Service]' >> /etc/systemd/system/meteo.service\necho 'ExecStart=/opt/meteo.sh' >> /etc/systemd/system/meteo.service\nsystemctl daemon-reload\nsystemctl enable meteo\nriavvia\nsystemctl is-active meteo",
+          "verifica": {
+            "stampa": "active",
+            "usa": [
+              "systemctl",
+              "riavvia"
+            ]
+          },
+          "hint": [
+            "Scrivi la unit, ricarica, abilita, riavvia.",
+            "systemctl daemon-reload, systemctl enable meteo, riavvia"
+          ],
+          "spiegazione": "Il ciclo completo di un servizio nuovo: **scrivi la unit, ricarica, abilita, verifica con un riavvio**. Quattro passi, e saltarne uno solo produce una macchina che sembra a posto finche' non si spegne.\n\nSu una stazione che deve stare accesa da sola per mesi, il riavvio di prova non e' facoltativo: e' l'unico modo di sapere che ripartira'."
+        },
+        {
+          "id": "l13-un-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "La unit c'e' ma il servizio fallisce: lo script indicato non esiste ancora. Scrivilo, rendilo eseguibile e fai partire il servizio.",
+          "servizi": {
+            "unita": {
+              "meteo.service": {
+                "descrizione": "Stazione meteo",
+                "exec": "/opt/meteo.sh",
+                "attivo": false,
+                "abilitato": false,
+                "stato": "inactive",
+                "log": [
+                  "systemd[1]: unit caricata"
+                ]
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "systemctl start meteo\njournalctl -u meteo -n 1\necho 'echo misura' > /opt/meteo.sh\nchmod +x /opt/meteo.sh\nsystemctl start meteo\nsystemctl is-active meteo",
+          "verifica": {
+            "esiste": [
+              "/opt/meteo.sh"
+            ],
+            "stampa": "active",
+            "usa": [
+              "chmod",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Il journal dice quale file manca: crealo e rendilo eseguibile.",
+            "echo 'echo misura' > /opt/meteo.sh, poi chmod +x"
+          ],
+          "spiegazione": "Un file appena creato con `echo` non e' eseguibile: nasce con `rw-r--r--`, e senza `chmod +x` il servizio continua a fallire con lo stesso codice.\n\nÈ la sequenza che ripeterai ogni volta che trasformi uno script in un servizio, e le due mosse vanno insieme come una sola."
+        },
+        {
+          "id": "l13-un-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il backup dei dati va fatto ogni notte alle 3. Prepara la riga di cron in un file e installala, poi verifica cosa e' programmato.",
+          "servizi": true,
+          "filesystem": {},
+          "soluzione": "echo '0 3 * * * /opt/backup.sh' > lavori.cron\ncrontab lavori.cron\ncrontab -l",
+          "verifica": {
+            "stampa": "0 3 * * * /opt/backup.sh",
+            "usa": [
+              "crontab",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Cinque campi: minuto, ora, giorno, mese, giorno della settimana.",
+            "echo '0 3 * * * /opt/backup.sh' > lavori.cron, poi crontab lavori.cron"
+          ],
+          "spiegazione": "`0 3 * * *` si legge cosi': minuto 0, ora 3, ogni giorno del mese, ogni mese, ogni giorno della settimana. Gli asterischi vogliono dire «qualunque».\n\nLe tre di notte e' l'ora canonica dei backup perche' la macchina e' scarica — ma se il fuso o l'ora legale contano, `crontab -l` sulla macchina vera e' l'unica fonte attendibile."
+        },
+        {
+          "id": "l13-un-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il log dell'acquisizione e' cresciuto troppo. Ruotalo, e verifica che il vecchio contenuto sia al sicuro e il file corrente riparta vuoto.",
+          "servizi": true,
+          "filesystem": {
+            "/home/tu/misure.log": "riga1\nriga2\nriga3\n"
+          },
+          "soluzione": "wc -l misure.log\nlogrotate misure.log\nwc -l misure.log\ncat misure.log.1",
+          "verifica": {
+            "esiste": [
+              "misure.log.1"
+            ],
+            "contenuto": {
+              "misure.log": ""
+            },
+            "stampa": "0 misure.log",
+            "usa": [
+              "logrotate",
+              "wc"
+            ]
+          },
+          "hint": [
+            "logrotate archivia il file corrente e ne comincia uno nuovo.",
+            "logrotate misure.log, poi wc -l misure.log"
+          ],
+          "spiegazione": "Il vecchio contenuto e' in `misure.log.1`, il file corrente riparte da zero. Sulla macchina vera questo lo fa `logrotate` da solo, ogni notte, con una configurazione che dice quante copie tenere e per quanto.\n\nSenza rotazione un log cresce finche' il disco e' pieno — e un disco pieno ferma l'acquisizione, non solo i log."
+        },
+        {
+          "id": "l13-un-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' `logrotate` esiste, se basterebbe cancellare i log ogni tanto?",
+          "opzioni": [
+            "perche' un disco pieno ferma tutta la macchina, e la cancellazione a mano prima o poi non viene fatta",
+            "perche' i log compressi si leggono piu' in fretta",
+            "perche' systemd non sa scrivere log",
+            "perche' i log vanno conservati per legge"
+          ],
+          "risposta": "perche' un disco pieno ferma tutta la macchina, e la cancellazione a mano prima o poi non viene fatta",
+          "spiegazione": "Un disco pieno non ferma solo i log: ferma l'acquisizione, i database, i servizi che non riescono piu' a scrivere. E il momento in cui accade e' sempre di notte, o durante una prova.\n\n«Ogni tanto lo cancello io» e' un piano che funziona finche' la persona che lo faceva cambia gruppo. La rotazione automatica no."
+        },
+        {
+          "id": "l13-un-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cron o timer di systemd, per un lavoro periodico su una macchina moderna?",
+          "opzioni": [
+            "timer: finiscono nel journal come gli altri servizi, e si diagnosticano allo stesso modo",
+            "cron: e' piu' vecchio quindi piu' affidabile",
+            "sono identici, cambia solo la sintassi",
+            "dipende dalla distribuzione, non ci sono differenze pratiche"
+          ],
+          "risposta": "timer: finiscono nel journal come gli altri servizi, e si diagnosticano allo stesso modo",
+          "spiegazione": "Il vantaggio vero dei timer non e' la sintassi — piu' verbosa — ma il fatto che un lavoro periodico diventa un servizio come gli altri: `systemctl status`, `journalctl -u`, gli stessi comandi di sempre.\n\n`cron` resta ovunque e va saputo leggere, perche' lo trovi su ogni macchina che ha piu' di cinque anni."
+        },
+        {
+          "id": "l13-un-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La stazione che si tiene in piedi da sola.** Scrivi lo script, rendilo eseguibile, dichiara la unit, abilitala, riavvia la macchina per verificare, e ruota il log perche' non riempia il disco.",
+          "servizi": {
+            "unita": {}
+          },
+          "filesystem": {
+            "/home/tu/misure.log": "riga1\nriga2\n"
+          },
+          "soluzione": "echo 'echo misura' > /opt/meteo.sh\nchmod +x /opt/meteo.sh\necho '[Unit]' > /etc/systemd/system/meteo.service\necho 'Description=Stazione meteo' >> /etc/systemd/system/meteo.service\necho '[Service]' >> /etc/systemd/system/meteo.service\necho 'ExecStart=/opt/meteo.sh' >> /etc/systemd/system/meteo.service\nsystemctl daemon-reload\nsystemctl enable meteo\nriavvia\nsystemctl is-active meteo\nlogrotate misure.log\nwc -l misure.log",
+          "verifica": {
+            "esiste": [
+              "/opt/meteo.sh",
+              "misure.log.1"
+            ],
+            "stampa": "0 misure.log",
+            "usa": [
+              "chmod",
+              "systemctl",
+              "riavvia",
+              "logrotate"
+            ]
+          },
+          "hint": [
+            "Script, permessi, unit, daemon-reload, enable, riavvia, rotazione.",
+            "chmod +x, poi la unit con echo, daemon-reload, enable, riavvia, logrotate"
+          ],
+          "spiegazione": "Sette passaggi, e nessuno e' facoltativo: senza `chmod +x` fallisce, senza `daemon-reload` systemd non vede la unit, senza `enable` non riparte dopo un blackout, senza rotazione il disco si riempie dopo qualche mese.\n\nQuesta e' una stazione che sopravvive a un'estate senza nessuno in laboratorio — ed e' anche il pezzo centrale della ground station del traguardo finale."
+        }
+      ]
+    }
+  ]
+}

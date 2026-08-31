@@ -631,11 +631,58 @@ caso("una sessione tmux sopravvive e si ritrova per nome", () => {
   assert.match(esegui(sh, "tmux ls").errore, /no server running/);
 });
 
+function conServizi(files = {}) {
+  const sh = creaShell(files, { comandi: { ...POSIX, ...SERVIZI } });
+  statoServizi(sh);
+  return sh;
+}
+
 caso("systemctl e journalctl condividono lo stato del servizio", () => {
-  const sh = creaShell({}, { comandi: { ...POSIX, ...SERVIZI } }); statoServizi(sh);
+  const sh = conServizi({ "/opt/acq/acquisisci.sh": { contenuto: "x", modo: 0o755 } });
   esegui(sh, "systemctl start acquisizione.service");
-  assert.match(esegui(sh, "systemctl status acquisizione.service").out, /active/);
+  assert.match(esegui(sh, "systemctl status acquisizione.service").out, /active \(running\)/);
   assert.match(esegui(sh, "journalctl -u acquisizione.service").out, /avviato/);
+});
+
+caso("un ExecStart che non esiste o non e' eseguibile da' 203/EXEC", () => {
+  const sh = conServizi();
+  assert.match(esegui(sh, "systemctl start acquisizione").errore, /failed/);
+  assert.match(esegui(sh, "systemctl status acquisizione").out, /203\/EXEC.*non esiste/);
+
+  const sh2 = conServizi({ "/opt/acq/acquisisci.sh": { contenuto: "x", modo: 0o644 } });
+  esegui(sh2, "systemctl start acquisizione");
+  assert.match(esegui(sh2, "systemctl status acquisizione").out, /non e' eseguibile/);
+  esegui(sh2, "chmod +x /opt/acq/acquisisci.sh");
+  esegui(sh2, "systemctl start acquisizione");
+  assert.equal(esegui(sh2, "systemctl is-active acquisizione").out, "active");
+});
+
+caso("start vale per adesso, enable vale dal prossimo avvio", () => {
+  const sh = conServizi({ "/opt/acq/acquisisci.sh": { contenuto: "x", modo: 0o755 } });
+  esegui(sh, "systemctl start acquisizione");
+  esegui(sh, "riavvia");
+  assert.equal(esegui(sh, "systemctl is-active acquisizione").out, "inactive", "start non sopravvive al riavvio");
+  esegui(sh, "systemctl enable acquisizione");
+  esegui(sh, "riavvia");
+  assert.equal(esegui(sh, "systemctl is-active acquisizione").out, "active", "enable si'");
+});
+
+caso("una unit scritta a mano si vede solo dopo daemon-reload", () => {
+  const sh = conServizi({ "/opt/meteo.sh": { contenuto: "x", modo: 0o755 } });
+  esegui(sh, "echo 'Description=Stazione meteo' > /etc/systemd/system/meteo.service");
+  esegui(sh, "echo 'ExecStart=/opt/meteo.sh' >> /etc/systemd/system/meteo.service");
+  assert.match(esegui(sh, "systemctl status meteo").errore, /non trovata/);
+  esegui(sh, "systemctl daemon-reload");
+  assert.match(esegui(sh, "systemctl status meteo").out, /Stazione meteo/);
+  esegui(sh, "systemctl start meteo");
+  assert.equal(esegui(sh, "systemctl is-active meteo").out, "active");
+});
+
+caso("logrotate archivia il log e ne ricomincia uno vuoto", () => {
+  const sh = conServizi({ "/home/tu/misure.log": "a\nb\n" });
+  esegui(sh, "logrotate misure.log");
+  assert.equal(V.leggi(sh.fs, "misure.log.1"), "a\nb\n");
+  assert.equal(V.leggi(sh.fs, "misure.log"), "");
 });
 
 caso("hardware: modprobe e sysctl modificano lo stato osservabile", () => {
