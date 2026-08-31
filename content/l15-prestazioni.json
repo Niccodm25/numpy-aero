@@ -1,106 +1,579 @@
 {
   "id": "l15",
-  "titolo": "Prestazioni e diagnosi",
-  "perche": "",
+  "titolo": "Prestazioni: quale risorsa e' satura",
+  "perche": "«E' lento» non e' una diagnosi. CPU, memoria, disco, rete o attesa: sono cinque cause diverse con cure diverse, e si separano in due minuti con gli strumenti giusti. Qui impari a leggerli, a distinguere il caso che sembra un problema di disco ed e' di memoria, e a guardare dentro il programma quando la macchina e' innocente.",
   "funzioni": [
+    "top",
+    "uptime",
+    "free -h",
     "vmstat",
     "iostat",
-    "strace",
-    "bpftrace",
-    "perf",
-    "tuned",
+    "strace -c",
+    "perf stat",
+    "systemd-run MemoryMax",
     "cgroups",
-    "namespaces"
+    "tuned-adm",
+    "hdparm -t"
   ],
   "lezioni": [
     {
       "id": "l15-l1",
-      "titolo": "Misurare il collo di bottiglia",
-      "md": "`vmstat` separa processi, memoria, swap e I/O; `iostat` concentra la vista sul disco. CPU alta puo' essere lavoro utile; swap e I/O alto possono spiegare lentezza senza CPU satura. `strace` osserva chiamate di sistema, `perf` campiona CPU, `bpftrace` misura eventi nel kernel: strumenti da usare con una domanda precisa, non come cura universale.\n\n### Da dove viene il nome\n\n- `vmstat` — *virtual memory statistics*\n- `iostat` — *input/output statistics* — quanto lavora il disco\n- `strace` — *system call trace* — le chiamate che un programma fa al kernel\n- `perf` — *performance* — il profilatore del kernel\n- `cgroups` — *control groups* — quante risorse puo' consumare un gruppo di processi\n\nNon e' erudizione: un nome che significa qualcosa si ricorda, tre lettere a caso si ripassano ogni volta."
+      "titolo": "«E' lento» non e' una diagnosi",
+      "md": "Cinque risorse possono essere sature, e la cura e' diversa per ognuna: **CPU**, **memoria**, **disco**, **rete**, oppure niente di tutto questo (il programma aspetta qualcosa).\n\nLa prima riga da leggere e' sempre la stessa:\n\n```\ntop\n%Cpu(s): 9 us,  6 sy, 71 wa, 14 id\n```\n\nQuattro numeri, quattro significati:\n\n- **us** (*user*) — tempo speso nel tuo codice. Alto = stai calcolando.\n- **sy** (*system*) — tempo dentro il kernel. Alto = troppe chiamate di sistema.\n- **wa** (*wait*) — tempo passato **ad aspettare il disco**. Alto = il collo di bottiglia non e' il calcolo.\n- **id** (*idle*) — tempo in cui non fa niente.\n\n`us` al 96% vuol dire che la macchina sta lavorando **bene**: la CPU e' li' per quello. `wa` al 71% vuol dire che i core stanno fermi ad aspettare, ed e' il vero spreco.\n\n### Il carico medio non e' una percentuale\n\n```\ncarico medio: 7.8, 7.4, 6.9\n```\n\nSono i processi mediamente in attesa di girare, su 1, 5 e 15 minuti. Il numero va confrontato con **quanti core hai**: 7.8 su 8 core e' una macchina piena che lavora; 7.8 su 2 core e' una macchina in ginocchio.\n\nI tre valori insieme dicono anche la **tendenza**: se il primo e' molto piu' alto del terzo, il problema e' appena cominciato.\n\n### La memoria libera che sembra finita\n\n```\nfree -h\nMem:  15.6Gi total  4.1Gi used  5.6Gi free  6.0Gi buff/cache  11.5Gi available\n```\n\nLa colonna che conta e' **available**, non `free`: la cache e' memoria che il kernel sta usando per i file, e la restituisce appena serve. Una macchina sana ha quasi sempre poca memoria «libera» e molta cache — e va benissimo."
+    },
+    {
+      "id": "l15-l2",
+      "titolo": "vmstat e iostat: separare i casi",
+      "md": "```\nvmstat\n r  b   swpd   free  cache   si   so    bi    bo  us sy id wa\n 1  3      0  10900   8800    0    0 96000 12000   9  6 14 71\n```\n\nTre colonne dicono quasi tutto:\n\n- **si / so** — swap in ingresso e in uscita. **Se non sono zero, la memoria e' finita**, e tutto il resto (disco al 90%, sistema lentissimo) e' una conseguenza. Si guarda questa prima di ogni altra cosa.\n- **bi / bo** — blocchi letti e scritti al secondo: quanto lavoro sta facendo il disco.\n- **wa** — quanto si aspetta quel disco.\n\n```\niostat\nDevice      tps   kB_read/s   kB_wrtn/s   %util\nnvme0n1    1240       96000       12000      99\n```\n\n`%util` al 99% vuol dire disco **saturo**: aggiungere core non servira' a niente.\n\n### Le tre diagnosi tipiche\n\n| Sintomo | Cosa vedi | Cura |\n|---|---|---|\n| CPU satura | `us` alto, `wa` ~0, disco fermo | piu' core, o codice migliore |\n| Disco saturo | `wa` alto, `%util` ~100, `us` basso | leggere meno, leggere piu' grande, SSD |\n| Memoria finita | `si`/`so` diversi da zero, `available` quasi zero | piu' RAM, o un algoritmo che non tenga tutto in memoria |\n\nIl terzo caso e' insidioso perche' **sembra un problema di disco**: lo swap passa dal disco, quindi `wa` e `%util` sono alti. La differenza la fanno `si`/`so`, che nel caso di puro I/O restano a zero."
+    },
+    {
+      "id": "l15-l3",
+      "titolo": "Dentro il programma: strace, perf, cgroups",
+      "md": "```\nstrace -c python riduci.py\n% time     calls  syscall\n    50     51200  read\n    50     51200  lseek\n     0         3  openat\n```\n\n`strace -c` conta le **chiamate al kernel** raggruppate per tipo. Cinquantamila `read` per un file solo vuol dire letture minuscole: il programma sta chiedendo 4 KB alla volta invece di leggere a blocchi grandi. Il tempo se ne va nel passaggio fra programma e kernel, non nel calcolo.\n\nÈ la diagnosi che nessun profilo di CPU ti darebbe, perche' la CPU non e' occupata: sta aspettando.\n\n```\nperf stat python simula.py\n       instructions   #  1.36 insn per cycle\n        cache-misses\n```\n\n`perf` guarda **dentro** l'esecuzione: quante istruzioni per ciclo, quanti fallimenti di cache. Meno di 1 istruzione per ciclo su un calcolo numerico vuol dire che il processore passa il tempo ad aspettare la memoria — tipicamente per come sono disposti i dati.\n\n### cgroups: mettere un tetto\n\n```\nsystemd-run --scope -p MemoryMax=2G python monte_carlo.py\n```\n\nI **control groups** limitano quanto una cosa puo' consumare: memoria, CPU, banda di disco. Servono per non far affogare una macchina condivisa, e sono anche il pavimento su cui stanno i container del modulo l17 — un container e' processi isolati con un cgroup attorno.\n\n### tuned: i profili di sistema\n\n```\ntuned-adm active\ntuned-adm profile throughput-performance\n```\n\nCambia una manciata di parametri del kernel insieme, per un uso tipico. Su una macchina di calcolo ha senso; su un portatile che deve durare a batteria, il profilo opposto. È l'unica «ottimizzazione generica» che si fa senza misurare — tutto il resto si misura prima."
     }
   ],
   "raccolte": [
     {
-      "id": "l15-diag",
-      "comando": "vmstat, iostat, perf",
-      "titolo": "capire prima di ottimizzare",
+      "id": "l15-leggere",
+      "comando": "top, uptime, free",
+      "titolo": "leggere lo stato",
       "esercizi": [
         {
-          "id": "l15-1",
+          "id": "l15-le-1",
           "tipo": "terminale",
-          "testo": "Osserva memoria, swap e I/O.",
-          "prestazioni": true,
+          "difficolta": 2,
+          "testo": "La simulazione e' in corso. Guarda lo stato generale della macchina.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "top",
+          "verifica": {
+            "stampa": "96 us",
+            "usa": [
+              "top"
+            ]
+          },
+          "hint": [
+            "Tre lettere.",
+            "top"
+          ],
+          "spiegazione": "`96 us` vuol dire che il 96% del tempo la CPU sta eseguendo **il tuo codice**. La macchina non e' in difficolta': sta facendo esattamente quello per cui l'hai accesa.\n\n«CPU al 96%» non e' un guasto. Il guasto e' quando quel tempo se ne va in attesa, ed e' il `wa` degli esercizi successivi."
+        },
+        {
+          "id": "l15-le-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda il carico medio della macchina, sui tre intervalli.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "uptime",
+          "verifica": {
+            "stampa": "7.8",
+            "usa": [
+              "uptime"
+            ]
+          },
+          "hint": [
+            "Sei lettere.",
+            "uptime"
+          ],
+          "spiegazione": "Tre numeri: la media dei processi in attesa su 1, 5 e 15 minuti. **Vanno confrontati con il numero di core**: 7.8 su 8 core e' una macchina piena che lavora bene, 7.8 su 2 core e' una macchina in ginocchio.\n\nI tre valori insieme dicono anche la tendenza: qui il primo e' piu' alto del terzo, quindi il carico sta salendo."
+        },
+        {
+          "id": "l15-le-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**La memoria che sembra finita.** Guarda quanta ne resta davvero, in forma leggibile.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "free -h",
+          "verifica": {
+            "stampa": "available",
+            "usa": [
+              "free"
+            ]
+          },
+          "hint": [
+            "-h la rende leggibile.",
+            "free -h"
+          ],
+          "spiegazione": "La colonna da guardare e' **available**, non `free`: 11.5 Gi disponibili anche se «liberi» ne risultano 5.6. La differenza e' la **cache**, cioe' memoria che il kernel sta usando per tenere i file, e che restituisce appena qualcuno la chiede.\n\nUna macchina sana ha quasi sempre poca memoria libera e molta cache. Chi guarda la colonna sbagliata compra RAM che non serve."
+        },
+        {
+          "id": "l15-le-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Quale processo sta consumando, e in che stato e'? Filtra la riga che ti interessa.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "top | grep python",
+          "verifica": {
+            "stampa": "simula.py",
+            "usa": [
+              "top",
+              "grep"
+            ]
+          },
+          "hint": [
+            "L'uscita di top e' testo come le altre.",
+            "top | grep python"
+          ],
+          "spiegazione": "La colonna `S` e' lo **stato**: `R` sta girando, `S` dorme aspettando qualcosa, `D` e' bloccato in attesa del disco — e quest'ultimo e' il segnale piu' chiaro di un collo di bottiglia di I/O.\n\nQui `%CPU 780` su un sistema a 8 core vuol dire che il programma sta usando quasi otto core: sta parallelizzando davvero."
+        },
+        {
+          "id": "l15-le-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**La macchina non fa niente, eppure sembra lenta.** Verifica lo stato e salva la prova in `carico.txt`.",
+          "prestazioni": {
+            "caso": "ozio"
+          },
+          "filesystem": {},
+          "soluzione": "uptime > carico.txt\ntop >> carico.txt\ncat carico.txt",
+          "verifica": {
+            "contiene": {
+              "carico.txt": "93 id"
+            },
+            "usa": [
+              "uptime",
+              "top"
+            ]
+          },
+          "hint": [
+            "Carico e stato in un file solo.",
+            "uptime > carico.txt, poi top >> carico.txt"
+          ],
+          "spiegazione": "`93 id` e carico 0.12: la macchina e' **ferma**. Se un programma sembra lento su una macchina ferma, il collo di bottiglia non e' qui — e' la rete, un servizio remoto, o il programma che sta aspettando qualcosa.\n\nDimostrare che il problema **non** e' dove qualcuno crede vale quanto trovarlo."
+        },
+        {
+          "id": "l15-le-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`top` mostra `%Cpu(s): 96 us, 3 sy, 0 wa`. La macchina e' in difficolta'?",
+          "opzioni": [
+            "no: sta usando la CPU per calcolare, che e' quello che deve fare",
+            "si': il 96% e' troppo alto",
+            "si', perche' sy dovrebbe essere maggiore",
+            "non si puo' dire senza guardare la rete"
+          ],
+          "risposta": "no: sta usando la CPU per calcolare, che e' quello che deve fare",
+          "spiegazione": "Una CPU al 96% in `us` e' una macchina che rende. Il problema semmai e' l'opposto: una simulazione che tiene la CPU al 20% sta sprecando la macchina, e la domanda diventa «cosa sta aspettando?».\n\nIl numero preoccupante e' `wa`: li' i core sono accesi e fermi."
+        },
+        {
+          "id": "l15-le-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Un processo in `top` e' nello stato `D`. Cosa vuol dire?",
+          "opzioni": [
+            "e' bloccato in attesa del disco: non lo puoi nemmeno interrompere finche' non finisce",
+            "e' morto",
+            "sta usando il debugger",
+            "e' in pausa, lo puoi riprendere"
+          ],
+          "risposta": "e' bloccato in attesa del disco: non lo puoi nemmeno interrompere finche' non finisce",
+          "spiegazione": "`D` sta per *uninterruptible sleep*: il processo aspetta una operazione di I/O e nemmeno `kill -9` lo tocca finche' quella non si conclude. È il motivo per cui a volte un processo «non si riesce a uccidere».\n\nMolti processi in `D` insieme sono il sintomo piu' netto di un disco saturo — o di uno storage di rete che non risponde."
+        },
+        {
+          "id": "l15-le-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il riassunto per la segnalazione.** Metti in `stato.txt` carico, riga della CPU, e memoria disponibile.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "uptime > stato.txt\ntop | grep Cpu >> stato.txt\nfree -h | grep Mem >> stato.txt\ncat stato.txt",
+          "verifica": {
+            "contiene": {
+              "stato.txt": "wa"
+            },
+            "stampa": "carico medio",
+            "usa": [
+              "uptime",
+              "top",
+              "free",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Tre comandi filtrati, un file solo.",
+            "top | grep Cpu >> stato.txt, poi free -h | grep Mem >> stato.txt"
+          ],
+          "spiegazione": "Tre righe che permettono a chiunque di capire in che stato era la macchina **in quel momento** — informazione che dieci minuti dopo non esiste piu'.\n\nÈ lo stesso gesto del modulo sui servizi: una segnalazione con i dati vale, una con «va lento» no."
+        }
+      ]
+    },
+    {
+      "id": "l15-separare",
+      "comando": "vmstat e iostat",
+      "titolo": "separare i cinque casi",
+      "esercizi": [
+        {
+          "id": "l15-se-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il calcolo va piano. Guarda le colonne di sistema con `vmstat` e cerca dove va il tempo.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
           "soluzione": "vmstat",
           "verifica": {
-            "stampa": "memory",
+            "stampa": "71",
             "usa": [
               "vmstat"
             ]
           },
           "hint": [
+            "Una parola sola.",
             "vmstat"
           ],
-          "spiegazione": "Una fotografia delle risorse."
+          "spiegazione": "`wa 71` e `us 9`: i core sono **fermi ad aspettare**, e il tempo di calcolo e' quasi zero. Aggiungere core a questa macchina non cambierebbe niente.\n\nLa colonna `b` (processi bloccati) a 3 conferma: ci sono tre processi in attesa di I/O."
         },
         {
-          "id": "l15-2",
+          "id": "l15-se-2",
           "tipo": "terminale",
-          "testo": "Controlla l'attivita' del disco.",
-          "prestazioni": true,
-          "soluzione": "iostat",
+          "difficolta": 3,
+          "testo": "Conferma il sospetto guardando il disco: quanto e' occupato?",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "vmstat\niostat",
           "verifica": {
-            "stampa": "nvme0n1",
+            "stampa": "99",
             "usa": [
-              "iostat"
+              "iostat",
+              "vmstat"
             ]
           },
           "hint": [
+            "iostat mostra la percentuale di utilizzo.",
             "iostat"
           ],
-          "spiegazione": "I/O alto indica attesa sul disco."
+          "spiegazione": "`%util 99`: il disco e' **saturo**. Le due misure concordano — `wa` alto in `vmstat` e disco al 99% in `iostat` — e insieme sono una diagnosi, non un sospetto.\n\nDa qui le strade sono tre: leggere di meno, leggere a blocchi piu' grandi (e' l'esercizio con `strace`), o mettere i dati su un disco piu' veloce."
         },
         {
-          "id": "l15-3",
+          "id": "l15-se-3",
           "tipo": "terminale",
-          "testo": "Osserva le chiamate al filesystem di un programma.",
-          "prestazioni": true,
-          "soluzione": "strace",
+          "difficolta": 4,
+          "testo": "**Caso diverso, stessa apparenza.** Qui il disco e' all'88%, ma prima di dare la colpa al disco guarda le colonne dello swap.",
+          "prestazioni": {
+            "caso": "memoria"
+          },
+          "filesystem": {},
+          "soluzione": "vmstat\nfree -h",
           "verifica": {
-            "stampa": "openat",
+            "stampa": "1900",
+            "usa": [
+              "vmstat",
+              "free"
+            ]
+          },
+          "hint": [
+            "si e so sono le colonne dello swap.",
+            "vmstat, poi free -h"
+          ],
+          "spiegazione": "`si 320` e `so 410` non sono zero: **la memoria e' finita** e il sistema sta spostando pagine su disco. Il disco all'88% e' una **conseguenza**, non la causa.\n\nSe avessi comprato un disco piu' veloce avresti speso soldi per rendere lo swap piu' rapido. La cura e' piu' RAM, o un algoritmo che non tenga tutto in memoria insieme."
+        },
+        {
+          "id": "l15-se-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda la memoria disponibile in questo caso e confrontala con quella usata dal processo.",
+          "prestazioni": {
+            "caso": "memoria"
+          },
+          "filesystem": {},
+          "soluzione": "free -h\ntop | grep python",
+          "verifica": {
+            "stampa": "91",
+            "usa": [
+              "free",
+              "top"
+            ]
+          },
+          "hint": [
+            "%MEM nella riga del processo.",
+            "top | grep python"
+          ],
+          "spiegazione": "Il processo occupa il 91% della memoria e `available` e' quasi zero: e' lui a mangiarsi la macchina. Nello stato `D` sta aspettando lo swap.\n\nUn Monte Carlo che tiene tutte le realizzazioni in memoria e' il caso tipico: la soluzione non e' hardware, e' elaborare a blocchi e scrivere man mano."
+        },
+        {
+          "id": "l15-se-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il terzo caso.** Qui la CPU e' al 96%. Dimostra che disco e memoria non c'entrano, e salva le tre prove in `diagnosi.txt`.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "vmstat > diagnosi.txt\niostat >> diagnosi.txt\nfree -h >> diagnosi.txt\ncat diagnosi.txt",
+          "verifica": {
+            "contiene": {
+              "diagnosi.txt": "nvme0n1"
+            },
+            "stampa": "96",
+            "usa": [
+              "vmstat",
+              "iostat",
+              "free"
+            ]
+          },
+          "hint": [
+            "Tre comandi in un file, poi si legge.",
+            "vmstat > diagnosi.txt, poi iostat >> e free -h >>"
+          ],
+          "spiegazione": "`us 96`, `wa 0`, disco al 3%, swap a zero: **e' la CPU, e sta lavorando**. Le altre due risorse sono escluse con i dati alla mano.\n\nQuesto file e' la risposta alla domanda «hai controllato che non sia il disco?» — e la risposta e' si', ed e' scritta."
+        },
+        {
+          "id": "l15-se-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`vmstat` mostra `si` e `so` diversi da zero. Qual e' la prima cosa da concludere?",
+          "opzioni": [
+            "la memoria e' finita: il disco carico e' una conseguenza dello swap",
+            "il disco e' rotto",
+            "la CPU e' satura",
+            "c'e' un problema di rete"
+          ],
+          "risposta": "la memoria e' finita: il disco carico e' una conseguenza dello swap",
+          "spiegazione": "Lo swap **passa dal disco**, quindi una macchina che sta esaurendo la memoria sembra avere un problema di I/O: `wa` alto, disco al 90%, tutto lento. Le colonne `si`/`so` sono l'unica cosa che distingue i due casi.\n\nSi guardano per prime, prima di `iostat` e prima di qualunque ipotesi: se non sono zero, il resto e' rumore."
+        },
+        {
+          "id": "l15-se-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Il carico medio e' 8.0 su una macchina con 8 core, con `us` al 95%. Va bene?",
+          "opzioni": [
+            "si': tutti i core lavorano, e' l'uso pieno di una macchina di calcolo",
+            "no: il carico non deve mai superare 1",
+            "no: 8.0 vuol dire che la macchina e' bloccata",
+            "dipende dalla memoria"
+          ],
+          "risposta": "si': tutti i core lavorano, e' l'uso pieno di una macchina di calcolo",
+          "spiegazione": "Il carico si legge **rispetto al numero di core**: 8.0 su 8 core vuol dire che ogni core ha in media un processo pronto — la macchina e' piena e rende.\n\nLo stesso 8.0 su 2 core vorrebbe dire quattro processi in coda per ogni core, e li' i tempi si allungano. `nproc` da' il numero da usare come metro."
+        },
+        {
+          "id": "l15-se-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La domanda del relatore: «perche' ci mette tanto?»** Raccogli le prove del caso disco in `perche_lento.txt`: carico, colonne di sistema, e il disco.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "uptime > perche_lento.txt\nvmstat >> perche_lento.txt\niostat >> perche_lento.txt\ngrep nvme perche_lento.txt",
+          "verifica": {
+            "contiene": {
+              "perche_lento.txt": "wa"
+            },
+            "stampa": "99",
+            "usa": [
+              "uptime",
+              "vmstat",
+              "iostat",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Tre comandi in un file, poi filtra la riga del disco.",
+            "grep nvme perche_lento.txt"
+          ],
+          "spiegazione": "La risposta non e' «e' lento»: e' «il disco e' al 99% e i core aspettano il 71% del tempo, quindi il collo di bottiglia e' l'I/O e non il calcolo».\n\nCon quel file allegato, la discussione passa da un'opinione a un numero — e la decisione (SSD, meno letture, dati piu' vicini) diventa motivabile."
+        }
+      ]
+    },
+    {
+      "id": "l15-dentro",
+      "comando": "strace, perf, cgroups",
+      "titolo": "dentro il programma",
+      "esercizi": [
+        {
+          "id": "l15-de-1",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il programma aspetta il disco. Guarda **cosa** chiede al kernel, raggruppato per tipo.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "strace -c python riduci.py",
+          "verifica": {
+            "stampa": "51200",
             "usa": [
               "strace"
             ]
           },
           "hint": [
-            "strace"
+            "-c da' il riassunto invece del flusso.",
+            "strace -c python riduci.py"
           ],
-          "spiegazione": "Strace mostra cio' che un processo chiede al kernel."
+          "spiegazione": "Cinquantamila `read` e altrettante `lseek` per elaborare un file: il programma sta leggendo **a pezzettini**, saltando avanti e indietro. Il tempo se ne va nel passaggio fra programma e kernel.\n\nÈ una diagnosi che nessun profilo di CPU avrebbe dato: la CPU non e' occupata, sta aspettando. La cura sta nel codice — leggere a blocchi grandi, o tutto insieme se ci sta in memoria."
         },
         {
-          "id": "l15-4",
-          "tipo": "predict",
-          "testo": "CPU al 95% significa sempre guasto?",
-          "opzioni": [
-            "no, puo' essere lavoro utile",
-            "si",
-            "e' un errore DNS",
-            "serve RAID"
+          "id": "l15-de-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Confronta con un programma che invece calcola: guarda le sue chiamate di sistema.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "strace -c python simula.py",
+          "verifica": {
+            "stampa": "clock_gettime",
+            "usa": [
+              "strace"
+            ]
+          },
+          "hint": [
+            "Stesso comando, altro caso.",
+            "strace -c python simula.py"
           ],
-          "risposta": "no, puo' essere lavoro utile",
-          "spiegazione": "Conta il contesto e il tempo atteso."
+          "spiegazione": "Quasi nessuna chiamata di I/O: questo programma **sta calcolando**, e il kernel lo interpella solo per sapere che ora e'. Se e' lento, il problema e' nell'algoritmo, e `strace` non ha altro da dire.\n\nSapere quando uno strumento **non** e' quello giusto vale quanto saperlo usare."
         },
         {
-          "id": "l15-5",
-          "tipo": "predict",
-          "testo": "A cosa servono cgroups e namespaces?",
-          "opzioni": [
-            "a isolare e limitare risorse, base dei container",
-            "a comprimere log",
-            "a risolvere DNS",
-            "a creare utenti"
+          "id": "l15-de-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda dentro l'esecuzione con il profilatore: istruzioni per ciclo e fallimenti di cache.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "perf stat python simula.py",
+          "verifica": {
+            "stampa": "insn per cycle",
+            "usa": [
+              "perf"
+            ]
+          },
+          "hint": [
+            "perf stat COMANDO",
+            "perf stat python simula.py"
           ],
-          "risposta": "a isolare e limitare risorse, base dei container",
-          "spiegazione": "Preparano il modello dei container."
+          "spiegazione": "**Istruzioni per ciclo** e' la misura di quanto il processore stia lavorando invece di aspettare la memoria. Sopra 1 va bene; sotto 1 su un calcolo numerico vuol dire che i dati sono disposti male e ogni accesso costa un viaggio in RAM.\n\nÈ il livello in cui si capisce perche' lo stesso algoritmo su array contigui va tre volte piu' veloce che su strutture sparse — la stessa ragione per cui NumPy e' veloce."
+        },
+        {
+          "id": "l15-de-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Metti un tetto.** La simulazione mangia tutta la memoria della macchina condivisa: lanciala con un limite di 2G.",
+          "prestazioni": {
+            "caso": "memoria"
+          },
+          "filesystem": {},
+          "soluzione": "free -h\nsystemd-run --scope -p MemoryMax=2G python monte_carlo.py",
+          "verifica": {
+            "stampa": "limitato a 2G",
+            "usa": [
+              "systemd-run"
+            ]
+          },
+          "hint": [
+            "--scope -p MemoryMax=2G, poi il comando.",
+            "systemd-run --scope -p MemoryMax=2G python monte_carlo.py"
+          ],
+          "spiegazione": "I **control groups** limitano quanto un processo puo' consumare. Con un tetto, il programma che sfora viene fermato invece di trascinare giu' tutta la macchina — e su un nodo condiviso e' la differenza fra un job fallito e trenta persone bloccate.\n\nÈ anche il pavimento dei container: un container e' processi isolati con un cgroup attorno."
+        },
+        {
+          "id": "l15-de-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda il profilo di sistema attivo e passa a quello per il calcolo, poi verifica.",
+          "prestazioni": {
+            "caso": "cpu"
+          },
+          "filesystem": {},
+          "soluzione": "tuned-adm active\ntuned-adm profile throughput-performance\ntuned-adm active",
+          "verifica": {
+            "stampa": "throughput-performance",
+            "usa": [
+              "tuned-adm"
+            ]
+          },
+          "hint": [
+            "profile NOME cambia, active mostra.",
+            "tuned-adm profile throughput-performance"
+          ],
+          "spiegazione": "Un profilo cambia una manciata di parametri del kernel insieme, calibrati per un uso tipico: `throughput-performance` per una macchina di calcolo, un profilo di risparmio per un portatile.\n\nÈ l'unica «ottimizzazione generica» ragionevole, perche' i valori li ha scelti qualcuno che ha misurato. Tutto il resto si misura prima di cambiarlo."
+        },
+        {
+          "id": "l15-de-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Misura la velocita' di lettura del disco e salva il numero insieme allo stato di `iostat`.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "hdparm -t /dev/nvme0n1 > disco.txt\niostat >> disco.txt\ncat disco.txt",
+          "verifica": {
+            "contiene": {
+              "disco.txt": "MB/s"
+            },
+            "stampa": "nvme0n1",
+            "usa": [
+              "hdparm",
+              "iostat"
+            ]
+          },
+          "hint": [
+            "hdparm -t misura la lettura.",
+            "hdparm -t /dev/nvme0n1 > disco.txt"
+          ],
+          "spiegazione": "Una misura assoluta (quanti MB/s legge il disco) e una relativa (quanto e' occupato adesso): insieme dicono se il disco e' lento **o** se e' semplicemente pieno di lavoro.\n\nSono due conclusioni diverse: la prima si risolve con hardware, la seconda distribuendo il carico."
+        },
+        {
+          "id": "l15-de-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`strace -c` mostra 51.200 chiamate `read` per elaborare un file. Cosa concludi?",
+          "opzioni": [
+            "il programma legge a pezzi minuscoli: conviene leggere a blocchi grandi",
+            "il file e' corrotto",
+            "il disco e' rotto",
+            "servono piu' core"
+          ],
+          "risposta": "il programma legge a pezzi minuscoli: conviene leggere a blocchi grandi",
+          "spiegazione": "Ogni chiamata al kernel costa: cinquantamila letture da 4 KB per un file da 200 MB vuol dire pagare quel costo cinquantamila volte invece di duecento.\n\nÈ un problema **di codice**, non di macchina — e nessun acquisto lo risolve. In Python spesso basta leggere il file in un colpo, o usare la funzione della libreria che legge a blocchi al posto tuo."
+        },
+        {
+          "id": "l15-de-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Diagnosi completa di un calcolo lento.** Stato della macchina, colonne di sistema, disco, e chiamate del programma: tutto in `analisi_prestazioni.txt`, e poi la riga che dimostra la causa.",
+          "prestazioni": {
+            "caso": "disco"
+          },
+          "filesystem": {},
+          "soluzione": "uptime > analisi_prestazioni.txt\nvmstat >> analisi_prestazioni.txt\niostat >> analisi_prestazioni.txt\nstrace -c python riduci.py >> analisi_prestazioni.txt\ngrep read analisi_prestazioni.txt",
+          "verifica": {
+            "contiene": {
+              "analisi_prestazioni.txt": "51200"
+            },
+            "stampa": "read",
+            "usa": [
+              "uptime",
+              "vmstat",
+              "iostat",
+              "strace",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Quattro comandi in un file, poi filtra la riga che conta.",
+            "strace -c python riduci.py >> analisi_prestazioni.txt"
+          ],
+          "spiegazione": "La catena completa, dall'esterno verso l'interno: **la macchina** (carico), **le risorse** (wa alto, disco al 99%), **il programma** (cinquantamila letture minuscole). Ogni passo restringe il campo, e l'ultimo indica dove mettere le mani.\n\nQuesta e' la differenza fra «e' lento» e «legge a blocchi da 4 KB, e va cambiato quel pezzo»: la seconda e' una cosa che qualcuno puo' correggere."
         }
       ]
     }
