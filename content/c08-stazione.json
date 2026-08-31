@@ -1,0 +1,291 @@
+{
+  "id": "c08",
+  "cantiere": true,
+  "titolo": "Cantiere — La stazione che non dorme",
+  "perche": "Il segmento di terra di un CubeSat: un ricevitore sul tetto, passaggi alle quattro di notte, e nessuno in laboratorio. Sette fasi che attraversano tutto il ramo — hardware, rete, servizi, storage, sicurezza, script e container — e si valutano su una sola domanda: cosa succede quando nessuno guarda.",
+  "funzioni": [
+    "modprobe",
+    "lsusb",
+    "ip addr",
+    "ping",
+    "ss",
+    "systemctl enable",
+    "riavvia",
+    "mkfs.ext4",
+    "fstab",
+    "mount -a",
+    "ufw",
+    "prova-da-fuori",
+    "if",
+    "exit",
+    "$(comando)",
+    "docker build",
+    "docker run -v"
+  ],
+  "lezioni": [
+    {
+      "id": "c08-b",
+      "titolo": "Briefing",
+      "md": "## La situazione\n\nIl gruppo ha vinto un posto su un CubeSat universitario, e ti hanno affidato **il segmento di terra**: un PC in un laboratorio, un ricevitore SDR sul tetto, e passaggi satellitari che avvengono anche alle quattro di notte.\n\nNessuno sara' li' quando succedono. La stazione deve funzionare da sola per mesi.\n\nSul disco trovi:\n\n```\n/opt/stazione/ricevi.sh            lo script che decodifica i pacchetti\n/etc/systemd/system/ricezione.service   la unit, gia' scritta\ntelemetria.log                     il log dei passaggi ricevuti\nriduci.sh                          il conteggio degli errori\n```\n\n## Cosa devi produrre\n\nSette fasi, una per ogni pezzo del ramo:\n\n1. **L'hardware** — il ricevitore riconosciuto dal sistema\n2. **La rete** — la stazione raggiungibile, e la prova che lo e'\n3. **Il servizio** — la ricezione che parte da sola dopo un blackout\n4. **Lo storage** — la telemetria su un disco suo, montato all'avvio\n5. **La sicurezza** — aperto solo quello che serve, verificato da fuori\n6. **Il controllo** — uno script che dica in una riga se la stazione e' viva\n7. **La consegna** — l'analisi in un container, e lo stato della stazione in un file\n\n## La regola di questo cantiere\n\n**Si valuta cosa succede quando nessuno guarda.** Ogni fase finisce con una verifica che vale anche dopo un riavvio: `enable` invece di `start`, `fstab` invece di `mount`, un file di stato invece di una risposta a schermo.\n\nÈ l'ultimo cantiere del ramo, e mette insieme sette moduli. Se ti blocchi, la soluzione e' li' sotto: guardala, capiscila, e rifalla."
+    }
+  ],
+  "esercizi": [
+    {
+      "id": "c08-f1",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 1 - L'hardware.**\n\nHanno collegato il ricevitore SDR. Verifica che il sistema lo veda, guarda se un driver lo sta gestendo, e fallo riconoscere: alla fine deve esistere il suo file di dispositivo.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "lsusb -t\nmodprobe dvb_usb_rtl28xxu\nlsusb -t\nls /dev",
+      "verifica": {
+        "esiste": [
+          "/dev/swradio0"
+        ],
+        "stampa": "swradio0",
+        "usa": [
+          "lsusb",
+          "modprobe"
+        ]
+      },
+      "spiegazione": "Prima `Driver=(nessuno)`, poi il driver legato e `/dev/swradio0` che compare: **finche' in `/dev` non c'e' niente, nessun programma di ricezione potra' aprirlo**.\n\nÈ la catena che si controlla in quest'ordine ogni volta che l'hardware «non viene visto»: c'e' sul bus, ha un driver, esiste in `/dev`. Il messaggio d'errore del software di ricezione non ti dira' mai quale dei tre manca.",
+      "hardware": true
+    },
+    {
+      "id": "c08-f2",
+      "tipo": "terminale",
+      "difficolta": 3,
+      "testo": "**Fase 2 - La rete.**\n\nLa stazione deve restare raggiungibile: dovrai collegarti da casa quando qualcosa non va.\n\nGuarda indirizzo e rotta, e dimostra che il nome del cluster del dipartimento si risolve e risponde — e' li' che manderai i dati.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "ip addr\nip route\nping -c1 cluster.univ.it\nss -tulpn",
+      "verifica": {
+        "stampa": "0% packet loss",
+        "usa": [
+          "ip",
+          "ping",
+          "ss"
+        ]
+      },
+      "spiegazione": "Indirizzo, rotta, nome, risposta: la scaletta del modulo sulla rete applicata prima che serva, non dopo.\n\n`ss -tulpn` mostra chi ascolta su questa macchina: `sshd` sulla 22 e l'acquisizione sulla 8000 — ma guarda **su quale indirizzo**, perche' nella fase sulla sicurezza quella differenza torna.",
+      "rete": true
+    },
+    {
+      "id": "c08-f3",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 3 - Il servizio.**\n\nLa ricezione deve ripartire da sola dopo un blackout, non quando qualcuno arriva in laboratorio.\n\nAvviala, abilitala, riavvia la macchina, e dimostra che e' tornata attiva.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "systemctl start ricezione\nsystemctl enable ricezione\nriavvia\nsystemctl is-active ricezione\nsystemctl is-enabled ricezione",
+      "verifica": {
+        "stampa": "enabled",
+        "usa": [
+          "systemctl",
+          "riavvia"
+        ]
+      },
+      "spiegazione": "`start` e `enable` rispondono a due domande diverse — «gira adesso?» e «ripartira' da sola?» — e per una stazione che nessuno guarda conta soprattutto la seconda.\n\nLa unit ha anche `Restart=always`: se il programma di ricezione muore da solo, systemd lo rimette in piedi senza aspettare il riavvio. È il motivo per cui un servizio e' meglio di un `nohup`.",
+      "servizi": {
+        "unita": {
+          "ricezione.service": {
+            "descrizione": "Ricezione satellitare",
+            "exec": "/opt/stazione/ricevi.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "c08-f4",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 4 - Lo storage.**\n\nLa telemetria non puo' stare sul disco di sistema: mesi di passaggi lo riempirebbero, e un disco pieno ferma la ricezione.\n\nPrepara il disco dedicato, montalo su `/telemetria`, e mettilo in `fstab` perche' ci sia anche dopo un riavvio. Provalo con `mount -a` senza riavviare.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "lsblk -f\nmkfs.ext4 /dev/sdb1\nmkdir /telemetria\necho '/dev/sdb1  /telemetria  ext4  defaults  0 2' >> /etc/fstab\nmount -a\ndf -h",
+      "verifica": {
+        "contiene": {
+          "/etc/fstab": "/dev/sdb1"
+        },
+        "stampa": "/telemetria",
+        "usa": [
+          "mkfs.ext4",
+          "mount"
+        ]
+      },
+      "spiegazione": "Il disco nuovo arriva senza filesystem, quindi `mount` fallirebbe: si formatta, si crea il punto di mount, si monta.\n\n`fstab` e' la parte che vale: un `mount` a mano sparisce al riavvio, e la ricezione ricomincerebbe a scrivere **sotto** il punto di mount, sul disco di sistema — invisibile e senza errori, finche' il disco non e' pieno. `mount -a` prova la riga prima che sia il riavvio a farlo.",
+      "storage": {
+        "dispositivi": {
+          "/dev/nvme0n1p1": {
+            "size": 200,
+            "fs": "ext4",
+            "usatoGB": 40,
+            "etichetta": "sistema"
+          },
+          "/dev/sdb1": {
+            "size": 2000,
+            "fs": null,
+            "usatoGB": 0,
+            "etichetta": "telemetria"
+          }
+        },
+        "montati": {
+          "/dev/nvme0n1p1": "/"
+        },
+        "contenuti": {
+          "/dev/sdb1": {}
+        }
+      }
+    },
+    {
+      "id": "c08-f5",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 5 - La sicurezza.**\n\nLa stazione e' raggiungibile da fuori, quindi lo e' anche per chi non ti interessa.\n\nNega tutto in ingresso, apri solo ssh, accendi il firewall, e **verifica da fuori** che la 22 risponda e la 443 no.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "ufw default deny incoming\nufw allow 22\nufw enable\nufw status\nprova-da-fuori 22\nprova-da-fuori 443",
+      "verifica": {
+        "stampa": "connessione riuscita",
+        "errore": "bloccata dal firewall",
+        "usa": [
+          "ufw",
+          "prova-da-fuori"
+        ]
+      },
+      "spiegazione": "L'ordine e' quello che non si sbaglia: **nega, apri, accendi**. Invertirlo su una macchina che raggiungi solo via ssh vuol dire chiudersi fuori — e questa stazione sta in un laboratorio a cui non hai le chiavi di notte.\n\nLa verifica da fuori e' la parte che distingue un elenco di regole da una macchina davvero indurita: `ufw status` dice cosa credi di aver configurato, la prova dice cosa succede.",
+      "sicurezza": true
+    },
+    {
+      "id": "c08-f6",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 6 - Il controllo.**\n\nScrivi `stazione.sh`: se il servizio di ricezione non e' attivo deve dirlo e uscire con codice 1, altrimenti deve stampare quanti errori ci sono nella telemetria di oggi.\n\nProvalo a servizio fermo e a servizio avviato.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "echo 'stato=$(systemctl is-active ricezione)' > stazione.sh\necho 'if [ $stato = active ]; then' >> stazione.sh\necho '  echo errori: $(grep -c ERROR telemetria.log)' >> stazione.sh\necho 'else' >> stazione.sh\necho '  echo ricezione ferma' >> stazione.sh\necho '  exit 1' >> stazione.sh\necho 'fi' >> stazione.sh\nbash stazione.sh\nsystemctl start ricezione\nbash stazione.sh",
+      "verifica": {
+        "esiste": [
+          "stazione.sh"
+        ],
+        "stampa": "errori: 2",
+        "usa": [
+          "bash",
+          "systemctl",
+          "grep"
+        ]
+      },
+      "spiegazione": "Lo script **guarda e decide**: cattura lo stato del servizio, confronta, e nel ramo buono conta gli errori del passaggio. Due errori su quattro righe: sincronismo perso e un pacchetto caduto.\n\nUno script cosi' finisce in un lavoro periodico e ti scrive **solo quando qualcosa non va** — che e' l'unico modo di gestire una stazione senza guardarla ogni mattina.",
+      "servizi": {
+        "unita": {
+          "ricezione.service": {
+            "descrizione": "Ricezione satellitare",
+            "exec": "/opt/stazione/ricevi.sh",
+            "attivo": false,
+            "abilitato": false,
+            "stato": "inactive",
+            "log": [
+              "systemd[1]: unit caricata"
+            ]
+          },
+          "sshd.service": {
+            "descrizione": "OpenSSH server",
+            "exec": "/usr/sbin/sshd",
+            "attivo": true,
+            "abilitato": true,
+            "stato": "active",
+            "log": [
+              "sshd[812]: in ascolto sulla porta 22"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "c08-f7",
+      "tipo": "terminale",
+      "difficolta": 4,
+      "testo": "**Fase 7 - La consegna.**\n\nL'analisi della telemetria deve poter essere rieseguita fra due anni da chiunque. Costruisci l'immagine con le versioni fissate, elabora il log montando la cartella, e salva il risultato insieme allo stato della stazione in `consegna.txt`.",
+      "filesystem": {
+        "/opt/stazione/ricevi.sh": {
+          "contenuto": "echo pacchetto ricevuto\n",
+          "modo": 493
+        },
+        "/etc/systemd/system/ricezione.service": "[Unit]\nDescription=Ricezione satellitare\n\n[Service]\nExecStart=/opt/stazione/ricevi.sh\nRestart=always\n\n[Install]\nWantedBy=multi-user.target\n",
+        "/home/tu/telemetria.log": "10:00 INFO passaggio iniziato\n10:03 ERROR pacchetto perso\n10:07 INFO passaggio concluso\n10:41 ERROR sincronismo\n",
+        "/home/tu/riduci.sh": "grep -c ERROR $1\n"
+      },
+      "soluzione": "echo 'FROM python:3.12' > Dockerfile\necho 'RUN pip install numpy==2.2.5' >> Dockerfile\necho 'COPY riduci.sh /lavoro/riduci.sh' >> Dockerfile\necho 'WORKDIR /lavoro' >> Dockerfile\ndocker build -t stazione:1 .\ndocker run -v /home/tu:/lavoro/dati stazione:1 sh -c 'grep -c ERROR /lavoro/dati/telemetria.log > /lavoro/dati/errori.txt'\ncat errori.txt > consegna.txt\ndocker images >> consegna.txt\ncat consegna.txt",
+      "verifica": {
+        "contiene": {
+          "consegna.txt": "stazione:1"
+        },
+        "stampa": "2",
+        "usa": [
+          "docker",
+          "cat"
+        ]
+      },
+      "spiegazione": "Il risultato e' arrivato **da te** perche' e' stato scritto dentro il volume: fuori sarebbe morto con il container, senza un errore.\n\nCon questo file, chi arriva dopo di te ha tre cose: **il numero**, **l'immagine** che lo ha prodotto, e il `Dockerfile` che la ricostruisce con le stesse versioni. È la differenza fra un risultato difendibile e uno screenshot.\n\n**Cosa hai messo in piedi**: un ricevitore riconosciuto dal kernel, una macchina raggiungibile e chiusa a chi non serve, un servizio che riparte da solo, un disco dedicato che sopravvive al riavvio, un controllo automatico e un'analisi riproducibile.\n\nQuello che manca, ed e' fuori da questo ramo: il codice e il Dockerfile in un repository git, perche' «l'infrastruttura della stazione» sia una cosa che si scarica invece di una cosa che qualcuno ricorda.",
+      "container": true
+    }
+  ]
+}

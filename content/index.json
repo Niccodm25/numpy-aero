@@ -473,9 +473,9 @@
     },
     {
       "id": "c08",
-      "file": "",
+      "file": "c08-stazione.json",
       "titolo": "Cantiere — La stazione che non dorme",
-      "disponibile": false,
+      "disponibile": true,
       "cantiere": true
     }
   ]
