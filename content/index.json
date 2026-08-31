@@ -387,7 +387,7 @@
     {
       "id": "l10",
       "file": "l10-testo-avanzato.json",
-      "titolo": "Testo avanzato: sed, awk, xargs",
+      "titolo": "Trasformare il testo: cut, sed, awk, xargs",
       "disponibile": true
     },
     {

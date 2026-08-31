@@ -1,1 +1,758 @@
-{"id":"l10","titolo":"Testo avanzato: sed, awk, xargs","perche":"Dopo grep non basta piu' trovare una riga: devi estrarre colonne, normalizzare valori, salvare una copia della pipeline e applicare un comando a una lista di file.","funzioni":["cut -d -f","tr","tee","sed s///g","awk {print $1}","xargs"],"lezioni":[{"id":"l10-l1","titolo":"Colonne e sostituzioni in una pipeline","md":"```bash\ncut -d , -f 2 misure.csv        # seconda colonna CSV\nsed 's,vecchio,nuovo,g' file      # sostituisce tutte le occorrenze\ntr a-z A-Z                         # legge dalla pipe e cambia caratteri\ntee colonne.txt                    # salva e continua a stampare\n```\n\n`cut` usa un delimitatore e campi che iniziano da 1. `sed` qui usa solo la forma sicura e comune `s/vecchio/nuovo/g`; il `g` evita di fermarsi alla prima occorrenza della riga. `tee` e' il punto di controllo: conserva una copia dell'output senza interrompere la pipeline."},{"id":"l10-l2","titolo":"awk legge campi; xargs trasforma una lista","md":"```bash\nawk '{print $2, $1}' dati.txt  # campi separati da spazi\nfind . -name '*.tmp' | xargs rm   # applica rm a ogni nome ricevuto\n```\n\n`awk` e' un linguaggio intero; qui impari il novanta per cento utile per leggere colonne: `$1`, `$2` e `NR` (numero di riga). `xargs` trasforma l'input in argomenti: e' potente e pericoloso. Prima guarda sempre la lista senza `xargs rm`; nomi con spazi richiedono forme piu' avanzate, fuori da questo simulatore."}],"raccolte":[{"id":"l10-trasforma","comando":"cut, sed, tr, tee","titolo":"trasformare una colonna senza perdere traccia","esercizi":[{"id":"l10-tr-1","tipo":"terminale","testo":"Estrai la seconda colonna del CSV.","testoAvanzato":true,"filesystem":{"/home/tu/a.csv":"t,quota\n0,1000\n"},"soluzione":"cut -d , -f 2 a.csv","verifica":{"stampa":"quota","usa":["cut"]},"hint":["Delimitatore virgola, campo 2."],"spiegazione":"I campi di cut partono da 1."},{"id":"l10-tr-2","tipo":"terminale","testo":"Rinomina INFO in OK in tutto il log.","testoAvanzato":true,"filesystem":{"/home/tu/log":"INFO INFO\n"},"soluzione":"sed 's/INFO/OK/g' log","verifica":{"stampa":"OK OK","usa":["sed"]},"hint":["La g sostituisce entrambe."],"spiegazione":"Senza g cambierebbe solo la prima occorrenza."},{"id":"l10-tr-3","tipo":"terminale","testo":"Porta in maiuscolo l'output della pipe e salvalo.","testoAvanzato":true,"soluzione":"echo aero | tr a-z A-Z | tee nome.txt","verifica":{"contenuto":{"nome.txt":"AERO"},"usa":["tr","tee"]},"hint":["tr legge dalla pipe; tee salva."],"spiegazione":"Tee non interrompe l'output."},{"id":"l10-tr-4","tipo":"predict","testo":"Perche' tee e' utile in una pipeline?","opzioni":["salva una copia senza fermare il flusso","comprime file","sceglie un gruppo","uccide processi"],"risposta":"salva una copia senza fermare il flusso","spiegazione":"E' un punto di osservazione e di salvataggio."}]},{"id":"l10-campi","comando":"awk e xargs","titolo":"leggere record e applicare comandi","esercizi":[{"id":"l10-ca-1","tipo":"terminale","testo":"Stampa prima il secondo e poi il primo campo.","testoAvanzato":true,"filesystem":{"/home/tu/dati":"uno due\n"},"soluzione":"awk '{print $2, $1}' dati","verifica":{"stampa":"due uno","usa":["awk"]},"hint":["$2, poi $1."],"spiegazione":"Awk divide gli spazi in campi."},{"id":"l10-ca-2","tipo":"terminale","testo":"Cancella entrambi i temporanei ricevuti dalla pipe.","testoAvanzato":true,"filesystem":{"/home/tu/a.tmp":"x","/home/tu/b.tmp":"x"},"soluzione":"echo a.tmp b.tmp | xargs rm","verifica":{"nonEsiste":["a.tmp","b.tmp"],"usa":["xargs"]},"hint":["xargs passa ogni nome a rm."],"spiegazione":"Prima di xargs rm, nella vita vera, guarda sempre la lista."},{"id":"l10-ca-3","tipo":"predict","testo":"Cosa rappresenta NR in awk?","opzioni":["il numero della riga corrente","il secondo campo","un nome di file","un permesso"],"risposta":"il numero della riga corrente","spiegazione":"E' utile per aggiungere un indice a un testo."},{"id":"l10-ca-4","tipo":"predict","testo":"Qual e' la precauzione prima di `... | xargs rm`?","opzioni":["controllare prima la lista senza rm","usare sudo","comprimere i nomi","cambiare gruppo"],"risposta":"controllare prima la lista senza rm","spiegazione":"Xargs rende un elenco in azioni: l'errore si moltiplica."}]}]}
+{
+  "id": "l10",
+  "titolo": "Trasformare il testo: cut, sed, awk, xargs",
+  "perche": "Cercare non basta: a un certo punto i dati vanno tagliati, sostituiti, sommati e passati a un altro comando. Sono i quattro strumenti con cui si prepara un file prima di darlo a Python — e spesso quelli con cui si evita del tutto di scrivere lo script.",
+  "funzioni": [
+    "cut -d -f",
+    "tr",
+    "tr -d",
+    "tee",
+    "tee -a",
+    "sed s///",
+    "sed s///g",
+    "sed /motivo/d",
+    "sed -i",
+    "awk -F",
+    "awk $1 $2 NR NF",
+    "awk END",
+    "xargs",
+    "xargs -n1",
+    "xargs -I"
+  ],
+  "lezioni": [
+    {
+      "id": "l10-l1",
+      "titolo": "cut, tr, tee: colonne e caratteri",
+      "md": "```\ncut -d, -f2 campagna.csv     # la seconda colonna, separatore virgola\ncut -d, -f1,3 campagna.csv   # la prima e la terza\ncut -d, -f2-4 campagna.csv   # dalla seconda alla quarta\n```\n\n`-d` dice qual e' il separatore (di default e' il tabulatore, che quasi mai e' quello che vuoi), `-f` quali campi. Si conta **da 1**, non da 0.\n\n### Il limite di cut, dichiarato\n\n`cut` non sa niente di CSV: taglia sul carattere e basta. Su una riga come\n\n```\np1,\"sensore, guasto\",9000\n```\n\nconta tre campi dove ce ne sono due e mezzo. Se il file ha virgole dentro le virgolette, `cut` non e' lo strumento: lo e' Python con il suo modulo `csv`.\n\n### tr lavora sui caratteri, non sulle parole\n\n```\ncat nomi.txt | tr a-z A-Z     # tutto maiuscolo\ncat sporco.csv | tr -d '\"'    # via le virgolette\ncat vecchio.txt | tr -d '\\r'  # via i fine riga di Windows\n```\n\n`tr` legge solo dalla pipe, mai da un nome di file: e' l'unico dei comandi di questo modulo a farlo, ed e' un inciampo classico.\n\n### tee: guardare quello che stai salvando\n\n```\ngrep ERROR log.txt | tee errori.txt | wc -l\n```\n\n`tee` scrive nel file **e** lascia passare il testo al comando dopo. Serve quando vuoi conservare un passaggio intermedio senza spezzare la pipeline in due comandi."
+    },
+    {
+      "id": "l10-l2",
+      "titolo": "sed: sostituire e cancellare",
+      "md": "```\nsed 's/INFO/OK/' log.txt      # la PRIMA occorrenza di ogni riga\nsed 's/INFO/OK/g' log.txt     # tutte\nsed '/INFO/d' log.txt         # cancella le righe che contengono INFO\n```\n\nLa `g` finale sta per *globale* — dentro la riga, non nel file: senza, su una riga con due occorrenze ne cambia una sola. È l'errore che produce file «quasi» corretti.\n\n### Il separatore non deve essere per forza la barra\n\n```\nsed 's|/mnt/vecchio|/mnt/nuovo|' analisi.conf\n```\n\nQuando il testo contiene delle barre — cioe' ogni volta che si tratta di percorsi — si cambia delimitatore. `|` e `#` sono le scelte abituali, e la riga diventa leggibile invece di essere un muro di `\\/`.\n\n### -i riscrive il file, e non chiede conferma\n\n```\ncp analisi.conf analisi.conf.bak      # prima\nsed -i 's/soglia=10/soglia=25/' analisi.conf\n```\n\nSenza `-i`, `sed` **stampa** e basta: il file resta com'era, ed e' il modo giusto di provare il comando prima di applicarlo. Con `-i` il file viene riscritto: se l'espressione era sbagliata, l'originale non c'e' piu'.\n\nLa regola pratica: prima lo lanci senza `-i` e guardi l'uscita, poi lo rilanci con `-i`. Su file che contano, una copia di sicurezza in piu' non ha mai fatto male a nessuno."
+    },
+    {
+      "id": "l10-l3",
+      "titolo": "awk: campi e condizioni. xargs: liste",
+      "md": "```\nawk '{print $2}' log.txt                     # il secondo campo, separatore = spazi\nawk -F, '{print $2}' campagna.csv            # separatore virgola\nawk -F, '$2 > 8000 {print $1, $2}' dati.csv  # solo le righe che soddisfano\nawk -F, '{s += $2} END {print s}' dati.csv   # la somma di una colonna\nawk '/ERROR/ {print $3}' log.txt             # solo le righe che contengono ERROR\n```\n\n`awk` legge riga per riga, la spezza in campi, e per ognuna decide se fare qualcosa. `$1`, `$2`... sono i campi, `$0` la riga intera, `NR` il numero di riga, `NF` quanti campi ci sono.\n\nÈ il salto rispetto a `cut`: `cut` taglia sempre allo stesso modo, `awk` **sceglie le righe** e sa fare i conti.\n\n### Il confine di questo simulatore\n\nQui `awk` capisce un separatore, i campi, `NR`, `NF`, **una** condizione e la somma con `END`. `awk` vero e' un linguaggio completo, con variabili, cicli e funzioni — ma quando l'espressione non ci sta piu' su una riga, la risposta giusta quasi sempre e' Python, non un programma `awk` di trenta righe.\n\n### xargs: da una lista ad argomenti\n\n```\nfind dati -name *.tmp | xargs rm            # tutti in un colpo solo\ncut -d, -f1 lista.csv | xargs -n1 echo       # uno alla volta\nfind . -name *.log | xargs -I{} cp {} archivio/\n```\n\nAlcuni comandi non leggono dalla pipe: `rm`, `cp`, `mkdir` vogliono argomenti. `xargs` li costruisce.\n\n**La precauzione**: prima di `| xargs rm`, lancia la stessa riga con `| xargs echo rm` e guarda cosa avrebbe cancellato. E ricorda che i nomi con spazi rompono tutto: per quelli servono `find -print0` e `xargs -0`."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l10-cut",
+      "comando": "cut, tr, tee",
+      "titolo": "colonne e caratteri",
+      "esercizi": [
+        {
+          "id": "l10-cu-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il CSV della campagna ha quattro colonne. Tirane fuori la seconda, quella delle quote.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cut -d, -f2 campagna.csv",
+          "verifica": {
+            "stampa": "12000",
+            "usa": [
+              "cut"
+            ]
+          },
+          "hint": [
+            "-d dice il separatore, -f il campo.",
+            "cut -d, -f2 campagna.csv"
+          ],
+          "spiegazione": "`-d,` dice che i campi sono separati da virgole; senza, `cut` userebbe il tabulatore e ti restituirebbe la riga intera. I campi si contano **da 1**.\n\nCompare anche l'intestazione `quota`: `cut` non sa che la prima riga e' diversa dalle altre — nessuno di questi comandi lo sa.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Per la tabella della relazione ti servono solo il nome della prova e il Mach: prima e terza colonna.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cut -d, -f1,3 campagna.csv",
+          "verifica": {
+            "stampa": "p3,0.91",
+            "usa": [
+              "cut"
+            ]
+          },
+          "hint": [
+            "I campi si elencano separati da virgole.",
+            "cut -d, -f1,3 campagna.csv"
+          ],
+          "spiegazione": "`-f1,3` prende due campi non contigui; `-f2-4` prenderebbe un intervallo. Nota che il separatore resta la virgola anche in uscita: `cut` ricompone i campi con lo stesso carattere con cui li ha divisi.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prepara l'elenco dei nomi delle prove, **senza la riga di intestazione**, e salvalo in `nomi.txt`.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cut -d, -f1 campagna.csv | grep -v prova > nomi.txt\ncat nomi.txt",
+          "verifica": {
+            "contenuto": {
+              "nomi.txt": "p1\np2\np3\np4"
+            },
+            "usa": [
+              "cut",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Taglia la colonna, poi togli la riga di intestazione con quello che sai gia'.",
+            "cut -d, -f1 campagna.csv | grep -v prova > nomi.txt"
+          ],
+          "spiegazione": "`grep -v` toglie la riga che contiene l'intestazione: e' il modo piu' rapido, anche se non il piu' rigoroso — se una prova si chiamasse `prova7` sparirebbe anche quella.\n\nÈ la stessa pipe del modulo sui log: cambia solo il comando che genera i dati.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il CSV arriva da un export di Excel, con tutti i campi fra virgolette. Ripuliscilo in `pulito.csv` e controlla il risultato.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cat quotato.csv | tr -d '\"' > pulito.csv\ncat pulito.csv",
+          "verifica": {
+            "contenuto": {
+              "pulito.csv": "prova,quota\np1,9000"
+            },
+            "usa": [
+              "tr"
+            ]
+          },
+          "hint": [
+            "tr -d cancella dei caratteri, e legge solo dalla pipe.",
+            "cat quotato.csv | tr -d '\"' > pulito.csv"
+          ],
+          "spiegazione": "`tr -d` cancella tutti i caratteri elencati, ovunque siano. È il coltellino per i file arrivati da altri sistemi: virgolette di troppo, ritorni a capo di Windows (`tr -d '\\r'`), spazi indesiderati.\n\nAttenzione a una cosa: `tr` **non accetta un nome di file**. Legge solo dalla pipe, ed e' l'unico comando di questo modulo a comportarsi cosi'.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Gli esiti vanno in maiuscolo per la tabella finale. Prendi la colonna e convertila.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cut -d, -f4 campagna.csv | tr a-z A-Z",
+          "verifica": {
+            "stampa": "SCARTATA",
+            "usa": [
+              "cut",
+              "tr"
+            ]
+          },
+          "hint": [
+            "Prima la colonna, poi la conversione.",
+            "cut -d, -f4 campagna.csv | tr a-z A-Z"
+          ],
+          "spiegazione": "`tr a-z A-Z` mappa carattere per carattere: la `a` diventa `A`, la `b` diventa `B`. Non e' una funzione «maiuscolo», e' una sostituzione posizionale — con insiemi di lunghezza diversa succedono cose sorprendenti, ed e' il motivo per cui si usano quasi sempre questi due intervalli e basta.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Vuoi contare gli errori del log **e** conservarne l'elenco per la segnalazione, in un passaggio solo.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cat log.txt | grep ERROR | tee errori.txt | wc -l",
+          "verifica": {
+            "contiene": {
+              "errori.txt": "E07"
+            },
+            "stampa": "3",
+            "usa": [
+              "tee",
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "tee sta in mezzo alla pipeline: scrive e lascia passare.",
+            "cat log.txt | grep ERROR | tee errori.txt | wc -l"
+          ],
+          "spiegazione": "Senza `tee` servirebbero due comandi — uno per salvare e uno per contare — e il file verrebbe letto due volte. Con `tee` il testo passa **e** resta.\n\nIl nome viene dal raccordo a T dell'idraulica, ed e' esattamente quello che fa: sdoppia il flusso.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-cu-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Il CSV contiene la riga `p1,\"sensore, guasto\",9000`. Cosa restituisce `cut -d, -f2`?",
+          "opzioni": [
+            "`\"sensore` — cut taglia sulla virgola e ignora le virgolette",
+            "`\"sensore, guasto\"` — cut riconosce le virgolette",
+            "un errore di formato",
+            "la riga intera"
+          ],
+          "risposta": "`\"sensore` — cut taglia sulla virgola e ignora le virgolette",
+          "spiegazione": "`cut` non sa cos'e' un CSV: sa cos'e' un carattere. La virgola dentro le virgolette e' una virgola come le altre, e il campo viene spezzato a meta'.\n\nÈ il confine oltre il quale gli strumenti della shell non bastano piu': un CSV con campi quotati si legge con il modulo `csv` di Python, che le virgolette le capisce."
+        },
+        {
+          "id": "l10-cu-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Qual e' la quota massima raggiunta nella campagna?** Rispondi con una pipeline sola, partendo dal CSV.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cut -d, -f2 campagna.csv | grep -v quota | sort -n -r | head -n 1",
+          "verifica": {
+            "stampa": "12000",
+            "usa": [
+              "cut",
+              "sort",
+              "head"
+            ]
+          },
+          "hint": [
+            "Colonna, via l'intestazione, ordina numericamente al contrario, prendi la prima.",
+            "cut -d, -f2 campagna.csv | grep -v quota | sort -n -r | head -n 1"
+          ],
+          "spiegazione": "Quattro comandi piccoli, una domanda tecnica, nessuno script. Il `-n` di `sort` e' obbligatorio: in ordine alfabetico `9000` verrebbe dopo `12000`, e la risposta sarebbe sbagliata **senza nessun errore**.\n\nQuesto e' il momento in cui la shell smette di essere un modo per aprire i file e diventa un modo per interrogarli.",
+          "testoAvanzato": true
+        }
+      ]
+    },
+    {
+      "id": "l10-sed",
+      "comando": "sed",
+      "titolo": "sostituire e cancellare",
+      "esercizi": [
+        {
+          "id": "l10-se-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Nel log, la parola `INFO` va sostituita con `OK` prima di allegarlo alla relazione. Guarda il risultato senza toccare il file.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed 's/INFO/OK/g' log.txt",
+          "verifica": {
+            "stampa": "10:00 OK avvio",
+            "usa": [
+              "sed"
+            ]
+          },
+          "hint": [
+            "s/vecchio/nuovo/g, e il nome del file dopo.",
+            "sed 's/INFO/OK/g' log.txt"
+          ],
+          "spiegazione": "`sed` **stampa** il risultato e lascia il file com'era: e' il comportamento di default, ed e' la ragione per cui si puo' provare senza paura.\n\nGli apici singoli attorno all'espressione servono sempre: dentro ci possono finire caratteri che la shell interpreterebbe.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prepara un log ripulito, senza le righe informative: tieni solo quello che non e' `INFO` e salvalo in `errori.txt`.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed '/INFO/d' log.txt > errori.txt\ncat errori.txt",
+          "verifica": {
+            "contiene": {
+              "errori.txt": "E12"
+            },
+            "usa": [
+              "sed"
+            ]
+          },
+          "hint": [
+            "/motivo/d cancella le righe che contengono quel motivo.",
+            "sed '/INFO/d' log.txt > errori.txt"
+          ],
+          "spiegazione": "`/INFO/d` fa la stessa cosa di `grep -v INFO`, e non e' un caso: sono due strumenti che si sovrappongono. `grep` e' piu' chiaro quando devi solo filtrare; `sed` conviene quando nella stessa passata vuoi anche sostituire qualcosa.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il file di configurazione punta a `/mnt/vecchio`, che non esiste piu'. Sostituisci con `/mnt/nuovo` e guarda l'esito **senza** modificare il file.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed 's|/mnt/vecchio|/mnt/nuovo|' analisi.conf",
+          "verifica": {
+            "stampa": "/mnt/nuovo/dati",
+            "usa": [
+              "sed"
+            ]
+          },
+          "hint": [
+            "Il separatore di sed non deve essere per forza la barra.",
+            "sed 's|/mnt/vecchio|/mnt/nuovo|' analisi.conf"
+          ],
+          "spiegazione": "Con i percorsi la barra come delimitatore diventa illeggibile: `s/\\/mnt\\/vecchio\\/\\/mnt\\/nuovo\\//`. `sed` accetta **qualunque** carattere subito dopo la `s`, e con `|` la riga torna leggibile.\n\nÈ una di quelle cose che non sono scritte da nessuna parte e che chi lavora con i percorsi impara il primo giorno.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-4",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Ora applica davvero la sostituzione al file — ma prima mettilo al sicuro con una copia.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "cp analisi.conf analisi.conf.bak\nsed -i 's|/mnt/vecchio|/mnt/nuovo|' analisi.conf\ncat analisi.conf",
+          "verifica": {
+            "esiste": [
+              "analisi.conf.bak"
+            ],
+            "contiene": {
+              "analisi.conf": "/mnt/nuovo/dati"
+            },
+            "usa": [
+              "cp",
+              "sed"
+            ]
+          },
+          "hint": [
+            "-i riscrive il file. Prima la copia.",
+            "cp analisi.conf analisi.conf.bak, poi sed -i ..."
+          ],
+          "spiegazione": "`-i` sta per *in place*: il file viene riscritto e l'originale non esiste piu'. Non chiede conferma, non avvisa, e se l'espressione era sbagliata te ne accorgi dopo.\n\nLa sequenza giusta e' sempre questa: prima **senza** `-i` per guardare, poi la copia, poi `-i`. Su un file di configurazione di un banco che acquisisce, saltare il secondo passo e' il tipo di risparmio che costa una giornata.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Nel file c'e' la riga `note=dati dati grezzi`, con la parola ripetuta. Sostituisci `dati` con `misure` **senza** la `g` e guarda quante ne cambia.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed 's/dati/misure/' analisi.conf | grep note",
+          "verifica": {
+            "stampa": "note=misure dati grezzi",
+            "usa": [
+              "sed",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Lancia la sostituzione senza g e filtra la riga che ti interessa.",
+            "sed 's/dati/misure/' analisi.conf | grep note"
+          ],
+          "spiegazione": "Una sola: senza `g`, `sed` sostituisce **la prima occorrenza di ogni riga** e passa alla successiva. La seconda `dati` e' rimasta li'.\n\nÈ il guasto piu' silenzioso di `sed`: il file sembra corretto perche' la maggior parte delle righe ha una occorrenza sola, e quelle con due restano sbagliate finche' qualcuno non se ne accorge.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "L'ultimo export usa il punto e virgola come separatore. Convertilo in un CSV vero e verifica che `cut` funzioni sul risultato.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed 's/;/,/g' export.csv > campagna2.csv\ncut -d, -f2 campagna2.csv",
+          "verifica": {
+            "contiene": {
+              "campagna2.csv": "p1,9000"
+            },
+            "stampa": "9000",
+            "usa": [
+              "sed",
+              "cut"
+            ]
+          },
+          "hint": [
+            "Prima normalizza il separatore, poi taglia.",
+            "sed 's/;/,/g' export.csv > campagna2.csv"
+          ],
+          "spiegazione": "Il punto e virgola arriva dagli Excel configurati in italiano, dove la virgola e' il separatore decimale. È il primo ostacolo di quasi ogni file che ti passa qualcun altro, e si toglie con una riga.\n\nLa verifica finale non e' un dettaglio: convertire e non controllare vuol dire scoprire il problema tre passaggi piu' avanti.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-se-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' conviene lanciare `sed` **senza** `-i` la prima volta?",
+          "opzioni": [
+            "perche' cosi' stampa il risultato e il file resta intatto: puoi controllare prima di applicare",
+            "perche' senza -i e' piu' veloce",
+            "perche' -i funziona solo su file piccoli",
+            "non conviene: -i e' sempre preferibile"
+          ],
+          "risposta": "perche' cosi' stampa il risultato e il file resta intatto: puoi controllare prima di applicare",
+          "spiegazione": "`sed` senza `-i` e' una **prova**: vedi esattamente cosa succederebbe, e il file non viene toccato. Con `-i` la modifica e' immediata e definitiva, e un'espressione sbagliata puo' svuotare o rovinare un file di configurazione senza dire niente.\n\nProva, copia, applica — in quest'ordine."
+        },
+        {
+          "id": "l10-se-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La soglia va alzata da 10 a 25** nel file di configurazione del banco. Applica la modifica e dimostra che e' andata a buon fine.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "sed 's/soglia=10/soglia=25/' analisi.conf\nsed -i 's/soglia=10/soglia=25/' analisi.conf\ngrep soglia analisi.conf",
+          "verifica": {
+            "contiene": {
+              "analisi.conf": "soglia=25"
+            },
+            "stampa": "soglia=25",
+            "usa": [
+              "sed",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Prima guarda, poi applica con -i, poi verifica con grep.",
+            "sed -i 's/soglia=10/soglia=25/' analisi.conf, poi grep soglia analisi.conf"
+          ],
+          "spiegazione": "Tre passaggi che diventano un riflesso: **guardo**, **applico**, **verifico**. L'ultimo `grep` costa un secondo e ti dice che il file contiene davvero quello che credi — cosa che dopo un `sed -i` non e' mai scontata.\n\nNota che ho scritto `soglia=10` e non solo `10`: cercare il numero da solo avrebbe cambiato anche il `10` dentro un percorso o una data.",
+          "testoAvanzato": true
+        }
+      ]
+    },
+    {
+      "id": "l10-awk",
+      "comando": "awk e xargs",
+      "titolo": "campi, condizioni, liste",
+      "esercizi": [
+        {
+          "id": "l10-aw-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Stessa colonna delle quote di prima, ma con `awk`: separatore virgola, secondo campo.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "awk -F, '{print $2}' campagna.csv",
+          "verifica": {
+            "stampa": "12000",
+            "usa": [
+              "awk"
+            ]
+          },
+          "hint": [
+            "-F dice il separatore, $2 e' il secondo campo.",
+            "awk -F, '{print $2}' campagna.csv"
+          ],
+          "spiegazione": "Stesso risultato di `cut -d, -f2`, con piu' caratteri. Il motivo per impararlo arriva nell'esercizio dopo: `cut` taglia sempre allo stesso modo, `awk` puo' **scegliere le righe**.\n\nGli apici singoli attorno al programma servono sempre: dentro ci sono `$` e graffe, che la shell interpreterebbe.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Per la relazione servono solo le prove che hanno superato gli 8000 metri: nome e quota.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "awk -F, '$2 > 8000 {print $1, $2}' campagna.csv",
+          "verifica": {
+            "stampa": "p4 11000",
+            "usa": [
+              "awk"
+            ]
+          },
+          "hint": [
+            "Prima della graffa si mette la condizione.",
+            "awk -F, '$2 > 8000 {print $1, $2}' campagna.csv"
+          ],
+          "spiegazione": "Questo con `cut` non si fa: `cut` non guarda i valori, taglia e basta. La condizione prima delle graffe e' il salto di qualita' di `awk`.\n\nNota che l'intestazione sparisce da sola: `quota` non e' un numero maggiore di 8000, quindi quella riga non passa. È un effetto collaterale comodo, non una regola su cui contare.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Quanto vale la somma delle quote di tutta la campagna?",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "awk -F, '{s += $2} END {print s}' campagna.csv",
+          "verifica": {
+            "stampa": "35000",
+            "usa": [
+              "awk"
+            ]
+          },
+          "hint": [
+            "Una variabile che accumula, e un blocco END che stampa alla fine.",
+            "awk -F, '{s += $2} END {print s}' campagna.csv"
+          ],
+          "spiegazione": "`END` e' un blocco che viene eseguito **dopo** l'ultima riga: e' li' che si stampano i totali. La riga di intestazione non disturba, perche' `quota` non e' un numero e non contribuisce alla somma.\n\nQuesta e' l'unica forma di calcolo che vale la pena fare in `awk`: totali e conteggi su una colonna. Per una media pesata o una deviazione standard si passa a Python — e non e' una resa, e' la scelta giusta.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Numera le righe di errore del log e mostra solo il codice: ti serve un elenco progressivo per la segnalazione.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "grep ERROR log.txt | awk '{print NR, $3}'",
+          "verifica": {
+            "stampa": "3 E12",
+            "usa": [
+              "grep",
+              "awk"
+            ]
+          },
+          "hint": [
+            "Prima filtra con quello che conosci, poi numera con NR.",
+            "grep ERROR log.txt | awk '{print NR, $3}'"
+          ],
+          "spiegazione": "`NR` e' il numero della riga **fra quelle che awk sta leggendo**: siccome ha letto solo le tre righe passate da `grep`, la numerazione va da 1 a 3. Se avessi numerato prima di filtrare, avresti avuto 2, 4 e 5.\n\nL'ordine dei comandi in una pipeline cambia il risultato, non solo la velocita'.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Fai la classifica dei codici di errore del log: quale guasto si e' ripetuto di piu'.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "awk '/ERROR/ {print $3}' log.txt | sort | uniq -c",
+          "verifica": {
+            "stampa": "2 E12",
+            "usa": [
+              "awk",
+              "sort",
+              "uniq"
+            ]
+          },
+          "hint": [
+            "awk puo' filtrare con /motivo/ e stampare un campo solo; poi la coppia che conosci.",
+            "awk '/ERROR/ {print $3}' log.txt | sort | uniq -c"
+          ],
+          "spiegazione": "Qui `awk` fa in un colpo quello che nel modulo sui log richiedeva un file gia' pronto di soli codici: **filtra** le righe di errore e **isola** il campo del codice, cosi' `uniq` trova righe identiche da contare.\n\nÈ la risposta alla domanda lasciata aperta allora: su un log con l'orario davanti non si possono contare i doppioni — a meno di togliere prima tutto il resto, che e' esattamente quello che hai appena fatto.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "La cartella `dati` si e' riempita di file temporanei. Trovali, cancellali tutti in un comando solo, e verifica che i dati buoni siano rimasti.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "find dati -name *.tmp\nfind dati -name *.tmp | xargs rm\nls dati",
+          "verifica": {
+            "nonEsiste": [
+              "dati/prova1.tmp",
+              "dati/prova2.tmp"
+            ],
+            "esiste": [
+              "dati/buono.csv"
+            ],
+            "usa": [
+              "find",
+              "xargs"
+            ]
+          },
+          "hint": [
+            "Prima guarda cosa trova find, poi passalo a rm con xargs.",
+            "find dati -name *.tmp | xargs rm"
+          ],
+          "spiegazione": "`rm` non legge dalla pipe: vuole argomenti. `xargs` prende la lista e la trasforma in argomenti, ed e' il ponte fra i comandi che **producono liste** e quelli che **vogliono nomi**.\n\nIl primo `find` da solo non e' pignoleria: e' la precauzione. Prima di `| xargs rm` si guarda sempre cosa uscirebbe — perche' dopo non c'e' cestino.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l10-aw-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Stai per lanciare `find . -name \"*.log\" | xargs rm`. Qual e' la precauzione che conta di piu'?",
+          "opzioni": [
+            "lanciarlo prima con `xargs echo rm` e leggere cosa avrebbe cancellato",
+            "usare `sudo`, per essere sicuro che funzioni",
+            "aggiungere `-f` a rm, per evitare errori",
+            "nessuna: find e' preciso"
+          ],
+          "risposta": "lanciarlo prima con `xargs echo rm` e leggere cosa avrebbe cancellato",
+          "spiegazione": "`echo` davanti trasforma un comando distruttivo in una **prova**: vedi la riga esatta che verrebbe eseguita, e poi decidi. Costa due secondi e ha salvato molte cartelle.\n\nSeconda insidia, meno ovvia: i nomi con spazi. `xargs` divide sugli spazi, quindi `dati vecchi.log` diventa due argomenti e cancella la cosa sbagliata. La difesa e' `find -print0 | xargs -0`."
+        },
+        {
+          "id": "l10-aw-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il riepilogo per la riunione.** Dal CSV, tieni le prove con esito `ok`: salva nome e quota in `valide.txt` e dì quante sono, tutto in una pipeline.",
+          "filesystem": {
+            "/home/tu/campagna.csv": "prova,quota,mach,esito\np1,9000,0.82,ok\np2,3000,0.40,ok\np3,12000,0.91,scartata\np4,11000,0.88,ok\n",
+            "/home/tu/log.txt": "10:00 INFO avvio\n10:01 ERROR E12 sensore\n10:02 INFO ripristinato\n10:05 ERROR E07 timeout\n10:09 ERROR E12 sensore\n",
+            "/home/tu/analisi.conf": "percorso=/mnt/vecchio/dati\nsoglia=10\nnote=dati dati grezzi\n",
+            "/home/tu/export.csv": "prova;quota\np1;9000\np2;3000\n",
+            "/home/tu/quotato.csv": "\"prova\",\"quota\"\n\"p1\",\"9000\"\n",
+            "/home/tu/dati/prova1.tmp": "scarto\n",
+            "/home/tu/dati/prova2.tmp": "scarto\n",
+            "/home/tu/dati/buono.csv": "quota\n9000\n"
+          },
+          "soluzione": "awk -F, '$4 == \"ok\" {print $1, $2}' campagna.csv | tee valide.txt | wc -l",
+          "verifica": {
+            "contiene": {
+              "valide.txt": "p4 11000"
+            },
+            "stampa": "3",
+            "usa": [
+              "awk",
+              "tee",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Condizione su un campo di testo, poi tee per salvare mentre conti.",
+            "awk -F, '$4 == \"ok\" {print $1, $2}' campagna.csv | tee valide.txt | wc -l"
+          ],
+          "spiegazione": "Tre prove valide su quattro, il file per gli altri, il numero per te: una riga sola.\n\nLe virgolette attorno a `ok` distinguono un confronto fra testi da uno fra numeri — `$4 == ok` senza virgolette cercherebbe una variabile chiamata `ok`, che e' vuota, e non passerebbe nessuna riga.\n\nQuesto e' il punto di arrivo del modulo: filtrare per valore, scegliere le colonne, salvare e contare, senza aprire niente e senza scrivere uno script.",
+          "testoAvanzato": true
+        }
+      ]
+    }
+  ]
+}
