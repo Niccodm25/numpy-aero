@@ -1,1 +1,578 @@
-{"id":"l18","titolo":"Sicurezza del sistema","perche":"Una macchina esposta deve offrire solo cio' che serve, con accessi verificabili e aggiornamenti regolari. Qui si lavora solo in difesa: ridurre superficie, capire firewall e controlli di accesso.","funzioni":["ufw","firewalld","iptables","nftables","SELinux","AppArmor","capabilities","PAM"],"lezioni":[{"id":"l18-l1","titolo":"Minimo necessario","md":"Un firewall decide quali connessioni entrano; non corregge un servizio vulnerabile, ma riduce cio' che e' raggiungibile. `ufw enable` attiva una policy locale, `ufw allow 22` apre esplicitamente SSH e `ufw status` verifica le regole. Firewalld e nftables sono alternative comuni; iptables e' la sintassi storica da saper riconoscere. Prima di cambiare firewall da remoto, assicurati che SSH resti consentito."},{"id":"l18-l2","titolo":"Difesa a strati","md":"SELinux e AppArmor limitano cosa puo' fare un processo anche se viene compromesso. Le capabilities dividono privilegi che un tempo erano tutti di root; PAM governa autenticazione e policy. Nessuno di questi sostituisce aggiornamenti, chiavi SSH, backup e log: la sicurezza e' una serie di controlli piccoli, non un comando magico."}],"raccolte":[{"id":"l18-fw","comando":"ufw e controllo degli accessi","titolo":"esporre soltanto il necessario","esercizi":[{"id":"l18-1","tipo":"terminale","testo":"Attiva il firewall e verifica lo stato.","sicurezza":true,"soluzione":"ufw enable\nufw status","verifica":{"stampa":"Status: active","usa":["ufw"]},"hint":["enable, poi status."],"spiegazione":"Lo stato e' la verifica, non il messaggio di un solo comando."},{"id":"l18-2","tipo":"terminale","testo":"Consenti HTTPS sulla porta 443 e controlla la regola.","sicurezza":true,"soluzione":"ufw enable\nufw allow 443\nufw status","verifica":{"stampa":"443/tcp","usa":["ufw"]},"hint":["ufw allow 443."],"spiegazione":"Apri soltanto il servizio che devi offrire."},{"id":"l18-3","tipo":"predict","testo":"Prima di attivare un firewall via SSH, cosa controlli?","opzioni":["che la porta SSH resti consentita","che gzip sia installato","che il disco sia RAID","che tmux sia chiuso"],"risposta":"che la porta SSH resti consentita","spiegazione":"Altrimenti puoi chiuderti fuori dalla macchina."},{"id":"l18-4","tipo":"predict","testo":"Cosa aggiunge AppArmor o SELinux a un firewall?","opzioni":["limita le azioni del processo anche dopo un compromesso","apre porte","comprime log","crea container"],"risposta":"limita le azioni del processo anche dopo un compromesso","spiegazione":"E' un livello diverso: controllo del processo, non della rete."},{"id":"l18-5","tipo":"predict","testo":"Qual e' un principio corretto per un server esposto?","opzioni":["minimo privilegio e servizi minimi","aprire tutte le porte per comodita'","usare root per ogni servizio","disabilitare i log"],"risposta":"minimo privilegio e servizi minimi","spiegazione":"Ogni servizio e privilegio non necessario amplia la superficie di attacco."}]}]}
+{
+  "id": "l18",
+  "titolo": "Sicurezza del sistema: firewall, ssh, controllo obbligatorio",
+  "perche": "Se la macchina e' raggiungibile da fuori, e' raggiungibile anche da chi non ti interessa. Qui impari a chiudere tutto e aprire solo il necessario, a rendere ssh inutile agli automatismi, e a limitare cosa un programma puo' fare anche quando gira con privilegi. Tutto difensivo: sistemi tuoi, o affidati a te.",
+  "funzioni": [
+    "ufw status",
+    "ufw default",
+    "ufw allow",
+    "ufw deny",
+    "ufw delete",
+    "ufw enable",
+    "prova-da-fuori",
+    "sshd_config",
+    "PasswordAuthentication",
+    "PermitRootLogin",
+    "sshd -t",
+    "getenforce",
+    "setenforce",
+    "aa-status",
+    "getcap",
+    "setcap"
+  ],
+  "lezioni": [
+    {
+      "id": "l18-l1",
+      "titolo": "Chiudere tutto, poi aprire quello che serve",
+      "md": "```\nufw status                      # com'e' messo adesso\nufw default deny incoming       # in ingresso si nega\nufw allow 22                    # ...tranne quello che serve\nufw enable                      # e solo ORA si accende\nufw status numbered\nufw delete 2\n```\n\n**L'ordine di queste righe non e' un dettaglio.** Se attivi il firewall con la politica `deny` prima di aver permesso la 22, e sei collegato via ssh, ti sei appena chiuso fuori dalla macchina — e se quella macchina e' in un'altra stanza, la giornata e' finita li'.\n\nLa regola e' sempre: **prima le regole, poi l'accensione**. E se la macchina e' remota, si tiene aperta una seconda sessione ssh finche' non hai verificato che la prima funziona ancora.\n\n### Guardare l'elenco non basta\n\n`ufw status` dice cosa credi di aver configurato. L'unica prova e' provare **da fuori**: in questo simulatore c'e' `prova-da-fuori PORTA`, che tenta una connessione in arrivo come farebbe un'altra macchina. Sul tuo laboratorio si fa con `nc -z` dal portatile di un collega.\n\nTre risposte, tre significati diversi:\n\n- **bloccata dal firewall** — la regola c'e' e funziona;\n- **rifiutata** — il firewall lascia passare, ma nessun servizio ascolta li';\n- **riuscita** — la porta e' raggiungibile davvero.\n\n### Aprire a chi, non solo cosa\n\n```\nufw allow from 192.168.1.0/24 to any port 5432\n```\n\nUn database che serve solo alla rete del laboratorio non ha motivo di essere raggiungibile da Internet. Restringere **l'origine** e' spesso piu' utile che chiudere la porta."
+    },
+    {
+      "id": "l18-l2",
+      "titolo": "Indurire ssh: la porta piu' bersagliata",
+      "md": "`/etc/ssh/sshd_config` e' il file che decide chi entra. Le tre righe che contano:\n\n```\nPasswordAuthentication no      # solo chiavi\nPermitRootLogin no             # root non entra da remoto\nPort 22\n```\n\n**Solo chiavi.** Una macchina esposta riceve migliaia di tentativi di password al giorno, automatici e instancabili. Con `PasswordAuthentication no` quel rumore diventa irrilevante: non c'e' password da indovinare.\n\n**Root non entra.** Chi attacca conosce gia' meta' delle credenziali quando l'utente si chiama `root`. Si entra col proprio utente e si usa `sudo`, cosi' resta anche traccia di chi ha fatto cosa.\n\n### La riga che salva la giornata\n\n```\nsshd -t        # controlla la sintassi PRIMA di riavviare\n```\n\n`sshd -t` legge la configurazione e dice se ha senso. Riavviare `sshd` con un file rotto vuol dire che il servizio non riparte, e se eri collegato da remoto non c'e' modo di rientrare.\n\nLa sequenza sicura, sempre la stessa:\n\n1. modifica il file\n2. `sshd -t`\n3. `systemctl restart sshd`\n4. **apri una seconda sessione** senza chiudere la prima\n5. solo se funziona, chiudi la prima\n\n### Cambiare porta non e' sicurezza\n\nSpostare ssh sulla 2222 toglie il rumore delle scansioni automatiche, e questo e' tutto. Chi ti prende di mira trova la porta in pochi secondi. È igiene dei log, non protezione."
+    },
+    {
+      "id": "l18-l3",
+      "titolo": "Quando i permessi non bastano: MAC e capacita'",
+      "md": "I permessi Unix dicono **chi** puo' toccare un file. SELinux e AppArmor dicono **cosa puo' fare un programma**, indipendentemente dall'utente che lo lancia.\n\n```\ngetenforce            # Enforcing | Permissive | Disabled\nsetenforce 0          # passa a Permissive: registra e non blocca\naa-status             # i profili AppArmor caricati\n```\n\nSe un servizio compromesso prova a leggere `/etc/shadow`, i permessi lo fermerebbero solo se gira con un utente senza privilegi; il controllo obbligatorio lo ferma **comunque**, perche' quel programma non ha nel profilo il permesso di leggere quel file.\n\n### La tentazione da evitare\n\nQuando qualcosa non funziona, la prima risposta che si trova su Internet e' `setenforce 0` — o peggio, disattivare del tutto. Funziona, e toglie una difesa intera.\n\nLa risposta giusta e' passare a **Permissive**, riprodurre il problema, leggere le negazioni nei log, e correggere il profilo. Permissive registra senza bloccare: e' fatto esattamente per questo.\n\n### Capacita': setuid fatto per bene\n\n```\ngetcap /usr/bin/misura\nsetcap cap_net_raw+ep /usr/bin/misura\n```\n\nUn programma che deve aprire una socket di rete grezza — `ping`, un ricevitore, uno strumento di acquisizione — storicamente veniva reso **setuid root**: cioe' gli si davano *tutti* i poteri di root per averne uno solo.\n\nLe **capacita'** spezzano quel blocco: `cap_net_raw` da' quel permesso li' e nient'altro. Se il programma viene compromesso, l'attaccante si ritrova con una capacita' invece che con la macchina."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l18-ufw",
+      "comando": "ufw",
+      "titolo": "chiudere tutto, aprire il necessario",
+      "esercizi": [
+        {
+          "id": "l18-uf-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei appena arrivato su una macchina esposta. Guarda com'e' messo il firewall, e verifica da fuori se la porta 22 risponde.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw status\nprova-da-fuori 22",
+          "verifica": {
+            "stampa": "connessione riuscita",
+            "usa": [
+              "ufw",
+              "prova-da-fuori"
+            ]
+          },
+          "hint": [
+            "Prima lo stato, poi la prova dall'esterno.",
+            "ufw status, poi prova-da-fuori 22"
+          ],
+          "spiegazione": "Firewall fermo e politica in ingresso `allow`: **tutto quello che ascolta e' raggiungibile da chiunque**. Su una macchina in rete di dipartimento e' lo stato di partenza piu' comune, e il piu' pericoloso.\n\n`ufw status` dice come e' configurato; `prova-da-fuori` dice cosa succede davvero. Sono due domande diverse, e nel resto del modulo si vede perche'."
+        },
+        {
+          "id": "l18-uf-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Nell'ordine giusto.** Imposta la politica in ingresso a `deny`, permetti la 22, poi accendi il firewall e verifica che ssh risponda ancora.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw enable\nprova-da-fuori 22",
+          "verifica": {
+            "stampa": "connessione riuscita",
+            "usa": [
+              "ufw",
+              "prova-da-fuori"
+            ]
+          },
+          "hint": [
+            "Regole prima, accensione dopo.",
+            "ufw default deny incoming, ufw allow 22, poi ufw enable"
+          ],
+          "spiegazione": "Questo e' l'ordine che non si sbaglia: **si nega tutto, si apre quello che serve, e solo alla fine si accende**.\n\nSe la macchina e' remota, la regola in piu' e' tenere una seconda sessione ssh aperta finche' non hai verificato che la prima funziona ancora — perche' se hai sbagliato, quella sessione e' l'unica via di rientro."
+        },
+        {
+          "id": "l18-uf-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a fare il contrario: accendi il firewall con la politica `deny` **senza** aver permesso la 22, e guarda cosa succede a ssh.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw enable\nprova-da-fuori 22",
+          "verifica": {
+            "errore": "bloccata dal firewall",
+            "usa": [
+              "ufw",
+              "prova-da-fuori"
+            ]
+          },
+          "hint": [
+            "Nega tutto e accendi, senza permettere niente.",
+            "ufw default deny incoming, poi ufw enable"
+          ],
+          "spiegazione": "`ufw` avvisa, e la prova da fuori conferma: la 22 e' chiusa. Su una macchina davanti a te si rimedia in dieci secondi; su una macchina in un'altra stanza — o in un altro edificio — vuol dire andarci di persona.\n\nÈ l'errore piu' classico dell'amministrazione remota, e succede una volta sola nella vita di ciascuno."
+        },
+        {
+          "id": "l18-uf-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "L'acquisizione pubblica i dati sulla porta 8000. Aprila, verifica che risponda, e controlla che la 443 resti chiusa.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw enable\nufw allow 8000\nprova-da-fuori 8000\nprova-da-fuori 443",
+          "verifica": {
+            "stampa": "connessione riuscita",
+            "errore": "bloccata dal firewall",
+            "usa": [
+              "ufw",
+              "prova-da-fuori"
+            ]
+          },
+          "hint": [
+            "Apri la 8000 e prova sia quella sia una porta che non hai aperto.",
+            "ufw allow 8000, poi prova-da-fuori 8000 e prova-da-fuori 443"
+          ],
+          "spiegazione": "Una porta aperta, tutte le altre chiuse: e' il principio del **minimo necessario**, e si vede in due comandi.\n\nLa 443 e' bloccata dal firewall anche se su questa macchina non ascolta nessuno: sono due difese diverse e indipendenti, ed e' il motivo per cui il messaggio distingue «bloccata» da «rifiutata»."
+        },
+        {
+          "id": "l18-uf-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il database serve solo alle macchine del laboratorio. Permetti la porta 5432 **solo** dalla rete `192.168.1.0/24` e guarda come compare nell'elenco.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw allow from 192.168.1.0/24 to any port 5432\nufw enable\nufw status numbered",
+          "verifica": {
+            "stampa": "5432",
+            "usa": [
+              "ufw"
+            ]
+          },
+          "hint": [
+            "ufw allow from RETE to any port PORTA",
+            "ufw allow from 192.168.1.0/24 to any port 5432"
+          ],
+          "spiegazione": "Restringere **l'origine** e' spesso piu' utile che chiudere la porta: il servizio resta usabile da chi deve, e invisibile a tutti gli altri.\n\nÈ la forma con cui si espongono i database, le interfacce di gestione e i pannelli di controllo: mai a Internet, sempre a una rete precisa."
+        },
+        {
+          "id": "l18-uf-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Hai aperto la 8000 per una prova e non serve piu'. Elencala con i numeri, togli la regola, e verifica che ora sia chiusa.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw allow 8000\nufw enable\nufw status numbered\nufw delete 2\nprova-da-fuori 8000",
+          "verifica": {
+            "errore": "bloccata dal firewall",
+            "usa": [
+              "ufw"
+            ]
+          },
+          "hint": [
+            "status numbered da' i numeri, delete N toglie quella regola.",
+            "ufw status numbered, poi ufw delete 2"
+          ],
+          "spiegazione": "Le regole aperte «per una prova» sono la fonte principale delle porte esposte per anni. Toglierle appena la prova e' finita costa dieci secondi, e la verifica da fuori conferma che sono davvero sparite.\n\nQuando le regole diventano molte, `status numbered` e' l'unico modo per non cancellare quella sbagliata."
+        },
+        {
+          "id": "l18-uf-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "`prova-da-fuori 8000` risponde «connessione rifiutata». Cosa vuol dire?",
+          "opzioni": [
+            "il firewall lascia passare, ma su quella porta non ascolta nessun servizio",
+            "il firewall sta bloccando la porta",
+            "la macchina non e' raggiungibile in rete",
+            "il servizio e' in ascolto ma sovraccarico"
+          ],
+          "risposta": "il firewall lascia passare, ma su quella porta non ascolta nessun servizio",
+          "spiegazione": "**Rifiutata** e' una risposta della macchina: e' arrivata la richiesta, e ha detto di no perche' nessuno ascolta. **Bloccata** vuol dire che la richiesta non e' nemmeno arrivata al servizio.\n\nÈ la stessa distinzione del modulo sulla rete, vista dall'altro lato: li' con `nc -z`, qui con il firewall. Confonderle porta a cercare il guasto nel posto sbagliato."
+        },
+        {
+          "id": "l18-uf-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La macchina esposta, dall'inizio.** Nega tutto in ingresso, apri ssh e il servizio dati, accendi, e dimostra con tre prove che ssh e 8000 rispondono mentre la 443 no.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw allow 8000\nufw enable\nufw status\nprova-da-fuori 22\nprova-da-fuori 8000\nprova-da-fuori 443",
+          "verifica": {
+            "stampa": "connessione riuscita",
+            "errore": "bloccata dal firewall",
+            "usa": [
+              "ufw",
+              "prova-da-fuori"
+            ]
+          },
+          "hint": [
+            "Regole, accensione, e tre prove: 22, 8000, 443.",
+            "prova-da-fuori 22, prova-da-fuori 8000, prova-da-fuori 443"
+          ],
+          "spiegazione": "Due porte aperte e tutto il resto chiuso, **verificato** e non solo configurato. La differenza fra un elenco di regole e una macchina indurita e' esattamente questa prova.\n\nQuello che manca ancora, e sta nella prossima raccolta: la porta 22 e' aperta a chiunque, e chiunque proverа' a entrarci. Aprirla e' necessario; renderla inutile agli automatismi e' il passo dopo."
+        }
+      ]
+    },
+    {
+      "id": "l18-ssh",
+      "comando": "sshd_config",
+      "titolo": "indurire la porta piu' bersagliata",
+      "esercizi": [
+        {
+          "id": "l18-ss-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda com'e' configurato il server ssh di questa macchina, e chiediti cosa ci sia di rischioso.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "cat /etc/ssh/sshd_config",
+          "verifica": {
+            "stampa": "PasswordAuthentication yes",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Il file sta in /etc/ssh.",
+            "cat /etc/ssh/sshd_config"
+          ],
+          "spiegazione": "Due righe pericolose insieme: `PasswordAuthentication yes` e `PermitRootLogin yes`. Vuol dire che chiunque, da qualunque parte del mondo, puo' provare password sull'utente `root` — e le prova, migliaia di volte al giorno, automaticamente.\n\nÈ la configurazione di partenza di molte distribuzioni, ed e' il primo file da cambiare su una macchina esposta."
+        },
+        {
+          "id": "l18-ss-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Disattiva l'autenticazione con password, controlla la sintassi del file, e verifica la riga modificata.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config\nsshd -t\ngrep PasswordAuthentication /etc/ssh/sshd_config",
+          "verifica": {
+            "contiene": {
+              "/etc/ssh/sshd_config": "PasswordAuthentication no"
+            },
+            "stampa": "PasswordAuthentication no",
+            "usa": [
+              "sed",
+              "sshd",
+              "grep"
+            ]
+          },
+          "hint": [
+            "sed -i per cambiare la riga, poi sshd -t per controllare.",
+            "sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config"
+          ],
+          "spiegazione": "Da adesso si entra **solo con le chiavi** del modulo sulla macchina remota. I tentativi automatici di password diventano irrilevanti: non c'e' niente da indovinare.\n\n`sshd -t` non stampa niente quando la configurazione e' valida — il silenzio e' la buona notizia.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l18-ss-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Impedisci anche l'accesso diretto di root, controlla la sintassi, e mostra le due righe che hai cambiato.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config\nsshd -t\ngrep -i 'root\\|password' /etc/ssh/sshd_config",
+          "verifica": {
+            "contiene": {
+              "/etc/ssh/sshd_config": "PermitRootLogin no"
+            },
+            "usa": [
+              "sed",
+              "sshd"
+            ]
+          },
+          "hint": [
+            "Stessa tecnica della riga precedente.",
+            "sed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config"
+          ],
+          "spiegazione": "Chi attacca, con `root`, conosce gia' meta' delle credenziali. Si entra col proprio utente e si usa `sudo`: costa un comando in piu' e lascia traccia di chi ha fatto cosa — cosa che con un `root` condiviso non e' possibile.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l18-ss-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Il controllo che salva la giornata.** Introduci un errore nel file (`PermitRootLogin forse`), lancia il controllo di sintassi, e leggi cosa dice.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "echo 'PermitRootLogin forse' >> /etc/ssh/sshd_config\nsshd -t",
+          "verifica": {
+            "errore": "valore non valido",
+            "usa": [
+              "sshd",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Aggiungi la riga sbagliata e poi lancia sshd -t.",
+            "sshd -t"
+          ],
+          "spiegazione": "`sshd -t` legge la configurazione e dice **dove** e' rotta, senza toccare il servizio. Se avessi riavviato direttamente, `sshd` non sarebbe ripartito — e da una sessione remota non ci sarebbe stato modo di rientrare per correggere.\n\nQuesto comando prima di ogni riavvio e' l'abitudine piu' economica di tutta l'amministrazione remota."
+        },
+        {
+          "id": "l18-ss-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Applica la configurazione indurita e riavvia il servizio: correggi l'errore, controlla, riavvia, e verifica che ssh sia ancora attivo.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "sed -i '/PermitRootLogin forse/d' /etc/ssh/sshd_config\nsshd -t\nsystemctl restart sshd\nsystemctl is-active sshd",
+          "verifica": {
+            "stampa": "active",
+            "usa": [
+              "sed",
+              "sshd",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Togli la riga rotta, controlla, poi riavvia il servizio.",
+            "sed -i '/PermitRootLogin forse/d' /etc/ssh/sshd_config, poi systemctl restart sshd"
+          ],
+          "spiegazione": "La sequenza completa: **correggi, controlla, riavvia, verifica**. Il `sed` con `/motivo/d` toglie la riga intera, ed e' la stessa forma del modulo sul testo.\n\nSu una macchina remota manca un passo che qui non si puo' simulare: **aprire una seconda sessione** prima di chiudere quella da cui hai lavorato. Se la nuova entra, la configurazione e' buona.",
+          "testoAvanzato": true,
+          "servizi": true
+        },
+        {
+          "id": "l18-ss-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Sposta ssh sulla porta 2222 nel file di configurazione, controlla la sintassi, e apri quella porta sul firewall senza chiudere la 22.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config\nsshd -t\nufw allow 2222\nufw status",
+          "verifica": {
+            "contiene": {
+              "/etc/ssh/sshd_config": "Port 2222"
+            },
+            "stampa": "2222",
+            "usa": [
+              "sed",
+              "ufw"
+            ]
+          },
+          "hint": [
+            "Cambia la riga Port, poi apri la porta nel firewall.",
+            "sed -i 's/Port 22/Port 2222/' /etc/ssh/sshd_config, poi ufw allow 2222"
+          ],
+          "spiegazione": "Cambiare porta **non e' sicurezza**: toglie il rumore delle scansioni automatiche, e questo e' tutto. Chi ti prende di mira la trova in pochi secondi.\n\nQuello che conta e' l'ordine: si apre la porta nuova nel firewall **prima** di riavviare ssh, e si chiude la vecchia solo dopo aver verificato che la nuova funziona. Invertire i due passi e' l'altro modo classico di chiudersi fuori.",
+          "testoAvanzato": true
+        },
+        {
+          "id": "l18-ss-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Qual e' il beneficio maggiore di `PasswordAuthentication no`?",
+          "opzioni": [
+            "toglie di mezzo i tentativi automatici di password, che sono la quasi totalita' degli attacchi a ssh",
+            "rende la connessione piu' veloce",
+            "cifra meglio la sessione",
+            "evita di dover configurare le chiavi"
+          ],
+          "risposta": "toglie di mezzo i tentativi automatici di password, che sono la quasi totalita' degli attacchi a ssh",
+          "spiegazione": "Una macchina esposta riceve migliaia di tentativi di password al giorno, tutti automatici. Senza password da indovinare, quel rumore diventa irrilevante — e i log tornano leggibili, che e' un beneficio secondario ma reale.\n\nLa cifratura della sessione non cambia: quella c'e' comunque. Cambia **cosa serve** per entrare."
+        },
+        {
+          "id": "l18-ss-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Indurimento completo di ssh.** Niente password, niente root, controllo della sintassi, servizio riavviato, e firewall che lascia passare solo la 22.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "sed -i 's/PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config\nsed -i 's/PermitRootLogin yes/PermitRootLogin no/' /etc/ssh/sshd_config\nsshd -t\nsystemctl restart sshd\nufw default deny incoming\nufw allow 22\nufw enable\nprova-da-fuori 22",
+          "verifica": {
+            "contiene": {
+              "/etc/ssh/sshd_config": "PermitRootLogin no"
+            },
+            "stampa": "connessione riuscita",
+            "usa": [
+              "sed",
+              "sshd",
+              "ufw",
+              "systemctl"
+            ]
+          },
+          "hint": [
+            "Due sed, il controllo, il riavvio, poi le regole del firewall.",
+            "sshd -t prima di systemctl restart sshd"
+          ],
+          "spiegazione": "Questa e' la configurazione minima di una macchina che sta su una rete non fidata: **una porta aperta, solo chiavi, niente root**.\n\nÈ anche il punto in cui i moduli si incastrano: le chiavi vengono dal modulo sulla macchina remota, il riavvio del servizio da quello sui servizi, le regole dalla raccolta precedente, e la verifica finale dice che tutto insieme funziona.\n\nQuello che resta da fare su una macchina vera: aggiornamenti automatici di sicurezza, e leggere ogni tanto chi ha provato a entrare.",
+          "testoAvanzato": true,
+          "servizi": true
+        }
+      ]
+    },
+    {
+      "id": "l18-mac",
+      "comando": "SELinux, AppArmor, capacita'",
+      "titolo": "cosa puo' fare un programma",
+      "esercizi": [
+        {
+          "id": "l18-ma-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Controlla se il controllo obbligatorio e' attivo su questa macchina, e quali profili AppArmor sono caricati.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "getenforce\naa-status",
+          "verifica": {
+            "stampa": "Enforcing",
+            "usa": [
+              "getenforce"
+            ]
+          },
+          "hint": [
+            "Due comandi, uno per SELinux e uno per AppArmor.",
+            "getenforce, poi aa-status"
+          ],
+          "spiegazione": "`Enforcing` vuol dire che SELinux **blocca** quello che non e' nel profilo. Su AppArmor la stessa distinzione si chiama `enforce` contro `complain`.\n\nLe due tecnologie fanno la stessa cosa in modo diverso: SELinux e' il default su Red Hat e derivate, AppArmor su Ubuntu e Debian. Non convivono: su una macchina ce n'e' una sola."
+        },
+        {
+          "id": "l18-ma-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Un servizio non parte e sospetti il controllo obbligatorio. Passa a `Permissive` per verificarlo senza spegnere niente, e controlla lo stato.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "getenforce\nsetenforce 0\ngetenforce",
+          "verifica": {
+            "stampa": "Permissive",
+            "usa": [
+              "setenforce"
+            ]
+          },
+          "hint": [
+            "setenforce 0 passa a Permissive.",
+            "setenforce 0, poi getenforce"
+          ],
+          "spiegazione": "`Permissive` **registra e non blocca**: e' fatto esattamente per questa diagnosi. Se in Permissive il servizio parte, il colpevole era SELinux e nei log ci sono le negazioni da leggere.\n\nLa differenza con `disabled` e' tutta qui: Permissive continua a dirti cosa avrebbe bloccato, disabilitato non dice piu' niente."
+        },
+        {
+          "id": "l18-ma-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Rimetti il controllo in `Enforcing` e lascia una nota in `diagnosi.txt` su cosa avevi fatto e perche'.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "setenforce 1\ngetenforce > diagnosi.txt\necho 'passato a Permissive per diagnosi, poi rimesso Enforcing' >> diagnosi.txt\ncat diagnosi.txt",
+          "verifica": {
+            "contiene": {
+              "diagnosi.txt": "Enforcing"
+            },
+            "stampa": "Permissive per diagnosi",
+            "usa": [
+              "setenforce",
+              "echo"
+            ]
+          },
+          "hint": [
+            "setenforce 1 torna a Enforcing; poi scrivi la nota nel file.",
+            "getenforce > diagnosi.txt, poi echo '...' >> diagnosi.txt"
+          ],
+          "spiegazione": "Il passaggio a Permissive e' una **diagnosi**, non una soluzione: si torna sempre a `Enforcing`. Una macchina lasciata in Permissive «per il momento» ci resta per anni.\n\nScrivere cosa hai fatto e' l'altra meta' del lavoro: chi arriva dopo di te — o tu fra sei mesi — trova una nota invece di un mistero."
+        },
+        {
+          "id": "l18-ma-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il tuo programma di acquisizione deve aprire una socket di rete grezza. Dagli **solo** quella capacita' e verifica cosa ha ottenuto.",
+          "sicurezza": true,
+          "filesystem": {
+            "/usr/bin/acquisisci": {
+              "contenuto": "binario\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "setcap cap_net_raw+ep /usr/bin/acquisisci\ngetcap /usr/bin/acquisisci",
+          "verifica": {
+            "stampa": "cap_net_raw+ep",
+            "usa": [
+              "setcap",
+              "getcap"
+            ]
+          },
+          "hint": [
+            "setcap CAPACITA+ep PROGRAMMA",
+            "setcap cap_net_raw+ep /usr/bin/acquisisci"
+          ],
+          "spiegazione": "Un permesso solo, invece di tutti. L'alternativa storica era rendere il programma **setuid root** — cioe' dargli l'intera macchina per fargli aprire una socket.\n\nSe un programma con `cap_net_raw` viene compromesso, l'attaccante ottiene quella capacita'. Se fosse stato setuid root, avrebbe ottenuto root."
+        },
+        {
+          "id": "l18-ma-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Confronta le due strade sullo stesso programma: guarda i permessi con `ls -l`, poi le capacita', e salva il confronto in `capacita.txt`.",
+          "sicurezza": true,
+          "filesystem": {
+            "/usr/bin/acquisisci": {
+              "contenuto": "binario\n",
+              "modo": 493
+            }
+          },
+          "soluzione": "ls -l /usr/bin/acquisisci\nsetcap cap_net_raw+ep /usr/bin/acquisisci\ngetcap /usr/bin/acquisisci > capacita.txt\ncat capacita.txt",
+          "verifica": {
+            "contiene": {
+              "capacita.txt": "cap_net_raw"
+            },
+            "usa": [
+              "setcap",
+              "getcap",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Prima i permessi tradizionali, poi le capacita'.",
+            "getcap /usr/bin/acquisisci > capacita.txt"
+          ],
+          "spiegazione": "I permessi Unix (`rwx`) dicono **chi** puo' eseguire il programma. Le capacita' dicono **cosa quel programma puo' fare** una volta in esecuzione. Sono due assi indipendenti, e in `ls -l` le capacita' non si vedono affatto — e' il motivo per cui `getcap` esiste.\n\nSu una macchina che non capisci, `getcap -r /` mostra ogni programma con poteri speciali: e' una delle prime cose da guardare in un controllo di sicurezza."
+        },
+        {
+          "id": "l18-ma-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Un servizio non parte e su Internet trovi «disattiva SELinux». Cosa fai?",
+          "opzioni": [
+            "passi a Permissive, riproduci il problema, leggi le negazioni e correggi il profilo",
+            "disattivi SELinux: se il servizio parte, il problema e' risolto",
+            "reinstalli il servizio",
+            "dai al servizio i permessi di root"
+          ],
+          "risposta": "passi a Permissive, riproduci il problema, leggi le negazioni e correggi il profilo",
+          "spiegazione": "Disattivare funziona sempre, e toglie una difesa intera per tutta la vita della macchina. Permissive ti da' la **stessa informazione** — cosa sarebbe stato bloccato — senza rinunciare a niente in modo permanente.\n\nÈ la differenza fra risolvere un problema e nasconderlo. Vale per SELinux, per il firewall e per i permessi: la risposta «disattiva tutto» risolve sempre, ed e' sempre la peggiore."
+        },
+        {
+          "id": "l18-ma-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa aggiungono SELinux o AppArmor a permessi e firewall?",
+          "opzioni": [
+            "limitano cosa un programma puo' fare, anche quando gira con privilegi",
+            "cifrano i file di sistema",
+            "sostituiscono il firewall",
+            "controllano le password degli utenti"
+          ],
+          "risposta": "limitano cosa un programma puo' fare, anche quando gira con privilegi",
+          "spiegazione": "I permessi ragionano per **utente**, il controllo obbligatorio per **programma**. Un server web compromesso che gira come root, con i soli permessi Unix, puo' fare tutto; con un profilo che gli consente solo la sua cartella e la sua porta, quasi niente.\n\nÈ il terzo strato: firewall per chi arriva da fuori, permessi per chi e' dentro, controllo obbligatorio per cosa possono fare i programmi."
+        },
+        {
+          "id": "l18-ma-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il controllo di sicurezza della macchina.** Raccogli in `sicurezza.txt` le tre cose che un revisore vuole vedere: stato del firewall, configurazione di ssh, e stato del controllo obbligatorio.",
+          "sicurezza": true,
+          "filesystem": {},
+          "soluzione": "ufw default deny incoming\nufw allow 22\nufw enable\nufw status > sicurezza.txt\ngrep -i 'password\\|root' /etc/ssh/sshd_config >> sicurezza.txt\ngetenforce >> sicurezza.txt\ncat sicurezza.txt",
+          "verifica": {
+            "contiene": {
+              "sicurezza.txt": "Enforcing"
+            },
+            "stampa": "Stato: attivo",
+            "usa": [
+              "ufw",
+              "grep",
+              "getenforce"
+            ]
+          },
+          "hint": [
+            "Tre comandi, un file solo, con le frecce giuste.",
+            "ufw status > sicurezza.txt, poi grep ... >> e getenforce >>"
+          ],
+          "spiegazione": "Tre righe di comando e hai il riassunto che serve a chiunque debba giudicare la macchina: cosa e' raggiungibile, come si entra, cosa possono fare i programmi.\n\nÈ anche il documento che ti serve **tu** fra sei mesi, quando qualcuno chiedera' «questa macchina e' sicura?» e la risposta onesta dovra' essere piu' precisa di «credo di si'»."
+        }
+      ]
+    }
+  ]
+}

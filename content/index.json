@@ -441,7 +441,7 @@
     {
       "id": "l18",
       "file": "l18-sicurezza.json",
-      "titolo": "Sicurezza del sistema",
+      "titolo": "Sicurezza del sistema: firewall, ssh, controllo obbligatorio",
       "disponibile": true
     },
     {
