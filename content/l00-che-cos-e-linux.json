@@ -1,0 +1,503 @@
+{
+  "id": "l00",
+  "titolo": "Che cos'e' Linux, e perche' ti riguarda",
+  "perche": "Prima di digitare comandi conviene sapere cosa si sta usando: da dove viene Unix, perche' i comandi sono piccoli e si compongono, e dove Linux gira davvero — cluster di calcolo, banchi prova, droni, payload di CubeSat. Finisce con le prime domande da fare a una macchina che non conosci.",
+  "funzioni": [
+    "kernel",
+    "distribuzione",
+    "shell",
+    "GNU",
+    "GPL",
+    "/etc/os-release",
+    "/proc/version",
+    "whoami",
+    "pwd",
+    "ls /",
+    "echo $SHELL",
+    "grep"
+  ],
+  "lezioni": [
+    {
+      "id": "l00-l1",
+      "titolo": "Da Unix a Linux, in cinque tappe",
+      "md": "**1969, Bell Labs.** Ken Thompson e Dennis Ritchie scrivono **Unix** su un minicomputer avanzato. Non progettano un sistema operativo per il mondo: ne fanno uno per lavorarci loro. Da quella scelta viene tutto il resto — Unix e' fatto per chi ci sta dentro tutto il giorno, non per chi lo guarda una volta.\n\n**1973.** Unix viene riscritto in **C**, un linguaggio nato per l'occasione. È la mossa che lo rende trasportabile da una macchina all'altra: fino ad allora un sistema operativo era legato al suo processore. Da qui Unix comincia a diffondersi nelle universita'.\n\n**1983.** Richard Stallman avvia il progetto **GNU** (*GNU's Not Unix*): un sistema completo, libero, compatibile con Unix. Nel giro di qualche anno esistono il compilatore, la shell, i comandi — `ls`, `grep`, `cat`, tutti quelli che userai — ma manca il pezzo centrale: il **kernel**.\n\n**1991.** Linus Torvalds, studente a Helsinki, scrive per esercizio un kernel per il suo PC. Lo annuncia con un messaggio famoso per la sua modestia: «solo un hobby, niente di grande e professionale». Lo mette sotto licenza **GPL**, che obbliga chi lo modifica a ridistribuire le modifiche.\n\n**Da li' in poi.** Il kernel di Torvalds piu' gli strumenti GNU fanno un sistema completo. Oggi gira su quasi tutti i server del mondo, su tutti i cinquecento supercomputer piu' potenti, su miliardi di telefoni Android, e sull'hardware che raccoglie i dati nel laboratorio in cui entrerai.\n\n### Kernel, distribuzione, shell: tre cose diverse\n\n- **Kernel** — il programma che parla con l'hardware: memoria, dischi, processori, schede. È «Linux» in senso stretto, ed e' quello che dice `uname -r`.\n- **Distribuzione** — kernel + strumenti + gestore di pacchetti + scelte di default, impacchettati da qualcuno: Ubuntu, Debian, Fedora, Red Hat, Arch. È quello che dice `/etc/os-release`.\n- **Shell** — il programma con cui **tu** parli al sistema: `bash`, `zsh`. Non e' Linux: e' l'interfaccia. Ed e' quella che userai per tutto il resto del ramo."
+    },
+    {
+      "id": "l00-l2",
+      "titolo": "La filosofia che spiega tutti i comandi",
+      "md": "> Scrivi programmi che facciano una cosa sola, e la facciano bene.\n> Scrivi programmi che lavorino insieme.\n> Scrivi programmi che trattino il testo, perche' e' un'interfaccia universale.\n>\n> — Doug McIlroy, Bell Labs\n\nSono tre righe del 1978, e sono la ragione per cui i comandi che imparerai sono cosi' piccoli e cosi' strani.\n\n`ls` elenca e basta. `grep` filtra e basta. `wc` conta e basta. Nessuno dei tre sa che gli altri esistono, e il fatto che si possano incastrare — `ls | grep csv | wc -l` — non e' una funzione di nessuno dei tre: e' una proprieta' del sistema.\n\n### Perche' ti riguarda\n\nUn programma unico che «fa tutto» risolve i problemi che il suo autore aveva previsto. Cinquanta programmi piccoli che si compongono risolvono anche quelli che nessuno aveva previsto — compresi i tuoi.\n\nQuando nel modulo l02 conterai i codici di errore di una campagna con `sort | uniq -c | sort -n -r`, nessuno aveva pensato a te: hai messo insieme quattro pezzi generici e hai risposto a una domanda specifica. Quella e' la filosofia, ed e' l'unica cosa di questo modulo che vale la pena portarsi dietro.\n\n### Tutto e' un file\n\nL'altra idea centrale: un documento e' un file, un disco e' un file, una porta seriale e' un file, e perfino lo stato del kernel e' un file (`/proc`, che vedrai in l14). Un'unica idea invece di dieci interfacce diverse — ed e' il motivo per cui `cat` funziona su cose che non sono documenti.\n\n### Libero, in pratica\n\nIl codice si puo' leggere, modificare, ridistribuire. Le conseguenze pratiche che ti riguardano:\n\n- **niente licenze da comprare** per mettere Linux su venti macchine di laboratorio;\n- **niente scadenze**: una macchina di acquisizione puo' restare com'e' per dieci anni;\n- **si puo' guardare dentro** quando qualcosa non torna — e su un risultato scientifico questo conta;\n- **il fornitore non puo' sparire** portandosi via il sistema."
+    },
+    {
+      "id": "l00-l3",
+      "titolo": "Dove gira Linux, e perche' finirai per usarlo",
+      "md": "| Dove | Quanto | Cosa vuol dire per te |\n|---|---|---|\n| Supercomputer | **500 su 500** della classifica TOP500 | Se la tua simulazione non entra nel portatile, finira' li' |\n| Server web | la maggioranza netta | Ogni servizio a cui ti colleghi |\n| Android | miliardi di dispositivi | Un kernel Linux nel telefono che hai in tasca |\n| Embedded | router, TV, automobili, droni | Il computer del banco prova, quasi sempre |\n| Spazio | ISS, CubeSat, Perseverance | Il volo su Marte del drone Ingenuity girava su Linux |\n\n### In aerospaziale, in concreto\n\n- **Cluster di calcolo** — CFD, FEM, ottimizzazione, Monte Carlo. Ci si entra in `ssh`, il lavoro si manda in coda, e tutto quello che sai fare a mano serve li'.\n- **Banchi prova e acquisizione** — un Raspberry Pi o un PC industriale che campiona per giorni. Nessuno schermo, un terminale.\n- **Droni e robotica** — **ROS** (*Robot Operating System*) gira su Linux, ed e' lo standard di fatto della ricerca.\n- **CubeSat** — i payload usano Linux quando il calcolo a bordo conta piu' del consumo. Le stazioni di terra praticamente sempre.\n- **Riproducibilita'** — una campagna analizzata a mano non e' ripetibile. Uno script che gira uguale fra due anni si': ed e' il traguardo a cui punta tutto il ramo.\n\n### E Windows?\n\nResta quello che usi per il CAD, per Office, per il PC del laboratorio. Non e' una gara: Linux **si aggiunge**, e in questo percorso ci arrivi con WSL (modulo l06) senza toccare niente della macchina che gia' hai.\n\nLa divisione onesta: Windows per il lavoro quotidiano, Linux per il calcolo, l'hardware e tutto quello che deve girare da solo.\n\n### Cosa NON troverai in questo ramo\n\nInterfacce grafiche, personalizzazione del desktop, «quale distribuzione e' la migliore». Sono le cose di cui si discute di piu' su Internet e le meno utili al lavoro: dalla riga di comando in poi, Ubuntu e Fedora sono la stessa macchina.\n\n### Le quattro domande da fare a una macchina nuova\n\nPrima di toccare qualcosa, quattro comandi. Non serve capirli a fondo adesso — il modulo l01 li smonta uno per uno — ma sono le domande che ti farai ogni volta che ti colleghi a una macchina che non e' la tua.\n\n```\ncat /etc/os-release   # che distribuzione e'\ncat /proc/version     # quale kernel\nwhoami                # chi sono io su questa macchina\npwd                   # in che cartella mi trovo\necho $SHELL           # con quale shell sto parlando\n```\n\nI nomi sono abbreviazioni di frasi inglesi, non sigle: **`whoami`** e' *who am i*, **`pwd`** e' *print working directory*, **`echo`** ripete quello che gli dai — e con il dollaro davanti a un nome ne stampa il valore invece del nome.\n\nLe risposte cambiano tutto quello che viene dopo: cosa puoi leggere, cosa puoi scrivere, dove stai per creare file."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l00-storia",
+      "comando": "da Unix a Linux",
+      "titolo": "come ci siamo arrivati",
+      "esercizi": [
+        {
+          "id": "l00-st-1",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Cos'e' esattamente «Linux», in senso stretto?",
+          "opzioni": [
+            "il kernel: il programma che parla con l'hardware",
+            "il sistema operativo completo, comandi compresi",
+            "una distribuzione come Ubuntu",
+            "l'interfaccia grafica"
+          ],
+          "risposta": "il kernel: il programma che parla con l'hardware",
+          "spiegazione": "Linux e' il **kernel** scritto da Torvalds nel 1991: gestisce memoria, processi, dischi e dispositivi. I comandi che userai — `ls`, `grep`, `cat` — vengono dal progetto **GNU**, che li aveva scritti prima e senza kernel.\n\nPer questo il nome tecnicamente corretto e' GNU/Linux. Nessuno lo dice, ma sapere che sono due pezzi diversi serve: quando aggiorni il kernel i comandi restano, e viceversa."
+        },
+        {
+          "id": "l00-st-2",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' riscrivere Unix in C, nel 1973, e' stata la mossa che conta?",
+          "opzioni": [
+            "lo ha reso trasportabile da una macchina all'altra invece che legato a un processore",
+            "lo ha reso piu' veloce",
+            "ha permesso di venderlo",
+            "ha aggiunto l'interfaccia grafica"
+          ],
+          "risposta": "lo ha reso trasportabile da una macchina all'altra invece che legato a un processore",
+          "spiegazione": "Prima, un sistema operativo si scriveva in assembly ed era legato a **quel** modello di macchina. In C si ricompila altrove, e Unix comincia a girare su hardware diverso.\n\nÈ la stessa proprieta' che oggi ti permette di usare gli stessi comandi sul portatile, sul Raspberry del banco e su un nodo di calcolo con un processore diverso."
+        },
+        {
+          "id": "l00-st-3",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Nel 1991 al progetto GNU mancava un pezzo. Quale?",
+          "opzioni": [
+            "il kernel",
+            "la shell",
+            "il compilatore",
+            "i comandi di base"
+          ],
+          "risposta": "il kernel",
+          "spiegazione": "GNU aveva gia' il compilatore (`gcc`), la shell (`bash`) e tutti i comandi. Mancava il pezzo centrale, e il kernel di Torvalds ha riempito esattamente quel buco.\n\nÈ un incastro fortunato: due progetti nati separati, con licenze compatibili, che insieme facevano un sistema completo. Senza GNU, il kernel di Torvalds sarebbe stato un esercizio di programmazione."
+        },
+        {
+          "id": "l00-st-4",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Cosa distingue una **distribuzione** dal kernel?",
+          "opzioni": [
+            "la distribuzione e' kernel + strumenti + gestore di pacchetti + scelte di default, impacchettati da qualcuno",
+            "la distribuzione e' la versione a pagamento",
+            "sono sinonimi",
+            "la distribuzione e' l'interfaccia grafica"
+          ],
+          "risposta": "la distribuzione e' kernel + strumenti + gestore di pacchetti + scelte di default, impacchettati da qualcuno",
+          "spiegazione": "Ubuntu, Debian, Fedora, Arch usano lo **stesso kernel**: cambiano le versioni scelte, il gestore di pacchetti (`apt` contro `dnf`), i default e chi ci mette la faccia.\n\nDalla riga di comando in poi sono quasi indistinguibili — ed e' il motivo per cui questo ramo non discute quale sia la migliore: quello che impari vale su tutte."
+        },
+        {
+          "id": "l00-st-5",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "La licenza GPL del kernel obbliga chi lo modifica a fare cosa?",
+          "opzioni": [
+            "ridistribuire le modifiche con la stessa licenza",
+            "pagare una quota annuale",
+            "chiedere il permesso agli autori",
+            "niente: si puo' fare quello che si vuole"
+          ],
+          "risposta": "ridistribuire le modifiche con la stessa licenza",
+          "spiegazione": "È il meccanismo che ha tenuto insieme il progetto per trent'anni: chi migliora il kernel e lo distribuisce deve rendere pubbliche le modifiche, quindi i miglioramenti tornano a tutti.\n\nPer te ha una conseguenza pratica: nessuno puo' prendere Linux, chiuderlo e vendertelo senza codice. La macchina che hai continuerai a poterla riparare."
+        },
+        {
+          "id": "l00-st-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "«Scrivi programmi che facciano una cosa sola, e la facciano bene.» Che conseguenza ha, per te che stai per cominciare?",
+          "opzioni": [
+            "i comandi sono piccoli e si compongono: metti insieme quattro pezzi generici e rispondi a una domanda specifica",
+            "ogni comando ha molte opzioni per coprire tutti i casi",
+            "serve un programma diverso per ogni problema",
+            "i comandi sono difficili da imparare"
+          ],
+          "risposta": "i comandi sono piccoli e si compongono: metti insieme quattro pezzi generici e rispondi a una domanda specifica",
+          "spiegazione": "`ls` elenca, `grep` filtra, `sort` ordina, `wc` conta: nessuno dei quattro sa che gli altri esistono, e messi in fila rispondono a domande che nessuno aveva previsto.\n\nÈ il motivo per cui vale la pena imparare venti comandi piccoli invece di un programma grande: le combinazioni sono infinitamente piu' delle funzioni."
+        },
+        {
+          "id": "l00-st-7",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "«In Unix tutto e' un file» vuol dire soprattutto che...",
+          "opzioni": [
+            "dischi, dispositivi e perfino lo stato del kernel si leggono con gli stessi strumenti dei documenti",
+            "tutti i dati vanno salvati su disco",
+            "non esistono le cartelle",
+            "i file non hanno estensione"
+          ],
+          "risposta": "dischi, dispositivi e perfino lo stato del kernel si leggono con gli stessi strumenti dei documenti",
+          "spiegazione": "Un'unica interfaccia invece di dieci diverse: `cat /proc/cpuinfo` dice che processore c'e', `cat /dev/...` legge da un dispositivo. Nel modulo l14 leggerai il kernel con `cat` e `grep`, e sara' ovvio.\n\nÈ la scelta di progetto che rende utile imparare pochi comandi: valgono su cose che documenti non sono."
+        },
+        {
+          "id": "l00-st-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quale di queste **non** e' una conseguenza pratica del software libero, per un laboratorio?",
+          "opzioni": [
+            "l'assistenza tecnica e' garantita da un fornitore",
+            "niente licenze da comprare per venti macchine",
+            "una macchina di acquisizione puo' restare com'e' per dieci anni",
+            "si puo' guardare nel codice quando un risultato non torna"
+          ],
+          "risposta": "l'assistenza tecnica e' garantita da un fornitore",
+          "spiegazione": "L'assistenza e' proprio quello che il software libero **non** garantisce: la si compra a parte (Red Hat, SUSE, Canonical vivono di quello) oppure la si fa in casa — ed e' il motivo per cui competenze come queste servono.\n\nLe altre tre sono reali, e sono le ragioni per cui i laboratori scelgono Linux anche quando avrebbero i soldi per le licenze."
+        }
+      ]
+    },
+    {
+      "id": "l00-dove",
+      "comando": "dove gira Linux",
+      "titolo": "e perche' ti riguarda",
+      "esercizi": [
+        {
+          "id": "l00-dv-1",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Quanti dei 500 supercomputer piu' potenti al mondo girano Linux?",
+          "opzioni": [
+            "tutti e 500",
+            "circa la meta'",
+            "un centinaio",
+            "nessuno: usano sistemi proprietari"
+          ],
+          "risposta": "tutti e 500",
+          "spiegazione": "Cinquecento su cinquecento, da anni. Non e' una preferenza culturale: il calcolo scientifico ha bisogno di controllo fine sull'hardware, di poter modificare il sistema, e di non pagare licenze per centomila core.\n\nPer te significa una cosa sola: **se la tua simulazione non entra nel portatile, finira' su una macchina Linux**, e ci arriverai con `ssh`."
+        },
+        {
+          "id": "l00-dv-2",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Il computer di un banco prova o di un drone, tipicamente:",
+          "opzioni": [
+            "gira Linux senza interfaccia grafica, e ci si lavora da terminale",
+            "gira Windows con un monitor collegato",
+            "non ha un sistema operativo",
+            "gira un sistema proprietario del produttore"
+          ],
+          "risposta": "gira Linux senza interfaccia grafica, e ci si lavora da terminale",
+          "spiegazione": "Un Raspberry Pi, un PC industriale, una scheda di acquisizione: quasi sempre Linux, quasi sempre senza schermo. Ci si collega in rete e si lavora con i comandi.\n\nÈ il motivo per cui il primo modulo del ramo si chiama «muoversi su una macchina senza schermo»: non e' un esercizio di stile, e' la situazione normale."
+        },
+        {
+          "id": "l00-dv-3",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "**ROS**, lo standard di fatto per la robotica e i droni nella ricerca, gira principalmente su:",
+          "opzioni": [
+            "Linux",
+            "Windows",
+            "macOS",
+            "un sistema dedicato"
+          ],
+          "risposta": "Linux",
+          "spiegazione": "*Robot Operating System* non e' un sistema operativo: e' un insieme di librerie e strumenti che gira **sopra** Linux. Se in tesi tocchi un drone o un braccio robotico, quella e' la strada.\n\nEsistono porting per altri sistemi, ma la documentazione, i pacchetti e le risposte che troverai presuppongono Ubuntu."
+        },
+        {
+          "id": "l00-dv-4",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Il telefono Android che hai in tasca:",
+          "opzioni": [
+            "ha un kernel Linux sotto",
+            "non c'entra niente con Linux",
+            "usa Unix ma non Linux",
+            "gira una versione ridotta di Windows"
+          ],
+          "risposta": "ha un kernel Linux sotto",
+          "spiegazione": "Android e' un sistema costruito **sopra** il kernel Linux: sopra ci sono strati che con GNU non c'entrano niente, ma il pezzo che parla con l'hardware e' lo stesso.\n\nÈ il motivo per cui si dice che Linux gira su miliardi di dispositivi: la maggior parte sono telefoni, e nessuno dei loro proprietari lo sa."
+        },
+        {
+          "id": "l00-dv-5",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "In ambito spaziale, Linux si trova soprattutto...",
+          "opzioni": [
+            "sui payload che fanno calcolo a bordo e sulle stazioni di terra",
+            "solo negli uffici a terra",
+            "da nessuna parte: lo spazio usa solo sistemi certificati",
+            "sui computer di volo critici, al posto dei sistemi real-time"
+          ],
+          "risposta": "sui payload che fanno calcolo a bordo e sulle stazioni di terra",
+          "spiegazione": "La distinzione conta: **il controllo di volo critico** usa sistemi real-time certificati, dove il tempo di risposta e' garantito. **Il payload** — la parte che elabora dati — e le stazioni di terra usano spesso Linux, perche' li serve calcolo e flessibilita'.\n\nIl drone Ingenuity su Marte girava Linux, ed e' stato il primo volo controllato su un altro pianeta."
+        },
+        {
+          "id": "l00-dv-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Perche' questo percorso non discute «quale distribuzione e' la migliore»?",
+          "opzioni": [
+            "dalla riga di comando in poi sono quasi identiche: quello che impari vale su tutte",
+            "perche' Ubuntu e' oggettivamente la migliore",
+            "perche' la scelta non ha nessuna importanza",
+            "perche' cambiare distribuzione e' impossibile"
+          ],
+          "risposta": "dalla riga di comando in poi sono quasi identiche: quello che impari vale su tutte",
+          "spiegazione": "Cambiano il gestore di pacchetti (`apt` contro `dnf`), i default e il ciclo di rilascio. I comandi, i percorsi, i permessi, i processi: uguali.\n\nÈ anche il consiglio pratico: si sceglie quella che usa il gruppo con cui lavori, cosi' le domande hanno risposte gia' scritte."
+        },
+        {
+          "id": "l00-dv-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Devi analizzare i dati di una campagna con strumenti che chiedono Linux, ma il tuo portatile e' Windows e ti serve per il CAD. Cosa fai?",
+          "opzioni": [
+            "installi WSL: Linux dentro Windows, senza doppio avvio e senza partizioni",
+            "sostituisci Windows con Linux",
+            "fai tutto in Windows e speri che gli strumenti funzionino",
+            "compri un secondo computer"
+          ],
+          "risposta": "installi WSL: Linux dentro Windows, senza doppio avvio e senza partizioni",
+          "spiegazione": "**WSL** fa girare un kernel Linux vero dentro Windows, in un terminale. Il modulo l06 lo tratta per intero: si installa con un comando, e tutto il resto del ramo funziona identico li' dentro.\n\nLinux non sostituisce Windows: si aggiunge. Il CAD resta dov'e', il calcolo si sposta di la'."
+        },
+        {
+          "id": "l00-dv-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Qual e' il motivo piu' concreto per cui **a te** conviene imparare questi comandi?",
+          "opzioni": [
+            "ti servono per usare cluster, banchi prova e hardware, e per rendere ripetibile un'analisi",
+            "perche' Linux e' piu' sicuro",
+            "perche' e' gratis",
+            "per poter personalizzare il desktop"
+          ],
+          "risposta": "ti servono per usare cluster, banchi prova e hardware, e per rendere ripetibile un'analisi",
+          "spiegazione": "Sicurezza e costo sono argomenti veri e a te cambiano poco. Quello che cambia e' l'accesso: **senza terminale non entri** in un cluster, non tocchi un banco prova, non metti in piedi una stazione.\n\nE l'analisi ripetibile — uno script che rifa' tutto uguale fra due anni — e' quello che distingue un risultato difendibile da uno screenshot. È il traguardo verso cui punta tutto il ramo."
+        }
+      ]
+    },
+    {
+      "id": "l00-contatto",
+      "comando": "primo contatto",
+      "titolo": "le domande da fare a una macchina",
+      "esercizi": [
+        {
+          "id": "l00-co-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei davanti a una macchina che non conosci. Prima domanda: **che sistema e'?** Guarda il file che lo dichiara e leggine il contenuto.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "ls /etc\ncat /etc/os-release",
+          "verifica": {
+            "stampa": "Ubuntu",
+            "usa": [
+              "cat",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Il file sta in /etc e si chiama os-release.",
+            "cat /etc/os-release"
+          ],
+          "spiegazione": "Ubuntu 24.04: nome della distribuzione e versione. È la prima cosa da sapere, perche' decide quale gestore di pacchetti userai (`apt`) e quali istruzioni seguire quando le guide si dividono.\n\nNota che e' un **file di testo** letto con `cat`: non c'e' un pannello di controllo da aprire. Da qui in poi funziona quasi tutto cosi'."
+        },
+        {
+          "id": "l00-co-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Seconda domanda: **quale kernel**? Leggi la versione dal file che il kernel espone, e confrontala con quella che dichiara la distribuzione.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "cat /proc/version\ncat /etc/os-release",
+          "verifica": {
+            "stampa": "6.8.0",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Anche questo e' un file.",
+            "cat /proc/version"
+          ],
+          "spiegazione": "Kernel `6.8.0` sotto Ubuntu `24.04`: **due numeri di versione diversi**, perche' sono due cose diverse — il kernel di Torvalds e la distribuzione che lo impacchetta.\n\n`/proc` non sta su nessun disco: e' una finestra sul kernel che ha la forma di file. Nel modulo l14 ci tornerai sopra; per adesso basta sapere che il sistema si racconta da solo, e in testo."
+        },
+        {
+          "id": "l00-co-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Terza domanda: **chi sei** su questa macchina, e dove ti trovi.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "whoami\npwd",
+          "verifica": {
+            "stampa": "/home/tu",
+            "usa": [
+              "whoami",
+              "pwd"
+            ]
+          },
+          "hint": [
+            "Due comandi che si leggono come domande.",
+            "whoami, poi pwd"
+          ],
+          "spiegazione": "`whoami` — «chi sono io» — e `pwd` — *print working directory*. Sono le due domande che ti farai ogni volta che ti colleghi a una macchina che non e' la tua, e la risposta cambia tutto: cosa puoi leggere, cosa puoi scrivere, dove stai per creare file.\n\nÈ anche il primo assaggio dei nomi dei comandi: sono abbreviazioni di frasi inglesi, non sigle a caso."
+        },
+        {
+          "id": "l00-co-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda l'albero del sistema: elenca la radice `/`, poi entra a vedere cosa c'e' nella cartella delle configurazioni.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "ls /\nls /etc",
+          "verifica": {
+            "stampa": "os-release",
+            "usa": [
+              "ls"
+            ]
+          },
+          "hint": [
+            "La radice si scrive con una barra sola.",
+            "ls /, poi ls /etc"
+          ],
+          "spiegazione": "Un solo albero, che parte da `/`: niente `C:` e `D:`. `/etc` sono le configurazioni, `/home` le cartelle degli utenti, `/usr` i programmi, `/var` i dati che cambiano — i log per esempio.\n\nQuesta struttura e' la stessa su ogni distribuzione, ed e' il motivo per cui chi sa muoversi su Ubuntu si muove anche su Red Hat. Il modulo l01 la percorre per intero."
+        },
+        {
+          "id": "l00-co-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "**Quale shell stai usando?** Chiedilo alla variabile che lo dichiara, e guarda anche il nome della macchina.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "echo $SHELL\ncat /etc/hostname",
+          "verifica": {
+            "stampa": "banco01",
+            "usa": [
+              "echo",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Il valore di una variabile si legge con il dollaro davanti.",
+            "echo $SHELL, poi cat /etc/hostname"
+          ],
+          "spiegazione": "`bash` e' il programma con cui stai parlando al sistema: **non e' Linux**, e' l'interfaccia. Ne esistono altre — `zsh`, `fish` — e cambiarla non cambia il sistema sotto.\n\nIl nome della macchina serve piu' di quanto sembri: quando avrai tre sessioni aperte su tre macchine diverse, e' l'unica cosa che ti dice dove stai per lanciare quel comando."
+        },
+        {
+          "id": "l00-co-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il sistema si racconta in file di testo. Salva in `macchina.txt` distribuzione e kernel, e rileggi il risultato.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "cat /etc/os-release > macchina.txt\ncat /proc/version >> macchina.txt\ncat macchina.txt",
+          "verifica": {
+            "contiene": {
+              "macchina.txt": "6.8.0"
+            },
+            "stampa": "Ubuntu",
+            "usa": [
+              "cat"
+            ]
+          },
+          "hint": [
+            "Due letture, due frecce diverse.",
+            "cat /etc/os-release > macchina.txt, poi cat /proc/version >> macchina.txt"
+          ],
+          "spiegazione": "La prima freccia crea il file, la seconda aggiunge in fondo: se avessi usato `>` due volte, sarebbe rimasto solo il kernel.\n\nQuesto e' gia' un gesto da amministratore — raccogliere in un file le informazioni che servono a chi ti aiutera' — e lo farai in ogni modulo del ramo. Le frecce le spiega per bene il modulo l01."
+        },
+        {
+          "id": "l00-co-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il sistema e' fatto di testo.** Cerca la riga della versione dentro il file della distribuzione, invece di leggerlo tutto.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "cat /etc/os-release\ngrep VERSION_ID /etc/os-release",
+          "verifica": {
+            "stampa": "24.04",
+            "usa": [
+              "grep",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prima guarda tutto, poi filtra la riga che ti interessa.",
+            "grep VERSION_ID /etc/os-release"
+          ],
+          "spiegazione": "Questo e' il gesto centrale di tutto il ramo, e lo stai facendo al primo modulo: **un comando produce testo, un altro tiene solo la parte che serve**.\n\nSu un file da quattro righe sembra inutile. Su un log da diecimila righe — il modulo l02 — e' l'unico modo di trovare la riga che spiega perche' la prova e' andata storta."
+        },
+        {
+          "id": "l00-co-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La scheda della macchina, per intero.** Metti in `scheda.txt` distribuzione, kernel, nome della macchina e utente, e mostra solo la riga della versione.",
+          "filesystem": {
+            "/etc/os-release": "NAME=\"Ubuntu\"\nVERSION=\"24.04.1 LTS (Noble Numbat)\"\nID=ubuntu\nVERSION_ID=\"24.04\"\n",
+            "/proc/version": "Linux version 6.8.0-45-generic (gcc 13.2.0)\n",
+            "/home/tu/note.txt": "primo giorno\n",
+            "/usr/bin/python3": "binario\n",
+            "/var/log/sistema.log": "avvio completato\n",
+            "/etc/hostname": "banco01\n"
+          },
+          "soluzione": "cat /etc/os-release > scheda.txt\ncat /proc/version >> scheda.txt\ncat /etc/hostname >> scheda.txt\nwhoami >> scheda.txt\ngrep VERSION_ID scheda.txt",
+          "verifica": {
+            "contiene": {
+              "scheda.txt": "banco01"
+            },
+            "stampa": "24.04",
+            "usa": [
+              "cat",
+              "whoami",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Quattro comandi in un file, poi filtra.",
+            "cat /etc/hostname >> scheda.txt, poi whoami >> scheda.txt"
+          ],
+          "spiegazione": "Quattro righe che rispondono alla domanda «su cosa stai lavorando?» — la prima che ti farа' chiunque debba aiutarti, e la prima che dovresti farti tu prima di lanciare qualcosa che modifica.\n\nHai appena usato cinque comandi diversi e due tipi di redirezione senza averli ancora studiati: da qui in poi il ramo li smonta uno per uno. Il primo modulo comincia da dove sei adesso — dentro un terminale, su una macchina che non hai mai visto."
+        }
+      ]
+    }
+  ]
+}

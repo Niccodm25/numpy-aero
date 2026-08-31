@@ -56,10 +56,14 @@ def controlla(mid, titolo, dati, gia_visti):
         if len(r["esercizi"]) < PER_RACCOLTA:
             problemi.append(f"la raccolta «{r['comando']}» ha {len(r['esercizi'])} esercizi su {PER_RACCOLTA}")
 
-    composti = [e for e in esercizi
+    # La quota di composti si misura sugli esercizi di terminale: una raccolta di
+    # sole predizioni non puo' avere una soluzione, e un modulo teorico — la
+    # storia di Linux — non deve fingere di averne.
+    terminali = [e for e in esercizi if e["tipo"] == "terminale"]
+    composti = [e for e in terminali
                 if len((e.get("soluzione") or "").splitlines()) > 1 or "|" in (e.get("soluzione") or "")]
-    if esercizi and len(composti) / len(esercizi) < QUOTA_COMPOSTI:
-        problemi.append(f"solo {len(composti)}/{len(esercizi)} esercizi composti, "
+    if terminali and len(composti) / len(terminali) < QUOTA_COMPOSTI:
+        problemi.append(f"solo {len(composti)}/{len(terminali)} esercizi di terminale sono composti, "
                         f"il minimo e' {int(QUOTA_COMPOSTI * 100)}%")
 
     # Riuso: un esercizio che tocca un comando gia' insegnato altrove.
@@ -72,6 +76,10 @@ def controlla(mid, titolo, dati, gia_visti):
     # Ogni raccolta deve finire con uno scenario: gli ultimi due esercizi
     # combinano piu' comandi invece di ripetere quello nuovo da solo.
     for r in raccolte:
+        # Solo per le raccolte che hanno esercizi di terminale: una raccolta di
+        # predizioni finisce con una domanda, ed e' giusto cosi'.
+        if not any(e["tipo"] == "terminale" for e in r["esercizi"]):
+            continue
         coda = r["esercizi"][-2:]
         if coda and not any(len(comandi_di(e.get("soluzione"))) > 1 for e in coda):
             problemi.append(f"la raccolta «{r['comando']}» non finisce con uno scenario composto")

@@ -208,9 +208,9 @@
     },
     {
       "id": "l00",
-      "file": "",
+      "file": "l00-che-cos-e-linux.json",
       "titolo": "Che cos'e' Linux, e perche' ti riguarda",
-      "disponibile": false
+      "disponibile": true
     },
     {
       "id": "l01",
