@@ -562,12 +562,73 @@ caso("rete: DNS, ping, porte e route descrivono lo stesso scenario", () => {
   assert.match(esegui(sh, "ip route").out, /192\.168\.1\.1/);
 });
 
+function remota(files = {}) {
+  const sh = creaShell({ "/home/tu/nota.txt": "ciao\n", ...files }, { comandi: { ...POSIX, ...REMOTO } });
+  statoRemoto(sh, { autorizzata: true });
+  esegui(sh, "ssh-keygen -t ed25519");
+  return sh;
+}
+
+caso("il server accetta solo chiavi, e lo dice quando non ne hai", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...REMOTO } });
+  statoRemoto(sh);
+  assert.match(esegui(sh, "ssh anna@cluster pwd").errore, /Permission denied \(publickey\)/);
+  esegui(sh, "ssh-keygen -t ed25519");
+  assert.match(esegui(sh, "ssh anna@cluster pwd").errore, /non e' autorizzata/, "chiave c'e', ma il server non la conosce");
+  esegui(sh, "ssh-copy-id anna@cluster");
+  assert.equal(esegui(sh, "ssh anna@cluster pwd").out, "/home/anna");
+});
+
+caso("una chiave privata leggibile da altri viene rifiutata", () => {
+  const sh = remota();
+  const chiave = V.normalizza(sh.fs, "/home/tu/.ssh/id_ed25519");
+  sh.fs.nodi.get(chiave).modo = 0o644;
+  assert.match(esegui(sh, "ssh anna@cluster pwd").errore, /UNPROTECTED PRIVATE KEY/);
+  esegui(sh, "chmod 600 .ssh/id_ed25519");
+  assert.equal(esegui(sh, "ssh anna@cluster pwd").out, "/home/anna");
+});
+
+caso("il comando remoto gira sul filesystem di la'", () => {
+  const sh = remota();
+  assert.match(esegui(sh, "ssh anna@cluster 'ls risultati'").out, /quota\.csv/);
+  assert.equal(esegui(sh, "ssh anna@cluster 'wc -l risultati/quota.csv'").out, "3 risultati/quota.csv");
+});
+
+caso("~/.ssh/config porta utente e porta, e vale anche per scp", () => {
+  const sh = creaShell({}, { comandi: { ...POSIX, ...REMOTO } });
+  statoRemoto(sh, { autorizzata: true, porta: 2222 });
+  esegui(sh, "ssh-keygen -t ed25519");
+  assert.match(esegui(sh, "ssh cluster pwd").errore, /porta 22/, "senza config va sulla 22");
+  esegui(sh, "echo 'Host cluster' > .ssh/config");
+  esegui(sh, "echo '  User anna' >> .ssh/config");
+  esegui(sh, "echo '  Port 2222' >> .ssh/config");
+  assert.equal(esegui(sh, "ssh cluster pwd").out, "/home/anna");
+});
+
 caso("scp e rsync spostano dati fra filesystem locale e remoto", () => {
-  const sh = creaShell({ "/home/tu/nota.txt": "ciao\n" }, { comandi: { ...POSIX, ...REMOTO } }); statoRemoto(sh);
+  const sh = remota();
   esegui(sh, "scp anna@cluster:risultati/quota.csv quota.csv");
   assert.match(V.leggi(sh.fs, "quota.csv"), /1000/);
   esegui(sh, "rsync -av nota.txt anna@cluster:nota.txt");
   assert.equal(V.leggi(sh.remoto.fs, "nota.txt"), "ciao\n");
+});
+
+caso("scp su una cartella vuole -r, rsync non rimanda quello che c'e' gia'", () => {
+  const sh = remota();
+  assert.match(esegui(sh, "scp anna@cluster:risultati .").errore, /serve -r/);
+  esegui(sh, "scp -r anna@cluster:risultati .");
+  assert.equal(V.esiste(sh.fs, "/home/tu/risultati/quota.csv"), true);
+  assert.match(esegui(sh, "rsync -av anna@cluster:risultati .").out, /0 file/, "seconda volta: niente da mandare");
+});
+
+caso("una sessione tmux sopravvive e si ritrova per nome", () => {
+  const sh = remota();
+  esegui(sh, "tmux new -s notte");
+  esegui(sh, "tmux send-keys -t notte 'python simula.py'");
+  assert.match(esegui(sh, "tmux ls").out, /notte.*python simula\.py/);
+  assert.match(esegui(sh, "tmux attach -t notte").out, /sta ancora girando/);
+  esegui(sh, "tmux kill-session -t notte");
+  assert.match(esegui(sh, "tmux ls").errore, /no server running/);
 });
 
 caso("systemctl e journalctl condividono lo stato del servizio", () => {

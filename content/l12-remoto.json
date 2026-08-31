@@ -1,1 +1,761 @@
-{"id":"l12","titolo":"La macchina remota: SSH, copie e sessioni","perche":"Il cluster non e' una cartella magica: e' un'altra macchina, con utente, filesystem e processi propri. Devi entrare con identita' verificabile, spostare dati nella direzione giusta e far sopravvivere un lavoro alla disconnessione.","funzioni":["ssh","ssh-keygen","~/.ssh/config","scp","rsync -av","tmux"],"lezioni":[{"id":"l12-l1","titolo":"SSH e chiavi","md":"`ssh anna@cluster` apre una shell sull'altra macchina; `ssh anna@cluster pwd` esegue un comando remoto. Le chiavi create con `ssh-keygen` evitano password ripetute e permettono di distinguere chi si connette. Non copiare mai la chiave privata; in `~/.ssh/config` puoi dare un alias a host, utente e chiave. La prima impronta dell'host va verificata, non accettata per abitudine."},{"id":"l12-l2","titolo":"Copiare non e' sincronizzare","md":"```bash\nscp anna@cluster:risultati/quota.csv quota.csv\nrsync -av dati/ anna@cluster:dati/\n```\n`scp` e' una copia puntuale. `rsync` confronta sorgente e destinazione e trasferisce solo le differenze: e' migliore per output grandi e ripetuti. Controlla sempre la direzione prima di Invio. Per un job lungo su SSH usa `tmux`: & e bg non proteggono dalla disconnessione."}],"raccolte":[{"id":"l12-remote","comando":"ssh, scp, rsync","titolo":"entrare e riportare indietro dati","esercizi":[{"id":"l12-re-1","tipo":"terminale","testo":"Controlla la directory personale sul cluster.","remoto":true,"soluzione":"ssh anna@cluster pwd","verifica":{"stampa":"/home/anna","usa":["ssh"]},"hint":["ssh anna@cluster pwd"],"spiegazione":"Il prompt remoto ha un filesystem distinto dal tuo."},{"id":"l12-re-2","tipo":"terminale","testo":"Scarica il CSV dei risultati dal cluster nella cartella locale.","remoto":true,"soluzione":"scp anna@cluster:risultati/quota.csv quota.csv","verifica":{"contiene":{"quota.csv":"1000"},"usa":["scp"]},"hint":["La sorgente remota ha due punti."],"spiegazione":"In scp i due punti indicano il lato remoto."},{"id":"l12-re-3","tipo":"terminale","testo":"Sincronizza nota.txt verso la home remota.","remoto":true,"filesystem":{"/home/tu/nota.txt":"campagna\n"},"soluzione":"rsync -av nota.txt anna@cluster:nota.txt","verifica":{"usa":["rsync"]},"hint":["rsync -av sorgente destinazione."],"spiegazione":"Rsync e' pensato per ripetere il trasferimento senza ricopiare tutto."},{"id":"l12-re-4","tipo":"predict","testo":"La connessione SSH puo' cadere ma vuoi tornare a vedere un job lungo. Cosa usi?","opzioni":["tmux","fg","scp","chmod"],"risposta":"tmux","spiegazione":"Tmux mantiene una sessione riconnettibile."},{"id":"l12-re-5","tipo":"predict","testo":"Quale file non va mai copiato sul server o condiviso?","opzioni":["la chiave privata SSH","la chiave pubblica","un CSV","un file di configurazione senza segreti"],"risposta":"la chiave privata SSH","spiegazione":"La chiave privata e' la tua identita'; la pubblica e' quella che autorizzi sul server."},{"id":"l12-re-6","tipo":"predict","testo":"Perche' rsync e' preferibile a scp per un output enorme aggiornato ogni giorno?","opzioni":["trasferisce solo le differenze","cifra meglio SSH","non richiede rete","esegue il job"],"risposta":"trasferisce solo le differenze","spiegazione":"Riduce tempo e dati trasferiti, ma non sostituisce una verifica dei risultati."}]}]}
+{
+  "id": "l12",
+  "titolo": "La macchina remota: ssh, chiavi e trasferimenti",
+  "perche": "Il cluster non e' una cartella magica: e' un'altra macchina, con il suo utente e il suo filesystem. Qui impari a entrarci con una chiave invece che con una password, a spostare i dati nella direzione giusta, e a lanciare un calcolo che non muore quando chiudi il portatile.",
+  "funzioni": [
+    "ssh",
+    "ssh-keygen",
+    "ssh-copy-id",
+    "~/.ssh/config",
+    "authorized_keys",
+    "scp",
+    "scp -r",
+    "rsync -av",
+    "tmux new",
+    "tmux ls",
+    "tmux attach",
+    "tmux kill-session"
+  ],
+  "lezioni": [
+    {
+      "id": "l12-l1",
+      "titolo": "Entrare: la chiave, non la password",
+      "md": "```\nssh anna@cluster                 # sessione interattiva\nssh anna@cluster \"ls risultati\"  # un comando solo, e torni subito\nssh -p 2222 anna@cluster         # se il server non sta sulla 22\n```\n\nUn server serio **non accetta password**: accetta chiavi. Non e' una comodita', e' il modo normale di entrare — una password si indovina, si riusa e si scrive nei log; una chiave no.\n\n### Le tre righe che si fanno una volta sola\n\n```\nssh-keygen -t ed25519            # crea la coppia in ~/.ssh\nssh-copy-id anna@cluster         # manda la PUBBLICA sul server\nssh anna@cluster                 # da qui in poi entra e basta\n```\n\n`id_ed25519` e' la chiave **privata**: non esce mai da questa macchina, non si copia, non si manda per email, non finisce in un repository. `id_ed25519.pub` e' quella pubblica: e' fatta per essere data via, e il server la mette in `~/.ssh/authorized_keys`.\n\n### I permessi della chiave contano\n\n```\nWARNING: UNPROTECTED PRIVATE KEY FILE!\n```\n\nSe la chiave privata e' leggibile da altri, `ssh` si rifiuta di usarla. `chmod 600 ~/.ssh/id_ed25519` e' la cura, ed e' lo stesso `chmod` del modulo sui permessi: qui si vede a cosa serviva.\n\n### ~/.ssh/config, per non ripetersi\n\n```\nHost cluster\n  HostName hpc.dipartimento.univ.it\n  User anna\n  Port 2222\n```\n\nDa qui in poi `ssh cluster` basta, e vale anche per `scp` e `rsync`. È il primo file che si scrive su una macchina nuova."
+    },
+    {
+      "id": "l12-l2",
+      "titolo": "Copiare non e' sincronizzare",
+      "md": "```\nscp anna@cluster:risultati/quota.csv quota.csv    # scarica\nscp analisi.sh anna@cluster:analisi.sh            # carica\nscp -r anna@cluster:risultati .                   # una cartella intera\n```\n\nSi legge da sinistra a destra: **da dove**, **a dove**. La parte con i due punti e' quella remota, e sbagliare direzione e' il modo piu' rapido di sovrascrivere il file giusto con quello vecchio.\n\n### rsync trasferisce solo le differenze\n\n```\nrsync -av anna@cluster:risultati/ risultati/\ninviati 3 file\nrsync -av anna@cluster:risultati/ risultati/\ninviati 0 file (tutto gia' aggiornato)\n```\n\n`scp` ricopia tutto ogni volta. `rsync` confronta prima e manda solo quello che manca o e' cambiato: su una cartella di output che cresce di un file al giorno, la differenza fra i due e' fra minuti e ore.\n\n`-a` conserva permessi e struttura, `-v` dice cosa sta facendo. La coppia `-av` si scrive senza pensarci.\n\n### La barra finale, che sembra un dettaglio\n\n`rsync risultati/ dest/` copia **il contenuto**; `rsync risultati dest/` copia **la cartella dentro dest**. È la stessa distinzione di `cp`, e produce lo stesso `dest/risultati/risultati` quando si sbaglia."
+    },
+    {
+      "id": "l12-l3",
+      "titolo": "Il calcolo che sopravvive alla disconnessione",
+      "md": "Un processo lanciato dentro una sessione ssh **muore quando la sessione cade**: portatile chiuso, wifi caduto, treno in galleria, e sei ore di calcolo sparite. È lo stesso meccanismo del modulo sui processi, visto da lontano.\n\n```\ntmux new -s notte      # apri una sessione con un nome\n# lanci il calcolo, e stacchi con Ctrl-b d\ntmux ls                # quali sessioni ci sono\ntmux attach -t notte   # torni dentro, anche da un altro computer\n```\n\n`tmux` gira **sul server**, non sul tuo portatile: la sessione resta accesa di la' anche quando qui il coperchio e' chiuso. Ci si riattacca il giorno dopo e si trova tutto dov'era, compreso l'output scorso a schermo.\n\n### tmux o nohup?\n\n`nohup calcolo &` fa sopravvivere il processo, ma non ti restituisce la sessione: se vuoi vedere come sta andando, hai solo il file di log. `tmux` conserva **il terminale**, quindi puoi rientrare, guardare, interrompere, rilanciare.\n\nPer un job lanciato e dimenticato, `nohup` basta. Per un calcolo che vuoi seguire, `tmux`. Sui cluster con coda (SLURM) non serve ne' l'uno ne' l'altro: il job lo tiene il gestore.\n\n### La sequenza di una giornata\n\n```\nssh cluster            # entri\ntmux attach -t notte   # riprendi dove eri\n# guardi, correggi, ristacchi con Ctrl-b d\nexit                   # esci dal server: il calcolo continua\nrsync -av cluster:risultati/ risultati/   # ti porti a casa quello che e' uscito\n```"
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "l12-ssh",
+      "comando": "ssh, ssh-keygen, ssh-copy-id",
+      "titolo": "entrare con una chiave",
+      "esercizi": [
+        {
+          "id": "l12-ss-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Prima cosa su una macchina nuova: crea la tua coppia di chiavi e guarda cosa e' comparso in `~/.ssh`, permessi compresi.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n"
+          },
+          "soluzione": "ssh-keygen -t ed25519\nls -l .ssh",
+          "verifica": {
+            "esiste": [
+              "/home/tu/.ssh/id_ed25519",
+              "/home/tu/.ssh/id_ed25519.pub"
+            ],
+            "usa": [
+              "ssh-keygen",
+              "ls"
+            ],
+            "stampa": "id_ed25519"
+          },
+          "hint": [
+            "Il comando genera la coppia; poi guarda la cartella con ls -l.",
+            "ssh-keygen -t ed25519, poi ls -l .ssh"
+          ],
+          "spiegazione": "Due file, e non sono intercambiabili. `id_ed25519` e' la chiave **privata**: `-rw-------`, leggibile solo da te, e non esce mai da questa macchina. `id_ed25519.pub` e' quella **pubblica**, ed e' fatta per essere data via.\n\n`ed25519` e' l'algoritmo da usare oggi: chiavi corte, veloci, e nessuna delle debolezze delle vecchie RSA da 1024 bit."
+        },
+        {
+          "id": "l12-ss-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai la chiave ma il cluster non ti conosce ancora. Prova a entrare, leggi il rifiuto, autorizza la tua chiave e rientra chiedendo la directory personale.",
+          "remoto": {},
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster pwd\nssh-copy-id anna@cluster\nssh anna@cluster pwd",
+          "verifica": {
+            "stampa": "/home/anna",
+            "errore": "Permission denied",
+            "usa": [
+              "ssh",
+              "ssh-copy-id"
+            ]
+          },
+          "hint": [
+            "Il primo tentativo deve fallire: serve autorizzare la chiave pubblica.",
+            "ssh-copy-id anna@cluster, poi riprova"
+          ],
+          "spiegazione": "`Permission denied (publickey)` non vuol dire «password sbagliata»: vuol dire che il server accetta **solo** chiavi, e la tua non e' fra quelle autorizzate.\n\n`ssh-copy-id` fa una cosa sola: aggiunge la tua chiave pubblica in fondo a `~/.ssh/authorized_keys` sul server. Puoi farlo anche a mano — e' un file di testo — ma con `ssh-copy-id` non sbagli i permessi."
+        },
+        {
+          "id": "l12-ss-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Da quando hai copiato la chiave da un'altra macchina, `ssh` protesta e non entra. Guarda i permessi, sistemali e verifica entrando.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 420
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster pwd\nls -l .ssh\nchmod 600 .ssh/id_ed25519\nssh anna@cluster pwd",
+          "verifica": {
+            "stampa": "/home/anna",
+            "errore": "UNPROTECTED",
+            "usa": [
+              "chmod",
+              "ssh"
+            ]
+          },
+          "hint": [
+            "Il messaggio parla del file della chiave, non della rete.",
+            "chmod 600 .ssh/id_ed25519"
+          ],
+          "spiegazione": "Copiare una chiave con `scp` o da una chiavetta le lascia i permessi di default, `-rw-r--r--`: leggibile da chiunque abbia un account sulla macchina. `ssh` si rifiuta di usarla, e ha ragione — una chiave privata che altri possono leggere e' una chiave da rifare.\n\nÈ lo stesso `chmod` del modulo sui permessi: qui si vede perche' quel numero valeva la pena impararlo."
+        },
+        {
+          "id": "l12-ss-4",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Senza aprire una sessione, chiedi al cluster cosa c'e' nella cartella `risultati`.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster \"ls risultati\"",
+          "verifica": {
+            "stampa": "quota.csv",
+            "usa": [
+              "ssh"
+            ]
+          },
+          "hint": [
+            "Il comando remoto si scrive dopo l'host, fra virgolette.",
+            "ssh anna@cluster \"ls risultati\""
+          ],
+          "spiegazione": "Un comando sulla stessa riga viene eseguito **di la'** e l'uscita torna qui: nessuna sessione da aprire e chiudere. È la forma che si usa negli script e nei controlli veloci.\n\nLe virgolette servono quando il comando ha spazi o caratteri speciali: senza, sarebbe la shell locale a interpretarli — la stessa storia degli apici nel modulo sugli script."
+        },
+        {
+          "id": "l12-ss-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il cluster e' stato spostato sulla porta 2222. Prova come facevi prima, leggi l'errore, e rientra sulla porta giusta.",
+          "remoto": {
+            "porta": 2222,
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster pwd\nssh -p 2222 anna@cluster pwd",
+          "verifica": {
+            "stampa": "/home/anna",
+            "errore": "porta 22",
+            "usa": [
+              "ssh"
+            ]
+          },
+          "hint": [
+            "-p PORTA prima dell'host.",
+            "ssh -p 2222 anna@cluster pwd"
+          ],
+          "spiegazione": "`connessione rifiutata` con la porta indicata e' un errore preciso: la macchina c'e' e ha risposto di no. Se avessi letto «host non raggiungibile» il problema sarebbe stato la rete, non la porta.\n\nSpostare `sshd` su una porta alta non e' sicurezza — chi scandaglia le trova comunque — ma toglie di mezzo il rumore di fondo dei tentativi automatici sulla 22."
+        },
+        {
+          "id": "l12-ss-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Sei stanco di scrivere utente e porta ogni volta. Scrivi `~/.ssh/config` perche' basti `ssh cluster`, poi provalo.",
+          "remoto": {
+            "porta": 2222,
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "echo 'Host cluster' > .ssh/config\necho '  HostName cluster' >> .ssh/config\necho '  User anna' >> .ssh/config\necho '  Port 2222' >> .ssh/config\nssh cluster pwd",
+          "verifica": {
+            "esiste": [
+              "/home/tu/.ssh/config"
+            ],
+            "contiene": {
+              "/home/tu/.ssh/config": "Port 2222"
+            },
+            "stampa": "/home/anna",
+            "usa": [
+              "ssh",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Quattro righe: Host, HostName, User, Port.",
+            "echo 'Host cluster' > .ssh/config, poi le altre con >>"
+          ],
+          "spiegazione": "Da qui in poi `ssh cluster` sa gia' utente e porta, e lo sanno anche `scp` e `rsync`: lo stesso alias vale per tutti e tre.\n\nÈ il primo file che si scrive quando si comincia a lavorare su una macchina remota, e su un portatile con quattro server diversi diventa la differenza fra ricordare quattro righe di comando e ricordare quattro nomi."
+        },
+        {
+          "id": "l12-ss-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il cluster non ti fa entrare.** Prima di dare la colpa alla rete, dimostra che la macchina risponde e che la porta 22 e' aperta — poi guarda l'errore vero di `ssh`.",
+          "remoto": {},
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ping -c1 cluster.univ.it\nnc -z cluster.univ.it 22\nssh anna@cluster.univ.it pwd",
+          "verifica": {
+            "stampa": "succeeded",
+            "errore": "Permission denied",
+            "usa": [
+              "ping",
+              "nc",
+              "ssh"
+            ]
+          },
+          "hint": [
+            "Scaletta del modulo precedente: nome, host, porta, e solo alla fine il servizio.",
+            "ping -c1, poi nc -z ... 22, poi ssh"
+          ],
+          "spiegazione": "Ping e porta a posto: la rete non c'entra niente, ed e' un'informazione che vale mezz'ora. Il rifiuto arriva **dopo** che la connessione e' riuscita — e' il server che decide di non farti entrare, non la strada che manca.\n\nQuesta e' la scaletta del modulo sulla rete applicata a un caso vero: interfaccia, indirizzo, rotta, nome, porta, e solo alla fine il servizio.",
+          "rete": true
+        },
+        {
+          "id": "l12-ss-8",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quale di questi file non va copiato **mai** su un altro computer o dentro un repository?",
+          "opzioni": [
+            "`~/.ssh/id_ed25519`, la chiave privata",
+            "`~/.ssh/id_ed25519.pub`, la chiave pubblica",
+            "`~/.ssh/config`, gli alias degli host",
+            "`~/.ssh/known_hosts`, le impronte dei server"
+          ],
+          "risposta": "`~/.ssh/id_ed25519`, la chiave privata",
+          "spiegazione": "La privata resta dove e' nata, sempre. Se ti serve entrare da un secondo computer, generi una **seconda** coppia e autorizzi anche quella: non si trasporta la prima.\n\nLa pubblica invece e' fatta per girare — sta gia' su ogni server dove entri. `config` e `known_hosts` non sono segreti, ma raccontano dove lavori: pubblicarli su GitHub e' un regalo a chi cerca bersagli."
+        }
+      ]
+    },
+    {
+      "id": "l12-trasf",
+      "comando": "scp e rsync",
+      "titolo": "portare i dati di la' e di qua",
+      "esercizi": [
+        {
+          "id": "l12-tr-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il calcolo di stanotte e' finito. Portati a casa `risultati/quota.csv` dal cluster.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "scp anna@cluster:risultati/quota.csv quota.csv\ncat quota.csv",
+          "verifica": {
+            "contiene": {
+              "quota.csv": "8400"
+            },
+            "usa": [
+              "scp"
+            ]
+          },
+          "hint": [
+            "scp SORGENTE DESTINAZIONE: la parte remota ha i due punti.",
+            "scp anna@cluster:risultati/quota.csv quota.csv"
+          ],
+          "spiegazione": "Il percorso remoto parte dalla home dell'utente: `risultati/quota.csv` e' `/home/anna/risultati/quota.csv`. Il punto e virgola non c'entra — sono **due punti**, e separano l'host dal percorso.\n\nSbagliare l'ordine dei due argomenti e' il modo classico di sovrascrivere il file appena calcolato con quello vecchio che avevi qui."
+        },
+        {
+          "id": "l12-tr-2",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Scarica il log della simulazione e conta subito quante righe di errore contiene, senza aprirlo.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "scp anna@cluster:risultati/log.txt log.txt\ngrep ERROR log.txt | wc -l",
+          "verifica": {
+            "contiene": {
+              "log.txt": "ERROR"
+            },
+            "stampa": "1",
+            "usa": [
+              "scp",
+              "grep",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Prima scarica, poi usa gli strumenti del modulo sui log.",
+            "scp ...log.txt log.txt, poi grep ERROR log.txt | wc -l"
+          ],
+          "spiegazione": "Questo e' il gesto piu' frequente di una giornata su un cluster: scaricare l'uscita e interrogarla con gli stessi comandi di sempre. `grep` e `wc` non sanno da dove viene il file, e non gli interessa.\n\nSu un log da un giga conviene invece il contrario — `ssh cluster \"grep -c ERROR log.txt\"` — perche' fa il conto di la' e ti manda un numero invece di un giga."
+        },
+        {
+          "id": "l12-tr-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Manda il tuo script di analisi sul cluster e verifica che sia arrivato.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "scp analisi.sh anna@cluster:analisi.sh\nssh anna@cluster ls",
+          "verifica": {
+            "stampa": "analisi.sh",
+            "usa": [
+              "scp",
+              "ssh"
+            ]
+          },
+          "hint": [
+            "Stavolta la parte remota e' la destinazione.",
+            "scp analisi.sh anna@cluster:analisi.sh"
+          ],
+          "spiegazione": "Stessa forma, direzione opposta: quello con i due punti e' il secondo argomento. La verifica con `ssh ... ls` non e' pignoleria — un `scp` che fallisce a meta' lascia un file incompleto, e te ne accorgi solo quando lo lanci."
+        },
+        {
+          "id": "l12-tr-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Ti serve tutta la cartella `risultati`, non un file solo. Prova come prima, leggi l'errore, e portala giu' per intero.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "scp anna@cluster:risultati .\nscp -r anna@cluster:risultati .\nls risultati",
+          "verifica": {
+            "esiste": [
+              "/home/tu/risultati/quota.csv",
+              "/home/tu/risultati/log.txt"
+            ],
+            "errore": "serve -r",
+            "usa": [
+              "scp"
+            ]
+          },
+          "hint": [
+            "Su una cartella serve la stessa opzione di cp.",
+            "scp -r anna@cluster:risultati ."
+          ],
+          "spiegazione": "`-r` sta per ricorsivo, esattamente come in `cp` e in `rm`: la stessa lettera, lo stesso significato, tre comandi diversi. Il vocabolario di Unix si riusa piu' di quanto sembri."
+        },
+        {
+          "id": "l12-tr-5",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Sincronizza la cartella `risultati` con `rsync`, poi **rilancia lo stesso comando** e guarda cosa cambia.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "rsync -av anna@cluster:risultati .\nrsync -av anna@cluster:risultati .",
+          "verifica": {
+            "esiste": [
+              "/home/tu/risultati/quota.csv"
+            ],
+            "stampa": "0 file",
+            "usa": [
+              "rsync"
+            ]
+          },
+          "hint": [
+            "Lo stesso comando due volte di seguito.",
+            "rsync -av anna@cluster:risultati ., due volte"
+          ],
+          "spiegazione": "La seconda volta non trasferisce niente: `rsync` confronta prima e manda solo quello che manca o e' cambiato. `scp` invece ricopia tutto ogni volta, senza chiedersi niente.\n\nSu una cartella di output che cresce di un file al giorno, questa differenza e' fra pochi secondi e mezz'ora — ed e' la ragione per cui `rsync` ha sostituito `scp` in tutti gli script seri."
+        },
+        {
+          "id": "l12-tr-6",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Porta giu' la cartella dei risultati e prepara il conto per la riunione: quanti file sono arrivati e quante righe ha il CSV.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "rsync -av anna@cluster:risultati .\nls risultati | wc -l\nwc -l risultati/quota.csv",
+          "verifica": {
+            "esiste": [
+              "/home/tu/risultati/quota.csv"
+            ],
+            "stampa": "3 risultati/quota.csv",
+            "usa": [
+              "rsync",
+              "wc",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Prima sincronizza, poi conta con gli strumenti che conosci gia'.",
+            "ls risultati | wc -l, poi wc -l risultati/quota.csv"
+          ],
+          "spiegazione": "Due conteggi diversi con lo stesso comando: `ls | wc -l` conta **i file**, `wc -l file` conta **le righe**. Confonderli e' un classico, e da' numeri che sembrano plausibili.\n\nIl CSV ha tre righe perche' la prima e' l'intestazione: se conti i campioni, sono due. Anche questo e' un errore che finisce nelle relazioni."
+        },
+        {
+          "id": "l12-tr-7",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Ogni notte il cluster aggiunge un file a una cartella che ne contiene gia' diecimila. Come la porti a casa ogni mattina?",
+          "opzioni": [
+            "`rsync`, che trasferisce solo quello che e' cambiato",
+            "`scp -r`, che e' piu' semplice e fa la stessa cosa",
+            "`ssh` con `cat` su ogni file",
+            "una copia manuale, per non sbagliare"
+          ],
+          "risposta": "`rsync`, che trasferisce solo quello che e' cambiato",
+          "spiegazione": "`scp -r` ricopierebbe diecimila file per portarne uno nuovo. `rsync` confronta e ne manda uno: stesso risultato, tre ordini di grandezza di differenza.\n\nÈ anche piu' sicuro: un `rsync` interrotto si riprende da dove era, un `scp` interrotto lascia un file a meta'."
+        },
+        {
+          "id": "l12-tr-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Routine del mattino.** Controlla che il calcolo abbia prodotto i file, portali a casa in modo incrementale, e verifica che il CSV sia completo.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster \"ls risultati\"\nrsync -av anna@cluster:risultati .\nwc -l risultati/quota.csv\ngrep -c ERROR risultati/log.txt",
+          "verifica": {
+            "esiste": [
+              "/home/tu/risultati/quota.csv"
+            ],
+            "stampa": "3 risultati/quota.csv",
+            "usa": [
+              "ssh",
+              "rsync",
+              "wc",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Quattro passi: guarda di la', porta di qua, conta le righe, conta gli errori.",
+            "ssh ... \"ls risultati\", poi rsync -av, poi wc -l e grep -c"
+          ],
+          "spiegazione": "È la giornata tipo di chi usa un cluster: si guarda **prima** se c'e' qualcosa da portare via — un `rsync` su una cartella vuota non lo dice — poi si sincronizza, poi si controlla che i dati siano quelli attesi.\n\nIl controllo finale non e' pignoleria: un job ucciso dal gestore per tempo scaduto lascia file troncati che sembrano validi. Il conteggio delle righe e' il modo piu' rapido di accorgersene."
+        }
+      ]
+    },
+    {
+      "id": "l12-tmux",
+      "comando": "tmux",
+      "titolo": "il calcolo che sopravvive",
+      "esercizi": [
+        {
+          "id": "l12-tm-1",
+          "tipo": "predict",
+          "difficolta": 2,
+          "testo": "Lanci una simulazione da sei ore dentro una sessione `ssh` e chiudi il portatile. Cosa succede?",
+          "opzioni": [
+            "il processo muore con la sessione",
+            "continua, e lo ritrovi domani",
+            "va in pausa e riprende quando ti ricolleghi",
+            "continua solo se lo hai lanciato con sudo"
+          ],
+          "risposta": "il processo muore con la sessione",
+          "spiegazione": "È lo stesso meccanismo del modulo sui processi: quando il terminale se ne va, i suoi figli ricevono il segnale di chiusura. Cambia solo che qui il terminale sta dall'altra parte di una connessione, e a farlo cadere basta il wifi.\n\nLe difese sono due, con usi diversi: `nohup` per lanciare e dimenticare, `tmux` per poter tornare a guardare."
+        },
+        {
+          "id": "l12-tm-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Apri sul cluster una sessione che sopravvive alla disconnessione, chiamala `notte`, e verifica che ci sia.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "tmux new -s notte\ntmux ls",
+          "verifica": {
+            "stampa": "notte",
+            "usa": [
+              "tmux"
+            ]
+          },
+          "hint": [
+            "tmux new -s NOME, poi l'elenco.",
+            "tmux new -s notte, poi tmux ls"
+          ],
+          "spiegazione": "Il nome non e' un vezzo: `tmux ls` con tre sessioni chiamate `0`, `1` e `2` non dice niente a nessuno, tantomeno a te fra una settimana.\n\nSulla macchina vera si stacca dalla sessione con **Ctrl-b d** — la sessione resta accesa sul server — e ci si ritorna con `tmux attach`."
+        },
+        {
+          "id": "l12-tm-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Dentro la sessione `notte` metti in moto la simulazione, poi controlla dall'elenco che stia girando li' dentro.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "tmux new -s notte\ntmux send-keys -t notte 'python simula.py'\ntmux ls",
+          "verifica": {
+            "stampa": "python simula.py",
+            "usa": [
+              "tmux"
+            ]
+          },
+          "hint": [
+            "send-keys manda un comando dentro una sessione che esiste gia'.",
+            "tmux send-keys -t notte 'python simula.py'"
+          ],
+          "spiegazione": "Sulla macchina vera il comando lo scrivi direttamente dentro la sessione: `send-keys` serve negli script, quando vuoi avviare un lavoro senza entrare a mano. Qui fa la stessa cosa in modo visibile.\n\n`-t` sta per *target*: quale sessione. Con piu' calcoli in parallelo e' l'unico modo per non sbagliare bersaglio."
+        },
+        {
+          "id": "l12-tm-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il giorno dopo, da un altro computer: guarda quali sessioni sono rimaste aperte e rientra in quella del calcolo.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "tmux new -s notte\ntmux send-keys -t notte 'python simula.py'\ntmux ls\ntmux attach -t notte",
+          "verifica": {
+            "stampa": "sta ancora girando",
+            "usa": [
+              "tmux"
+            ]
+          },
+          "hint": [
+            "Prima l'elenco, poi attach -t sul nome giusto.",
+            "tmux attach -t notte"
+          ],
+          "spiegazione": "Questo e' il punto di tutto `tmux`: la sessione vive **sul server**, quindi non le interessa da quale computer ti colleghi ne' quante volte e' caduta la linea. Ritrovi anche l'output scorso a schermo, che con `nohup` avresti perso."
+        },
+        {
+          "id": "l12-tm-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Provi a riattaccarti a una sessione che non esiste, e poi chiedi l'elenco su una macchina dove non ne hai aperta nessuna. Leggi i due messaggi.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "tmux attach -t inesistente\ntmux ls",
+          "verifica": {
+            "errore": "no server running",
+            "usa": [
+              "tmux"
+            ]
+          },
+          "hint": [
+            "Due comandi che devono fallire, per vedere come lo dicono.",
+            "tmux attach -t inesistente, poi tmux ls"
+          ],
+          "spiegazione": "`sessione non trovata` e `no server running` dicono due cose diverse: nel primo caso `tmux` c'e' ed e' vivo ma quel nome non esiste, nel secondo non c'e' proprio nessuna sessione — quindi nemmeno il tuo calcolo.\n\nLeggere il secondo messaggio dopo una notte di lavoro vuol dire che il server e' stato riavviato: le sessioni non sopravvivono a quello."
+        },
+        {
+          "id": "l12-tm-6",
+          "tipo": "predict",
+          "difficolta": 3,
+          "testo": "Quando conviene `nohup` invece di `tmux`?",
+          "opzioni": [
+            "quando lanci e dimentichi, e ti basta il file di log",
+            "quando vuoi poter rientrare e guardare l'avanzamento",
+            "quando il calcolo dura piu' di un giorno",
+            "quando il server e' molto carico"
+          ],
+          "risposta": "quando lanci e dimentichi, e ti basta il file di log",
+          "spiegazione": "`nohup` fa sopravvivere il processo ma non ti restituisce il terminale: se vuoi vedere come sta andando, hai solo il log. `tmux` conserva la sessione intera, quindi puoi rientrare, guardare, interrompere e rilanciare.\n\nSui cluster con coda (SLURM) non serve ne' l'uno ne' l'altro: e' il gestore a tenere in vita il job, e tu ne guardi lo stato con i suoi comandi."
+        },
+        {
+          "id": "l12-tm-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Il calcolo e' finito e i dati sono al sicuro: chiudi la sessione e verifica che sul server non sia rimasto niente in piedi.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "tmux new -s notte\ntmux kill-session -t notte\ntmux ls",
+          "verifica": {
+            "errore": "no server running",
+            "usa": [
+              "tmux"
+            ]
+          },
+          "hint": [
+            "kill-session -t NOME, poi controlla l'elenco.",
+            "tmux kill-session -t notte, poi tmux ls"
+          ],
+          "spiegazione": "Le sessioni dimenticate sono il rifiuto piu' comune su un cluster condiviso: occupano memoria, tengono aperti file, e dopo sei mesi nessuno sa piu' se dentro c'e' qualcosa di vivo.\n\nChiuderle quando il lavoro e' finito e' educazione verso gli altri utenti, e verso te stesso fra sei mesi."
+        },
+        {
+          "id": "l12-tm-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Una notte di calcolo, dall'inizio alla fine.** Guarda cosa c'e' gia' sul cluster, avvia la simulazione in una sessione che sopravviva, e porta a casa i risultati.",
+          "remoto": {
+            "autorizzata": true
+          },
+          "filesystem": {
+            "/home/tu/analisi.sh": "grep ERROR $1 | wc -l\n",
+            "/home/tu/note.txt": "campagna di agosto\n",
+            "/home/tu/.ssh/id_ed25519": {
+              "contenuto": "PRIVATE KEY\n",
+              "modo": 384
+            },
+            "/home/tu/.ssh/id_ed25519.pub": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco\n"
+          },
+          "soluzione": "ssh anna@cluster \"ls risultati\"\ntmux new -s notte\ntmux send-keys -t notte 'python simula.py'\ntmux ls\nrsync -av anna@cluster:risultati .\nwc -l risultati/quota.csv",
+          "verifica": {
+            "esiste": [
+              "/home/tu/risultati/quota.csv"
+            ],
+            "stampa": "notte",
+            "usa": [
+              "ssh",
+              "tmux",
+              "rsync",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Quattro fasi: guarda, avvia dentro tmux, sincronizza, verifica.",
+            "ssh ... ls, tmux new -s notte, send-keys, poi rsync -av"
+          ],
+          "spiegazione": "È la sequenza completa, e non ne avanza nessun pezzo: la chiave ti fa entrare senza password, `tmux` fa sopravvivere il calcolo alla connessione, `rsync` porta a casa solo quello che e' cambiato, `wc` dice se il file e' completo.\n\nDa qui in poi l'unica cosa che manca per il cluster vero e' il gestore di code: `sbatch` al posto di `tmux`, e il job lo tiene in vita SLURM."
+        }
+      ]
+    }
+  ]
+}
