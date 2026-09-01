@@ -505,7 +505,16 @@ caso("which cerca lungo il PATH", () => {
 // ---------- processi e job control ----------
 
 const shellProcessi = () => {
-  const sh = creaShell({}, { comandi: { ...POSIX, ...PROCESSI } });
+  // Gli script ci sono davvero: avviare in sottofondo un file che non esiste
+  // adesso e' un errore, come su una macchina vera.
+  const sh = creaShell(
+    {
+      "/home/tu/lungo.py": "misura()",
+      "/home/tu/notte.py": "misura()",
+      "/home/tu/breve.py": "misura()",
+    },
+    { comandi: { ...POSIX, ...PROCESSI } }
+  );
   statoProcessi(sh);
   return sh;
 };

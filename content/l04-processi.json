@@ -377,7 +377,10 @@
             "ps aux | grep -c lungo.py"
           ],
           "spiegazione": "Il processo c'e' e il terminale e' tornato libero: e' quello che fa il sottofondo. `avvia` qui sta per il `&` finale di una riga vera — un comando del simulatore, come dice la lezione.\n\nContare invece di guardare serve soprattutto negli script: `if [ $(ps aux | grep -c mio_calcolo) -eq 0 ]` e' il modo con cui uno script controlla se il suo lavoro sta ancora girando.",
-          "processi": true
+          "processi": true,
+          "filesystem": {
+            "/home/tu/lungo.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-so-2",
@@ -396,7 +399,10 @@
             "Prima avvialo, poi jobs.",
             "jobs"
           ],
-          "spiegazione": "`jobs` elenca i lavori **di questa shell**, non del sistema: sono due cose diverse, e un processo avviato in un altro terminale non compare qui anche se e' tuo."
+          "spiegazione": "`jobs` elenca i lavori **di questa shell**, non del sistema: sono due cose diverse, e un processo avviato in un altro terminale non compare qui anche se e' tuo.",
+          "filesystem": {
+            "/home/tu/lungo.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-so-3",
@@ -429,7 +435,10 @@
             "avvia, poi esci per chiudere il terminale.",
             "Alla fine ps aux per vedere cosa resta."
           ],
-          "spiegazione": "Il processo e' sparito insieme al terminale. È il comportamento che coglie di sorpresa la prima volta, e la ragione per cui esiste il comando della prossima domanda."
+          "spiegazione": "Il processo e' sparito insieme al terminale. È il comportamento che coglie di sorpresa la prima volta, e la ragione per cui esiste il comando della prossima domanda.",
+          "filesystem": {
+            "/home/tu/lungo.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-so-5",
@@ -449,7 +458,10 @@
             "Il comando e' nohup, davanti a quello da lanciare.",
             "nohup python lungo.py, poi esci, poi ps aux"
           ],
-          "spiegazione": "`nohup` — *no hangup* — stacca il processo dal terminale: quando il terminale se ne va, lui resta. L'output, che non ha piu' dove andare, finisce in un file chiamato `nohup.out`."
+          "spiegazione": "`nohup` — *no hangup* — stacca il processo dal terminale: quando il terminale se ne va, lui resta. L'output, che non ha piu' dove andare, finisce in un file chiamato `nohup.out`.",
+          "filesystem": {
+            "/home/tu/lungo.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-so-6",
@@ -486,7 +498,10 @@
             "ps aux > serale.txt, poi grep -c simula serale.txt"
           ],
           "spiegazione": "L'elenco salvato e' il promemoria per domani: quali calcoli hai lasciato girare, con quali numeri. Su una macchina condivisa e' anche la risposta alla domanda «di chi e' questo processo che occupa la macchina da tre giorni?».\n\n`nohup` e' la difesa minima; per un calcolo che vuoi **rivedere** mentre gira, il modulo sulla macchina remota mostra `tmux`.",
-          "processi": true
+          "processi": true,
+          "filesystem": {
+            "/home/tu/simula.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-so-8",
@@ -508,7 +523,10 @@
             "ps aux | grep -c simula, prima e dopo pkill"
           ],
           "spiegazione": "Il conteggio a `1` dopo il lancio e a `0` dopo `pkill` e' la prova che il ciclo si e' chiuso: avviato, verificato, fermato.\n\nLasciare processi in giro su una macchina condivisa e' il modo piu' rapido di rendersi antipatici — e di trovare la macchina piena quando servira' a te.",
-          "processi": true
+          "processi": true,
+          "filesystem": {
+            "/home/tu/simula.py": "# programma lungo del banco\nmisura()\n"
+          }
         }
       ]
     },
@@ -534,7 +552,10 @@
             "bg prende un numero di job con il simbolo %.",
             "bg %1"
           ],
-          "spiegazione": "`bg %1` invia una ripresa al processo e restituisce subito il prompt. Il job resta in `jobs`, perche' continua in sottofondo."
+          "spiegazione": "`bg %1` invia una ripresa al processo e restituisce subito il prompt. Il job resta in `jobs`, perche' continua in sottofondo.",
+          "filesystem": {
+            "/home/tu/lunga.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-bg-2",
@@ -554,7 +575,10 @@
             "Dopo STOP scegli fg, non bg.",
             "fg %1"
           ],
-          "spiegazione": "`fg` riporta il job al terminale: in un terminale vero il prompt aspetterebbe il suo termine. Nel simulatore viene riportato davanti senza bloccare la pagina, ma esce da `jobs` e resta visibile a `ps`."
+          "spiegazione": "`fg` riporta il job al terminale: in un terminale vero il prompt aspetterebbe il suo termine. Nel simulatore viene riportato davanti senza bloccare la pagina, ma esce da `jobs` e resta visibile a `ps`.",
+          "filesystem": {
+            "/home/tu/lunga.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-bg-3",
@@ -585,7 +609,10 @@
             "Il job e' gia' in esecuzione.",
             "bg %1"
           ],
-          "spiegazione": "`bg` serve a riprendere un job fermato. Se e' gia' in esecuzione in sottofondo, non c'e' niente da riprendere: controlla `jobs`, non indovinare."
+          "spiegazione": "`bg` serve a riprendere un job fermato. Se e' gia' in esecuzione in sottofondo, non c'e' niente da riprendere: controlla `jobs`, non indovinare.",
+          "filesystem": {
+            "/home/tu/lunga.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-bg-5",
@@ -605,7 +632,10 @@
             "bg senza argomenti agisce sull'ultimo job fermato.",
             "jobs | grep -c esecuzione"
           ],
-          "spiegazione": "Senza argomento `bg` sceglie il job corrente. E' comodo, ma quando hai piu' lavori il numero esplicito evita di riprendere quello sbagliato."
+          "spiegazione": "Senza argomento `bg` sceglie il job corrente. E' comodo, ma quando hai piu' lavori il numero esplicito evita di riprendere quello sbagliato.",
+          "filesystem": {
+            "/home/tu/lunga.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-bg-6",
@@ -638,7 +668,11 @@
             "Il primo processo ha PID 1501 e job [1].",
             "fg %1"
           ],
-          "spiegazione": "Numero del job e PID non sono intercambiabili: qui `%1` seleziona il primo job anche se il secondo continua in sottofondo."
+          "spiegazione": "Numero del job e PID non sono intercambiabili: qui `%1` seleziona il primo job anche se il secondo continua in sottofondo.",
+          "filesystem": {
+            "/home/tu/primo.py": "# programma lungo del banco\nmisura()\n",
+            "/home/tu/secondo.py": "# programma lungo del banco\nmisura()\n"
+          }
         },
         {
           "id": "l04-bg-8",
@@ -659,7 +693,10 @@
             "-STOP ferma, -CONT riprende.",
             "kill -CONT 1501, poi jobs | grep -c esecuzione"
           ],
-          "spiegazione": "`bg` e' la scelta interattiva, perche' usa il job e ne ristabilisce il sottofondo. `kill -CONT` e' il segnale sottostante: utile da riconoscere nei log o negli script, non la scorciatoia quotidiana."
+          "spiegazione": "`bg` e' la scelta interattiva, perche' usa il job e ne ristabilisce il sottofondo. `kill -CONT` e' il segnale sottostante: utile da riconoscere nei log o negli script, non la scorciatoia quotidiana.",
+          "filesystem": {
+            "/home/tu/lunga.py": "# programma lungo del banco\nmisura()\n"
+          }
         }
       ]
     }

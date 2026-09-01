@@ -77,16 +77,37 @@ export const SICUREZZA = {
     }
 
     if (azione === "allow" || azione === "deny") {
-      // ufw allow 22 | 22/tcp | from 192.168.1.0/24 to any port 5432
-      const testo = resto.join(" ");
-      const da = (testo.match(/from\s+(\S+)/) ?? [])[1] ?? null;
-      // "port 5432" quando c'e', altrimenti il primo argomento che e' solo un
-      // numero: cercare cifre ovunque prenderebbe il 192 di un indirizzo.
-      const porta = Number(
-        (testo.match(/port\s+(\d+)/) ?? [])[1] ??
-          (resto.find((a) => /^\d+(\/(tcp|udp))?$/.test(a)) ?? "").split("/")[0]
-      );
-      if (!porta) throw new V.ErroreFs("manca la porta");
+      // Le forme ammesse, e nient'altro:
+      //   ufw allow 22
+      //   ufw allow 22/tcp
+      //   ufw allow from 192.168.1.0/24
+      //   ufw allow from 192.168.1.0/24 to any port 5432
+      // Prima si pescavano "from" e "port" con due espressioni regolari, e le
+      // parole in mezzo non contavano: `ufw allow from 10.0.0.0/8 zibaldone any
+      // port 5432` passava come se fosse scritto giusto.
+      let da = null;
+      let porta = null;
+      let i = 0;
+      if (/^\d+(\/(tcp|udp))?$/.test(resto[0] ?? "")) {
+        porta = Number(resto[0].split("/")[0]);
+        i = 1;
+      }
+      if (resto[i] === "from") {
+        da = resto[i + 1];
+        if (!da) throw new V.ErroreFs("manca l'indirizzo dopo from");
+        i += 2;
+        if (resto[i] === "to") {
+          if (resto[i + 1] !== "any") throw new V.ErroreFs('dopo "to" ci va "any"');
+          if (resto[i + 2] !== "port") throw new V.ErroreFs('dopo "to any" ci va "port"');
+          porta = Number(resto[i + 3]);
+          if (!porta) throw new V.ErroreFs("manca il numero di porta dopo port");
+          i += 4;
+        }
+      }
+      if (i < resto.length) throw new V.ErroreFs(`non capisco: ${resto.slice(i).join(" ")}`);
+      // ufw vero accetta anche `allow from 10.0.0.0/8` senza porta; qui il
+      // modello e' fatto di regole su porte, e dirlo e' meglio che fingere.
+      if (!porta) throw new V.ErroreFs("qui una regola vuole sempre una porta");
       f.regole.push({ porta, azione, da });
       return `Regola aggiunta: ${azione} ${porta}${da ? ` da ${da}` : ""}`;
     }

@@ -10,7 +10,7 @@
 // l'eccezione che la shell sa gia' trasformare in un messaggio invece che in un
 // crash, e inventarne una seconda identica non serve a niente.
 
-import { ErroreFs } from "./vfs.js";
+import { ErroreFs, esiste } from "./vfs.js";
 
 /** Processi presenti all'avvio, se l'esercizio non ne dichiara altri. */
 export const PROCESSI_BASE = [
@@ -146,6 +146,17 @@ export const PROCESSI = {
   avvia(sh, args) {
     const comando = args.join(" ");
     if (!comando) throw new ErroreFs("manca il comando da avviare");
+    // Anche in sottofondo il file da eseguire deve esistere: `python manca.py &`
+    // su una macchina vera stampa il numero di lavoro e muore subito, non resta
+    // in esecuzione a farsi trovare da ps.
+    //
+    // ponytail: si controlla il file, non il programma. In questo modulo
+    // `python` e' un segnaposto — l'interprete vero sta nel ramo Python — e
+    // pretenderlo qui vorrebbe dire montare mezzo ramo per il job control.
+    const script = args.slice(1).find((a) => !a.startsWith("-") && a.includes("."));
+    if (script && !esiste(sh.fs, script)) {
+      throw new ErroreFs(`${script}: file o directory non esistente`);
+    }
     const pid = sh.prossimoPid++;
     const p = {
       pid,

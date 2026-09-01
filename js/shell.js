@@ -482,6 +482,54 @@ export function eseguiTutto(sh, righe) {
 
 // Le opzioni sono lettere singole raccolte da qualunque argomento che inizi per
 // "-": "rm -r -f x" e "rm -rf x" devono comportarsi allo stesso modo.
+/**
+ * Il motivo di grep e' un'espressione regolare, non un pezzo di testo: `.`
+ * vale per un carattere qualunque, `*` ripete, `^` e `$` sono l'inizio e la
+ * fine della riga, e `\|` separa due alternative. Prima qui si cercava una
+ * sottostringa e basta, cosi' `grep -i 'root\|password'` non trovava niente e
+ * l'esercizio sembrava dire che nel file non c'era nulla.
+ *
+ * ponytail: si traduce la sintassi POSIX di base in quella di JavaScript,
+ * invece di scrivere un motore di espressioni regolari. Le classi \w, i gruppi
+ * di cattura e le ripetizioni {n,m} non servono a nessuna lezione: se
+ * serviranno, si aggiungono qui.
+ */
+function espressione(motivo, ignoraMaiuscole) {
+  let fuori = "";
+  for (let i = 0; i < motivo.length; i++) {
+    const c = motivo[i];
+    if (c === "\\" && i + 1 < motivo.length) {
+      const dopo = motivo[++i];
+      // \| \( \) \+ \? sono operatori nella sintassi POSIX di base...
+      if ("|()+?{}".includes(dopo)) fuori += dopo;
+      // ...tutto il resto e' il carattere stesso, protetto.
+      else fuori += "\\" + dopo;
+      continue;
+    }
+    if ("+?(){}|".includes(c)) fuori += "\\" + c;
+    else fuori += c;
+  }
+  let re;
+  try {
+    re = new RegExp(fuori, ignoraMaiuscole ? "i" : "");
+  } catch {
+    throw new V.ErroreFs(`espressione non valida: ${motivo}`);
+  }
+  return (riga) => re.test(riga);
+}
+
+/** Il numero di `-A2` o di `-A 2`, zero se l'opzione non c'e'. */
+function numeroDi(args, lettera) {
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (!a.startsWith("-") || a.startsWith("--") || !a.includes(lettera)) continue;
+    const attaccato = a.slice(a.indexOf(lettera) + 1);
+    if (/^\d+$/.test(attaccato)) return Number(attaccato);
+    if (/^\d+$/.test(args[i + 1] ?? "")) return Number(args[i + 1]);
+  }
+  return 0;
+}
+
 function opzioni(args) {
   const flag = new Set();
   const resto = [];
@@ -684,26 +732,36 @@ export const POSIX = {
     const { flag, resto } = opzioni(args);
     const [motivo, ...file] = resto;
     if (!motivo) throw new V.ErroreFs("serve un motivo da cercare");
-    if (!file.length) {
-      const soloTesto = flag.has("i") ? motivo.toLowerCase() : motivo;
-      const trovate = righeDi(ingresso(sh, undefined)).filter((r) => {
-        const c = flag.has("i") ? r.toLowerCase() : r;
-        return c.includes(soloTesto) !== flag.has("v");
+
+    const prova = espressione(motivo, flag.has("i"));
+    // -A N stampa anche le N righe dopo ogni riga trovata, -B N quelle prima:
+    // e' come si legge un log, dove la riga che spiega l'errore sta accanto e
+    // non dentro. Il numero puo' stare attaccato (-A1) o staccato (-A 1).
+    // Con -c si contano le righe trovate, non il contesto attorno.
+    const dopo = flag.has("c") ? 0 : numeroDi(args, "A");
+    const prima = flag.has("c") ? 0 : numeroDi(args, "B");
+
+    const cerca = (righe, etichetta) => {
+      const presa = new Set();
+      righe.forEach((r, i) => {
+        if (prova(r) === flag.has("v")) return;
+        for (let k = i - prima; k <= i + dopo; k++) if (k >= 0 && k < righe.length) presa.add(k);
       });
-      // grep esce con 1 quando non trova niente: non e' un errore, e' la
-      // risposta — ed e' esattamente quello che un "if" gli chiede.
-      sh.esito = trovate.length ? 0 : 1;
-      return flag.has("c") ? String(trovate.length) : trovate.join("\n");
-    }
-    const cerca = flag.has("i") ? motivo.toLowerCase() : motivo;
-    const out = [];
-    for (const f of file) {
-      for (const riga of righeDi(V.leggi(sh.fs, f))) {
-        const confronto = flag.has("i") ? riga.toLowerCase() : riga;
-        const dentro = confronto.includes(cerca);
-        if (dentro !== flag.has("v")) out.push(file.length > 1 ? `${f}:${riga}` : riga);
+      const scelte = [...presa].sort((a, b) => a - b);
+      return scelte.map((i) => (etichetta ? `${etichetta}:${righe[i]}` : righe[i]));
+    };
+
+    let out;
+    if (!file.length) {
+      out = cerca(righeDi(ingresso(sh, undefined)), null);
+    } else {
+      out = [];
+      for (const f of file) {
+        out.push(...cerca(righeDi(V.leggi(sh.fs, f)), file.length > 1 ? f : null));
       }
     }
+    // grep esce con 1 quando non trova niente: non e' un errore, e' la
+    // risposta — ed e' esattamente quello che un "if" gli chiede.
     sh.esito = out.length ? 0 : 1;
     if (flag.has("c")) return String(out.length);
     return out.join("\n");
