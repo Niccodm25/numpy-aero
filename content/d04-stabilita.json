@@ -1,0 +1,1133 @@
+{
+  "id": "d04",
+  "titolo": "Stabilita' statica: requisiti e configurazioni",
+  "perche": "Trovato l'equilibrio, resta da chiedersi se ci si resta. Due condizioni bastano a dirlo — pendenza negativa e intercetta positiva della curva C_m(alpha) — e da quelle due discende la forma di tutti gli aeroplani: perche' la coda sta dietro, perche' un canard stalla prima, perche' una tuttala ha freccia e svergolamento, e perche' un caccia moderno puo' permettersi di essere instabile.",
+  "fonte": "Dinamica del Volo, Parte II, capitolo 2, paragrafi 2.1-2.4 (pagine 21-27). Lezione del 06/03/2026, prof. Giulio Avanzini.",
+  "notazione": "Nelle risposte: alpha alpha_e delta_E h eta_t V_H V_C deps i_t i_c eps_0 tau_E C_m0 C_ma C_mdE C_m0_wb C_ma_wb C_m0_eng C_ma_eng C_L0_wb C_La_wb C_La_t.",
+  "lezioni": [
+    {
+      "id": "d04-lez-richiami",
+      "titolo": "Che cosa vuol dire stabile",
+      "md": "Risolto il problema del trim, la domanda successiva e': l'equilibrio trovato e' anche **stabile**?\n\nLe definizioni rigorose vengono dalla teoria dei sistemi dinamici. Sia $\\mathbf{x}_{eq}$ un equilibrio di $\\dot{\\mathbf{x}} = \\mathbf{f}(\\mathbf{x}, t)$.\n\n### Stabilita' di Lyapunov\n\nL'equilibrio e' L-stabile se, dopo una perturbazione, lo stato resta **sufficientemente vicino** all'equilibrio:\n\n$$\\forall \\varepsilon > 0, \\ \\exists \\delta > 0 : \\ \\lVert \\mathbf{x}(t_0) - \\mathbf{x}_{eq}\\rVert < \\delta \\ \\Rightarrow \\ \\lVert \\mathbf{x}(t) - \\mathbf{x}_{eq}\\rVert < \\varepsilon, \\ \\forall t > t_0$$\n\n### Stabilita' asintotica\n\nIn piu', lo stato **torna** all'equilibrio:\n\n$$\\exists \\delta > 0 : \\ \\lVert \\mathbf{x}(t_0) - \\mathbf{x}_{eq}\\rVert < \\delta \\ \\Rightarrow \\ \\lVert \\mathbf{x}(t) - \\mathbf{x}_{eq}\\rVert \\to 0 \\ \\text{per} \\ t \\to +\\infty$$\n\nSe vale per perturbazioni arbitrariamente grandi si parla di stabilita' asintotica **globale**. Tutte queste proprieta' sono in generale **locali**: garantiscono il comportamento solo per perturbazioni sufficientemente piccole.\n\n### Stabilita' statica\n\nUn equilibrio si dice **staticamente stabile** se, in seguito a una perturbazione, il sistema genera una reazione che si **oppone** alla perturbazione stessa: in termini meccanici, la perturbazione genera forze e momenti di richiamo verso l'equilibrio.\n\nLa stabilita' statica e' condizione **necessaria ma non sufficiente** per la stabilita' nel senso di Lyapunov: dice solo come reagisce il sistema all'istante iniziale dopo la perturbazione, non come evolve nel tempo. Se pero' anche questa condizione minima e' violata, l'instabilita' e' certa — una perturbazione che riceve una reazione concorde con se' stessa non puo' che amplificarsi.\n\n> Il problema del trim e' una delle lezioni centrali del corso perche' ha posto le basi del **controllo** del velivolo: i fratelli Wright capirono che il problema chiave del volo non era la propulsione o le strutture, ma il controllo dell'aeroplano una volta in volo. La stabilita' statica e' il requisito minimo che permette di sperare in una controllabilita' ragionevole."
+    },
+    {
+      "id": "d04-lez-rigidezza",
+      "titolo": "Rigidezza di beccheggio: il requisito C_m,alpha < 0",
+      "md": "Si restringe l'attenzione al moto longitudinale, in volo simmetrico, sotto quattro ipotesi:\n\n- velivolo **rigido** e **simmetrico** rispetto al piano longitudinale $xz$;\n- volo **simmetrico**: ali livellate, derapata $\\beta = 0$, il piano di simmetria coincide con quello verticale durante tutto il moto. I gradi di liberta' passano da 6 a 3;\n- **comandi bloccati** (*stick-fixed*): la deflessione $\\delta_E$ e' prefissata ed esce dal problema come variabile di controllo;\n- dipendenza **lineare** dei coefficienti aerodinamici dall'angolo d'attacco.\n\n### La raffica\n\nSi consideri una raffica ascendente $w_g$ che provochi un incremento $\\Delta\\alpha > 0$ dell'angolo d'attacco: la velocita' vera diventa la composizione fra $V_e$ e $w_g$, e il velivolo si trova a incidenza maggiore.\n\nPerche' il criterio di stabilita' statica sia soddisfatto, il velivolo deve generare un momento di richiamo che si opponga: se $\\alpha$ aumenta il momento deve essere **a picchiare**, se $\\alpha$ diminuisce **a cabrare**.\n\n$$\\frac{dM}{d\\alpha} < 0 \\iff C_{m\\alpha} < 0$$\n\nQuesta proprieta' si chiama **stick-fixed longitudinal static stability**, o **pitch stiffness** — rigidezza di beccheggio.\n\n### La molla\n\nIl requisito $C_{m\\alpha} < 0$ esprime una sorta di **rigidezza torsionale aerodinamica** attorno all'asse di beccheggio: a ogni spostamento angolare $\\Delta\\alpha$ corrisponde un momento di richiamo proporzionale e di segno opposto.\n\nE' l'analogo aerodinamico della costante elastica di una molla angolare. Da qui il nome *stiffness*: piu' $|C_{m\\alpha}|$ e' grande, piu' la \"molla\" e' dura, e piu' il velivolo resiste ai cambi di incidenza — nel bene (stabilita') e nel male (serve piu' forza per manovrare)."
+    },
+    {
+      "id": "d04-lez-trimmability",
+      "titolo": "Trimmability: il requisito C_m0 > 0, e l'effetto dell'equilibratore",
+      "md": "Il requisito $C_{m\\alpha} < 0$ da solo non basta. Si vuole che il velivolo sia in equilibrio trimmato a un angolo d'attacco **positivo**, condizione necessaria per generare la portanza utile al sostentamento.\n\nCon dipendenza lineare $C_m(\\alpha) = C_{m0} + C_{m\\alpha}\\alpha$, l'equilibrio $C_m = 0$ da'\n\n$$\\alpha_e = -\\frac{C_{m0}}{C_{m\\alpha}}$$\n\nAffinche' $\\alpha_e > 0$ con $C_{m\\alpha} < 0$, deve essere\n\n$$C_{m0} > 0 \\quad \\text{abbinato a} \\quad C_{m\\alpha} < 0$$\n\n### Sul grafico\n\nNel piano $C_m$-$\\alpha$ i due requisiti diventano: **pendenza negativa** e **intercetta positiva**. Le altre combinazioni di segni sono inaccettabili per un velivolo civile:\n\n- pendenza negativa e intercetta negativa: stabile, ma trimma solo ad $\\alpha_e < 0$, inutile;\n- pendenza positiva: instabile, qualunque sia l'intercetta.\n\nVelivoli da caccia moderni possono essere staticamente **instabili** ($C_{m\\alpha} > 0$) perche' un sistema fly-by-wire compensa attivamente l'instabilita', ottenendo vantaggi di manovrabilita'. Per i velivoli a comandi manuali l'instabilita' statica e' proibitiva.\n\n### L'effetto dell'equilibratore\n\nUna deflessione $\\delta_E$ aggiunge un termine di controllo al momento:\n\n$$C_m = C_{m0} + C_{m\\alpha}\\alpha + C_{m\\delta_E}\\delta_E, \\qquad C_{m\\delta_E} < 0$$\n\nPer le convenzioni standard $C_{m\\delta_E} < 0$: una deflessione positiva (*trailing-edge down*, comando di cloche **push**) genera un momento di controllo negativo, a picchiare.\n\nManipolando $\\delta_E$ il pilota **trasla verticalmente** la retta $C_m(\\alpha)$ e seleziona cosi' la velocita' di trim:\n\n- $\\delta_E > 0$ (push, bordo d'uscita in basso): la retta scende, il trim si sposta a $\\alpha_e$ **minori**, cioe' velocita' **maggiori**;\n- $\\delta_E < 0$ (pull, bordo d'uscita in alto): la retta sale, il trim va a $\\alpha_e$ **maggiori**, cioe' velocita' minori.\n\nLa pendenza non cambia: l'equilibratore sposta il punto di equilibrio, non la stabilita'."
+    },
+    {
+      "id": "d04-lez-configurazioni",
+      "titolo": "Configurazioni: tuttala, convenzionale, canard",
+      "md": "Affinche' un velivolo soddisfi entrambi i requisiti la sua **configurazione** aerodinamica deve essere progettata apposta.\n\n### Tail-less e flying wing\n\nLe configurazioni *tail-less* (senza impennaggi orizzontali) hanno notevole difficolta' a soddisfare contemporaneamente i due requisiti. I quattro casi possibili: entrambi violati ma trim ad $\\alpha > 0$ possibile; rigidezza presente ma trim solo ad $\\alpha \\le 0$ (inutile); rigidezza con $C_{m0} = 0$ (trim solo ad $\\alpha = 0$); entrambi soddisfatti solo grazie a profilo a **curvatura negativa**, con grave penalizzazione delle prestazioni.\n\nL'unica configurazione tail-less di interesse pratico e' la **flying wing** (tuttala), e servono due ingredienti insieme:\n\n1. **Freccia** (*sweep*): le porzioni esterne delle semiali finiscono **dietro** al baricentro. La portanza li' prodotta crea un braccio rispetto al baricentro e fornisce la rigidezza di beccheggio.\n2. **Svergolamento** (*twist*): un angolo di *washout* alle estremita' riduce l'incidenza locale. Quando l'incidenza alla radice e' positiva, le punte d'ala generano portanza **negativa**, fornendo un momento a cabrare a portanza totale nulla, cioe' $C_{m0} > 0$.\n\nPochi prototipi volarono nell'era dei comandi manuali (il Northrop YB-49, anni '40, con problemi di stabilita'). Il B-2 Spirit e' in servizio grazie al fly-by-wire, che compensa attivamente l'instabilita' intrinseca.\n\n### Configurazione convenzionale\n\nL'impennaggio orizzontale e' in coda. La sua portanza, dietro al baricentro, fornisce automaticamente il momento di richiamo: quando $\\alpha$ aumenta, la portanza dell'impennaggio aumenta e il braccio $\\ell_t$ genera un momento picchiante che supera il momento cabrante dell'ala.\n\n$$C_{m\\alpha} = C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} + C_{L\\alpha}|_{wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) - \\eta_t V_H C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right) < 0$$\n\n$$C_{m0} = C_{m0}|_{wb} + C_{m0}|_{eng} + C_{L0}|_{wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) - \\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0) > 0$$\n\nIl termine $-\\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0)$ e' positivo se $i_t < \\varepsilon_0$, ovvero in pratica se $i_t < i_w$: **calettamento di coda minore di quello dell'ala**. E' la regola di progetto che rende trimmabile un velivolo convenzionale.\n\n### Configurazione canard\n\nL'impennaggio orizzontale e' **davanti** all'ala principale. I requisiti diventano\n\n$$C_{m\\alpha} = C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} + C_{L\\alpha}|_{wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) + \\eta_t V_C C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right) < 0$$\n\n$$C_{m0} = C_{m0}|_{wb} + C_{m0}|_{eng} + C_{L0}|_{wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) + \\eta_t V_C C_{L\\alpha,t}(i_c - \\varepsilon_0) > 0$$\n\nIl segno del termine di superficie e' **cambiato**: nel canard $V_C$ e' positivo (braccio davanti al baricentro), quindi il contributo e' **destabilizzante**. La stabilita' deve essere garantita dal contributo dell'**ala principale**, che sta dietro al baricentro: $C_{L\\alpha}|_{wb}(x_G - x_{AC})/\\bar{c} < 0$.\n\nPer avere $C_{m0} > 0$ serve $i_c > i_w$: il canard e' calettato **piu'** dell'ala, e quindi arriva allo stallo **prima**. Questo e' il problema operativo del canard: quando il canard stalla la rigidezza si perde e l'ala principale non raggiunge mai il suo $C_{L,max}$, il che penalizza decollo e atterraggio. Dal punto di vista della sola stabilita', pero', il canard e' perfettamente realizzabile."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "d04-requisiti",
+      "comando": "requisiti",
+      "titolo": "Rigidezza di beccheggio e trimmabilita'",
+      "esercizi": [
+        {
+          "id": "d04-ri-1",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Un equilibrio staticamente stabile reagisce a una perturbazione con una reazione che vi si oppone. Fra queste tre proprieta' — `lyapunov asintotica statica` — elenca quelle che **non** sono garantite dalla sola stabilita' statica.",
+          "soluzione": "lyapunov asintotica",
+          "verifica": {
+            "insieme": [
+              "lyapunov",
+              "asintotica"
+            ]
+          },
+          "hint": [
+            "La stabilita' statica guarda l'istante iniziale dopo la perturbazione, non l'evoluzione nel tempo."
+          ],
+          "spiegazione": "La stabilita' statica e' **necessaria ma non sufficiente**: dice come reagisce il sistema subito dopo la perturbazione, non se lo stato resta vicino (Lyapunov) o se ci torna (asintotica). Se pero' manca anche lei, l'instabilita' e' certa: una perturbazione che riceve una reazione concorde con se' stessa non puo' che amplificarsi."
+        },
+        {
+          "id": "d04-ri-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Con dipendenza lineare $C_m(\\alpha) = C_{m0} + C_{m\\alpha}\\alpha$, scrivi l'angolo d'attacco di equilibrio `alpha_e` imponendo $C_m = 0$.",
+          "soluzione": "-C_m0/C_ma",
+          "verifica": {
+            "equivale": "-C_m0/C_ma",
+            "usa": [
+              "C_m0",
+              "C_ma"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Poni la retta uguale a zero e isola alpha."
+          ],
+          "spiegazione": "$\\alpha_e = -\\dfrac{C_{m0}}{C_{m\\alpha}}$. E' il punto in cui la retta $C_m(\\alpha)$ taglia l'asse: l'unico angolo d'attacco a cui il velivolo, lasciato a se' stesso con quell'equilibratore, sta in equilibrio."
+        },
+        {
+          "id": "d04-ri-3",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Perche' il velivolo sia stabile **e** trimmabile a incidenza positiva, quali condizioni servono? Elenca fra `C_ma_negativo C_m0_positivo C_mdE_negativo C_ma_positivo C_m0_negativo`.",
+          "soluzione": "C_ma_negativo C_m0_positivo",
+          "verifica": {
+            "insieme": [
+              "C_ma_negativo",
+              "C_m0_positivo"
+            ]
+          },
+          "hint": [
+            "Uno dei due e' la pendenza della retta, l'altro l'intercetta.",
+            "Il segno di C_m,deltaE e' una convenzione, non un requisito di stabilita'."
+          ],
+          "spiegazione": "Pendenza negativa ($C_{m\\alpha} < 0$) e intercetta positiva ($C_{m0} > 0$): solo con questa combinazione $\\alpha_e = -C_{m0}/C_{m\\alpha}$ e' positivo. Il segno di $C_{m\\delta_E}$ discende dalle convenzioni di segno dei comandi, e non e' un requisito."
+        },
+        {
+          "id": "d04-ri-4",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo ha $C_{m0} = 0.08$ e $C_{m\\alpha} = -0.55$ 1/rad. A che angolo d'attacco si trimma, in gradi, con equilibratore neutro?",
+          "dati": "C_m0 = 0.08\nC_ma = -0.55 1/rad",
+          "soluzione": "(0.08/0.55)*180/pi",
+          "verifica": {
+            "valore": 8.33,
+            "entro": 0.06
+          },
+          "hint": [
+            "Prima il rapporto, che e' in radianti, poi la conversione in gradi."
+          ],
+          "spiegazione": "$\\alpha_e = 0.08/0.55 = 0.145$ rad $= 8.3$ gradi. E' un'incidenza da volo lento: con l'equilibratore neutro il velivolo si trimma vicino al fondo del suo campo di velocita'. Per volare veloce serve $\\delta_E > 0$, che abbassa la retta e sposta il trim a incidenze minori."
+        },
+        {
+          "id": "d04-ri-5",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Con l'equilibratore deflesso, l'equilibrio $C_m = 0$ si sposta. Scrivi `alpha_e` in funzione di `C_m0`, `C_ma`, `C_mdE` e `delta_E`.",
+          "soluzione": "-(C_m0 + C_mdE*delta_E)/C_ma",
+          "verifica": {
+            "equivale": "-(C_m0 + C_mdE*delta_E)/C_ma",
+            "usa": [
+              "C_m0",
+              "C_ma",
+              "C_mdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "La deflessione si somma all'intercetta: la retta trasla verticalmente.",
+            "La pendenza non cambia."
+          ],
+          "spiegazione": "$\\alpha_e = -\\dfrac{C_{m0} + C_{m\\delta_E}\\delta_E}{C_{m\\alpha}}$. L'equilibratore agisce sull'**intercetta**, non sulla pendenza: sposta il punto di trim lasciando intatta la stabilita'. E' esattamente quello che si vuole da un comando — cambiare la condizione di volo senza cambiare il carattere del velivolo."
+        },
+        {
+          "id": "d04-ri-6",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo ($C_{m0} = 0.08$, $C_{m\\alpha} = -0.55$), con $C_{m\\delta_E} = -1.20$ 1/rad. Il pilota spinge la cloche portando $\\delta_E = +2$ gradi. A quale angolo d'attacco si trimma ora, in gradi?",
+          "dati": "C_m0 = 0.08\nC_ma = -0.55 1/rad\nC_mdE = -1.20 1/rad\ndelta_E = +2 gradi",
+          "soluzione": "-(0.08 + (-1.20)*2*pi/180)/(-0.55)*180/pi",
+          "verifica": {
+            "valore": 3.97,
+            "entro": 0.08
+          },
+          "hint": [
+            "Prima converti la deflessione in radianti, poi applica la formula del trim con equilibratore.",
+            "Push (delta_E positivo) deve abbassare l'incidenza di trim: aspettati meno di 8.3 gradi."
+          ],
+          "spiegazione": "$\\delta_E = 0.0349$ rad, quindi $\u0007lpha_e = -(0.08 - 0.0419)/(-0.55) = 0.0693$ rad $= 4.0$ gradi. Due gradi di equilibratore a scendere hanno tolto piu' di quattro gradi di incidenza di trim: il rapporto e' $C_{m\\delta_E}/C_{m\u0007lpha} \u0007pprox 2.2$, e dice quanto e' potente il comando rispetto alla rigidezza. Con altri due gradi di push il trim andrebbe sotto zero — cioe' fuori dal volo utile."
+        },
+        {
+          "id": "d04-ri-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un progettista vuole che il velivolo si trimmi a $\\alpha_e = 6$ gradi con equilibratore neutro. Avendo $C_{m\\alpha} = -0.62$ 1/rad, quale $C_{m0}$ serve?",
+          "dati": "alpha_e = 6 gradi\nC_ma = -0.62 1/rad",
+          "soluzione": "0.62*6*pi/180",
+          "verifica": {
+            "valore": 0.0649,
+            "entro": 0.0015
+          },
+          "hint": [
+            "Inverti la relazione fra alpha di trim, intercetta e pendenza.",
+            "L'incidenza va in radianti."
+          ],
+          "spiegazione": "$C_{m0} = -C_{m\\alpha}\\alpha_e = 0.62 \\cdot 0.1047 = 0.065$. E' un numero piccolo, e va **costruito**: viene dal calettamento della coda, dal momento focale dell'ala e dalla posizione del baricentro. Nel modulo precedente hai visto la formula che lo compone; qui si vede a cosa serve saperlo dosare."
+        },
+        {
+          "id": "d04-ri-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Una raffica ascendente porta un velivolo stabile ($C_{m\\alpha} = -0.62$ 1/rad) da 4 a 6 gradi di incidenza. Il velivolo ha $S = 90$ m², $\\bar{c} = 3.3$ m e vola a pressione dinamica $\\frac{1}{2}\\rho V^2 = 8200$ Pa. Quanto vale il momento di richiamo generato, in newton-metro? Rispondi col segno.",
+          "dati": "C_ma = -0.62 1/rad\nDelta alpha = 2 gradi\nS = 90 m^2\nc = 3.3 m\npressione dinamica = 8200 Pa",
+          "soluzione": "8200*90*3.3*(-0.62)*2*pi/180",
+          "verifica": {
+            "valore": -52700,
+            "entro": 800
+          },
+          "hint": [
+            "La variazione di coefficiente e' $C_{m\\alpha}\\Delta\\alpha$, con l'incidenza in radianti.",
+            "Poi si moltiplica per pressione dinamica, superficie e corda."
+          ],
+          "spiegazione": "$\\Delta M = \\frac{1}{2}\\rho V^2 S\\bar{c}\\,C_{m\\alpha}\\Delta\\alpha = 8200 \\cdot 90 \\cdot 3.3 \\cdot (-0.62) \\cdot 0.0349 = -52.7$ kNm, a picchiare. E' la molla di richiamo in numeri: due gradi di raffica producono un momento che riporta giu' il muso. Se $C_{m\\alpha}$ fosse positivo lo stesso conto darebbe un momento che alza ancora di piu' il muso — e da li' non si torna."
+        }
+      ]
+    },
+    {
+      "id": "d04-configurazioni",
+      "comando": "configurazioni",
+      "titolo": "Convenzionale, canard, tuttala: chi fornisce la stabilita'",
+      "esercizi": [
+        {
+          "id": "d04-cf-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Configurazione convenzionale. Scrivi `C_ma` mettendo insieme i quattro contributi: `C_ma_wb C_ma_eng C_La_wb h eta_t V_H C_La_t deps` (con `h` la posizione del baricentro rispetto al centro aerodinamico, adimensionale).",
+          "soluzione": "C_ma_wb + C_ma_eng + C_La_wb*h - eta_t*V_H*C_La_t*(1 - deps)",
+          "verifica": {
+            "equivale": "C_ma_wb + C_ma_eng + C_La_wb*h - eta_t*V_H*C_La_t*(1 - deps)",
+            "usa": [
+              "C_ma_wb",
+              "C_ma_eng",
+              "C_La_wb",
+              "h",
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "deps"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Tre contributi si sommano, quello della coda si sottrae."
+          ],
+          "spiegazione": "$C_{m\\alpha} = C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} + C_{L\\alpha}|_{wb}h - \\eta_t V_H C_{L\\alpha,t}(1 - \\frac{d\\varepsilon}{d\\alpha})$. E' la stessa formula del modulo precedente, letta ora come **requisito**: deve venire negativa, e l'unico termine che tira in quella direzione e' la coda."
+        },
+        {
+          "id": "d04-cf-2",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Quali due ingredienti servono insieme a una **flying wing** per essere stabile e trimmabile? Scegli fra `freccia svergolamento fusoliera_lunga camber_positivo motori_in_coda`.",
+          "soluzione": "freccia svergolamento",
+          "verifica": {
+            "insieme": [
+              "freccia",
+              "svergolamento"
+            ]
+          },
+          "hint": [
+            "Uno serve a mettere una porzione di ala dietro al baricentro, l'altro a farle fare portanza negativa."
+          ],
+          "spiegazione": "**Freccia** (*sweep*): le porzioni esterne finiscono dietro al baricentro e forniscono la rigidezza. **Svergolamento** (*twist*, washout): le punte a incidenza ridotta generano portanza negativa a portanza totale nulla, dando $C_{m0} > 0$. Un camber positivo farebbe il contrario, e infatti la sola tail-less che funziona senza svergolamento richiede curvatura **negativa**, con grave perdita di efficienza."
+        },
+        {
+          "id": "d04-cf-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Configurazione **canard**: la superficie e' davanti al baricentro. Scrivi `C_ma` usando `V_C` al posto di `V_H`, con gli stessi altri simboli.",
+          "soluzione": "C_ma_wb + C_ma_eng + C_La_wb*h + eta_t*V_C*C_La_t*(1 - deps)",
+          "verifica": {
+            "equivale": "C_ma_wb + C_ma_eng + C_La_wb*h + eta_t*V_C*C_La_t*(1 - deps)",
+            "usa": [
+              "C_ma_wb",
+              "C_ma_eng",
+              "C_La_wb",
+              "h",
+              "eta_t",
+              "V_C",
+              "C_La_t",
+              "deps"
+            ],
+            "senza": [
+              "V_H"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Cambia un segno rispetto alla convenzionale: il braccio e' dall'altra parte del baricentro.",
+            "Una superficie davanti al baricentro che porta di piu' fa cabrare, non picchiare."
+          ],
+          "spiegazione": "$C_{m\\alpha} = \\ldots + \\eta_t V_C C_{L\\alpha,t}(1 - \\frac{d\\varepsilon}{d\\alpha})$, con il **piu'**. Nel canard il termine di superficie e' **destabilizzante**: la stabilita' deve venire dall'ala principale, che sta dietro al baricentro, cioe' da $C_{L\\alpha}|_{wb}h < 0$. E' il ribaltamento completo dei ruoli rispetto alla configurazione convenzionale."
+        },
+        {
+          "id": "d04-cf-4",
+          "tipo": "insieme",
+          "difficolta": 3,
+          "testo": "In configurazione convenzionale, che relazione deve valere fra i calettamenti perche' sia $C_{m0} > 0$? E nel canard? Elenca le due condizioni corrette fra `i_t_minore_di_i_w i_t_maggiore_di_i_w i_c_minore_di_i_w i_c_maggiore_di_i_w`.",
+          "soluzione": "i_t_minore_di_i_w i_c_maggiore_di_i_w",
+          "verifica": {
+            "insieme": [
+              "i_t_minore_di_i_w",
+              "i_c_maggiore_di_i_w"
+            ]
+          },
+          "hint": [
+            "Nella convenzionale il termine di coda entra col meno, nel canard col piu': la condizione si ribalta.",
+            "La superficie che deve 'spingere in basso' e' quella che va calettata meno."
+          ],
+          "spiegazione": "Convenzionale: $i_t < i_w$, calettamento di coda minore di quello dell'ala. Canard: $i_c > i_w$, superficie anteriore calettata **di piu'**. E qui nasce il problema operativo del canard: essendo calettato piu' dell'ala, arriva allo stallo prima, e quando stalla la rigidezza si perde mentre l'ala non ha ancora raggiunto il suo $C_{L,max}$."
+        },
+        {
+          "id": "d04-cf-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo convenzionale ha $C_{m\\alpha}|_{wb} = 0.22$, $C_{m\\alpha}|_{eng} = 0.04$, $C_{L\\alpha}|_{wb} = 4.5$, $h = 0.14$, $\\eta_t = 0.9$, $V_H = 0.65$, $C_{L\\alpha,t} = 3.4$, $d\\varepsilon/d\\alpha = 0.42$. Quanto vale $C_{m\\alpha}$?",
+          "dati": "C_ma_wb = 0.22\nC_ma_eng = 0.04\nC_La_wb = 4.5\nh = 0.14\neta_t = 0.9\nV_H = 0.65\nC_La_t = 3.4\ndeps = 0.42",
+          "soluzione": "0.22 + 0.04 + 4.5*0.14 - 0.9*0.65*3.4*(1 - 0.42)",
+          "verifica": {
+            "valore": -0.2637,
+            "entro": 0.006
+          },
+          "hint": [
+            "Somma i tre destabilizzanti e sottrai il contributo di coda."
+          ],
+          "spiegazione": "$C_{m\\alpha} = 0.89 - 1.154 = -0.26$ 1/rad: stabile, ma di poco. Confrontalo con il $-0.43$ del modulo precedente: qui il baricentro e' piu' arretrato ($h = 0.14$) e la coda piu' piccola ($V_H = 0.65$). Bastano pochi centesimi di corda di arretramento per mangiarsi il margine."
+        },
+        {
+          "id": "d04-cf-6",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo. Di quanto puo' arretrare il baricentro, in frazione di corda, prima che $C_{m\\alpha}$ diventi nullo? Rispondi con la variazione ammessa di `h`.",
+          "dati": "C_ma = -0.2637 1/rad\nC_La_wb = 4.5",
+          "soluzione": "0.2637/4.5",
+          "verifica": {
+            "valore": 0.0586,
+            "entro": 0.002
+          },
+          "hint": [
+            "Il termine che cresce con l'arretramento e' $C_{L\\alpha}|_{wb}h$.",
+            "Serve la variazione di `h` che annulla il $C_{m\\alpha}$ calcolato prima."
+          ],
+          "spiegazione": "$\\Delta h = 0.264/4.5 = 0.059$, cioe' il 5.9% della corda. Un velivolo con corda media di 3.3 m puo' permettersi 19 cm di arretramento del baricentro, e poi diventa instabile. E' esattamente il concetto di **margine statico**, che nel prossimo modulo prende un nome e una formula — e il valore tipico di riferimento e' proprio attorno al 5%."
+        },
+        {
+          "id": "d04-cf-7",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Scrivi il requisito di trimmabilita' per la configurazione convenzionale: `C_m0` con i suoi quattro contributi. Usa `C_m0_wb C_m0_eng C_L0_wb h eta_t V_H C_La_t i_t eps_0`.",
+          "soluzione": "C_m0_wb + C_m0_eng + C_L0_wb*h - eta_t*V_H*C_La_t*(i_t - eps_0)",
+          "verifica": {
+            "equivale": "C_m0_wb + C_m0_eng + C_L0_wb*h - eta_t*V_H*C_La_t*(i_t - eps_0)",
+            "usa": [
+              "C_m0_wb",
+              "C_m0_eng",
+              "C_L0_wb",
+              "h",
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "i_t",
+              "eps_0"
+            ],
+            "senza": [
+              "alpha",
+              "deps"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Stessa struttura del $C_{m\\alpha}$, ma con i termini a incidenza nulla.",
+            "Nel contributo di coda compare la differenza fra calettamento e downwash a portanza nulla."
+          ],
+          "spiegazione": "$C_{m0} = C_{m0}|_{wb} + C_{m0}|_{eng} + C_{L0}|_{wb}h - \\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0)$. L'ultimo termine e' **positivo** quando $i_t < \\varepsilon_0$: e' la coda calettata a picchiare rispetto all'ala che, spingendo in basso, alza il muso e rende il velivolo trimmabile a incidenza positiva."
+        },
+        {
+          "id": "d04-cf-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo convenzionale ha $C_{m0}|_{wb} = -0.055$, $C_{m0}|_{eng} = 0.005$, $C_{L0}|_{wb} = 0.18$, $h = 0.12$, $\\eta_t = 0.9$, $V_H = 0.68$, $C_{L\\alpha,t} = 3.5$, $\\varepsilon_0 = 1.2$ gradi. Quale calettamento $i_t$, in gradi, serve per avere esattamente $C_{m0} = 0.07$?",
+          "dati": "C_m0_wb = -0.055\nC_m0_eng = 0.005\nC_L0_wb = 0.18\nh = 0.12\neta_t = 0.9\nV_H = 0.68\nC_La_t = 3.5\neps_0 = 1.2 gradi\nC_m0 voluto = 0.07",
+          "soluzione": "1.2 - (0.07 + 0.055 - 0.005 - 0.18*0.12)/(0.9*0.68*3.5)*180/pi",
+          "verifica": {
+            "valore": -1.432,
+            "entro": 0.03
+          },
+          "hint": [
+            "Isola il termine di coda: $\\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0)$ deve valere la somma degli altri meno il $C_{m0}$ voluto.",
+            "Il risultato viene in radianti: convertilo, e ricorda che $\\varepsilon_0$ e' gia' in gradi."
+          ],
+          "spiegazione": "Il termine di coda deve valere $-0.0986$, quindi $i_t - \\varepsilon_0 = -0.046$ rad $= -2.6$ gradi, da cui $i_t = 1.2 - 2.6 = -1.4$ gradi circa. Calettamento negativo, come previsto: la coda guarda leggermente in basso rispetto all'ala. E' un numero che si legge sul disegno di qualunque velivolo convenzionale."
+        }
+      ]
+    },
+    {
+      "id": "d04-elevatore",
+      "comando": "elevatore",
+      "titolo": "L'equilibratore sposta il trim, non la stabilita'",
+      "esercizi": [
+        {
+          "id": "d04-el-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il coefficiente di momento con il termine di controllo, in funzione di `alpha` e `delta_E`.",
+          "soluzione": "C_m0 + C_ma*alpha + C_mdE*delta_E",
+          "verifica": {
+            "equivale": "C_m0 + C_ma*alpha + C_mdE*delta_E",
+            "usa": [
+              "C_m0",
+              "C_ma",
+              "alpha",
+              "C_mdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Alla retta si aggiunge un termine proporzionale alla deflessione."
+          ],
+          "spiegazione": "$C_m = C_{m0} + C_{m\\alpha}\\alpha + C_{m\\delta_E}\\delta_E$ con $C_{m\\delta_E} < 0$. Sul piano $C_m$-$\\alpha$ il terzo termine e' una traslazione verticale: la retta si alza o si abbassa, la pendenza resta."
+        },
+        {
+          "id": "d04-el-2",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Il pilota spinge la cloche in avanti ($\\delta_E > 0$, bordo d'uscita in basso). Che cosa succede? Elenca le conseguenze corrette fra `retta_scende alpha_trim_minore velocita_maggiore pendenza_cambia stabilita_aumenta`.",
+          "soluzione": "retta_scende alpha_trim_minore velocita_maggiore",
+          "verifica": {
+            "insieme": [
+              "retta_scende",
+              "alpha_trim_minore",
+              "velocita_maggiore"
+            ]
+          },
+          "hint": [
+            "$C_{m\\delta_E}$ e' negativo: una deflessione positiva abbassa la curva.",
+            "Meno incidenza di trim vuol dire piu' velocita', perche' la portanza deve restare uguale al peso."
+          ],
+          "spiegazione": "Push: la retta scende di $C_{m\\delta_E}\\delta_E < 0$, il trim si sposta a incidenze minori, e a portanza costante meno incidenza significa piu' velocita'. La **pendenza non cambia**: l'equilibratore sposta il punto di equilibrio, non la rigidezza. La stabilita' e' una proprieta' della configurazione, non del comando."
+        },
+        {
+          "id": "d04-el-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Quanto equilibratore serve per trimmare a un'incidenza voluta? Scrivi `delta_E` in funzione di `alpha`, `C_m0`, `C_ma` e `C_mdE`.",
+          "soluzione": "-(C_m0 + C_ma*alpha)/C_mdE",
+          "verifica": {
+            "equivale": "-(C_m0 + C_ma*alpha)/C_mdE",
+            "usa": [
+              "C_m0",
+              "C_ma",
+              "alpha",
+              "C_mdE"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_ma_wb": [
+                0.05,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "h": [
+                0.02,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_C": [
+                0.3,
+                0.9
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "i_t": [
+                -0.06,
+                -0.005
+              ],
+              "i_c": [
+                0.01,
+                0.08
+              ],
+              "eps_0": [
+                0.005,
+                0.04
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ]
+            }
+          },
+          "hint": [
+            "Imponi $C_m = 0$ e isola la deflessione invece dell'incidenza."
+          ],
+          "spiegazione": "$\\delta_E = -\\dfrac{C_{m0} + C_{m\\alpha}\\alpha}{C_{m\\delta_E}}$. E' la stessa equazione di prima letta al contrario: prima si chiedeva dove finisce il trim data la deflessione, ora quanta deflessione serve per un trim voluto. E' la forma che diventera' la **curva di trim** nel prossimo modulo."
+        },
+        {
+          "id": "d04-el-4",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo con $C_{m0} = 0.075$, $C_{m\\alpha} = -0.58$ e $C_{m\\delta_E} = -1.15$ deve essere trimmato a $\\alpha = 10$ gradi per l'avvicinamento. Quanti gradi di equilibratore servono?",
+          "dati": "C_m0 = 0.075\nC_ma = -0.58 1/rad\nC_mdE = -1.15 1/rad\nalpha = 10 gradi",
+          "soluzione": "-(0.075 - 0.58*10*pi/180)/(-1.15)*180/pi",
+          "verifica": {
+            "valore": -1.3,
+            "entro": 0.1
+          },
+          "hint": [
+            "Converti l'incidenza in radianti, applica la formula, riconverti in gradi.",
+            "Per volare lenti serve tirare: aspettati una deflessione negativa."
+          ],
+          "spiegazione": "$\\alpha = 0.1745$ rad, $C_{m0} + C_{m\\alpha}\\alpha = 0.075 - 0.1012 = -0.0262$, quindi $\\delta_E = -0.0228$ rad $= -1.3$ gradi, cioe' bordo d'uscita in alto: **pull**. Per volare lenti si tira, come dice il manico. La formula lo ritrova da sola, ed e' un buon controllo di segno su tutta la catena."
+        },
+        {
+          "id": "d04-el-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo in crociera a $\\alpha = 2.5$ gradi. Quanti gradi di equilibratore servono ora?",
+          "dati": "C_m0 = 0.075\nC_ma = -0.58 1/rad\nC_mdE = -1.15 1/rad\nalpha = 2.5 gradi",
+          "soluzione": "-(0.075 - 0.58*2.5*pi/180)/(-1.15)*180/pi",
+          "verifica": {
+            "valore": 2.47,
+            "entro": 0.1
+          },
+          "hint": [
+            "Stessa formula, altra incidenza.",
+            "In crociera si vola veloci: aspettati il segno opposto al caso dell'avvicinamento."
+          ],
+          "spiegazione": "$\\delta_E = +2.5$ gradi: push. Fra avvicinamento e crociera l'equilibratore si sposta di quasi quattro gradi, e la corsa totale disponibile e' dell'ordine di 25-30: c'e' margine. Quando non ce n'e', il velivolo semplicemente non e' trimmabile a quella condizione, ed e' cosi' che nasce il limite anteriore del baricentro."
+        },
+        {
+          "id": "d04-el-6",
+          "tipo": "ordina",
+          "difficolta": 3,
+          "testo": "Rimetti in ordine il ragionamento che porta al requisito di rigidezza di beccheggio.",
+          "passi": [
+            {
+              "id": "SE",
+              "testo": "Un momento che si oppone a un aumento di alpha e' un momento negativo"
+            },
+            {
+              "id": "RA",
+              "testo": "Una raffica ascendente w_g investe il velivolo"
+            },
+            {
+              "id": "ST",
+              "testo": "Quindi dM/d alpha < 0, cioe' C_m,alpha < 0"
+            },
+            {
+              "id": "IN",
+              "testo": "L'angolo d'attacco aumenta di Delta alpha > 0"
+            },
+            {
+              "id": "RI",
+              "testo": "Per essere stabile il velivolo deve generare un momento di richiamo a picchiare"
+            }
+          ],
+          "soluzione": "RA IN RI SE ST",
+          "verifica": {
+            "ordine": [
+              "RA",
+              "IN",
+              "RI",
+              "SE",
+              "ST"
+            ]
+          },
+          "hint": [
+            "Si parte dal disturbo e si arriva alla condizione sul coefficiente.",
+            "La conclusione sul segno viene dopo aver detto che verso deve avere il momento."
+          ],
+          "spiegazione": "Raffica, incremento di incidenza, richiesta di un momento che si opponga, traduzione in segno della derivata, conclusione $C_{m\\alpha} < 0$. E' un ragionamento di una riga sola, ma e' l'unico posto del corso in cui si decide **perche'** quella derivata deve essere negativa: tutto il resto e' contabilita' dei contributi."
+        },
+        {
+          "id": "d04-el-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un caccia moderno e' volutamente instabile: $C_{m\\alpha} = +0.30$ 1/rad, con $C_{m0} = -0.02$. A quale incidenza, in gradi, si trova il suo (unico) punto di equilibrio a comandi neutri?",
+          "dati": "C_ma = +0.30 1/rad\nC_m0 = -0.02",
+          "soluzione": "(0.02/0.30)*180/pi",
+          "verifica": {
+            "valore": 3.82,
+            "entro": 0.05
+          },
+          "hint": [
+            "La formula dell'equilibrio non cambia: $\\alpha_e = -C_{m0}/C_{m\\alpha}$.",
+            "Con entrambi i segni ribaltati, l'incidenza di equilibrio torna positiva."
+          ],
+          "spiegazione": "$\\alpha_e = 0.02/0.30 = 0.0667$ rad $= 3.8$ gradi. C'e' un equilibrio, ma e' **instabile**: qualunque raffica lo allontana e il velivolo non ci torna. Vola solo perche' il fly-by-wire interviene decine di volte al secondo. Il vantaggio e' la manovrabilita': la stessa raffica che destabilizza e' anche la risposta pronta che un caccia vuole."
+        },
+        {
+          "id": "d04-el-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo tuttala ottiene $C_{m0} = 0.045$ grazie allo svergolamento e ha $C_{m\\alpha} = -0.18$ 1/rad (rigidezza modesta, tipica della freccia). Quanto vale l'incidenza di trim, in gradi? E cosa ne concludi rispetto al convenzionale dell'esercizio d04-ri-4?",
+          "dati": "C_m0 = 0.045\nC_ma = -0.18 1/rad",
+          "soluzione": "(0.045/0.18)*180/pi",
+          "verifica": {
+            "valore": 14.3,
+            "entro": 0.2
+          },
+          "hint": [
+            "Stessa formula dell'equilibrio.",
+            "Rigidezza piccola al denominatore: l'incidenza di trim viene grande."
+          ],
+          "spiegazione": "$\\alpha_e = 0.25$ rad $= 14.3$ gradi, contro gli 8.3 del convenzionale: vicino allo stallo. E' il compromesso della tuttala — la rigidezza viene solo dalla freccia, e' modesta, e con essa il velivolo si trimma ad incidenze alte e reagisce piano ai disturbi. Il B-2 e' in servizio perche' il fly-by-wire fa il lavoro che qui farebbe una coda."
+        }
+      ]
+    }
+  ]
+}

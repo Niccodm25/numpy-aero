@@ -32,6 +32,7 @@ const OPERATORI = {
   approx: "≈", neq: "≠", ne: "≠", equiv: "≡", sim: "∼", propto: "∝",
   leq: "≤", le: "≤", geq: "≥", ge: "≥", ll: "≪", gg: "≫",
   to: "→", rightarrow: "→", Rightarrow: "⇒", leftarrow: "←", mapsto: "↦",
+  iff: "⟺", Leftrightarrow: "⟺", leftrightarrow: "↔", implies: "⟹",
   infty: "∞", partial: "∂", nabla: "∇", sum: "∑", int: "∫", prod: "∏",
   in: "∈", notin: "∉", subset: "⊂", cup: "∪", cap: "∩",
   forall: "∀", exists: "∃", ldots: "…", cdots: "⋯", dots: "…",

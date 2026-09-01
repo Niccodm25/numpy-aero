@@ -134,12 +134,14 @@
       "moduli": [
         "d01",
         "d02",
-        "d03"
+        "d03",
+        "d04",
+        "d05"
       ],
       "prossimi": [
-        "Stabilita' statica longitudinale a comandi bloccati; punto neutro e margine statico",
-        "Configurazioni: tail-less, flying-wing, convenzionale, canard",
-        "Stabilita' in velocita', effetti del Mach, limite posteriore di centraggio"
+        "Stabilita' statica in velocita': criterio storico, effetti del Mach, limite posteriore",
+        "Comandi reversibili e irreversibili; momento di cerniera; aletta di trim",
+        "Stabilita' a comandi liberi e stick-force trim"
       ]
     }
   ],
@@ -510,6 +512,18 @@
       "id": "d03",
       "file": "d03-momento.json",
       "titolo": "Momento di beccheggio e soluzione del trim",
+      "disponibile": true
+    },
+    {
+      "id": "d04",
+      "file": "d04-stabilita.json",
+      "titolo": "Stabilita' statica: requisiti e configurazioni",
+      "disponibile": true
+    },
+    {
+      "id": "d05",
+      "file": "d05-punto-neutro.json",
+      "titolo": "Punto neutro, margine statico, curve di trim",
       "disponibile": true
     }
   ]

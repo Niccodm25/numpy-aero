@@ -1,0 +1,1372 @@
+{
+  "id": "d05",
+  "titolo": "Punto neutro, margine statico, curve di trim",
+  "perche": "La stabilita' smette di essere una somma di contributi e diventa una distanza: il baricentro deve stare davanti a un punto preciso dell'ala, e quanto ci sta davanti si chiama margine statico. Da li' escono la curva di trim, il legame fra stabilita' e fatica di pilotaggio, e i due limiti — posteriore e anteriore — che chiudono l'escursione ammessa del centro di massa.",
+  "fonte": "Dinamica del Volo, Parte II, capitolo 2, paragrafi 2.5-2.9 (pagine 27-33). Lezione del 06/03/2026, prof. Giulio Avanzini.",
+  "notazione": "In questo modulo h_G = x_G/c e h_N = x_N/c sono misurate dal bordo d'attacco (non dal centro aerodinamico, come la h dei moduli precedenti). Altri simboli: SM h_Nwb C_La C_ma C_m0 C_mdE C_LdE C_L_trim C_L0 alpha alpha_star A B W_S rho V eta_t V_H C_La_t deps C_ma_eng.",
+  "lezioni": [
+    {
+      "id": "d05-lez-punto-neutro",
+      "titolo": "Il punto neutro",
+      "md": "Quando il baricentro arretra succedono due cose insieme, e vanno entrambe nella stessa direzione:\n\n- il braccio $\\ell_t$ dell'impennaggio si **accorcia** — meno effetto stabilizzante;\n- il braccio $(x_G - x_{AC})$ dell'ala si **allunga** — piu' effetto destabilizzante.\n\nEsiste dunque una posizione limite $x_N$ oltre la quale l'aeroplano diventa instabile.\n\n$$x_N \\ \\text{tale che} \\ C_{m\\alpha}\\big|_{x_G = x_N} = 0$$\n\nPer $x_G < x_N$ il velivolo e' staticamente stabile ($C_{m\\alpha} < 0$); per $x_G > x_N$ instabile.\n\n### La derivazione\n\nEsplicitando il coefficiente volumetrico di coda nella forma $V_H = V_H' - \\frac{S_t}{S}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)$:\n\n$$C_{m\\alpha} = C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} + C_{L\\alpha}|_{wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) - \\eta_t\\left[V_H' - \\frac{S_t}{S}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)\\right]C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right)$$\n\nImponendo $C_{m\\alpha} = 0$ con $x_G = x_N$ e raccogliendo i termini in $(x_N/\\bar{c} - x_{AC}/\\bar{c})$:\n\n$$C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} + \\left(\\frac{x_N}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)\\left[C_{L\\alpha}|_{wb} + \\eta_t\\frac{S_t}{S}C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right)\\right] - \\eta_t V_H' C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right) = 0$$\n\nLa quantita' fra parentesi quadre e' il gradiente di portanza dell'**intero velivolo**, $C_{L\\alpha}$ — la stessa formula ricavata nel modulo sulla portanza. Risolvendo:\n\n$$\\frac{x_N}{\\bar{c}} = \\frac{x_{AC}}{\\bar{c}} - \\frac{C_{m\\alpha}|_{wb} + C_{m\\alpha}|_{eng} - \\eta_t V_H' C_{L\\alpha,t}(1 - d\\varepsilon/d\\alpha)}{C_{L\\alpha}}$$\n\n### La formulazione compatta\n\nIntroducendo il centro aerodinamico del **wing-body** $x_{N,wb}$, definito da $dC_{m,wb}/d\\alpha = 0$:\n\n$$\\frac{x_{N,wb}}{\\bar{c}} = \\frac{x_{AC}}{\\bar{c}} - \\frac{C_{m\\alpha}|_{wb}}{C_{L\\alpha}|_{wb}}$$\n\nla $C_{m\\alpha}$ totale si riscrive come\n\n$$C_{m\\alpha} = C_{m\\alpha}|_{eng} + C_{L\\alpha}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{N,wb}}{\\bar{c}}\\right) - \\eta_t V_H C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right)$$\n\ne il punto neutro diventa\n\n$$\\frac{x_N}{\\bar{c}} = \\frac{x_{N,wb}}{\\bar{c}} - \\frac{C_{m\\alpha}|_{eng} - \\eta_t V_H C_{L\\alpha,t}(1 - d\\varepsilon/d\\alpha)}{C_{L\\alpha}}$$\n\n> Notazione alternativa: in molti testi la posizione del baricentro si indica con $h = x_G/\\bar{c}$ e quella del punto neutro con $h_N = x_N/\\bar{c}$. Attenzione: e' una $h$ diversa da quella usata nei moduli precedenti, dove indicava la distanza **dal centro aerodinamico**, cioe' $x_G/\\bar{c} - x_{AC}/\\bar{c}$."
+    },
+    {
+      "id": "d05-lez-alpha-star",
+      "titolo": "L'angolo d'attacco equivalente e la forma coerente di C_m0",
+      "md": "Scelto $x_{N,wb}$ come riferimento, si introduce l'angolo d'attacco equivalente dell'intero velivolo. Si assume una delle due condizioni equivalenti:\n\n- $C_{L0}|_{wb} \\approx 0$, cioe' contributo del wing-body a incidenza nulla trascurabile;\n- si sceglie come asse $x_B$ la **linea a portanza nulla** del wing-body, in cui $C_{L0}|_{wb} = 0$ esattamente.\n\nIn entrambi i casi $C_{mAC,wb} = C_{m0}|_{wb}$.\n\nSotto questa ipotesi $C_L = C_{L0} + C_{L\\alpha}\\alpha$ con $C_{L0} = \\eta_t\\frac{S_t}{S}C_{L\\alpha,t}(i_t - \\varepsilon_0)$, e si introduce l'**angolo d'attacco equivalente** $\\alpha^*$, riferito alla linea a portanza nulla dell'intero velivolo, tale che $C_L = C_{L\\alpha}\\alpha^*$:\n\n$$\\alpha^* = \\alpha + \\frac{C_{L0}}{C_{L\\alpha}}$$\n\nQuando $\\alpha^* = 0$ allora $C_L = 0$ e $C_m = C_{m0}$: e' la definizione pulita di \"momento a portanza nulla\".\n\nL'angolo d'attacco dell'impennaggio diventa $\\alpha_t = i_t - \\varepsilon_0 + (1 - d\\varepsilon/d\\alpha)(\\alpha^* - C_{L0}/C_{L\\alpha})$. Sostituendo nel momento totale a $\\delta_E = 0$, $\\alpha^* = 0$, e raccogliendo $(i_t - \\varepsilon_0)$:\n\n$$C_{m0}\\big|_{\\alpha^* = 0} = C_{mAC,wb} + C_{m0}|_{eng} - \\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0)\\left[1 - \\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right)\\eta_t\\frac{S_t}{S}\\frac{C_{L\\alpha,t}}{C_{L\\alpha}}\\right]$$\n\nE' la forma **coerente** di $C_{m0}$: quella che vale davvero quando la portanza totale e' nulla, non quando l'angolo d'attacco geometrico e' nullo. La differenza fra le due sta tutta nella parentesi quadra, che vale poco meno di uno."
+    },
+    {
+      "id": "d05-lez-margine",
+      "titolo": "Il margine statico",
+      "md": "Definito il punto neutro, il requisito di stabilita' si riformula in modo compatto e fisicamente diretto:\n\n$$C_{m\\alpha} = C_{L\\alpha}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_N}{\\bar{c}}\\right)$$\n\nTre formulazioni **equivalenti** dello stesso requisito:\n\n1. $C_{m\\alpha} < 0$ — in termini di derivata di stabilita';\n2. $x_G/\\bar{c} < x_N/\\bar{c}$ — il baricentro deve trovarsi **davanti** al punto neutro;\n3. margine statico positivo.\n\n### Il margine statico\n\n$$SM = \\frac{x_N - x_G}{\\bar{c}}, \\qquad \\text{valore di riferimento operativo } SM \\approx 0.05$$\n\nCirca il 5% della corda media aerodinamica: e' il margine tipico per qualita' di volo accettabili.\n\nIl margine statico esprime **quanto si puo' far arretrare il baricentro prima che il velivolo diventi instabile**: e' un margine di sicurezza geometrico sulla posizione del centro di massa. La denominazione *pitch stiffness* e' meccanicamente coerente — $C_{m\\alpha}$ gioca il ruolo di una costante elastica torsionale aerodinamica, e il margine statico dice quanta ne resta.\n\n### Il baricentro non sta fermo\n\nIn condizioni ideali, fissata la configurazione rigida, il baricentro e' un punto fisso. In condizioni operative reali $x_G$ varia con il caricamento — passeggeri, bagagli, merci — e con il livello dei serbatoi. Esiste quindi un'**escursione ammessa** del baricentro:\n\n- il **limite posteriore**, legato a $x_N$ (oltre, instabilita');\n- il **limite anteriore**, che dipende dal fondo corsa dell'equilibratore.\n\nIl secondo si vede solo guardando le curve di trim."
+    },
+    {
+      "id": "d05-lez-curve-trim",
+      "titolo": "Le curve di trim, e il limite anteriore del baricentro",
+      "md": "Risolvendo il sistema lineare delle equazioni di equilibrio in portanza e momento, la deflessione necessaria a trimmare un certo $C_{L,trim}$ risulta lineare nel $C_L$ stesso:\n\n$$\\delta_{E,eq} = A + B\\,C_{L,trim}, \\qquad A = \\frac{C_{m0}C_{L\\alpha}}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}, \\qquad B = \\frac{C_{m\\alpha}}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}$$\n\n### Perche' il denominatore si semplifica\n\nSi ha $C_{m\\alpha} = C_{L\\alpha}\\cdot(-SM) \\sim C_{L\\alpha}\\cdot 0.05$, mentre $C_{m\\delta_E}$ e' dell'ordine del rapporto volumetrico di coda (maggiore di uno) e $C_{L\\delta_E}$ e' la piccola forza generata dall'equilibratore. Pertanto $|C_{m\\alpha}C_{L\\delta_E}| \\ll |C_{L\\alpha}C_{m\\delta_E}|$, e il denominatore e' dominato dal secondo termine, **positivo** (poiche' $C_{m\\delta_E} < 0$ e $C_{L\\alpha} > 0$):\n\n$$A \\approx -\\frac{C_{m0}}{C_{m\\delta_E}} > 0, \\qquad B \\approx -\\frac{C_{m\\alpha}}{C_{L\\alpha}C_{m\\delta_E}} = \\frac{x_N/\\bar{c} - x_G/\\bar{c}}{C_{m\\delta_E}} = \\frac{SM}{C_{m\\delta_E}} < 0$$\n\n> Il segno si controlla con i numeri, sempre. Sostituendo $C_{m\\alpha} = C_{L\\alpha}(h_G - h_N)$ dentro $-C_{m\\alpha}/(C_{L\\alpha}C_{m\\delta_E})$ si semplifica $C_{L\\alpha}$ e resta $-(h_G - h_N)/C_{m\\delta_E} = SM/C_{m\\delta_E}$, negativo perche' $C_{m\\delta_E} < 0$. Se trovi scritta la forma $(h_G - h_N)/C_{m\\delta_E}$, quella darebbe $B > 0$ e contraddirebbe la pendenza negativa: e' un segno perso per strada.\n\n### Che cosa dicono i segni\n\n$A > 0$ da' intercetta positiva ($\\delta_E > 0$ per $C_L = 0$). $B < 0$: la pendenza e' negativa e **proporzionale al margine statico**. Un velivolo piu' stabile ($|B|$ piu' grande) richiede deflessioni di equilibratore maggiori per cambiare il $C_L$ trimmato. Per $SM = 0$ — baricentro nel punto neutro — si ha $B = 0$: **tutti i $C_L$ vengono trimmati con la stessa $\\delta_E$**, che e' la stabilita' neutra.\n\n> Pendenza alta significa controllo piu' impegnativo. Aumentare la stabilita' rende la curva di trim piu' pendente: a parita' di variazione di $C_L$ il pilota deve applicare una corsa di equilibratore piu' lunga. Esiste un compromesso fra stabilita' e controllabilita', e attraversa tutto il resto del corso.\n\n### La curva di trim in velocita'\n\nIn trim vale la condizione di sostentamento $W = \\frac{1}{2}\\rho V^2 S\\,C_{L,trim}$, da cui $C_{L,trim} = (W/S)/(\\frac{1}{2}\\rho V^2)$. Sostituendo:\n\n$$\\delta_{E,eq} = A + B\\,\\frac{W/S}{\\frac{1}{2}\\rho V^2}$$\n\nL'andamento e' **iperbolico** in $V$, con asintoto orizzontale $\\delta_{E,eq} \\to A$ per $V \\to \\infty$. Ad alta velocita' servono deflessioni piccole; a bassa velocita' (verso $V_{st}$) le deflessioni diventano grandi e negative — comando *pull*. Aumentando il margine statico la curva diventa piu' ripida.\n\nLe limitazioni operative disegnano una scatola attorno alla curva: $V \\ge V_{st}$ a sinistra, $V \\le V_{max}$ a destra, e $\\delta_{E,max,neg} \\le \\delta_E \\le \\delta_{E,max}$ in verticale, cioe' il fondo corsa in entrambe le direzioni.\n\n### Il limite anteriore del baricentro\n\nFinora si e' trovato il limite **posteriore**: $x_G \\le x_N$. Il limite **anteriore** nasce da un vincolo operativo di controllabilita'.\n\nRicordando che $C_{m\\alpha} = C_{L\\alpha}(x_G - x_N)/\\bar{c}$: se il baricentro si sposta verso prua, $x_G$ diminuisce, $C_{m\\alpha}$ diventa sempre piu' negativo (margine statico piu' grande) e la pendenza $|B|$ della curva di trim diventa sempre piu' ripida.\n\nMa l'equilibratore ha un **fondo corsa** $\\delta_{E,max,neg}$. Per trimmare tutti i $C_L$ fino al $C_{L,max}$ di stallo, se la curva e' troppo ripida si raggiunge il fondo corsa **prima** di arrivare a trimmare il $C_{L,max}$. La posizione del baricentro che porta a tangenza fra curva di trim e $C_{L,max}$ con $\\delta_E = \\delta_{E,max,neg}$ e' la **posizione limite anteriore**.\n\nNella pratica progettuale si sottrae un ulteriore margine: quando l'aeroplano e' trimmato vicino allo stallo deve comunque mantenere una capacita' di governo residua per le manovre di richiamata.\n\n> Convenzione di segno sull'asse $x$: nelle convenzioni standard di dinamica del volo l'asse $x$ e' positivo **verso poppa** (origini storiche nell'ingegneria navale). Percio' se il baricentro va verso prua, $x_G$ diventa piu' piccolo: \"baricentro piu' avanti\" corrisponde a $x_G$ minore."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "d05-punto-neutro",
+      "comando": "punto neutro",
+      "titolo": "Punto neutro e margine statico",
+      "esercizi": [
+        {
+          "id": "d05-pn-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il margine statico `SM` in funzione della posizione adimensionale del punto neutro `h_N` e del baricentro `h_G` (entrambe divise per la corda).",
+          "soluzione": "h_N - h_G",
+          "verifica": {
+            "equivale": "h_N - h_G",
+            "usa": [
+              "h_N",
+              "h_G"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "E' una distanza, misurata in frazioni di corda.",
+            "Deve essere positiva quando il baricentro sta davanti al punto neutro."
+          ],
+          "spiegazione": "$SM = \\dfrac{x_N - x_G}{\\bar{c}} = h_N - h_G$. Dice quanto si puo' far arretrare il baricentro prima che il velivolo diventi instabile: e' un margine di sicurezza geometrico, e il valore operativo di riferimento e' circa 0.05, il 5% della corda."
+        },
+        {
+          "id": "d05-pn-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi `C_ma` nella formulazione compatta, in funzione di `C_La`, `h_G` e `h_N`.",
+          "soluzione": "C_La*(h_G - h_N)",
+          "verifica": {
+            "equivale": "C_La*(h_G - h_N)",
+            "usa": [
+              "C_La",
+              "h_G",
+              "h_N"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "E' il gradiente di portanza del velivolo per una distanza adimensionale.",
+            "Attenzione all'ordine: deve venire negativa quando il baricentro sta davanti al punto neutro."
+          ],
+          "spiegazione": "$C_{m\\alpha} = C_{L\\alpha}\\left(\\dfrac{x_G}{\\bar{c}} - \\dfrac{x_N}{\\bar{c}}\\right) = -C_{L\\alpha}\\,SM$. Tutta la stabilita' statica longitudinale in una riga: la rigidezza e' il gradiente di portanza per il margine statico, cambiato di segno."
+        },
+        {
+          "id": "d05-pn-3",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Le tre formulazioni equivalenti del requisito di stabilita' statica longitudinale. Elenca quelle corrette fra `C_ma_negativo baricentro_davanti_al_punto_neutro margine_statico_positivo C_m0_positivo baricentro_dietro_al_punto_neutro`.",
+          "soluzione": "C_ma_negativo baricentro_davanti_al_punto_neutro margine_statico_positivo",
+          "verifica": {
+            "insieme": [
+              "C_ma_negativo",
+              "baricentro_davanti_al_punto_neutro",
+              "margine_statico_positivo"
+            ]
+          },
+          "hint": [
+            "Sono tre modi di dire la stessa cosa, uno in termini di derivata, uno geometrico, uno di margine.",
+            "$C_{m0} > 0$ e' il requisito di trimmabilita', un'altra cosa."
+          ],
+          "spiegazione": "$C_{m\\alpha} < 0 \\iff x_G < x_N \\iff SM > 0$. La terza e' la piu' usata in progetto perche' e' un numero geometrico che si legge sul disegno; la prima e' quella che entra nelle equazioni; la seconda spiega perche' esiste un limite al caricamento di coda."
+        },
+        {
+          "id": "d05-pn-4",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo ha punto neutro a $x_N/\\bar{c} = 0.42$ e baricentro a $x_G/\\bar{c} = 0.36$. Quanto vale il margine statico, in percentuale di corda?",
+          "dati": "x_N/c = 0.42\nx_G/c = 0.36",
+          "soluzione": "(0.42 - 0.36)*100",
+          "verifica": {
+            "valore": 6.0,
+            "entro": 0.15
+          },
+          "hint": [
+            "Differenza fra le due posizioni adimensionali, moltiplicata per cento."
+          ],
+          "spiegazione": "$SM = 6\\%$. Poco sopra il valore di riferimento operativo del 5%: un velivolo con qualita' di volo accettabili, ne' troppo pesante da manovrare ne' troppo vicino al limite. Con la corda di 3.3 m di un tipico bimotore, il 6% sono 20 cm di margine sul centraggio."
+        },
+        {
+          "id": "d05-pn-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo, con $C_{L\\alpha} = 5.1$ 1/rad. Quanto vale $C_{m\\alpha}$?",
+          "dati": "C_La = 5.1 1/rad\nx_G/c = 0.36\nx_N/c = 0.42",
+          "soluzione": "5.1*(0.36 - 0.42)",
+          "verifica": {
+            "valore": -0.306,
+            "entro": 0.006
+          },
+          "hint": [
+            "Usa la formulazione compatta: gradiente di portanza per la distanza dal punto neutro."
+          ],
+          "spiegazione": "$C_{m\\alpha} = 5.1 \\cdot (-0.06) = -0.31$ 1/rad. Nota quanto e' comodo: due numeri geometrici e il gradiente di portanza, e la derivata di stabilita' esce da sola — senza rifare la somma dei contributi di ala, fusoliera, motore e coda. E' proprio il vantaggio della formulazione compatta."
+        },
+        {
+          "id": "d05-pn-6",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il punto neutro nella formulazione compatta, in funzione di `h_Nwb` (centro aerodinamico del wing-body), `C_ma_eng`, `eta_t`, `V_H`, `C_La_t`, `deps` e `C_La`.",
+          "soluzione": "h_Nwb - (C_ma_eng - eta_t*V_H*C_La_t*(1 - deps))/C_La",
+          "verifica": {
+            "equivale": "h_Nwb - (C_ma_eng - eta_t*V_H*C_La_t*(1 - deps))/C_La",
+            "usa": [
+              "h_Nwb",
+              "C_ma_eng",
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "deps",
+              "C_La"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "Si parte dal centro aerodinamico del wing-body e si corregge con i contributi di motore e coda.",
+            "La correzione e' divisa per il gradiente di portanza dell'intero velivolo."
+          ],
+          "spiegazione": "$\\dfrac{x_N}{\\bar{c}} = \\dfrac{x_{N,wb}}{\\bar{c}} - \\dfrac{C_{m\\alpha}|_{eng} - \\eta_t V_H C_{L\\alpha,t}(1 - d\\varepsilon/d\\alpha)}{C_{L\\alpha}}$. Il termine di coda, essendo negativo dentro una sottrazione, **sposta indietro** il punto neutro: piu' coda, piu' margine di caricamento. Il motore davanti al baricentro lo sposta avanti, cioe' lo peggiora."
+        },
+        {
+          "id": "d05-pn-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo ha $x_{N,wb}/\\bar{c} = 0.26$, $C_{m\\alpha}|_{eng} = 0.05$, $\\eta_t = 0.9$, $V_H = 0.70$, $C_{L\\alpha,t} = 3.5$, $d\\varepsilon/d\\alpha = 0.45$, $C_{L\\alpha} = 5.0$. Dov'e' il punto neutro, in frazione di corda?",
+          "dati": "x_Nwb/c = 0.26\nC_ma_eng = 0.05\neta_t = 0.9\nV_H = 0.70\nC_La_t = 3.5\ndeps = 0.45\nC_La = 5.0",
+          "soluzione": "0.26 - (0.05 - 0.9*0.70*3.5*(1 - 0.45))/5.0",
+          "verifica": {
+            "valore": 0.4915,
+            "entro": 0.004
+          },
+          "hint": [
+            "Prima il contributo di coda: $\\eta_t V_H C_{L\\alpha,t}(1 - d\\varepsilon/d\\alpha)$.",
+            "Poi la correzione, divisa per il gradiente di portanza del velivolo."
+          ],
+          "spiegazione": "Il contributo di coda vale 1.212, quindi $x_N/\\bar{c} = 0.26 + 1.162/5.0 = 0.49$. La coda ha spostato il punto neutro dal 26% al 49% della corda: e' quasi un quarto di corda di margine di caricamento in piu', e mostra in un numero solo a cosa serve un impennaggio."
+        },
+        {
+          "id": "d05-pn-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Stesso velivolo ($x_N/\\bar{c} = 0.4915$, $C_{L\\alpha} = 5.0$, $\\bar{c} = 3.4$ m). Si vuole mantenere $SM \\ge 0.05$. Qual e' la posizione piu' arretrata ammessa per il baricentro, in metri dal bordo d'attacco della corda media?",
+          "dati": "x_N/c = 0.4915\nSM minimo = 0.05\nc = 3.4 m",
+          "soluzione": "(0.4915 - 0.05)*3.4",
+          "verifica": {
+            "valore": 1.501,
+            "entro": 0.02
+          },
+          "hint": [
+            "Il baricentro deve stare davanti al punto neutro di almeno il margine voluto.",
+            "Poi la posizione adimensionale si moltiplica per la corda."
+          ],
+          "spiegazione": "$x_G/\\bar{c} \\le 0.4415$, cioe' $x_G \\le 1.50$ m. E' il **limite posteriore di centraggio**: caricare bagagli oltre quel punto porta il velivolo sotto il margine ammesso. Sui manuali di volo compare come un diagramma peso-braccio, ed e' questo il conto che ci sta dietro."
+        }
+      ]
+    },
+    {
+      "id": "d05-curve",
+      "comando": "curve di trim",
+      "titolo": "Le curve di trim in C_L e in velocita'",
+      "esercizi": [
+        {
+          "id": "d05-ct-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi la curva di trim nel piano $(C_L, \\delta_E)$: la deflessione di equilibrio in funzione di `C_L_trim`, con i coefficienti `A` e `B`.",
+          "soluzione": "A + B*C_L_trim",
+          "verifica": {
+            "equivale": "A + B*C_L_trim",
+            "usa": [
+              "A",
+              "B",
+              "C_L_trim"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "E' una retta: intercetta piu' pendenza per la variabile."
+          ],
+          "spiegazione": "$\\delta_{E,eq} = A + B\\,C_{L,trim}$. Una retta, e i suoi due coefficienti dicono due cose diverse: $A$ dov'e' l'equilibratore a portanza nulla, $B$ quanto bisogna muoverlo per cambiare condizione di volo."
+        },
+        {
+          "id": "d05-ct-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Nell'approssimazione operativa, scrivi il coefficiente `A` in funzione di `C_m0` e `C_mdE`.",
+          "soluzione": "-C_m0/C_mdE",
+          "verifica": {
+            "equivale": "-C_m0/C_mdE",
+            "usa": [
+              "C_m0",
+              "C_mdE"
+            ],
+            "senza": [
+              "C_La",
+              "C_ma"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "Nel denominatore esatto un termine domina sull'altro: resta il prodotto $C_{L\\alpha}C_{m\\delta_E}$, che si semplifica con il $C_{L\\alpha}$ al numeratore."
+          ],
+          "spiegazione": "$A \\approx -\\dfrac{C_{m0}}{C_{m\\delta_E}} > 0$, positivo perche' $C_{m0} > 0$ e $C_{m\\delta_E} < 0$. E' la deflessione che servirebbe a trimmare a portanza nulla: non e' una condizione di volo reale, ma e' l'intercetta della retta e si misura bene."
+        },
+        {
+          "id": "d05-ct-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il coefficiente `B` nell'approssimazione operativa, prima in funzione di `C_ma`, `C_La` e `C_mdE`.",
+          "soluzione": "-C_ma/(C_La*C_mdE)",
+          "verifica": {
+            "equivale": "-C_ma/(C_La*C_mdE)",
+            "usa": [
+              "C_ma",
+              "C_La",
+              "C_mdE"
+            ],
+            "senza": [
+              "C_m0"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "Stessa semplificazione del denominatore usata per `A`."
+          ],
+          "spiegazione": "$B \\approx -\\dfrac{C_{m\\alpha}}{C_{L\\alpha}C_{m\\delta_E}}$. Sostituendo $C_{m\\alpha} = C_{L\\alpha}(h_G - h_N)$ si semplifica il gradiente di portanza e resta una formula puramente geometrica, che e' l'esercizio successivo."
+        },
+        {
+          "id": "d05-ct-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Sostituisci la formulazione compatta di `C_ma` dentro `B` e scrivi il risultato in funzione di `h_G`, `h_N` e `C_mdE`.",
+          "soluzione": "(h_N - h_G)/C_mdE",
+          "verifica": {
+            "equivale": "(h_N - h_G)/C_mdE",
+            "usa": [
+              "h_G",
+              "h_N",
+              "C_mdE"
+            ],
+            "senza": [
+              "C_La",
+              "C_ma"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "$C_{m\\alpha} = C_{L\\alpha}(h_G - h_N)$: il gradiente di portanza si semplifica.",
+            "Attenzione al segno che resta davanti: il risultato deve essere negativo per un velivolo stabile."
+          ],
+          "spiegazione": "$B \\approx \\dfrac{h_N - h_G}{C_{m\\delta_E}} = \\dfrac{SM}{C_{m\\delta_E}} < 0$, negativa perche' $C_{m\\delta_E} < 0$. La pendenza della curva di trim e' **proporzionale al margine statico**: e' il legame diretto fra stabilita' e fatica di pilotaggio, e da qui in poi tutto il corso ci gira attorno."
+        },
+        {
+          "id": "d05-ct-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo ha $SM = 0.08$ e $C_{m\\delta_E} = -1.25$ 1/rad. Quanto vale la pendenza `B` della curva di trim?",
+          "dati": "SM = 0.08\nC_mdE = -1.25 1/rad",
+          "soluzione": "0.08/(-1.25)",
+          "verifica": {
+            "valore": -0.064,
+            "entro": 0.002
+          },
+          "hint": [
+            "$B \\approx SM/C_{m\\delta_E}$: margine statico diviso potenza dell'equilibratore.",
+            "Il margine e' positivo e $C_{m\\delta_E}$ negativo: il risultato e' negativo."
+          ],
+          "spiegazione": "$B = 0.08/(-1.25) = -0.064$ rad per unita' di $C_L$. Negativa, come deve essere: per trimmare un $C_L$ piu' grande (volo piu' lento) serve equilibratore verso l'alto. E il modulo dice quanto: raddoppiando il margine statico raddoppia anche la corsa richiesta."
+        },
+        {
+          "id": "d05-ct-6",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi la curva di trim in velocita': `delta_E` in funzione di `A`, `B`, del carico alare `W_S`, della densita' `rho` e della velocita' `V`.",
+          "soluzione": "A + B*(W_S/(0.5*rho*V^2))",
+          "verifica": {
+            "equivale": "A + B*(W_S/(0.5*rho*V^2))",
+            "usa": [
+              "A",
+              "B",
+              "W_S",
+              "rho",
+              "V"
+            ],
+            "senza": [
+              "C_L_trim"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "Sostituisci $C_{L,trim} = (W/S)/(\\frac{1}{2}\\rho V^2)$ nella curva in $C_L$."
+          ],
+          "spiegazione": "$\\delta_{E,eq} = A + B\\dfrac{W/S}{\\frac{1}{2}\\rho V^2}$. L'andamento e' **iperbolico**: ad alta velocita' la deflessione tende all'asintoto $A$, a bassa velocita' cresce in modulo. E' la curva che il pilota percorre ogni volta che cambia velocita' senza cambiare quota."
+        },
+        {
+          "id": "d05-ct-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo con $A = 0.06$ rad, $B = -0.075$ rad, carico alare $W/S = 3800$ Pa, vola a quota dove $\\rho = 0.74$ kg/m³. Quanti gradi di equilibratore servono a $V = 120$ m/s?",
+          "dati": "A = 0.06 rad\nB = -0.075 rad\nW/S = 3800 Pa\nrho = 0.74 kg/m^3\nV = 120 m/s",
+          "soluzione": "(0.06 - 0.075*(3800/(0.5*0.74*120^2)))*180/pi",
+          "verifica": {
+            "valore": 0.373,
+            "entro": 0.02
+          },
+          "hint": [
+            "Prima la pressione dinamica, poi il $C_{L,trim}$, poi la retta.",
+            "Il risultato in radianti va convertito in gradi."
+          ],
+          "spiegazione": "Pressione dinamica 5328 Pa, $C_{L,trim} = 3800/5328 = 0.713$, quindi $\\delta_E = 0.06 - 0.075 \\cdot 0.713 = 0.0065$ rad $= 0.37$ gradi. In crociera il trim si tocca appena: si e' vicini all'asintoto $A$ della curva, dove la deflessione smette di dipendere dalla velocita'."
+        },
+        {
+          "id": "d05-ct-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Stesso velivolo, in avvicinamento a $V = 70$ m/s con $\\rho = 1.20$ kg/m³. Quanti gradi di equilibratore servono ora?",
+          "dati": "A = 0.06 rad\nB = -0.075 rad\nW/S = 3800 Pa\nrho = 1.20 kg/m^3\nV = 70 m/s",
+          "soluzione": "(0.06 - 0.075*(3800/(0.5*1.20*70^2)))*180/pi",
+          "verifica": {
+            "valore": -2.115,
+            "entro": 0.04
+          },
+          "hint": [
+            "Stessa formula, altra pressione dinamica.",
+            "A bassa velocita' il $C_{L,trim}$ e' grande: aspettati una deflessione negativa, comando pull."
+          ],
+          "spiegazione": "Pressione dinamica 2940 Pa, $C_{L,trim} = 1.29$, quindi $\\delta_E = 0.06 - 0.097 = -0.037$ rad $= -2.1$ gradi: **pull**. Fra crociera e avvicinamento l'equilibratore si sposta di due gradi e mezzo. Con il baricentro piu' avanti la pendenza $|B|$ crescerebbe e quei due gradi e mezzo diventerebbero molti di piu': e' cosi' che nasce il limite anteriore di centraggio."
+        }
+      ]
+    },
+    {
+      "id": "d05-limiti",
+      "comando": "limiti di centraggio",
+      "titolo": "Alpha equivalente e i limiti di centraggio",
+      "esercizi": [
+        {
+          "id": "d05-li-1",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Che cosa succede quando il baricentro si sposta verso **prua**? Elenca le conseguenze corrette fra `SM_aumenta curva_piu_ripida controllo_piu_impegnativo SM_diminuisce curva_piu_piatta`.",
+          "soluzione": "SM_aumenta curva_piu_ripida controllo_piu_impegnativo",
+          "verifica": {
+            "insieme": [
+              "SM_aumenta",
+              "curva_piu_ripida",
+              "controllo_piu_impegnativo"
+            ]
+          },
+          "hint": [
+            "Baricentro piu' avanti vuol dire piu' distanza dal punto neutro.",
+            "La pendenza della curva di trim e' proporzionale al margine statico."
+          ],
+          "spiegazione": "Il baricentro avanti aumenta il margine statico, quindi $|B|$ cresce e la curva di trim diventa piu' ripida: a parita' di variazione di $C_L$ serve piu' corsa di equilibratore. Piu' stabile e piu' faticoso da governare — e' il compromesso che il limite anteriore di centraggio mette per iscritto."
+        },
+        {
+          "id": "d05-li-2",
+          "tipo": "numerico",
+          "difficolta": 2,
+          "testo": "Per un velivolo con baricentro **nel** punto neutro, quanto vale la pendenza `B` della curva di trim?",
+          "soluzione": "0",
+          "verifica": {
+            "valore": 0,
+            "entro": 1e-09
+          },
+          "hint": [
+            "$B$ e' proporzionale a $h_G - h_N$."
+          ],
+          "spiegazione": "$B = 0$: **tutti i $C_L$ vengono trimmati con la stessa deflessione**. E' la stabilita' neutra — il velivolo non ha una velocita' di trim preferita, e qualunque velocita' e' di equilibrio. Per un pilota e' una macchina che non torna da nessuna parte: sgradevole, e per i regolamenti inaccettabile."
+        },
+        {
+          "id": "d05-li-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi l'angolo d'attacco equivalente `alpha_star`, riferito alla linea a portanza nulla dell'intero velivolo, in funzione di `alpha`, `C_L0` e `C_La`.",
+          "soluzione": "alpha + C_L0/C_La",
+          "verifica": {
+            "equivale": "alpha + C_L0/C_La",
+            "usa": [
+              "alpha",
+              "C_L0",
+              "C_La"
+            ],
+            "dominio": {
+              "h_G": [
+                0.15,
+                0.4
+              ],
+              "h_N": [
+                0.3,
+                0.55
+              ],
+              "h_Nwb": [
+                0.2,
+                0.35
+              ],
+              "h_AC": [
+                0.2,
+                0.3
+              ],
+              "SM": [
+                0.02,
+                0.2
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_ma": [
+                -1.5,
+                -0.1
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "A": [
+                0.02,
+                0.2
+              ],
+              "B": [
+                -0.4,
+                -0.02
+              ],
+              "W_S": [
+                2000,
+                7000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ]
+            }
+          },
+          "hint": [
+            "E' l'angolo che si dovrebbe avere perche' la portanza fosse tutta proporzionale, senza termine noto.",
+            "Deve valere $C_L = C_{L\\alpha}\\alpha^*$."
+          ],
+          "spiegazione": "$\\alpha^* = \\alpha + \\dfrac{C_{L0}}{C_{L\\alpha}}$: si sposta l'origine degli angoli sulla linea a portanza nulla. Quando $\\alpha^* = 0$ si ha $C_L = 0$ e $C_m = C_{m0}$, che e' la definizione pulita di momento a portanza nulla — quella che serve per confrontare velivoli diversi senza dipendere da come e' stato disegnato l'asse $x_B$."
+        },
+        {
+          "id": "d05-li-4",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo ha $C_{L0} = 0.22$ e $C_{L\\alpha} = 5.0$ 1/rad. Vola a $\\alpha = 3$ gradi. Quanto vale $\\alpha^*$, in gradi?",
+          "soluzione": "3 + (0.22/5.0)*180/pi",
+          "verifica": {
+            "valore": 5.52,
+            "entro": 0.06
+          },
+          "hint": [
+            "Il rapporto e' in radianti: va convertito prima di sommarlo ai gradi."
+          ],
+          "spiegazione": "$C_{L0}/C_{L\\alpha} = 0.044$ rad $= 2.52$ gradi, quindi $\\alpha^* = 5.52$ gradi. Due gradi e mezzo di differenza fra l'angolo geometrico e quello equivalente: non e' un dettaglio, ed e' il motivo per cui confrontare $C_{m0}$ fra velivoli diversi ha senso solo nella forma coerente, riferita a portanza nulla."
+        },
+        {
+          "id": "d05-li-5",
+          "tipo": "ordina",
+          "difficolta": 3,
+          "testo": "Rimetti in ordine il ragionamento che porta al limite **anteriore** del baricentro.",
+          "passi": [
+            {
+              "id": "FO",
+              "testo": "Con la curva troppo ripida si arriva al fondo corsa dell'equilibratore prima di trimmare il C_L,max"
+            },
+            {
+              "id": "AV",
+              "testo": "Il baricentro si sposta verso prua, quindi x_G diminuisce"
+            },
+            {
+              "id": "TA",
+              "testo": "La posizione che porta a tangenza fra curva di trim e C_L,max fissa il limite anteriore"
+            },
+            {
+              "id": "PE",
+              "testo": "La pendenza |B| della curva di trim diventa piu' ripida"
+            },
+            {
+              "id": "MA",
+              "testo": "Il margine statico aumenta e C_m,alpha diventa piu' negativo"
+            }
+          ],
+          "soluzione": "AV MA PE FO TA",
+          "verifica": {
+            "ordine": [
+              "AV",
+              "MA",
+              "PE",
+              "FO",
+              "TA"
+            ]
+          },
+          "hint": [
+            "Si parte dal baricentro che si sposta e si arriva alla condizione di tangenza.",
+            "Il fondo corsa entra in gioco solo dopo che la curva e' diventata ripida."
+          ],
+          "spiegazione": "Baricentro avanti, margine statico maggiore, pendenza piu' ripida, fondo corsa raggiunto prima del $C_{L,max}$, condizione di tangenza che fissa il limite. Il limite posteriore e' una questione di **stabilita'**, l'anteriore di **controllabilita'**: sono due vincoli di natura diversa che chiudono l'escursione ammessa da due lati."
+        },
+        {
+          "id": "d05-li-6",
+          "tipo": "insieme",
+          "difficolta": 3,
+          "testo": "Quali limitazioni disegnano la scatola operativa attorno alla curva di trim nel piano $(V, \\delta_E)$? Elenca fra `velocita_di_stallo velocita_massima fondo_corsa_equilibratore punto_neutro margine_statico`.",
+          "soluzione": "velocita_di_stallo velocita_massima fondo_corsa_equilibratore",
+          "verifica": {
+            "insieme": [
+              "velocita_di_stallo",
+              "velocita_massima",
+              "fondo_corsa_equilibratore"
+            ]
+          },
+          "hint": [
+            "Due limiti sono in orizzontale, uno in verticale (in entrambi i versi).",
+            "Punto neutro e margine statico decidono la *forma* della curva, non i bordi del grafico."
+          ],
+          "spiegazione": "$V \\ge V_{st}$ a sinistra, $V \\le V_{max}$ a destra, $\\delta_{E,max,neg} \\le \\delta_E \\le \\delta_{E,max}$ in verticale. Punto neutro e margine statico non sono limiti del grafico: decidono la **pendenza** della curva che ci sta dentro, e quindi se la curva esce dalla scatola prima di aver coperto tutto il campo di velocita'."
+        },
+        {
+          "id": "d05-li-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo ha $C_{m\\delta_E} = -1.30$ 1/rad e fondo corsa $\\delta_{E,max,neg} = -20$ gradi. Con $A = 0.05$ rad, quale pendenza `B` porterebbe esattamente al fondo corsa nel trimmare $C_{L,max} = 1.6$?",
+          "dati": "C_mdE = -1.30 1/rad\ndelta_E,max,neg = -20 gradi\nA = 0.05 rad\nC_L,max = 1.6",
+          "soluzione": "(-20*pi/180 - 0.05)/1.6",
+          "verifica": {
+            "valore": -0.2494,
+            "entro": 0.004
+          },
+          "hint": [
+            "Imponi $\\delta_E = \\delta_{E,max,neg}$ quando $C_{L,trim} = C_{L,max}$.",
+            "Il fondo corsa va convertito in radianti."
+          ],
+          "spiegazione": "$B = (-0.349 - 0.05)/1.6 = -0.249$ rad. Qualunque pendenza piu' ripida di questa — cioe' qualunque margine statico maggiore — significa non riuscire a trimmare fino allo stallo. Confrontala con il $B = -0.075$ dell'esercizio precedente: c'e' un fattore tre di margine, ed e' li' che sta lo spazio di manovra del progettista sul centraggio."
+        },
+        {
+          "id": "d05-li-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Stesso velivolo. A quale margine statico corrisponde quella pendenza limite, sapendo che $B = -SM/C_{m\\delta_E}$?",
+          "dati": "B limite = -0.2494\nC_mdE = -1.30 1/rad",
+          "soluzione": "0.2494*1.30",
+          "verifica": {
+            "valore": 0.3242,
+            "entro": 0.006
+          },
+          "hint": [
+            "Inverti la relazione fra pendenza, margine statico e potenza dell'equilibratore."
+          ],
+          "spiegazione": "$SM = |B|\\,|C_{m\\delta_E}| = 0.249 \\cdot 1.30 = 0.32$, cioe' il 32% della corda. E' un margine enorme rispetto al 5% operativo: vuol dire che il **limite anteriore** vero, con questi numeri, non e' il fondo corsa in se' ma il margine ulteriore che si sottrae per lasciare capacita' di governo residua nelle richiamate. Il vincolo di progetto e' quasi sempre quello, non il fondo corsa nudo."
+        }
+      ]
+    }
+  ]
+}
