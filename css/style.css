@@ -204,6 +204,19 @@ button.minuscolo {
 }
 .tasto-storia:active { color: var(--acc); border-color: var(--acc); }
 
+/* Una formula su una riga sua. Se e' piu' larga dello schermo scorre lei,
+   senza portarsi dietro la pagina: su telefono e' la differenza fra leggibile
+   e inutilizzabile. */
+.formula {
+  overflow-x: auto; overflow-y: hidden;
+  margin: .8rem 0; padding: .2rem 0;
+}
+math { font-size: 1.05em; }
+/* Larghezza del contenuto e non della pagina: con min-width al 100% le
+   colonne di un sistema di equazioni si allargavano fino a staccare il primo
+   membro dal secondo. */
+math[display="block"] { display: block; width: max-content; max-width: none; }
+
 /* I passi di una dimostrazione da rimettere in ordine. */
 .passi { padding-left: 1.2rem; }
 .passi li { margin: .35rem 0; }

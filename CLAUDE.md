@@ -26,7 +26,7 @@ regole.
 - **Prima di ogni commit**, tutti e quattro:
 
   ```bash
-  node tools/check_app.mjs && node tools/test_shell.mjs && node tools/test_fisica.mjs && python tools/check_lezioni.py && python tools/check_moduli.py
+  node tools/check_app.mjs && node tools/test_shell.mjs && node tools/test_fisica.mjs && node tools/test_mate.mjs && python tools/check_lezioni.py && python tools/check_moduli.py
   ```
 
   Se uno fallisce non si committa: si sistema.
@@ -121,6 +121,13 @@ difficolta' crescente che finisce a 4, almeno il 40% fra `formula` e `numerico`
 (riconoscere non e' saper fare), e ogni esercizio con `soluzione`, `verifica` e
 `spiegazione`. `tools/test_fisica.mjs` riesegue ogni soluzione **e** prova una
 risposta storta: una verifica che accetta tutto e' peggio di nessuna verifica.
+
+Le formule delle lezioni si scrivono in **LaTeX** fra dollari — `$C_L$` in
+linea, `$$...$$` su una riga sua — e `js/mate.js` le traduce in MathML, che il
+browser disegna da solo: nessuna libreria da scaricare, e funziona offline come
+il resto. E' tradotto il sottoinsieme che serve (frazioni, indici, radici,
+greche, accenti, `aligned`); un comando ignoto compare a schermo com'e' scritto
+invece di sparire, e `test_mate.mjs` fallisce se ne resta uno in una lezione.
 
 La lezione scioglie i nomi come nel ramo Linux: *trim* viene dall'assettare le
 vele, `gamma` e' il *flight path angle*. E i numeri degli esercizi vengono da

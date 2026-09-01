@@ -23,6 +23,7 @@ const PRECACHE = [
   "js/scheduler.js",
   "js/storage.js",
   "js/md.js",
+  "js/mate.js",
   "js/percorso.js",
   "js/vfs.js",
   "js/shell.js",

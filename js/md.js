@@ -1,17 +1,34 @@
-// Markdown minimo: blocchi di codice, titoli, liste, inline code, grassetto.
+// Markdown minimo: blocchi di codice, titoli, liste, inline code, grassetto, e
+// le formule fra dollari, che passano da mate.js e diventano MathML.
 // ponytail: basta per il testo delle lezioni. Se un giorno serve altro -> marked.js.
+
+import { formula } from "./mate.js";
 
 const esc = (s) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export function md(src = "") {
   const code = [];
-  // I blocchi ``` vengono estratti prima di tutto, così il loro contenuto
-  // non viene toccato dalle regole inline. Sentinella improbabile in prosa.
-  let t = esc(src).replace(/```(?:\w+)?\n([\s\S]*?)```/g, (_, c) => {
+  const formule = [];
+  // I blocchi ``` e le formule si estraggono prima di tutto, così il loro
+  // contenuto non viene toccato dalle regole inline né dall'escape: il LaTeX è
+  // pieno di barre e di & che il markdown non deve vedere. Sentinelle
+  // improbabili in prosa.
+  let t = String(src).replace(/```(?:\w+)?\n([\s\S]*?)```/g, (_, c) => {
     code.push(c.replace(/\n+$/, ""));
     return `@@CODE${code.length - 1}@@`;
   });
+  // Una formula a blocco può essere più larga dello schermo: scorre da sola,
+  // senza portarsi dietro tutta la pagina.
+  t = t.replace(/\$\$([\s\S]+?)\$\$/g, (_, f) => {
+    formule.push(`<div class="formula">${formula(f, true)}</div>`);
+    return `@@MATE${formule.length - 1}@@`;
+  });
+  t = t.replace(/\$([^$\n]+?)\$/g, (_, f) => {
+    formule.push(formula(f, false));
+    return `@@MATE${formule.length - 1}@@`;
+  });
+  t = esc(t);
 
   t = t
     .replace(/`([^`\n]+)`/g, "<code>$1</code>")
@@ -22,7 +39,7 @@ export function md(src = "") {
     .map((b) => {
       b = b.trim();
       if (!b) return "";
-      if (/^@@CODE\d+@@$/.test(b)) return b;
+      if (/^@@CODE\d+@@$/.test(b) || /^@@MATE\d+@@$/.test(b)) return b;
       if (b.startsWith("### ")) return `<h4>${b.slice(4)}</h4>`;
       if (b.startsWith("## ")) return `<h3>${b.slice(3)}</h3>`;
       if (tabella(b)) return tabella(b);
@@ -32,7 +49,9 @@ export function md(src = "") {
     })
     .join("");
 
-  return html.replace(/@@CODE(\d+)@@/g, (_, i) => `<pre><code>${code[i]}</code></pre>`);
+  return html
+    .replace(/@@CODE(\d+)@@/g, (_, i) => `<pre><code>${esc(code[i])}</code></pre>`)
+    .replace(/@@MATE(\d+)@@/g, (_, i) => formule[i]);
 }
 
 // Tabella pipe: intestazione, riga di separatori, righe. Restituisce null se il
