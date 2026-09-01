@@ -121,6 +121,11 @@ export const RETE = {
   ip(sh, args) {
     const r = rete(sh);
     const [che, ...resto] = args;
+    // `ip link show` e `ip link` sono la stessa cosa; `ip link zibaldone` no.
+    const LETTURA = new Set(["show", "list", "s", "l", undefined]);
+    const soloLettura = (dopo) => {
+      if (!LETTURA.has(dopo)) throw new ErroreFs(`comando "${dopo}" sconosciuto`);
+    };
 
     if (che === "addr" || che === "a" || che === "address") {
       if (resto[0] === "add" || resto[0] === "del") {
@@ -130,6 +135,7 @@ export const RETE = {
         i.indirizzo = azione === "add" ? cidr : null;
         return "";
       }
+      soloLettura(resto[0]);
       return Object.entries(r.interfacce)
         .map(([nome, i], n) =>
           `${n + 1}: ${nome}: <BROADCAST,MULTICAST${i.stato === "up" ? ",UP,LOWER_UP" : ""}> state ${i.stato.toUpperCase()}` +
@@ -148,6 +154,7 @@ export const RETE = {
         i.stato = stato;
         return "";
       }
+      soloLettura(resto[0]);
       return Object.entries(r.interfacce)
         .map(([nome, i], n) => `${n + 1}: ${nome}: state ${i.stato.toUpperCase()}`)
         .join("\n");
@@ -156,9 +163,11 @@ export const RETE = {
     if (che === "route" || che === "r") {
       if (resto[0] === "add" || resto[0] === "del") {
         if (resto[1] !== "default") throw new ErroreFs("qui si gestisce solo la rotta default");
+        if (resto[0] === "add" && resto[2] !== "via") throw new ErroreFs('manca "via" prima del gateway');
         r.gateway = resto[0] === "add" ? resto[3] : null;
         return "";
       }
+      soloLettura(resto[0]);
       const iface = uscita(sh);
       const righe = [];
       if (r.gateway) righe.push(`default via ${r.gateway} dev ${iface ? iface[0] : "enp0s3"}`);

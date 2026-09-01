@@ -37,6 +37,8 @@ import { SICUREZZA, statoSicurezza } from "../js/sicurezza.js";
 import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
 
 const TUTTO = process.argv.includes("--tutto");
+// --caso l17-df-3: mostra base e mutazione fianco a fianco, per capire perche'
+const CASO = (process.argv.find((a) => a.startsWith("--caso=")) || "").slice(7);
 const CAPO = String.fromCharCode(10);
 
 /** Prepara la shell dell'esercizio, con gli stessi moduli che monta l'app. */
@@ -105,11 +107,12 @@ function prova(es, testo) {
   } catch (e) {
     return { crash: String((e && e.message) || e), uscita: "", ok: false };
   }
-  const uscita = t.map((r) => (r.out ?? "") + (r.errore ?? "")).join(CAPO);
+  const perRiga = t.map((r) => (r.out ?? "") + (r.errore ?? ""));
+  const uscita = perRiga.join(CAPO);
   try {
-    return { crash: null, uscita, ok: verifica(sh, es.verifica, t).ok };
+    return { crash: null, uscita, perRiga, ok: verifica(sh, es.verifica, t).ok };
   } catch (e) {
-    return { crash: String((e && e.message) || e), uscita, ok: false };
+    return { crash: String((e && e.message) || e), uscita, perRiga, ok: false };
   }
 }
 
@@ -128,6 +131,7 @@ function assurdo(tok) {
 
 const indice = JSON.parse(readFileSync(new URL("../content/index.json", import.meta.url)));
 const bugie = [];
+const deboli = new Map(); // esercizi che passano con la soluzione tutta rovinata
 const cieche = [];
 const crash = [];
 let provati = 0;
@@ -145,6 +149,22 @@ for (const meta of indice.moduli) {
       }
       const righe = es.soluzione.split(CAPO);
 
+      // Soluzione rovinata da cima a fondo: ogni argomento di ogni riga
+      // sostituito. Se la verifica passa lo stesso, non sta controllando
+      // niente — l'esercizio si supera senza risolverlo.
+      const tutteRovinate = righe.map((riga) => {
+        const parole = dividi(riga).parole;
+        return parole
+          .map((p, k) => (k === 0 ? p : (assurdo(p) ?? p)))
+          .join(" ");
+      });
+      // Se non c'era niente da rovinare (`pwd`, `df -h`) non si conclude niente.
+      const testoRovinato = tutteRovinate.join(CAPO);
+      if (testoRovinato !== righe.map((r) => dividi(r).parole.join(" ")).join(CAPO)) {
+        const rovinata = prova(es, testoRovinato);
+        if (!rovinata.crash && rovinata.ok) deboli.set(es.id, tutteRovinate.join(" ; "));
+      }
+
       for (let i = 0; i < righe.length; i++) {
         const parole = dividi(righe[i]).parole;
         if (!parole.length) continue;
@@ -160,8 +180,20 @@ for (const meta of indice.moduli) {
           alt[i] = mutate.join(" ");
           provati++;
           const r = prova(es, alt.join(CAPO));
+          if (CASO && es.id === CASO) {
+            console.log("  " + alt[i] + "   [" + parole[k] + " -> " + nuovo + "]");
+            console.log("      base:   " + JSON.stringify(base.uscita).slice(0, 160));
+            console.log("      mutata: " + JSON.stringify(r.uscita).slice(0, 160) + "  verifica=" + r.ok);
+          }
           if (r.crash) crash.push([es.id, alt[i], r.crash]);
-          else if (r.uscita === base.uscita && r.ok) {
+          // Si guarda la riga mutata, non la trascrizione: se quella riga
+          // gia' falliva per conto suo, l'argomento non c'entra niente.
+          else if (
+            r.uscita === base.uscita &&
+            r.ok &&
+            (base.perRiga[i] ?? "") === (r.perRiga[i] ?? "") &&
+            !/^[a-z.-]+: /.test(base.perRiga[i] ?? "")
+          ) {
             bugie.push([es.id, comando, parole[k], nuovo, righe[i]]);
           }
         }
@@ -191,6 +223,11 @@ console.log(CAPO + "ARGOMENTO IGNORATO — stessa risposta con un valore assurdo
 for (const [c, n] of perComando(bugie)) console.log("  " + c.padEnd(16) + n);
 console.log(CAPO + "OPZIONE IGNOTA ACCETTATA — `-Zq` non provoca nessuna protesta (" + cieche.length + ")");
 for (const [c, n] of perComando(cieche)) console.log("  " + c.padEnd(16) + n);
+console.log(CAPO + "VERIFICA VACUA — passa anche con la soluzione tutta rovinata (" + deboli.size + ")");
+for (const [id, prima] of [...deboli].slice(0, TUTTO ? 1e9 : 40)) {
+  console.log("  " + id.padEnd(12) + prima);
+}
+
 if (crash.length) {
   console.log(CAPO + "CRASH (" + crash.length + ")");
   for (const [id, riga, msg] of crash.slice(0, 40)) console.log("  " + id + "  " + riga + "  -> " + msg);

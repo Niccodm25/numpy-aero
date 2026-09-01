@@ -75,6 +75,26 @@ export function statoPrestazioni(sh, scenario = {}) {
 
 const p = (sh) => sh.prestazioni;
 
+/**
+ * Il programma da misurare deve esistere. `strace -c python manca.py` su una
+ * macchina vera si ferma subito; senza questo controllo il simulatore
+ * rispondeva con le stesse statistiche anche per un file inventato, e cosi'
+ * insegnava che strace misura qualcosa che non c'e'.
+ *
+ * ponytail: i numeri restano quelli dichiarati dallo scenario dell'esercizio.
+ * Modellare le syscall di un programma qualunque costerebbe un interprete e
+ * non insegnerebbe niente in piu' — la lezione dice che sono i numeri di
+ * questo banco, non una misura fatta adesso.
+ */
+function bersaglio(sh, args) {
+  const liberi = args.filter((a) => !a.startsWith("-"));
+  if (!liberi.length) throw new V.ErroreFs("manca il comando da misurare");
+  const script = liberi.find((a) => a.includes("."));
+  if (script && !V.esiste(sh.fs, script)) {
+    throw new V.ErroreFs(`${script}: file o directory non esistente`);
+  }
+}
+
 export const PRESTAZIONI = {
   /** Il riassunto in cima a top e' la prima cosa da leggere: carico, stato
    *  della CPU divisa per tipo, memoria. I processi vengono dopo. */
@@ -132,6 +152,7 @@ export const PRESTAZIONI = {
    *  subito se un programma sta facendo un milione di letture da 4 KB. */
   strace(sh, args) {
     const s = p(sh);
+    bersaglio(sh, args);
     if (args.includes("-c")) {
       const totale = s.syscall.reduce((t, [, n]) => t + n, 0);
       return [
@@ -150,6 +171,7 @@ export const PRESTAZIONI = {
   perf(sh, args) {
     if (!args.includes("stat")) throw new V.ErroreFs("qui perf capisce solo: perf stat COMANDO");
     const s = p(sh);
+    bersaglio(sh, args.slice(args.indexOf("stat") + 1));
     return [
       " Performance counter stats:",
       `        ${s.cpu.utente * 21}0,000,000      cycles`,

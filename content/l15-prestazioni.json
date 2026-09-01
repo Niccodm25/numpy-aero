@@ -404,7 +404,9 @@
           "prestazioni": {
             "caso": "disco"
           },
-          "filesystem": {},
+          "filesystem": {
+            "/home/tu/riduci.py": "# il programma da misurare\nleggi()\n"
+          },
           "soluzione": "strace -c python riduci.py",
           "verifica": {
             "stampa": "51200",
@@ -426,7 +428,9 @@
           "prestazioni": {
             "caso": "cpu"
           },
-          "filesystem": {},
+          "filesystem": {
+            "/home/tu/simula.py": "# il programma da misurare\nleggi()\n"
+          },
           "soluzione": "strace -c python simula.py",
           "verifica": {
             "stampa": "clock_gettime",
@@ -448,7 +452,9 @@
           "prestazioni": {
             "caso": "cpu"
           },
-          "filesystem": {},
+          "filesystem": {
+            "/home/tu/simula.py": "# il programma da misurare\nleggi()\n"
+          },
           "soluzione": "perf stat python simula.py",
           "verifica": {
             "stampa": "insn per cycle",
@@ -554,7 +560,9 @@
           "prestazioni": {
             "caso": "disco"
           },
-          "filesystem": {},
+          "filesystem": {
+            "/home/tu/riduci.py": "# il programma da misurare\nleggi()\n"
+          },
           "soluzione": "uptime > analisi_prestazioni.txt\nvmstat >> analisi_prestazioni.txt\niostat >> analisi_prestazioni.txt\nstrace -c python riduci.py >> analisi_prestazioni.txt\ngrep read analisi_prestazioni.txt",
           "verifica": {
             "contiene": {

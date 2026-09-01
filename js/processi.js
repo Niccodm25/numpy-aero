@@ -66,9 +66,19 @@ function trovaLavoro(sh, args) {
 
 export const PROCESSI = {
   ps(sh, args) {
-    const testo = args.join(" ");
     // "ps aux" mostra tutto, "ps" da solo mostra i processi di questa shell.
-    const tutti = /a/.test(testo) || /-e/.test(testo) || /-A/.test(testo);
+    // Le sigle si controllano una per una: prima bastava una "a" in mezzo a
+    // qualunque parola, e `ps zibaldone` rispondeva come `ps aux`.
+    const BSD = new Set(["a", "u", "x", "ax", "aux", "auxw", "ux"]);
+    let tutti = false;
+    for (const a of args) {
+      if (a.startsWith("-")) {
+        if (/[eA]/.test(a)) tutti = true;
+        continue;
+      }
+      if (!BSD.has(a)) throw new ErroreFs(`sigla non riconosciuta: ${a}`);
+      if (a.includes("a") || a.includes("x")) tutti = true;
+    }
     const righe = tutti ? suoi(sh) : suoi(sh).filter((p) => p.utente === (sh.fs.utente ?? "tu"));
     return [
       "UTENTE      PID  %CPU  S  COMANDO",

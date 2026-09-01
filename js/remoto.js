@@ -67,6 +67,11 @@ function daConfig(sh, alias) {
   return Object.keys(out).length ? out : null;
 }
 
+/** La chiave privata che c'e', qualunque tipo abbia scelto chi l'ha generata. */
+const NOMI_CHIAVE = ["id_ed25519", "id_rsa", "id_ecdsa"];
+const chiavePrivata = (fs) =>
+  NOMI_CHIAVE.map((n) => `/home/tu/.ssh/${n}`).find((p) => V.esiste(fs, p)) ?? null;
+
 /** Perche' il server non ti fa entrare. null = ti fa entrare. */
 function rifiuto(sh, dest) {
   const r = sh.remoto;
@@ -74,8 +79,8 @@ function rifiuto(sh, dest) {
   if (!nomiValidi.includes(dest.host)) return `${dest.host}: host non raggiungibile`;
   if (dest.porta !== r.porta) return `connessione rifiutata sulla porta ${dest.porta}`;
 
-  const priv = "/home/tu/.ssh/id_ed25519";
-  if (!V.esiste(sh.fs, priv))
+  const priv = chiavePrivata(sh.fs);
+  if (!priv)
     return r.soloChiavi
       ? `${dest.utente}@${dest.host}: Permission denied (publickey) — non hai una chiave`
       : null;
@@ -138,24 +143,34 @@ export const REMOTO = {
     return eseguiRemoto(sh, comando.replace(/^["']|["']$/g, ""));
   },
 
-  "ssh-keygen"(sh) {
+  "ssh-keygen"(sh, args = []) {
+    // Il tipo decide il nome dei file, ed e' il motivo per cui su una macchina
+    // vecchia trovi id_rsa e su una nuova id_ed25519. Prima veniva ignorato:
+    // `ssh-keygen -t zibaldone` generava una chiave ed25519 come niente fosse.
+    const TIPI = { ed25519: "id_ed25519", rsa: "id_rsa", ecdsa: "id_ecdsa" };
+    const t = args.indexOf("-t");
+    const tipo = t >= 0 ? args[t + 1] : "rsa";
+    if (t >= 0 && !tipo) throw new V.ErroreFs("manca il tipo dopo -t");
+    if (!TIPI[tipo]) throw new V.ErroreFs(`unknown key type ${tipo}`);
+    const nome = TIPI[tipo];
+
     const dir = "/home/tu/.ssh";
     V.creaDir(sh.fs, dir, true);
-    V.scrivi(sh.fs, `${dir}/id_ed25519`, "PRIVATE KEY — non esce mai da questa macchina\n");
-    sh.fs.nodi.get(V.normalizza(sh.fs, `${dir}/id_ed25519`)).modo = 0o600;
-    V.scrivi(sh.fs, `${dir}/id_ed25519.pub`, PUBBLICA + "\n");
-    return `Generata la coppia in ${dir}/id_ed25519 e ${dir}/id_ed25519.pub`;
+    V.scrivi(sh.fs, `${dir}/${nome}`, "PRIVATE KEY — non esce mai da questa macchina\n");
+    sh.fs.nodi.get(V.normalizza(sh.fs, `${dir}/${nome}`)).modo = 0o600;
+    V.scrivi(sh.fs, `${dir}/${nome}.pub`, PUBBLICA + "\n");
+    return `Generata la coppia in ${dir}/${nome} e ${dir}/${nome}.pub`;
   },
 
   "ssh-copy-id"(sh, args) {
     const spec = args.filter((a) => !a.startsWith("-")).at(-1);
     if (!spec) throw new V.ErroreFs("manca utente@host");
-    if (!V.esiste(sh.fs, "/home/tu/.ssh/id_ed25519.pub"))
+    if (!chiavePrivata(sh.fs))
       throw new V.ErroreFs("nessuna chiave pubblica da copiare: prima ssh-keygen");
     const dest = destinazione(sh, spec, null);
     if (![sh.remoto.nome, `${sh.remoto.nome}.univ.it`].includes(dest.host))
       throw new V.ErroreFs(`${dest.host}: host non raggiungibile`);
-    autorizza(sh, V.leggi(sh.fs, "/home/tu/.ssh/id_ed25519.pub").trim());
+    autorizza(sh, V.leggi(sh.fs, chiavePrivata(sh.fs) + ".pub").trim());
     return "1 chiave aggiunta. Ora prova a entrare senza password.";
   },
 

@@ -37,7 +37,12 @@ export function statoDischi(sh, scenario = {}) {
 }
 
 const d = (sh) => sh.dischi;
-const nomeDispositivo = (x) => (x.startsWith("/dev/") ? x : `/dev/${x}`);
+// Il nome puo' mancare del tutto — `resize2fs` da solo, `cryptsetup luksFormat`
+// senza dispositivo: si risponde come il comando vero, non con un crash.
+const nomeDispositivo = (x) => {
+  if (!x) throw new V.ErroreFs("manca il dispositivo");
+  return x.startsWith("/dev/") ? x : `/dev/${x}`;
+};
 
 function dispositivo(sh, nome) {
   const dev = d(sh).dispositivi[nomeDispositivo(nome)];
