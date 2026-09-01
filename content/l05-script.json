@@ -294,7 +294,10 @@
             "stampa": "rwxr-xr-x",
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "raccogli.sh": "755"
+            }
           },
           "hint": [
             "chmod +x seguito dal nome.",
@@ -674,7 +677,10 @@
             "usa": [
               "bash",
               "echo"
-            ]
+            ],
+            "contiene": {
+              "sicuro.sh": "set -eu"
+            }
           },
           "hint": [
             "Tre righe nello script, poi lancialo e guarda se il file esiste.",

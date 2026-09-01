@@ -30,6 +30,17 @@ regole.
   ```
 
   Se uno fallisce non si committa: si sistema.
+- **Dopo aver toccato un comando**, anche la sonda:
+
+  ```bash
+  node tools/sonda_comandi.mjs
+  ```
+
+  Non ha un esito da passare: rovina gli argomenti di ogni soluzione e dice
+  quali comandi rispondono uguale lo stesso, quali accettano un'opzione che non
+  esiste, e quali esercizi si superano con la soluzione tutta sbagliata. I
+  numeri devono scendere, mai salire. `--tutto` elenca i casi, `--caso=ID` e
+  `--uscita=ID` mostrano un esercizio solo.
 - **Ogni file nuovo in `js/` va aggiunto al `PRECACHE` di `sw.js`**, altrimenti
   l'app funziona online e resta bianca offline. `check_app.mjs` lo verifica.
 
@@ -68,7 +79,10 @@ Regole di sostanza — non automatizzabili, ma non negoziabili:
   lo modifica davvero — oppure quell'argomento si insegna con un `predict`
   onesto, dicendo nella lezione che sulla macchina vera è diverso.
 - **Ogni esercizio `terminale` ha una `verifica` che guarda lo stato**, non solo
-  `usa`. Se l'unica verifica è quale comando hai digitato, l'esercizio non
+  `usa`. Le chiavi disponibili: `cwd esiste nonEsiste dir contenuto contiene
+  nonContiene modo punta stampa nonStampa errore usa`. Un esercizio sui permessi
+  usa `modo`, uno sui collegamenti `punta`, e uno che toglie qualcosa `nonStampa`
+  o `nonContiene` — altrimenti passa anche chi non ha fatto niente. Se l'unica verifica è quale comando hai digitato, l'esercizio non
   controlla se hai ottenuto qualcosa.
 - **La difficoltà sale dentro la raccolta**: 1-3 il comando da solo, 4-6 con le
   opzioni che contano, 7-8 lo scenario che combina. Il campo `difficolta` lo
@@ -77,6 +91,10 @@ Regole di sostanza — non automatizzabili, ma non negoziabili:
   rompono le cose davvero: disco pieno, permesso sbagliato dopo un `sudo`,
   variabile vuota, log ruotato, servizio che non riparte dopo il riavvio, chiave
   ssh con i permessi troppo aperti.
+- **Niente opzioni inventate.** Un comando riconosce le opzioni elencate in
+  `js/opzioni.js` e rifiuta le altre. Se un esercizio ha bisogno di
+  un'opzione nuova, prima la si implementa e la si aggiunge alla tabella: non
+  si scrive nell'esercizio sperando che passi.
 - **Ogni soluzione viene rieseguita dai test.** `tools/test_shell.mjs` esegue le
   soluzioni `terminale` contro la loro stessa `verifica`: se un esercizio non
   passa, l'esercizio è sbagliato, non il test.

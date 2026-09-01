@@ -123,12 +123,16 @@
           "soluzione": "cp analisi.conf analisi.conf.bak\nsed -i 's/soglia=10/soglia=25/' analisi.conf\ngrep soglia analisi.conf",
           "verifica": {
             "contiene": {
-              "analisi.conf": "soglia=25"
+              "analisi.conf": "soglia=25",
+              "analisi.conf.bak": "soglia=10"
             },
             "stampa": "soglia=25",
             "usa": [
               "sed",
               "grep"
+            ],
+            "esiste": [
+              "analisi.conf.bak"
             ]
           },
           "hint": [

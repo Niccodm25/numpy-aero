@@ -153,6 +153,9 @@ export const PROCESSI = {
     // ponytail: si controlla il file, non il programma. In questo modulo
     // `python` e' un segnaposto — l'interprete vero sta nel ramo Python — e
     // pretenderlo qui vorrebbe dire montare mezzo ramo per il job control.
+    const INTERPRETI = ["python", "python3", "bash", "sh", "perl"];
+    if (!sh.comandi?.[args[0]] && !INTERPRETI.includes(args[0]) && !esiste(sh.fs, args[0]))
+      throw new ErroreFs(`${args[0]}: comando non trovato`);
     const script = args.slice(1).find((a) => !a.startsWith("-") && a.includes("."));
     if (script && !esiste(sh.fs, script)) {
       throw new ErroreFs(`${script}: file o directory non esistente`);

@@ -294,7 +294,10 @@
           "filesystem": {},
           "soluzione": "free -h\ntop | grep python",
           "verifica": {
-            "stampa": "91",
+            "stampa": [
+              "91 D python monte_carlo.py",
+              "Swap:"
+            ],
             "usa": [
               "free",
               "top"

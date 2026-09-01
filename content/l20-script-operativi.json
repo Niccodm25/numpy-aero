@@ -517,7 +517,10 @@
             "usa": [
               "bash",
               "ls"
-            ]
+            ],
+            "contiene": {
+              "rotto.sh": "trap"
+            }
           },
           "hint": [
             "set -e ferma allo sbaglio, trap pulisce lo stesso.",

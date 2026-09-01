@@ -218,10 +218,15 @@ export const HARDWARE = {
     return `${chiave} = ${letto}`;
   },
 
-  dmesg(sh, args) {
-    const righe = h(sh).log;
-    const n = args.includes("-n") ? Number(args[args.indexOf("-n") + 1]) : null;
-    return (n ? righe.slice(-n) : righe).join("\n");
+  /**
+   * Il registro del kernel, dall'avvio in poi.
+   *
+   * Senza opzioni: su dmesg vero `-n` cambia il livello dei messaggi che
+   * finiscono in console, non quanti se ne stampano. Qui faceva "le ultime N
+   * righe", che e' proprio la cosa per cui si scrive `dmesg | tail -n 3`.
+   */
+  dmesg(sh) {
+    return h(sh).log.join("\n");
   },
 
   uname(sh, args) {

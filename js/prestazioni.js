@@ -108,7 +108,11 @@ function bersaglio(sh, args) {
 export const PRESTAZIONI = {
   /** Il riassunto in cima a top e' la prima cosa da leggere: carico, stato
    *  della CPU divisa per tipo, memoria. I processi vengono dopo. */
-  top(sh) {
+  top(sh, args = []) {
+    // top vero non prende nomi di processo: chi ci prova cerca `pgrep` o
+    // `ps aux | grep`. Prima qui l'argomento veniva ignorato in silenzio.
+    const libero = args.find((a) => !a.startsWith("-"));
+    if (libero) throw new V.ErroreFs(`argomento non riconosciuto: ${libero}`);
     const s = p(sh);
     const m = s.memoria;
     return [

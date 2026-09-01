@@ -102,6 +102,9 @@
             "usa": [
               "tar",
               "rm"
+            ],
+            "esiste": [
+              "dati.tar.gz"
             ]
           },
           "hint": [

@@ -84,7 +84,7 @@ export const OPZIONI = {
   env: {},
   export: {},
   sysctl: { c: "apw" },
-  dmesg: { c: "n", v: "n", num: true },
+  dmesg: {},
   journalctl: { c: "nufb", v: "nu", num: true },
   systemctl: { c: "", l: ["failed", "now", "all"] },
   "systemd-run": { wrap: true, c: "p", v: "p", l: ["scope"] },

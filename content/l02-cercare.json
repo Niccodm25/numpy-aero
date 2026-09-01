@@ -645,7 +645,8 @@
             "usa": [
               "grep",
               "head"
-            ]
+            ],
+            "nonStampa": "quota fuori scala"
           },
           "hint": [
             "Prima filtra, poi taglia.",
@@ -653,7 +654,7 @@
           ],
           "spiegazione": "L'ordine conta: filtrare e poi tagliare da' le prime tre righe **fra quelle di errore**; tagliare e poi filtrare darebbe gli errori fra le prime tre righe, che e' un'altra domanda.\n\nÈ l'errore piu' comune nelle pipeline, e non produce nessun messaggio: solo un risultato sbagliato.",
           "filesystem": {
-            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n",
+            "/home/tu/volo/log.txt": "2026-08-29 10:00 INFO avvio\n2026-08-29 10:01 ERROR sensore quota\n2026-08-29 10:02 INFO ripristinato\n2026-08-29 10:05 error timeout\n2026-08-29 10:07 WARN batteria bassa\n2026-08-29 10:09 ERROR sensore quota\n2026-08-29 10:11 ERROR quota fuori scala\n",
             "/home/tu/volo/dati/prova1.csv": "quota,mach\n9000,0.82\n",
             "/home/tu/volo/dati/prova2.csv": "quota,mach\n3000,0.40\n",
             "/home/tu/codici.txt": "E12\nE07\nE12\n"

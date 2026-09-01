@@ -92,7 +92,7 @@
           "testo": "Guarda cosa ha detto il kernel quando hai infilato il cavo: le ultime righe del suo registro.",
           "hardware": true,
           "filesystem": {},
-          "soluzione": "dmesg -n 3",
+          "soluzione": "dmesg | tail -n 3",
           "verifica": {
             "stampa": "RTL2838UHIDIR",
             "usa": [
@@ -101,7 +101,7 @@
           },
           "hint": [
             "-n limita alle ultime righe.",
-            "dmesg -n 3"
+            "dmesg | tail -n 3"
           ],
           "spiegazione": "`dmesg` (*display message*) e' il registro del **kernel**, non dei servizi: hardware, driver, dischi. Il momento in cui un dispositivo viene collegato compare qui, con il nome che il dispositivo dichiara di avere.\n\nÈ la prima cosa da guardare dopo aver collegato qualcosa: se in `dmesg` non compare niente, il cavo non sta comunicando."
         },
@@ -135,7 +135,7 @@
           "testo": "Verifica anche dal lato del registro del kernel che il driver si sia legato, e salva la prova in `driver.txt`.",
           "hardware": true,
           "filesystem": {},
-          "soluzione": "modprobe dvb_usb_rtl28xxu\ndmesg -n 2 > driver.txt\ncat driver.txt",
+          "soluzione": "modprobe dvb_usb_rtl28xxu\ndmesg | tail -n 2 > driver.txt\ncat driver.txt",
           "verifica": {
             "contiene": {
               "driver.txt": "swradio0"
@@ -147,7 +147,7 @@
           },
           "hint": [
             "Carica il modulo, poi salva le ultime righe di dmesg.",
-            "dmesg -n 2 > driver.txt"
+            "dmesg | tail -n 2 > driver.txt"
           ],
           "spiegazione": "Il registro conserva la sequenza: dispositivo collegato, driver legato, file creato. Allegare queste righe a una segnalazione vale piu' di «non funziona» — e se il produttore chiede il modello esatto, sta scritto li'."
         },
@@ -273,7 +273,8 @@
             "usa": [
               "modprobe",
               "lsmod"
-            ]
+            ],
+            "nonStampa": "e1000e"
           },
           "hint": [
             "Quello con Used by a zero.",
@@ -290,7 +291,10 @@
           "filesystem": {},
           "soluzione": "modprobe -r e1000e\nlshw\nmodprobe e1000e\nlshw",
           "verifica": {
-            "stampa": "link=yes",
+            "stampa": [
+              "link=no",
+              "link=yes"
+            ],
             "usa": [
               "modprobe",
               "lshw"

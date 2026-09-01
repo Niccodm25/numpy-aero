@@ -429,7 +429,7 @@
               "avvia",
               "esci"
             ],
-            "stampa": "terminati"
+            "stampa": "1 processi terminati con lui"
           },
           "hint": [
             "avvia, poi esci per chiudere il terminale.",

@@ -133,7 +133,12 @@ export const RETE = {
 
     if (che === "addr" || che === "a" || che === "address") {
       if (resto[0] === "add" || resto[0] === "del") {
-        const [azione, cidr, , nome] = resto;
+        const [azione, cidr, parola, nome] = resto;
+        // `ip addr add 192.168.1.42/24 dev enp0s3`: l'indirizzo e' un indirizzo
+        // con la maschera, e "dev" ci va. Prima si leggeva solo la posizione.
+        if (!/^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/.test(cidr ?? ""))
+          throw new ErroreFs(`${cidr ?? "(niente)"}: serve un indirizzo con la maschera, tipo 192.168.1.42/24`);
+        if (parola !== "dev") throw new ErroreFs(`manca "dev" prima del nome dell'interfaccia`);
         const i = r.interfacce[nome];
         if (!i) throw new ErroreFs(`interfaccia ${nome} sconosciuta`);
         i.indirizzo = azione === "add" ? cidr : null;

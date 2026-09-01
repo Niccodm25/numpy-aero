@@ -859,11 +859,12 @@
           "filesystem": {},
           "soluzione": "cryptsetup luksOpen /dev/sdb1 sicuro\nmkdir /sicuro\nmkfs.ext4 /dev/mapper/sicuro\nmount /dev/mapper/sicuro /sicuro\numount /sicuro\ncryptsetup luksClose sicuro\nmount",
           "verifica": {
-            "stampa": "/dev/nvme0n1p1 on /",
+            "stampa": "/dev/mapper/sicuro chiuso.",
             "usa": [
               "cryptsetup",
               "umount"
-            ]
+            ],
+            "nonStampa": "/dev/mapper/sicuro on "
           },
           "hint": [
             "Prima si smonta, poi si chiude il volume.",

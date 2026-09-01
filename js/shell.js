@@ -1049,7 +1049,11 @@ export function verifica(sh, attesa, trascrizione = []) {
 
   if (attesa.stampa !== undefined) {
     const uscite = trascrizione.map((t) => t.out).filter(Boolean).join("\n");
-    if (!uscite.includes(attesa.stampa)) p(`l'output non contiene "${attesa.stampa}"`);
+    // Una stringa o un elenco: certi esercizi si dimostrano solo con due righe
+    // insieme — il prima e il dopo di un modulo tolto e rimesso.
+    for (const pezzo of [].concat(attesa.stampa)) {
+      if (!uscite.includes(pezzo)) p(`l'output non contiene "${pezzo}"`);
+    }
   }
 
   // Alcuni esercizi chiedono di **riprodurre** un guasto: li' il risultato
