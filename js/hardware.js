@@ -19,6 +19,10 @@ import * as V from "./vfs.js";
 const PROC_SYS = "/proc/sys";
 
 export function statoHardware(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.hardware = {
     pci: scenario.pci ?? [
       { slot: "00:02.0", classe: "VGA compatible controller", nome: "GPU integrata", modulo: "i915" },

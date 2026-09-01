@@ -13,6 +13,10 @@ import * as V from "./vfs.js";
 
 /** Aggiunge a una shell il mondo degli interpreti. Da passare a creaShell. */
 export function statoAmbienti(sh, interpreti = {}) {
+  // Lo interpreti arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  interpreti = structuredClone(interpreti);
   sh.interpreti = {};
   for (const [percorso, dati] of Object.entries(interpreti)) {
     sh.interpreti[percorso] = {

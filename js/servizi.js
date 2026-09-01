@@ -15,6 +15,10 @@ import * as V from "./vfs.js";
 const DIR_UNIT = "/etc/systemd/system";
 
 export function statoServizi(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.servizi = {
     unita: scenario.unita ?? {
       "acquisizione.service": {

@@ -39,6 +39,9 @@ import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
 const TUTTO = process.argv.includes("--tutto");
 // --caso l17-df-3: mostra base e mutazione fianco a fianco, per capire perche'
 const CASO = (process.argv.find((a) => a.startsWith("--caso=")) || "").slice(7);
+// --uscita=ID: la trascrizione della soluzione giusta e quella della soluzione
+// tutta rovinata, per scegliere una verifica che sappia distinguerle.
+const USCITA = (process.argv.find((a) => a.startsWith("--uscita=")) || "").slice(9);
 const CAPO = String.fromCharCode(10);
 
 /** Prepara la shell dell'esercizio, con gli stessi moduli che monta l'app. */
@@ -162,6 +165,11 @@ for (const meta of indice.moduli) {
       const testoRovinato = tutteRovinate.join(CAPO);
       if (testoRovinato !== righe.map((r) => dividi(r).parole.join(" ")).join(CAPO)) {
         const rovinata = prova(es, testoRovinato);
+        if (USCITA && es.id === USCITA) {
+          console.log("giusta:  " + JSON.stringify(base.uscita));
+          console.log("rovinata: " + JSON.stringify(rovinata.uscita));
+          console.log("verifica: " + JSON.stringify(es.verifica));
+        }
         if (!rovinata.crash && rovinata.ok) deboli.set(es.id, tutteRovinate.join(" ; "));
       }
 

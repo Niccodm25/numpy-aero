@@ -16,6 +16,10 @@
 import * as V from "./vfs.js";
 
 export function statoAutomazione(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.automazione = {
     inventario: scenario.inventario ?? { banco: ["banco01"], stazioni: ["meteo01", "meteo02"] },
     pacchetti: scenario.pacchetti ?? { rsync: true, tmux: false, htop: false },

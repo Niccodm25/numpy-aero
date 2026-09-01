@@ -13,6 +13,10 @@ import * as V from "./vfs.js";
 const SSHD = "/etc/ssh/sshd_config";
 
 export function statoSicurezza(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.sicurezza = {
     firewall: {
       attivo: scenario.attivo ?? false,

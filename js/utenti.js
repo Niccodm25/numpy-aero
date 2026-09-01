@@ -5,6 +5,10 @@
 import * as V from "./vfs.js";
 
 export function statoUtenti(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.utenti = {
     root: { uid: 0, gruppo: "root" },
     tu: { uid: 1000, gruppo: "studenti" },

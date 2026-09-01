@@ -1036,6 +1036,17 @@ export function verifica(sh, attesa, trascrizione = []) {
   const fuori = [];
   for (const c of attesa.usa || []) if (!usati.has(c)) fuori.push(`non hai usato ${c}`);
 
+  // Il contrario di "contiene": serve quando la prova che il lavoro e' fatto e'
+  // una riga che deve SPARIRE — un modulo scaricato, un disco smontato.
+  for (const [f, pezzo] of Object.entries(attesa.nonContiene || {})) {
+    if (V.esiste(sh.fs, f) && V.leggi(sh.fs, f).includes(pezzo)) p(`${f} contiene ancora "${pezzo}"`);
+  }
+
+  if (attesa.nonStampa !== undefined) {
+    const uscite = trascrizione.map((t) => t.out).filter(Boolean).join("\n");
+    if (uscite.includes(attesa.nonStampa)) p(`l'output contiene ancora "${attesa.nonStampa}"`);
+  }
+
   if (attesa.stampa !== undefined) {
     const uscite = trascrizione.map((t) => t.out).filter(Boolean).join("\n");
     if (!uscite.includes(attesa.stampa)) p(`l'output non contiene "${attesa.stampa}"`);

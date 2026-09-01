@@ -13,6 +13,10 @@ import { POSIX, creaShell, esegui } from "./shell.js";
 const PUBBLICA = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5 tu@banco";
 
 export function statoRemoto(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   const utente = scenario.utente ?? "anna";
   const fs = V.crea(
     scenario.files || {

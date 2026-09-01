@@ -16,6 +16,10 @@ import * as V from "./vfs.js";
 const FSTAB = "/etc/fstab";
 
 export function statoDischi(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.dischi = {
     dispositivi: scenario.dispositivi ?? {
       "/dev/nvme0n1p1": { size: 200, fs: "ext4", usatoGB: 40, etichetta: "sistema" },

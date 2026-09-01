@@ -15,6 +15,10 @@ import { ErroreFs, creaDir, esiste, leggi, scrivi } from "./vfs.js";
 const RESOLV = "/etc/resolv.conf";
 
 export function statoRete(sh, scenario = {}) {
+  // Lo scenario arriva dal JSON dell'esercizio, che l'app carica una volta
+  // sola: senza copiarlo, i comandi modificherebbero la dichiarazione
+  // stessa e l'esercizio ripartirebbe dallo stato in cui l'hai lasciato.
+  scenario = structuredClone(scenario);
   sh.rete = {
     interfacce: {
       lo: { stato: "up", indirizzo: "127.0.0.1/8", link: null },
