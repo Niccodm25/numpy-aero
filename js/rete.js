@@ -163,7 +163,13 @@ export const RETE = {
     if (che === "route" || che === "r") {
       if (resto[0] === "add" || resto[0] === "del") {
         if (resto[1] !== "default") throw new ErroreFs("qui si gestisce solo la rotta default");
-        if (resto[0] === "add" && resto[2] !== "via") throw new ErroreFs('manca "via" prima del gateway');
+        if (resto[0] === "add") {
+          if (resto[2] !== "via") throw new ErroreFs('manca "via" prima del gateway');
+          // Un gateway e' un indirizzo, non una parola: senza questo controllo
+          // `ip route add default via zibaldone` metteva su una rotta finta.
+          if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(resto[3] ?? ""))
+            throw new ErroreFs(`${resto[3] ?? "(niente)"}: non e' un indirizzo IPv4`);
+        }
         r.gateway = resto[0] === "add" ? resto[3] : null;
         return "";
       }

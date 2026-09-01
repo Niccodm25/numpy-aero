@@ -226,7 +226,10 @@
             "usa": [
               "ln",
               "cat"
-            ]
+            ],
+            "punta": {
+              "corrente": "/home/tu/campagne/2026-09"
+            }
           },
           "hint": [
             "ln -s BERSAGLIO NOME",
@@ -251,7 +254,10 @@
             "usa": [
               "ls",
               "ln"
-            ]
+            ],
+            "punta": {
+              "corrente": "/home/tu/campagne/2026-09"
+            }
           },
           "hint": [
             "ls -l mostra la freccia verso il bersaglio.",
@@ -276,7 +282,10 @@
             "usa": [
               "ln",
               "rm"
-            ]
+            ],
+            "punta": {
+              "ultimo.csv": "dati.csv"
+            }
           },
           "hint": [
             "Crea, leggi, cancella il bersaglio, rileggi.",
@@ -369,7 +378,10 @@
             "usa": [
               "ln",
               "rm"
-            ]
+            ],
+            "punta": {
+              "corrente": "/home/tu/campagne/2026-08"
+            }
           },
           "hint": [
             "Si toglie il vecchio collegamento e se ne crea uno nuovo.",
@@ -398,7 +410,10 @@
             "usa": [
               "ln",
               "bash"
-            ]
+            ],
+            "punta": {
+              "corrente": "/home/tu/campagne/2026-08"
+            }
           },
           "hint": [
             "Lo script nomina il collegamento, non la cartella vera.",

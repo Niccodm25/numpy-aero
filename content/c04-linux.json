@@ -139,6 +139,11 @@
         "errore": "permesso negato",
         "contiene": {
           "campagna/grezzi/prova1.csv": "9000,0.82"
+        },
+        "modo": {
+          "campagna/grezzi/prova1.csv": "444",
+          "campagna/grezzi/prova2.csv": "444",
+          "campagna/grezzi/prova3.csv": "444"
         }
       },
       "spiegazione": "`444` e' `r--r--r--`: leggibile da tutti, scrivibile da nessuno. La redirezione fallisce **prima** che `echo` venga eseguito, quindi il file non viene nemmeno svuotato - ed e' la ragione per cui questa protezione vale la pena su dati raccolti una volta sola.\n\nResta vero che `sudo chmod` puo' rimettere tutto com'era in un secondo: i permessi fermano gli sbagli, non le decisioni."

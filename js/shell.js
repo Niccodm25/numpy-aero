@@ -995,6 +995,26 @@ export function verifica(sh, attesa, trascrizione = []) {
     if (!V.leggi(sh.fs, f).includes(pezzo)) p(`${f} non contiene "${pezzo}"`);
   }
 
+  // I permessi si controllano guardandoli, non fidandosi del comando digitato:
+  // `chmod 451` e `chmod 444` lasciano il file leggibile e non scrivibile, e
+  // senza questo un esercizio sui permessi passava con il modo sbagliato.
+  for (const [f, modo] of Object.entries(attesa.modo || {})) {
+    if (!V.esiste(sh.fs, f)) { p(`manca ${f}`); continue; }
+    const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, f));
+    const suo = (nodo.modo ?? (nodo.tipo === "dir" ? V.MODO_DIR : V.MODO_FILE)).toString(8).padStart(4, "0");
+    const atteso = String(modo).padStart(4, "0");
+    if (suo !== atteso) p(`${f} ha i permessi ${suo.slice(-4)}, non ${atteso.slice(-4)}`);
+  }
+
+  // Un collegamento simbolico si giudica da dove punta: `ls` mostra il nome
+  // uguale sia che punti alla cartella giusta sia che punti nel vuoto.
+  for (const [nome, bersaglio] of Object.entries(attesa.punta || {})) {
+    const nodo = sh.fs.nodi.get(V.normalizza(sh.fs, nome));
+    if (!nodo) { p(`manca ${nome}`); continue; }
+    if (nodo.tipo !== "link") p(`${nome} non e' un collegamento`);
+    else if (nodo.destinazione !== V.normalizza(sh.fs, bersaglio)) p(`${nome} punta a ${nodo.destinazione}, non a ${bersaglio}`);
+  }
+
   // "usa" guarda i comandi digitati, non lo stato: serve quando l'esercizio
   // insegna proprio quel comando e raggiungere il risultato in altro modo
   // significherebbe non aver fatto l'esercizio.

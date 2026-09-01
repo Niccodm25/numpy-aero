@@ -289,7 +289,10 @@
               "chmod",
               "chgrp",
               "prova-come"
-            ]
+            ],
+            "modo": {
+              "dati.csv": "640"
+            }
           },
           "hint": [
             "640: tu leggi e scrivi, il gruppo legge.",
@@ -313,7 +316,10 @@
             "usa": [
               "chmod",
               "prova-come"
-            ]
+            ],
+            "modo": {
+              "dati.csv": "660"
+            }
           },
           "hint": [
             "660: tu e il gruppo leggete e scrivete.",
@@ -337,7 +343,10 @@
             "usa": [
               "prova-come",
               "chmod"
-            ]
+            ],
+            "modo": {
+              "dati.csv": "640"
+            }
           },
           "hint": [
             "Crea un utente fuori dal gruppo e prova a leggere come lui.",
@@ -363,7 +372,10 @@
             },
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "dati.csv": "440"
+            }
           },
           "hint": [
             "440: lettura per te e per il gruppo, scrittura per nessuno.",
@@ -404,7 +416,10 @@
               "chgrp",
               "chmod",
               "prova-come"
-            ]
+            ],
+            "modo": {
+              "progetto": "770"
+            }
           },
           "hint": [
             "Sulla cartella serve anche la x per attraversarla: 770.",
@@ -462,7 +477,10 @@
             "stampa": "rwsr-xr-x",
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "programma": "4755"
+            }
           },
           "hint": [
             "Il quarto numero davanti: 4 per setuid.",
@@ -500,7 +518,10 @@
             "usa": [
               "chmod",
               "chgrp"
-            ]
+            ],
+            "modo": {
+              "progetto": "2775"
+            }
           },
           "hint": [
             "Il 2 davanti accende il setgid.",
@@ -526,7 +547,10 @@
             ],
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "progetto": "2775"
+            }
           },
           "hint": [
             "Crea il file dentro la cartella e guarda la colonna del gruppo.",
@@ -549,7 +573,10 @@
             "stampa": "rwxrwxrwt",
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "scambio": "1777"
+            }
           },
           "hint": [
             "Il 1 davanti accende lo sticky bit.",
@@ -582,7 +609,10 @@
             "usa": [
               "rm",
               "chmod"
-            ]
+            ],
+            "modo": {
+              "scambio": "1777"
+            }
           },
           "hint": [
             "Prova a cancellare prima quello che non e' tuo.",
@@ -607,7 +637,10 @@
               "chmod",
               "chgrp",
               "prova-come"
-            ]
+            ],
+            "modo": {
+              "campagna": "3770"
+            }
           },
           "hint": [
             "3 = setgid (2) + sticky (1), su 770.",

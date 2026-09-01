@@ -123,7 +123,10 @@
             "usa": [
               "chmod",
               "ssh"
-            ]
+            ],
+            "modo": {
+              ".ssh/id_ed25519": "600"
+            }
           },
           "hint": [
             "Il messaggio parla del file della chiave, non della rete.",

@@ -261,7 +261,10 @@
             "stampa": "rwxr-xr-x",
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "analisi.sh": "755"
+            }
           },
           "hint": [
             "Tre cifre: 7 per te, 5 per gli altri due.",
@@ -283,7 +286,10 @@
             "stampa": "rw-------",
             "usa": [
               "chmod"
-            ]
+            ],
+            "modo": {
+              "note.txt": "600"
+            }
           },
           "hint": [
             "6 per te, 0 per gli altri due.",
@@ -319,6 +325,9 @@
             "errore": "permesso negato",
             "contiene": {
               "dati.csv": "9000,0.82"
+            },
+            "modo": {
+              "dati.csv": "444"
             }
           },
           "hint": [

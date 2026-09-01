@@ -86,10 +86,20 @@ const p = (sh) => sh.prestazioni;
  * non insegnerebbe niente in piu' — la lezione dice che sono i numeri di
  * questo banco, non una misura fatta adesso.
  */
+const INTERPRETI = ["python", "python3", "bash", "sh"];
+
 function bersaglio(sh, args) {
   const liberi = args.filter((a) => !a.startsWith("-"));
-  if (!liberi.length) throw new V.ErroreFs("manca il comando da misurare");
-  const script = liberi.find((a) => a.includes("."));
+  const [programma, ...dopo] = liberi;
+  if (!programma) throw new V.ErroreFs("manca il comando da misurare");
+  // Il programma: o e' un comando che questa shell conosce, o e' un interprete,
+  // o e' un file eseguibile che sta li'.
+  if (!sh.comandi?.[programma] && !INTERPRETI.includes(programma) && !V.esiste(sh.fs, programma)) {
+    throw new V.ErroreFs(`${programma}: comando non trovato`);
+  }
+  // Se e' un interprete, quello che gli passi deve esistere: e' il file che
+  // verrebbe misurato.
+  const script = INTERPRETI.includes(programma) ? dopo[0] : dopo.find((a) => a.includes("."));
   if (script && !V.esiste(sh.fs, script)) {
     throw new V.ErroreFs(`${script}: file o directory non esistente`);
   }
