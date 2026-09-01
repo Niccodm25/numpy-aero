@@ -125,6 +125,20 @@
         "Il browser — DevTools, ordine di caricamento, cosa blocca il rendering",
         "Pubblicare — sito statico, GitHub Pages, il perche' di HTTPS"
       ]
+    },
+    {
+      "id": "dinamica",
+      "titolo": "Dinamica del volo",
+      "perche": "Come si scrive che un aeroplano sta in equilibrio, e cosa si ricava da quelle equazioni. Si studia una dimostrazione alla volta: le formule si scrivono, non si riconoscono in mezzo a quattro opzioni.",
+      "disponibile": true,
+      "moduli": [
+        "d01"
+      ],
+      "prossimi": [
+        "Centro di pressione e centro aerodinamico; il modello di portanza (wing-body, impennaggio)",
+        "Contributi al momento di beccheggio; volume di coda V_H",
+        "Stabilita' statica longitudinale a comandi bloccati; punto neutro e margine statico"
+      ]
     }
   ],
   "moduli": [
@@ -477,6 +491,12 @@
       "titolo": "Cantiere — La stazione che non dorme",
       "disponibile": true,
       "cantiere": true
+    },
+    {
+      "id": "d01",
+      "file": "d01-trim.json",
+      "titolo": "Equilibrio in volo simmetrico: il trim",
+      "disponibile": true
     }
   ]
 }

@@ -204,6 +204,11 @@ button.minuscolo {
 }
 .tasto-storia:active { color: var(--acc); border-color: var(--acc); }
 
+/* I passi di una dimostrazione da rimettere in ordine. */
+.passi { padding-left: 1.2rem; }
+.passi li { margin: .35rem 0; }
+.passi code { white-space: pre-wrap; word-break: break-word; }
+
 /* Anteprima della pagina HTML che stai scrivendo. Fondo bianco fisso: e' una
    pagina a se', e mostrarla sul tema scuro dell'app direbbe una bugia su come
    apparira' davvero. */

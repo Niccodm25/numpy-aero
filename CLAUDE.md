@@ -26,7 +26,7 @@ regole.
 - **Prima di ogni commit**, tutti e quattro:
 
   ```bash
-  node tools/check_app.mjs && node tools/test_shell.mjs && python tools/check_lezioni.py && python tools/check_moduli.py
+  node tools/check_app.mjs && node tools/test_shell.mjs && node tools/test_fisica.mjs && python tools/check_lezioni.py && python tools/check_moduli.py
   ```
 
   Se uno fallisce non si committa: si sistema.
@@ -98,6 +98,33 @@ Regole di sostanza — non automatizzabili, ma non negoziabili:
 - **Ogni soluzione viene rieseguita dai test.** `tools/test_shell.mjs` esegue le
   soluzioni `terminale` contro la loro stessa `verifica`: se un esercizio non
   passa, l'esercizio è sbagliato, non il test.
+
+## 2-bis. I moduli di teoria (ramo Dinamica del volo)
+
+Gli esercizi non sono comandi ma **risposte scritte**, e il motore sta in
+`js/fisica.js`. Quattro tipi:
+
+- `formula` — la risposta e' un'espressione. Non si confronta come testo: viene
+  **valutata** su decine di punti casuali contro quella di riferimento, quindi
+  `C_L*sin(alpha) - C_D*cos(alpha)` e `-C_D*cos(alpha) + C_L*sin(alpha)` valgono
+  uguale. L'esercizio dichiara `dominio` (dove campionare), e puo' chiudere le
+  scorciatoie con `usa` e `senza`.
+- `numerico` — la risposta e' un numero, o il conto che lo produce; `entro` e' la
+  tolleranza.
+- `ordina` — i passi di una dimostrazione da rimettere in fila. Si mescolano a
+  ogni apertura: altrimenti al secondo ripasso si ricorda la posizione.
+- `insieme` — un elenco senza ordine (quali termini si annullano, quali
+  incognite restano).
+
+Regole, verificate da `check_moduli.py`: 24 esercizi in 3 raccolte da 8,
+difficolta' crescente che finisce a 4, almeno il 40% fra `formula` e `numerico`
+(riconoscere non e' saper fare), e ogni esercizio con `soluzione`, `verifica` e
+`spiegazione`. `tools/test_fisica.mjs` riesegue ogni soluzione **e** prova una
+risposta storta: una verifica che accetta tutto e' peggio di nessuna verifica.
+
+La lezione scioglie i nomi come nel ramo Linux: *trim* viene dall'assettare le
+vele, `gamma` e' il *flight path angle*. E i numeri degli esercizi vengono da
+velivoli plausibili, non da esempi tondi.
 
 ## 3. Convenzioni di contenuto
 

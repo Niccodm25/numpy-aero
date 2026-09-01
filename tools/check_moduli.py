@@ -92,6 +92,58 @@ def controlla(mid, titolo, dati, gia_visti):
     return problemi, esercizi
 
 
+
+# I moduli di teoria (ramo Dinamica del volo) hanno esercizi di formula, numero,
+# ordinamento e insieme invece che di terminale: le regole di forma restano —
+# 24 esercizi in 3 raccolte, difficolta' crescente — ma "composto" qui vuol dire
+# un'altra cosa, e la si misura sul tipo.
+TIPI_FISICA = {"formula", "numerico", "ordina", "insieme"}
+QUOTA_FORMULE = 0.40   # esercizi in cui la risposta e' una formula o un conto
+
+
+def controlla_teoria(dati):
+    problemi = []
+    raccolte = dati.get("raccolte") or []
+    esercizi = [e for r in raccolte for e in r["esercizi"]]
+
+    if len(esercizi) < MINIMO:
+        problemi.append(f"{len(esercizi)} esercizi, ne servono {MINIMO}")
+    if len(raccolte) < 3:
+        problemi.append(f"{len(raccolte)} raccolte, ne servono almeno 3")
+    for r in raccolte:
+        if len(r["esercizi"]) < PER_RACCOLTA:
+            problemi.append(f"la raccolta «{r['comando']}» ha {len(r['esercizi'])} esercizi su {PER_RACCOLTA}")
+
+    fuori_tipo = [e["id"] for e in esercizi if e["tipo"] not in TIPI_FISICA]
+    if fuori_tipo:
+        problemi.append(f"{len(fuori_tipo)} esercizi di tipo non previsto (es. {fuori_tipo[0]})")
+
+    # Riconoscere non e' saper fare: la meta' abbondante degli esercizi deve
+    # chiedere di scrivere una formula o di ricavare un numero.
+    scrivono = [e for e in esercizi if e["tipo"] in ("formula", "numerico")]
+    if esercizi and len(scrivono) / len(esercizi) < QUOTA_FORMULE:
+        problemi.append(f"solo {len(scrivono)}/{len(esercizi)} esercizi chiedono una formula o un conto, "
+                        f"il minimo e' {int(QUOTA_FORMULE * 100)}%")
+
+    senza = [e["id"] for e in esercizi if not e.get("soluzione") or not e.get("verifica")]
+    if senza:
+        problemi.append(f"{len(senza)} esercizi senza soluzione o senza verifica (es. {senza[0]})")
+
+    senza_perche = [e["id"] for e in esercizi if not e.get("spiegazione")]
+    if senza_perche:
+        problemi.append(f"{len(senza_perche)} esercizi senza spiegazione (es. {senza_perche[0]})")
+
+    # La difficolta' sale dentro la raccolta: 2 base, 3 composto, 4 scenario.
+    for r in raccolte:
+        livelli = [e.get("difficolta", 0) for e in r["esercizi"]]
+        if any(b < a for a, b in zip(livelli, livelli[1:])):
+            problemi.append(f"la raccolta «{r['comando']}» ha la difficolta' che scende")
+        if livelli and max(livelli) < 4:
+            problemi.append(f"la raccolta «{r['comando']}» non finisce con uno scenario (difficolta' 4)")
+
+    return problemi, esercizi
+
+
 def main():
     tutti = "--tutti" in sys.argv
     indice = json.load(io.open("content/index.json", encoding="utf8"))
@@ -108,6 +160,22 @@ def main():
         problemi, esercizi = controlla(mid, meta["titolo"], dati, visti)
         for e in esercizi:
             visti |= comandi_di(e.get("soluzione"))
+        if problemi:
+            fuori_standard += 1
+        if problemi or tutti:
+            stato = "ok" if not problemi else "DA RIFARE"
+            print("%-6s %-38s %5d %s" % (mid, meta["titolo"][:38], len(esercizi), stato))
+            for p in problemi:
+                print("       - " + p)
+
+    # Il ramo di teoria, con le sue regole.
+    teoria = next((r for r in indice["rami"] if r["id"] == "dinamica"), None)
+    for mid in (teoria or {}).get("moduli", []):
+        meta = next((m for m in indice["moduli"] if m["id"] == mid), None)
+        if not meta or not meta.get("disponibile"):
+            continue
+        dati = json.load(io.open("content/" + meta["file"], encoding="utf8"))
+        problemi, esercizi = controlla_teoria(dati)
         if problemi:
             fuori_standard += 1
         if problemi or tutti:

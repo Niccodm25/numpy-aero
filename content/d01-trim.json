@@ -1,0 +1,819 @@
+{
+  "id": "d01",
+  "titolo": "Equilibrio in volo simmetrico: il trim",
+  "perche": "Un aeroplano che vola dritto e a velocita' costante non e' fermo: e' in equilibrio, e l'equilibrio si scrive. Da otto equazioni differenziali si arriva a tre equazioni algebriche in tre incognite — angolo d'attacco, equilibratore, manetta — e quelle tre dicono in quali condizioni il velivolo puo' davvero stare. E' il primo passo per capire come funziona un aeroplano, e sotto ci sta tutto il resto della stabilita' statica.",
+  "fonte": "Dinamica del Volo, Parte II — Trim e stabilita' statica, capitolo 1 (pp. 3-10). Lezione del 05/03/2026, prof. Giulio Avanzini.",
+  "notazione": "Nelle risposte i simboli si scrivono in ASCII: alpha beta gamma theta phi rho eta_T d_T delta_E delta_T C_L C_D C_m C_X C_Z V S c m g T h_dot E. Le funzioni disponibili sono sin cos tan asin acos atan sqrt exp log abs, e g vale 9.81 se non lo dichiari.",
+  "lezioni": [
+    {
+      "id": "d01-lez-equilibrio",
+      "titolo": "Che cosa vuol dire equilibrio",
+      "md": "Nelle lezioni precedenti il modello del velivolo e' stato ridotto a **otto equazioni differenziali ordinarie del primo ordine**:\n\n```\nx_punto = f(x, u, t)\n\nx = (u, v, w ; p, q, r ; phi, theta)     stato, 8 componenti\nu = (delta_A, delta_E, delta_R ; delta_T)  comandi\n```\n\ndove `delta_A` e' la deflessione degli **alettoni**, `delta_E` dell'**equilibratore**, `delta_R` del **timone**, `delta_T` della **manetta**.\n\nAvere il modello non vuol dire sapere cosa il velivolo sa fare: bisogna cercarne le condizioni di volo, partendo dalla piu' semplice.\n\n### Equilibrio\n\nUn sistema dinamico qualunque — un reattore chimico, un sistema biologico, un aeroplano — e' in **equilibrio** quando le sue variabili di stato restano costanti nel tempo. Trovare un equilibrio vuol dire trovare una coppia `(x_eq, u_eq)` tale che\n\n```\nf(x_eq, u_eq, t) = 0\n```\n\nSe metti il sistema in `x_eq` applicando `u_eq`, le derivate sono nulle e l'integrazione lascia lo stato dov'e': il sistema ci **permane**.\n\n### Da dove viene la parola\n\n- **trim** — in inglese *to trim* e' assettare, mettere in assetto (nasce dalla nautica: assettare le vele). In gergo aeronautico «il velivolo e' trimmato» vuol dire esattamente «e' in equilibrio», e il *trim tab* e' l'aletta che ce lo tiene senza che il pilota debba spingere.\n- **alpha (angolo d'attacco)** — l'angolo fra la velocita' e l'asse longitudinale del velivolo.\n- **gamma (angolo di rampa)** — dall'inglese *flight path angle*: l'angolo che la traiettoria forma con l'orizzonte.\n- **theta (angolo di beccheggio)** — l'assetto: l'angolo fra l'asse `x_B` e il piano orizzontale.\n\n### La parola d'ordine e' semplificare\n\nLe condizioni piu' semplici sono il volo **stazionario**, **rettilineo** e **simmetrico**, in atmosfera calma e con Terra piatta. Sotto queste ipotesi il sistema diventa algebrico, accoppiato ma trattabile, e in molti casi ha soluzione analitica chiusa.\n\n> Il sistema in assi corpo **non** e' in forma normale: le derivate `p_punto, q_punto, r_punto` sono accoppiate dal prodotto d'inerzia `I_xz`. All'equilibrio pero' tutte le derivate vanno a zero, quindi la questione non si pone: zero a primo membro e' zero comunque sia scritto il sistema."
+    },
+    {
+      "id": "d01-lez-ipotesi",
+      "titolo": "Le tre ipotesi, e le tre equazioni che restano",
+      "md": "Si applicano in cascata tre ipotesi al sistema generale.\n\n```\n(a) Stazionarieta'   u_punto = v_punto = w_punto = 0\n                     p_punto = q_punto = r_punto = 0\n                     phi_punto = theta_punto = 0\n\n(b) Rettilineita'    p = q = r = 0\n\n(c) Simmetria        beta = 0, phi = 0, delta_A = 0, delta_R = 0\n                     e quindi Y = 0, L_roll = 0, N = 0\n```\n\n### Che cosa succede alle equazioni cardinali\n\nLe equazioni in assi corpo sono\n\n```\nu_punto + q w - r v = (X + T_x)/m - g sin(theta)\nv_punto + r u - p w = Y/m + g cos(theta) sin(phi)\nw_punto + p v - q u = (Z + T_z)/m + g cos(theta) cos(phi)\nI_x p_punto + (I_z - I_y) q r - I_xz (r_punto + p q) = L_roll\nI_y q_punto + (I_x - I_z) r p + I_xz (p^2 - r^2) = M + M_T\nI_z r_punto + (I_y - I_x) p q - I_xz (p_punto - q r) = N\ntheta_punto = q cos(phi) - r sin(phi)\nphi_punto   = p + (q sin(phi) + r cos(phi)) tan(theta)\n```\n\nI **termini inerziali** contengono fattori del tipo `qw`, `rv`, `(I_z - I_y) qr`: tutti proporzionali a componenti di velocita' angolare, e quindi nulli in volo rettilineo. Le due equazioni cinematiche d'assetto si riducono a `theta_punto = 0` e `phi_punto = 0`, gia' garantite dalla stazionarieta'. Le equazioni **laterali** — la componente y delle forze e i momenti `L_roll` e `N` — si annullano identicamente per la simmetria.\n\n### Risultato\n\n```\n(X + T_x)/m - g sin(theta) = 0     (1.1)\n(Z + T_z)/m + g cos(theta) = 0     (1.2)\nM + M_T = 0                        (1.3)\n```\n\nTre equazioni scalari. La prima e' l'equilibrio lungo `x_B` (spinta, forza aerodinamica assiale, proiezione del peso); la seconda lungo `z_B`, che punta verso il basso del velivolo; la terza e' l'equilibrio dei momenti di beccheggio attorno a `y_B`."
+    },
+    {
+      "id": "d01-lez-assi-corpo",
+      "titolo": "Il trim in assi corpo: incognite e condizione di volo",
+      "md": "Esplicitando i modelli di forze e momenti, le tre equazioni diventano\n\n```\n0.5 rho V^2 S C_X(alpha, delta_E; M) + T cos(eta_T) - m g sin(theta) = 0   (1.4)\n0.5 rho V^2 S C_Z(alpha, delta_E; M) - T sin(eta_T) + m g cos(theta) = 0   (1.5)\n0.5 rho V^2 S c C_m(alpha, delta_E; M) + T d_T = 0                          (1.6)\n```\n\ncon `rho` densita' dell'aria alla quota `h`, `V` velocita' rispetto all'aria, `S` superficie alare, `c` corda media aerodinamica, `T` modulo della spinta, `eta_T` **calettamento** dell'asse di spinta rispetto a `x_B`, `d_T` **braccio** della spinta rispetto al centro di massa.\n\nIl termine `0.5 rho V^2` e' la **pressione dinamica**: e' quello che rende una forza da un coefficiente, e cresce col quadrato della velocita'.\n\n### Contare\n\nPresa la quota `h` come parametro noto, le incognite sono **cinque**:\n\n```\nu, w   (oppure V, alpha)      theta      delta_E      delta_T\n```\n\ne le equazioni sono tre. Mancano due informazioni, e si **prescrivono**:\n\n- la velocita' di volo `V_eq` (e con essa il numero di Mach `M = V/a`);\n- l'angolo di rampa `gamma_eq`, equivalente al rateo di salita `h_dot = V sin(gamma)`.\n\nCosi' il problema e' ben posto: **tre equazioni in tre incognite** `(alpha, delta_E, delta_T)`.\n\n> Perche' proprio velocita' e rampa? Perche' sono le grandezze su cui il pilota vuole agire: interessa sapere in quali condizioni l'aeroplano puo' essere trimmato fra la velocita' di stallo e la velocita' massima. Tutto il resto e' conseguenza.\n\n### u, w oppure V, alpha\n\nIn assi corpo le componenti della velocita' sono\n\n```\nu = V cos(alpha) cos(beta)\nv = V sin(beta)\nw = V cos(beta) sin(alpha)\n```\n\nIn volo simmetrico `beta = 0`, quindi `v = 0`, `u = V cos(alpha)`, `w = V sin(alpha)`, con le relazioni inverse\n\n```\nV = sqrt(u^2 + w^2)          tan(alpha) = w/u\n```\n\nConoscere `(u, w)` equivale a conoscere `(V, alpha)`: sono scelte equivalenti delle incognite."
+    },
+    {
+      "id": "d01-lez-theta",
+      "titolo": "theta = alpha + gamma, e quando non vale",
+      "md": "In volo longitudinale, cioe' nel piano di simmetria, vale la relazione cinematica fondamentale\n\n```\ntheta = alpha + gamma\n```\n\nche permette di ricavare l'assetto una volta noto l'angolo d'attacco.\n\n### La dimostrazione, in tre righe\n\n1. L'asse `x_B` forma un angolo `theta` con il piano orizzontale locale: e' la definizione di angolo di beccheggio.\n2. Il vettore velocita' `V`, in volo simmetrico, giace nel piano di simmetria e forma con `x_B` un angolo pari, per definizione, all'angolo d'attacco `alpha` (con `V` sotto `x_B` se `alpha > 0`).\n3. L'angolo di rampa `gamma` e' l'angolo fra `V` e il piano orizzontale, positivo se `V` e' sopra l'orizzonte.\n\nSommando geometricamente i due angoli: `theta = alpha + gamma`.\n\n### Attenzione\n\nLa relazione vale **solo nel volo nel piano di simmetria**, cioe' quando il piano longitudinale dell'aeroplano coincide con il piano verticale che contiene la traiettoria. In condizioni piu' generali — volo non simmetrico, virata — `theta` non si esprime cosi'.\n\n### Il rateo di salita\n\n```\nh_dot = V sin(gamma)\n```\n\nDue velivoli con lo stesso `gamma` salgono a ratei diversi se volano a velocita' diverse: la rampa e' un angolo, il rateo e' una velocita' verticale. Prescrivere l'una o l'altro e' equivalente, ma non e' la stessa grandezza."
+    },
+    {
+      "id": "d01-lez-assi-vento",
+      "titolo": "Assi vento, ordini di grandezza, trim semplificato",
+      "md": "Le equazioni (1.4)-(1.6) sono corrette ma poco pratiche: i coefficienti `C_X` e `C_Z` si misurano e si interpretano molto meglio come **portanza** `C_L` e **resistenza** `C_D`, definite rispetto al vento relativo.\n\n### Dagli assi corpo agli assi vento\n\nIn assi vento la portanza e' diretta come `-z_W`, la resistenza come `-x_W`, la forza laterale come `+y_W`. Dalla matrice di rotazione:\n\n```\nC_X = -C_D cos(alpha) cos(beta) + C_S cos(alpha) sin(beta) + C_L sin(alpha)\nC_Y = -C_D sin(beta) - C_S cos(beta)\nC_Z = -C_D sin(alpha) cos(beta) + C_S sin(alpha) sin(beta) - C_L cos(alpha)\n```\n\nIn volo simmetrico (`beta = 0`, `C_S = 0`) restano\n\n```\nC_X = -C_D cos(alpha) + C_L sin(alpha)     (1.7)\nC_Y = 0                                     (1.8)\nC_Z = -C_D sin(alpha) - C_L cos(alpha)      (1.9)\n```\n\nSono relazioni invertibili: `C_L = C_X sin(alpha) - C_Z cos(alpha)` e `C_D = -C_X cos(alpha) - C_Z sin(alpha)`.\n\n### Il trim in assi vento\n\nSostituendo e riorganizzando lungo la tangente e la normale alla traiettoria:\n\n```\nT cos(alpha + eta_T) - 0.5 rho V^2 S C_D - m g sin(gamma) = 0     (1.10)\n0.5 rho V^2 S C_L + T sin(alpha + eta_T) - m g cos(gamma) = 0     (1.11)\n0.5 rho V^2 S c C_m + T d_T = 0                                    (1.12)\n```\n\nLa (1.10) e' l'equilibrio lungo la tangente: la spinta bilancia la resistenza piu' la componente del peso `mg sin(gamma)`, che si oppone al moto in salita e lo accelera in discesa. La (1.11) e' l'equilibrio lungo la normale: portanza piu' componente verticale della spinta bilanciano `mg cos(gamma)`. La (1.12) e' identica a quella in assi corpo, perche' in volo simmetrico `y_B` coincide con `y_W`.\n\nLa spinta forma con la velocita' un angolo `alpha + eta_T`: `eta_T` e' il calettamento rispetto a `x_B`, `alpha` l'angolo fra `x_B` e `V`.\n\n### Ordini di grandezza\n\n- Efficienza aerodinamica `E = L/D ~ 10` (fino a 15-20 per velivoli da trasporto). Quindi `D ~ L/10` e `L ~ m g cos(gamma)` circa `m g`.\n- Rapporto spinta/peso `T/(m g) ~ 1/E ~ 0.1` in volo livellato; solo i caccia ad alte prestazioni arrivano a `T/(m g)` circa 1.\n- Angolo d'attacco: pochi gradi, al piu' 10-15 prima dello stallo. Calettamento `eta_T`: pochi gradi.\n- Quindi `alpha + eta_T` e' piccolo: `sin(alpha + eta_T)` trascurabile e `cos(alpha + eta_T)` circa 1.\n\n### Il trim semplificato\n\nCon `E >> 1`, angoli piccoli e asse di spinta passante per il baricentro (`d_T` circa 0), le equazioni si **disaccoppiano**:\n\n```\nT_max delta_T = 0.5 rho V^2 S C_D + m g sin(gamma)     (1.13)\n0.5 rho V^2 S C_L = m g cos(gamma) circa m g           (1.14)\n0.5 rho V^2 S c C_m = 0                                 (1.15)\n```\n\nossia, in forma adimensionale,\n\n```\nC_L(alpha, delta_E) = m g / (0.5 rho V^2 S) = C_L_trim\nC_m(alpha, delta_E) = 0\n```\n\nPortanza e momento si disaccoppiano dalla spinta: essendo il modello aerodinamico lineare in `alpha` e `delta_E` lontano dallo stallo, restano **due equazioni in due incognite**, e la spinta si ricava dopo, in cascata. E' questa la ragione tecnica per cui il trim ha soluzione analitica chiusa.\n\n> L'ipotesi `d_T` circa 0 e' ben verificata per velivoli con motore in fusoliera, ma **non** per i civili a getto con motori in gondola sotto le ali basse, ne' per gli ad ala alta con motori sopra l'ala. In quei casi `T d_T` va conservato e l'accoppiamento spinta-momenti resta."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "d01-equilibrio",
+      "comando": "equilibrio",
+      "titolo": "Equilibrio e ipotesi: che cosa resta delle otto equazioni",
+      "esercizi": [
+        {
+          "id": "d01-eq-1",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Il velivolo vola su una traiettoria **rettilinea**. Elenca le componenti di velocita' angolare in assi corpo che questa sola ipotesi annulla.",
+          "segnaposto": "p q r",
+          "soluzione": "p q r",
+          "verifica": {
+            "insieme": [
+              "p",
+              "q",
+              "r"
+            ]
+          },
+          "hint": [
+            "Rettilineo vuol dire che il velivolo non ruota attorno a nessun asse mentre avanza."
+          ],
+          "spiegazione": "`p`, `q`, `r` sono rollio, beccheggio e imbardata. In volo rettilineo la velocita' angolare e' nulla, e questo e' il colpo che uccide tutti i termini inerziali del tipo `qw`, `rv`, `(I_z - I_y) qr`: sono tutti proporzionali a una di queste tre."
+        },
+        {
+          "id": "d01-eq-2",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Il volo si svolge nel piano longitudinale di simmetria. Elenca le grandezze che l'ipotesi di **simmetria** pone a zero, fra queste: `alpha beta phi theta delta_A delta_E delta_R delta_T`.",
+          "segnaposto": "beta phi ...",
+          "soluzione": "beta phi delta_A delta_R",
+          "verifica": {
+            "insieme": [
+              "beta",
+              "phi",
+              "delta_A",
+              "delta_R"
+            ]
+          },
+          "hint": [
+            "La derapata e' l'angolo fuori dal piano di simmetria.",
+            "I comandi laterali sono due: alettoni e timone. L'equilibratore non lo e'."
+          ],
+          "spiegazione": "Simmetria vuol dire derapata nulla (`beta = 0`), ali livellate (`phi = 0`) e comandi laterali indeflessi (`delta_A = delta_R = 0`). `alpha`, `theta`, `delta_E` e `delta_T` restano vivi: sono proprio le incognite del problema longitudinale."
+        },
+        {
+          "id": "d01-eq-3",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Per la simmetria del modello aerodinamico, tre componenti di forza e momento si annullano identicamente. Elencale usando `X Y Z L_roll M N`.",
+          "segnaposto": "Y ...",
+          "soluzione": "Y L_roll N",
+          "verifica": {
+            "insieme": [
+              "Y",
+              "L_roll",
+              "N"
+            ]
+          },
+          "hint": [
+            "Sono le grandezze laterali: la forza fuori dal piano e i due momenti che ti farebbero uscire da quel piano."
+          ],
+          "spiegazione": "Un velivolo simmetrico, in volo simmetrico, non genera forza laterale ne' momenti di rollio e imbardata. Sono le tre equazioni **laterali** del sistema, che si annullano da sole: e' cosi' che da sei equazioni cardinali se ne salvano tre."
+        },
+        {
+          "id": "d01-eq-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il **primo membro** dell'equazione di equilibrio lungo `x_B` (asse corpo longitudinale), quella che deve valere zero. Usa `X T_x m g theta`.",
+          "segnaposto": "(X + T_x)/m - ...",
+          "soluzione": "(X + T_x)/m - g*sin(theta)",
+          "verifica": {
+            "equivale": "(X + T_x)/m - g*sin(theta)",
+            "usa": [
+              "X",
+              "T_x",
+              "m",
+              "theta"
+            ],
+            "dominio": {
+              "X": [
+                -8000,
+                -2000
+              ],
+              "T_x": [
+                2000,
+                9000
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "theta": [
+                -0.2,
+                0.35
+              ]
+            }
+          },
+          "hint": [
+            "Le forze si dividono per la massa: e' un'equazione in accelerazioni.",
+            "Il peso entra proiettato su `x_B`, e in salita frena."
+          ],
+          "spiegazione": "`(X + T_x)/m - g sin(theta) = 0`. Il peso non compare come `mg` ma come `g sin(theta)`, perche' l'equazione e' gia' divisa per la massa; il segno meno dice che con il muso in su la componente del peso si oppone al moto."
+        },
+        {
+          "id": "d01-eq-5",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Stessa cosa per l'asse `z_B`, che punta verso il **basso** del velivolo. Scrivi il primo membro dell'equazione di equilibrio, usando `Z T_z m g theta`.",
+          "segnaposto": "(Z + T_z)/m + ...",
+          "soluzione": "(Z + T_z)/m + g*cos(theta)",
+          "verifica": {
+            "equivale": "(Z + T_z)/m + g*cos(theta)",
+            "usa": [
+              "Z",
+              "T_z",
+              "m",
+              "theta"
+            ],
+            "dominio": {
+              "Z": [
+                -60000,
+                -8000
+              ],
+              "T_z": [
+                -900,
+                900
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "theta": [
+                -0.2,
+                0.35
+              ]
+            }
+          },
+          "hint": [
+            "Il segno del termine di peso cambia rispetto all'equazione su `x_B`.",
+            "`z_B` punta in basso, e il peso pure: la proiezione e' positiva."
+          ],
+          "spiegazione": "`(Z + T_z)/m + g cos(theta) = 0`. Poiche' `z_B` e' diretto verso il basso, la proiezione del peso e' `+g cos(theta)`, e la forza aerodinamica normale `Z` deve essere negativa: e' la portanza, che tira verso l'alto."
+        },
+        {
+          "id": "d01-eq-6",
+          "tipo": "ordina",
+          "difficolta": 3,
+          "testo": "Rimetti in ordine il ragionamento che porta dalle otto equazioni del modello alle tre del trim. Scrivi le sigle dei passi nell'ordine giusto.",
+          "passi": [
+            {
+              "id": "IN",
+              "testo": "I termini inerziali (qw, rv, (I_z - I_y)qr) si annullano perche' contengono p, q, r"
+            },
+            {
+              "id": "ST",
+              "testo": "Si impone la stazionarieta': tutte le derivate temporali dello stato vanno a zero"
+            },
+            {
+              "id": "RE",
+              "testo": "Si impone la rettilineita': p = q = r = 0"
+            },
+            {
+              "id": "LA",
+              "testo": "Le tre equazioni laterali si annullano identicamente per la simmetria"
+            },
+            {
+              "id": "SI",
+              "testo": "Si impone la simmetria: beta = 0, phi = 0, comandi laterali indeflessi"
+            }
+          ],
+          "segnaposto": "ST RE ...",
+          "soluzione": "ST RE IN SI LA",
+          "verifica": {
+            "ordine": [
+              "ST",
+              "RE",
+              "IN",
+              "SI",
+              "LA"
+            ]
+          },
+          "hint": [
+            "Le ipotesi si applicano in cascata, nell'ordine in cui sono enunciate.",
+            "Ogni ipotesi va enunciata prima della conseguenza che produce."
+          ],
+          "spiegazione": "Le ipotesi vengono prima, le conseguenze dopo: stazionarieta' (le derivate spariscono), rettilineita' (p, q, r spariscono, e con loro i termini inerziali), simmetria (le equazioni laterali spariscono). L'ordine conta perche' i termini inerziali cadono per la rettilineita', non per la stazionarieta': sono prodotti di velocita' angolari, non derivate."
+        },
+        {
+          "id": "d01-eq-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo da 22000 kg vola in salita con assetto `theta = 8` gradi. Quanto vale, in newton, la componente del peso lungo `x_B` che compare nella prima equazione di equilibrio? Rispondi con il valore **con il suo segno**, come lo scriveresti a primo membro (cioe' il termine `-m g sin(theta)` moltiplicato per la massa).",
+          "dati": "m = 22000 kg\ntheta = 8 gradi\ng = 9.81 m/s^2",
+          "segnaposto": "-22000*9.81*sin(...)",
+          "soluzione": "-22000*9.81*sin(8*pi/180)",
+          "verifica": {
+            "valore": -30040,
+            "entro": 120
+          },
+          "hint": [
+            "I gradi vanno convertiti: `sin` lavora in radianti, quindi `8*pi/180`.",
+            "Con il muso in su la componente frena: il segno e' negativo."
+          ],
+          "spiegazione": "`-m g sin(theta) = -22000 * 9.81 * sin(8 gradi)` circa `-30.0 kN`. Confronta con il peso totale, 216 kN: in salita a 8 gradi il peso si porta via il 14% del peso come forza frenante, e la spinta deve pagarla oltre alla resistenza. E' il motivo per cui la salita costa manetta."
+        },
+        {
+          "id": "d01-eq-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Lo stesso velivolo, sempre a `theta = 8` gradi. Nell'equazione lungo `z_B` il termine di peso e' `+m g cos(theta)`. Di quanti newton differisce dal peso pieno `m g`? Rispondi con il valore assoluto della differenza.",
+          "dati": "m = 22000 kg\ntheta = 8 gradi\ng = 9.81 m/s^2",
+          "segnaposto": "22000*9.81*(1 - cos(...))",
+          "soluzione": "22000*9.81*(1 - cos(8*pi/180))",
+          "verifica": {
+            "valore": 2101,
+            "entro": 40
+          },
+          "hint": [
+            "La differenza e' `m g (1 - cos(theta))`.",
+            "Il coseno di un angolo piccolo e' vicinissimo a 1: aspettati un numero piccolo rispetto ai 216 kN del peso."
+          ],
+          "spiegazione": "Circa 2.1 kN su 216 kN, cioe' l'1%. E' il primo esempio del ragionamento che regge tutto il capitolo: il seno di un angolo piccolo conta (il 14% dell'esercizio precedente), il coseno no. Da qui l'approssimazione `cos(gamma)` circa 1 nel trim semplificato, mentre `sin(gamma)` non si butta mai via."
+        }
+      ]
+    },
+    {
+      "id": "d01-corpo",
+      "comando": "assi corpo",
+      "titolo": "Il trim in assi corpo: incognite, condizione di volo, theta = alpha + gamma",
+      "esercizi": [
+        {
+          "id": "d01-ac-1",
+          "tipo": "numerico",
+          "difficolta": 2,
+          "testo": "Presa la quota come parametro noto, quante sono le **incognite** del problema del trim in volo simmetrico? Rispondi con il numero.",
+          "segnaposto": "5",
+          "soluzione": "5",
+          "verifica": {
+            "valore": 5,
+            "entro": 0.001
+          },
+          "hint": [
+            "Due componenti di velocita' (o velocita' e angolo d'attacco), un assetto, due comandi longitudinali."
+          ],
+          "spiegazione": "Cinque: `u, w` (equivalentemente `V, alpha`), `theta`, `delta_E`, `delta_T`. Le equazioni sono tre, quindi mancano due informazioni — ed e' esattamente il numero di condizioni di volo che si prescrivono."
+        },
+        {
+          "id": "d01-ac-2",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Con cinque incognite e tre equazioni si prescrivono due grandezze, e restano tre incognite vere. Elenca le **tre incognite** che restano da determinare, fra `V alpha theta delta_E delta_T gamma`.",
+          "segnaposto": "alpha ...",
+          "soluzione": "alpha delta_E delta_T",
+          "verifica": {
+            "insieme": [
+              "alpha",
+              "delta_E",
+              "delta_T"
+            ]
+          },
+          "hint": [
+            "Le due prescritte sono quelle su cui vuole agire il pilota.",
+            "`theta` non e' un'incognita indipendente: si ricava da una relazione cinematica."
+          ],
+          "spiegazione": "Si prescrivono `V_eq` e `gamma_eq`; `theta` esce da `theta = alpha + gamma`. Restano `(alpha, delta_E, delta_T)`: quanto angolo d'attacco serve, quanto equilibratore per tenerlo, quanta manetta per mantenere la velocita'."
+        },
+        {
+          "id": "d01-ac-3",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi l'assetto `theta` in funzione di angolo d'attacco e angolo di rampa.",
+          "segnaposto": "alpha + ...",
+          "soluzione": "alpha + gamma",
+          "verifica": {
+            "equivale": "alpha + gamma",
+            "usa": [
+              "alpha",
+              "gamma"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.25
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ]
+            }
+          },
+          "hint": [
+            "Somma di due angoli: quello fra x_B e la velocita', e quello fra la velocita' e l'orizzonte."
+          ],
+          "spiegazione": "`theta = alpha + gamma`. In volo livellato (`gamma = 0`) l'assetto coincide con l'angolo d'attacco; in discesa ripida `theta` puo' essere negativo mentre `alpha` resta positivo — il muso e' sotto l'orizzonte, ma l'ala lavora lo stesso."
+        },
+        {
+          "id": "d01-ac-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "In volo simmetrico, scrivi la componente `w` della velocita' in assi corpo in funzione di `V` e `alpha`.",
+          "segnaposto": "V*sin(...)",
+          "soluzione": "V*sin(alpha)",
+          "verifica": {
+            "equivale": "V*sin(alpha)",
+            "usa": [
+              "V",
+              "alpha"
+            ],
+            "dominio": {
+              "V": [
+                60,
+                260
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ]
+            }
+          },
+          "hint": [
+            "Parti dal caso generale `w = V cos(beta) sin(alpha)` e imponi la simmetria."
+          ],
+          "spiegazione": "Con `beta = 0` resta `w = V sin(alpha)`, e analogamente `u = V cos(alpha)`, `v = 0`. `w` e' la componente di velocita' *verso il basso del velivolo*: e' piccola, ma e' quella che definisce l'angolo d'attacco."
+        },
+        {
+          "id": "d01-ac-5",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi la relazione inversa: l'angolo d'attacco `alpha` a partire dalle componenti `u` e `w`.",
+          "segnaposto": "atan(...)",
+          "soluzione": "atan(w/u)",
+          "verifica": {
+            "equivale": "atan(w/u)",
+            "usa": [
+              "u",
+              "w"
+            ],
+            "senza": [
+              "V"
+            ],
+            "dominio": {
+              "u": [
+                60,
+                260
+              ],
+              "w": [
+                1,
+                40
+              ]
+            }
+          },
+          "hint": [
+            "`tan(alpha) = w/u`: manca solo di invertire la tangente."
+          ],
+          "spiegazione": "`alpha = atan(w/u)`, e `V = sqrt(u^2 + w^2)`. Conoscere `(u, w)` equivale a conoscere `(V, alpha)`: sono due modi di scrivere lo stesso stato, e si sceglie quello che rende piu' leggibile il problema."
+        },
+        {
+          "id": "d01-ac-6",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Una centralina inerziale misura `u = 184 m/s` e `w = 11.5 m/s`. Qual e' l'angolo d'attacco, in **gradi**?",
+          "dati": "u = 184 m/s\nw = 11.5 m/s",
+          "segnaposto": "atan(11.5/184)*180/pi",
+          "soluzione": "atan(11.5/184)*180/pi",
+          "verifica": {
+            "valore": 3.576,
+            "entro": 0.03
+          },
+          "hint": [
+            "Prima l'angolo in radianti, poi la conversione `*180/pi`.",
+            "Aspettati pochi gradi: e' un velivolo in crociera, non in salita ripida."
+          ],
+          "spiegazione": "Circa 3.6 gradi. Nota il rapporto: 11.5 su 184 e' il 6%, e l'angolo in radianti e' 0.0624 — per angoli piccoli l'angolo *e'* il rapporto. E' la stessa approssimazione che regge il modello aerodinamico lineare in `alpha`."
+        },
+        {
+          "id": "d01-ac-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo sale con `V = 95 m/s` e rateo di salita `h_dot = 12 m/s`. L'angolo d'attacco al trim vale `alpha = 5.5` gradi. Quanto vale l'assetto `theta`, in gradi?",
+          "dati": "V = 95 m/s\nh_dot = 12 m/s\nalpha = 5.5 gradi",
+          "segnaposto": "5.5 + asin(...)*180/pi",
+          "soluzione": "5.5 + asin(12/95)*180/pi",
+          "verifica": {
+            "valore": 12.75,
+            "entro": 0.08
+          },
+          "hint": [
+            "Il rateo di salita da' la rampa: `h_dot = V sin(gamma)`.",
+            "Poi si somma: `theta = alpha + gamma`, ma i due angoli devono essere nella stessa unita'."
+          ],
+          "spiegazione": "`gamma = asin(12/95)` = 7.25 gradi, quindi `theta` = 5.5 + 7.25 = 12.75 gradi. Due passi che si incastrano: il rateo di salita e' un dato operativo, la rampa e' un angolo, e l'assetto e' quello che il pilota legge sull'orizzonte artificiale. Confondere `theta` con `gamma` significa credere che il muso punti dove si sta andando, che e' falso di tutto l'angolo d'attacco."
+        },
+        {
+          "id": "d01-ac-8",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Scrivi il **primo membro** dell'equazione dei momenti di beccheggio in assi corpo, quella che vale zero, esplicitando il momento aerodinamico con la pressione dinamica e il momento propulsivo con il suo braccio. Usa `rho V S c C_m T d_T`.",
+          "segnaposto": "0.5*rho*V^2*S*c*C_m + ...",
+          "soluzione": "0.5*rho*V^2*S*c*C_m + T*d_T",
+          "verifica": {
+            "equivale": "0.5*rho*V^2*S*c*C_m + T*d_T",
+            "usa": [
+              "rho",
+              "V",
+              "S",
+              "c",
+              "C_m",
+              "T",
+              "d_T"
+            ],
+            "dominio": {
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "S": [
+                20,
+                130
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "C_m": [
+                -0.15,
+                0.15
+              ],
+              "T": [
+                3000,
+                90000
+              ],
+              "d_T": [
+                -1.5,
+                1.5
+              ]
+            }
+          },
+          "hint": [
+            "Il momento aerodinamico ha una lunghezza in piu' rispetto a una forza: la corda media aerodinamica.",
+            "Il momento propulsivo e' spinta per braccio."
+          ],
+          "spiegazione": "`0.5 rho V^2 S c C_m + T d_T = 0`. La corda `c` c'e' perche' un momento e' una forza per una lunghezza, e la lunghezza di riferimento longitudinale e' la corda media aerodinamica. Il termine `T d_T` e' quello che accoppia la manetta all'equilibrio di beccheggio: se il motore non passa per il baricentro, dare motore fa alzare o abbassare il muso."
+        }
+      ]
+    },
+    {
+      "id": "d01-vento",
+      "comando": "assi vento",
+      "titolo": "Assi vento, ordini di grandezza, trim semplificato",
+      "esercizi": [
+        {
+          "id": "d01-av-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "In volo simmetrico, scrivi `C_X` in funzione di `C_L`, `C_D` e `alpha`.",
+          "segnaposto": "-C_D*cos(alpha) + ...",
+          "soluzione": "-C_D*cos(alpha) + C_L*sin(alpha)",
+          "verifica": {
+            "equivale": "-C_D*cos(alpha) + C_L*sin(alpha)",
+            "usa": [
+              "C_L",
+              "C_D",
+              "alpha"
+            ],
+            "dominio": {
+              "C_L": [
+                0.1,
+                1.5
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ]
+            }
+          },
+          "hint": [
+            "La resistenza e' diretta come `-x_W`: in assi corpo la sua proiezione su `x_B` e' negativa.",
+            "La portanza e' diretta come `-z_W` e su `x_B` proietta con il seno."
+          ],
+          "spiegazione": "`C_X = -C_D cos(alpha) + C_L sin(alpha)`. Il segno meno davanti a `C_D` dice l'ovvio: la resistenza tira all'indietro. Il termine `+C_L sin(alpha)` e' meno ovvio — a incidenza non nulla la portanza ha una componente in avanti lungo `x_B`, e non e' trascurabile perche' `C_L` e' dieci volte `C_D`."
+        },
+        {
+          "id": "d01-av-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Sempre in volo simmetrico, scrivi `C_Z` in funzione di `C_L`, `C_D` e `alpha`.",
+          "segnaposto": "-C_D*sin(alpha) - ...",
+          "soluzione": "-C_D*sin(alpha) - C_L*cos(alpha)",
+          "verifica": {
+            "equivale": "-C_D*sin(alpha) - C_L*cos(alpha)",
+            "usa": [
+              "C_L",
+              "C_D",
+              "alpha"
+            ],
+            "dominio": {
+              "C_L": [
+                0.1,
+                1.5
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ]
+            }
+          },
+          "hint": [
+            "Entrambi i termini sono negativi: `z_B` punta in basso, portanza e resistenza no."
+          ],
+          "spiegazione": "`C_Z = -C_D sin(alpha) - C_L cos(alpha)`. Il termine dominante e' `-C_L cos(alpha)`: la portanza e' quasi tutta lungo `-z_B`. E' il motivo per cui nell'equazione lungo `z_B` si riconosce, in fondo, l'equilibrio portanza-peso."
+        },
+        {
+          "id": "d01-av-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Inverti le due relazioni: scrivi `C_L` in funzione di `C_X`, `C_Z` e `alpha`.",
+          "segnaposto": "C_X*sin(alpha) - ...",
+          "soluzione": "C_X*sin(alpha) - C_Z*cos(alpha)",
+          "verifica": {
+            "equivale": "C_X*sin(alpha) - C_Z*cos(alpha)",
+            "usa": [
+              "C_X",
+              "C_Z",
+              "alpha"
+            ],
+            "senza": [
+              "C_D"
+            ],
+            "dominio": {
+              "C_X": [
+                -0.12,
+                0.05
+              ],
+              "C_Z": [
+                -1.5,
+                -0.1
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ]
+            }
+          },
+          "hint": [
+            "E' una rotazione: la matrice inversa di una rotazione e' la sua trasposta.",
+            "Moltiplica la prima relazione per `sin(alpha)`, la seconda per `-cos(alpha)`, e somma."
+          ],
+          "spiegazione": "`C_L = C_X sin(alpha) - C_Z cos(alpha)`, e specularmente `C_D = -C_X cos(alpha) - C_Z sin(alpha)`. Serve davvero: in galleria del vento si misurano portanza e resistenza (assi vento), in CFD spesso si calcolano i coefficienti in assi corpo, e per confrontarli bisogna saper passare nei due sensi."
+        },
+        {
+          "id": "d01-av-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il primo membro dell'equazione di trim lungo la **tangente** alla traiettoria (assi vento): spinta, resistenza, peso. Usa `T alpha eta_T rho V S C_D m g gamma`.",
+          "segnaposto": "T*cos(alpha + eta_T) - ...",
+          "soluzione": "T*cos(alpha + eta_T) - 0.5*rho*V^2*S*C_D - m*g*sin(gamma)",
+          "verifica": {
+            "equivale": "T*cos(alpha + eta_T) - 0.5*rho*V^2*S*C_D - m*g*sin(gamma)",
+            "usa": [
+              "T",
+              "alpha",
+              "eta_T",
+              "rho",
+              "V",
+              "S",
+              "C_D",
+              "m",
+              "gamma"
+            ],
+            "dominio": {
+              "T": [
+                3000,
+                90000
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "S": [
+                20,
+                130
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ]
+            }
+          },
+          "hint": [
+            "La spinta forma con la velocita' un angolo `alpha + eta_T`, non `eta_T` da solo.",
+            "In salita il peso frena: entra con il seno della rampa e con il segno meno."
+          ],
+          "spiegazione": "`T cos(alpha + eta_T) - 0.5 rho V^2 S C_D - m g sin(gamma) = 0`. Lungo la traiettoria la spinta paga due conti: la resistenza sempre, e la salita quando c'e'. In discesa `sin(gamma)` e' negativo e il peso spinge in avanti — e' il volo planato."
+        },
+        {
+          "id": "d01-av-5",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "E lungo la **normale** alla traiettoria: portanza, componente verticale della spinta, peso. Usa gli stessi simboli con `C_L`.",
+          "segnaposto": "0.5*rho*V^2*S*C_L + ...",
+          "soluzione": "0.5*rho*V^2*S*C_L + T*sin(alpha + eta_T) - m*g*cos(gamma)",
+          "verifica": {
+            "equivale": "0.5*rho*V^2*S*C_L + T*sin(alpha + eta_T) - m*g*cos(gamma)",
+            "usa": [
+              "T",
+              "alpha",
+              "eta_T",
+              "rho",
+              "V",
+              "S",
+              "C_L",
+              "m",
+              "gamma"
+            ],
+            "dominio": {
+              "T": [
+                3000,
+                90000
+              ],
+              "alpha": [
+                0.02,
+                0.25
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "S": [
+                20,
+                130
+              ],
+              "C_L": [
+                0.1,
+                1.5
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ]
+            }
+          },
+          "hint": [
+            "Qui la spinta entra con il seno dello stesso angolo, e il peso con il coseno della rampa."
+          ],
+          "spiegazione": "`0.5 rho V^2 S C_L + T sin(alpha + eta_T) - m g cos(gamma) = 0`. La spinta partecipa a sostenere il velivolo, ma con `sin(alpha + eta_T)`: pochi gradi, quindi poco. E' proprio questo termine che l'ipotesi di angoli piccoli manda via, lasciando l'equilibrio portanza-peso."
+        },
+        {
+          "id": "d01-av-6",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Volo livellato: `m = 18000 kg`, `V = 140 m/s`, `rho = 0.66 kg/m^3` (quota di crociera), `S = 78 m^2`. Quanto vale il `C_L` di trim?",
+          "dati": "m = 18000 kg\nV = 140 m/s\nrho = 0.66 kg/m^3\nS = 78 m^2\ng = 9.81 m/s^2",
+          "segnaposto": "18000*9.81/(0.5*0.66*140^2*78)",
+          "soluzione": "18000*9.81/(0.5*0.66*140^2*78)",
+          "verifica": {
+            "valore": 0.35,
+            "entro": 0.005
+          },
+          "hint": [
+            "In volo livellato `cos(gamma) = 1`: portanza uguale peso.",
+            "`C_L = m g / (0.5 rho V^2 S)`."
+          ],
+          "spiegazione": "Circa 0.35. E' un valore basso, ed e' giusto che lo sia: in crociera veloce si vola a piccolo `C_L`, quindi a piccolo angolo d'attacco. Lo stesso velivolo in avvicinamento a 70 m/s avrebbe bisogno di un `C_L` quattro volte piu' grande — la portanza va col quadrato della velocita', e la meta' della velocita' costa il quadruplo del coefficiente."
+        },
+        {
+          "id": "d01-av-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Lo stesso velivolo dell'esercizio precedente, in crociera livellata, ha efficienza `E = L/D = 16`. Quanta spinta serve, in newton, sotto le ipotesi del trim semplificato?",
+          "dati": "m = 18000 kg\nE = 16\ngamma = 0 (volo livellato)\ng = 9.81 m/s^2",
+          "segnaposto": "18000*9.81/16",
+          "soluzione": "18000*9.81/16",
+          "verifica": {
+            "valore": 11036,
+            "entro": 60
+          },
+          "hint": [
+            "In volo livellato la portanza vale il peso, e la resistenza e' la portanza divisa per l'efficienza.",
+            "La spinta paga solo la resistenza quando `gamma = 0`."
+          ],
+          "spiegazione": "`T = D = L/E = m g / E` circa 11.0 kN, cioe' `T/(m g)` = 1/16 = 0.0625. E' l'ordine di grandezza annunciato dal libro: spinta/peso attorno a 0.1 in volo livellato, tanto piu' piccolo quanto piu' il velivolo e' efficiente. Un caccia con `T/(m g)` vicino a 1 non e' piu' efficiente: e' un velivolo che accetta molta resistenza in cambio di prestazioni."
+        },
+        {
+          "id": "d01-av-8",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Trim semplificato. Scrivi la spinta richiesta `T` in funzione della condizione di volo, cioe' il secondo membro della prima equazione del trim semplificato. Usa `rho V S C_D m g gamma`.",
+          "segnaposto": "0.5*rho*V^2*S*C_D + ...",
+          "soluzione": "0.5*rho*V^2*S*C_D + m*g*sin(gamma)",
+          "verifica": {
+            "equivale": "0.5*rho*V^2*S*C_D + m*g*sin(gamma)",
+            "usa": [
+              "rho",
+              "V",
+              "S",
+              "C_D",
+              "m",
+              "gamma"
+            ],
+            "senza": [
+              "alpha",
+              "eta_T"
+            ],
+            "dominio": {
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "S": [
+                20,
+                130
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ]
+            }
+          },
+          "hint": [
+            "Sono cadute le funzioni di `alpha + eta_T`: `cos` circa 1 e il termine col `sin` e' trascurabile.",
+            "Restano due contributi: la resistenza e la componente del peso lungo la traiettoria."
+          ],
+          "spiegazione": "`T_max delta_T = 0.5 rho V^2 S C_D + m g sin(gamma)`. Con questa forma il trim si disaccoppia: `C_L(alpha, delta_E) = C_L_trim` e `C_m(alpha, delta_E) = 0` sono due equazioni lineari in due incognite e si risolvono da sole, poi la spinta esce in cascata da questa. Ed e' la formula che dice, in una riga, perche' salire costa: il termine `m g sin(gamma)` si somma alla resistenza, e a 18000 kg per 5 gradi di rampa vale 15 kN — piu' della resistenza in crociera."
+        }
+      ]
+    }
+  ]
+}

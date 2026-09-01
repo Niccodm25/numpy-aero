@@ -22,6 +22,7 @@ import * as SC from "./sicurezza.js";
 import * as AU from "./automazione.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
+import * as FI from "./fisica.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -280,6 +281,51 @@ async function vistaModulo(id) {
            <p class="muto">Un esercizio per comando a rotazione, finché non li sai tutti.</p>
            ${cartaPercorso(id, m)}`
     }`;
+}
+
+// I tasti dei simboli che servono da telefono: una formula si scrive con i
+// simboli del corso, un conto con le parentesi e le funzioni.
+const TASTI_FORMULA = ["alpha", "gamma", "theta", "C_L", "C_D", "sin(", "cos(", "^", "*", "/", "(", ")"];
+const TASTI_CONTO = ["(", ")", "*", "/", "^", "sin(", "cos(", "atan(", "sqrt(", "pi", "180/pi"];
+
+/**
+ * Esercizio di fisica: una riga sola per la risposta.
+ *
+ * Una riga e non un'area di testo perche' la risposta e' sempre una cosa sola
+ * — una formula, un numero, una sequenza — e perche' da telefono la tastiera
+ * copre meta' schermo: piu' e' corto il campo, piu' resta visibile il testo.
+ */
+function montaFisica(zona, es) {
+  // I passi si mescolano a ogni apertura: se restassero nell'ordine del file,
+  // al secondo ripasso si ricorderebbe la posizione invece del ragionamento.
+  const passi = es.passi
+    ? `<ol class="passi">${mescola(es.passi).map((x) => `<li><code>${escapeHtml(x.testo ?? x)}</code> <span class="muto">(${escapeHtml(String(x.id ?? ""))})</span></li>`).join("")}</ol>`
+    : "";
+  const aiuto = {
+    formula: "Scrivi la formula. L'ordine dei termini non conta: viene calcolata, non confrontata come testo.",
+    numerico: "Scrivi il numero, o il conto che lo produce.",
+    ordina: "Scrivi le sigle dei passi nell'ordine giusto, separate da spazi.",
+    insieme: "Elenca i simboli, separati da spazi. L'ordine non conta.",
+  }[es.tipo];
+
+  zona.innerHTML = `
+    ${es.dati ? `<p class="muto">Dati:</p><pre><code>${escapeHtml(es.dati)}</code></pre>` : ""}
+    ${passi}
+    <div class="riga-prompt">
+      <input id="risposta" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"
+             placeholder="${escapeHtml(es.segnaposto ?? "")}">
+    </div>
+    ${es.tipo === "formula" || es.tipo === "numerico"
+      ? `<div class="simboli">${(es.tasti ?? (es.tipo === "numerico" ? TASTI_CONTO : TASTI_FORMULA)).map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x)}</button>`).join("")}</div>`
+      : ""}
+    <p class="muto">${aiuto}</p>`;
+
+  const campo = zona.querySelector("#risposta");
+  zona.querySelectorAll(".simboli button").forEach((b) => {
+    b.onmousedown = (ev) => ev.preventDefault();
+    b.onclick = () => inserisci(campo, b.dataset.s);
+  });
+  if (matchMedia("(min-width: 700px)").matches) campo.focus();
 }
 
 /**
@@ -769,6 +815,8 @@ function montaEsercizio({
     term = montaTerminale(zona, es);
   } else if (es.tipo === "html") {
     montaHtml(zona, es);
+  } else if (FI.TIPI_FISICA.includes(es.tipo)) {
+    montaFisica(zona, es);
   } else {
     zona.innerHTML = `
       ${es.setup ? `<p class="muto">Dati forniti, gia caricati:</p><pre><code>${escapeHtml(es.setup)}</code></pre>` : ""}
@@ -782,7 +830,7 @@ function montaEsercizio({
 
   // Solo gli esercizi di codice hanno il tasto Prova: il terminale esegue gia' a
   // ogni invio, e l'anteprima dell'HTML si aggiorna mentre scrivi.
-  const codicePython = !["predict", "terminale", "html"].includes(es.tipo);
+  const codicePython = !["predict", "terminale", "html", ...FI.TIPI_FISICA].includes(es.tipo);
 
   azioni.innerHTML = `<button class="primario" id="ver">Verifica</button>
     ${codicePython ? `<button id="prova">Prova</button>` : ""}
@@ -858,6 +906,11 @@ function montaEsercizio({
       ok = esitoH.ok;
       if (!ok)
         dettaglio += `<ul>${esitoH.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
+    } else if (FI.TIPI_FISICA.includes(es.tipo)) {
+      const esitoF = FI.verificaFisica(es.tipo, zona.querySelector("#risposta").value, es.verifica);
+      ok = esitoF.ok;
+      if (!ok)
+        dettaglio += `<ul>${esitoF.problemi.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ul>`;
     } else {
       btn.textContent = "Eseguo…";
       const codice = (es.setup ? es.setup + "\n" : "") + zona.querySelector("#ed").value;
