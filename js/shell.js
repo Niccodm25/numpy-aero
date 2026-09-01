@@ -5,6 +5,7 @@
 // argomenti gia' separati e restituisce il testo da stampare.
 
 import * as V from "./vfs.js";
+import { opzioneIgnota } from "./opzioni.js";
 
 export function creaShell(iniziale = {}, opzioni = {}) {
   const fs = V.crea(iniziale);
@@ -143,6 +144,14 @@ export function esegui(sh, riga) {
     if (!nome) return { out: "", errore: "manca un comando attorno alla pipe" };
     const fn = sh.comandi[nome];
     if (!fn) return { out: "", errore: `${nome}: comando non trovato` };
+    // Le opzioni si controllano qui, prima del comando: un trattino che il
+    // simulatore non implementa deve dirlo, non sparire in silenzio.
+    const problema = opzioneIgnota(nome, parole.slice(1));
+    if (problema) {
+      sh.env["?"] = "1";
+      sh.esito = null;
+      return { out: "", errore: problema };
+    }
 
     sh.stdin = ingresso;
     try {
