@@ -701,9 +701,32 @@ export const POSIX = {
   },
 
   find(sh, args) {
-    const radice = args[0] ?? ".";
-    const nome = args.includes("-name") ? args[args.indexOf("-name") + 1] : null;
-    let trovati = V.sottoalbero(sh.fs, radice);
+    // Le radici vengono prima dei predicati: dopo il primo `-qualcosa`, un
+    // argomento nudo e' un errore, come su find vero.
+    const radici = [];
+    let nome = null;
+    let vistoPredicato = false;
+    for (let i = 0; i < args.length; i++) {
+      const a = args[i];
+      if (a === "-name") {
+        vistoPredicato = true;
+        nome = args[++i];
+        if (nome === undefined) throw new V.ErroreFs("manca l'argomento di '-name'");
+      } else if (a.startsWith("-")) {
+        throw new V.ErroreFs(`predicato sconosciuto '${a}'`);
+      } else if (vistoPredicato) {
+        throw new V.ErroreFs(`i percorsi vanno prima dell'espressione: '${a}'`);
+      } else {
+        radici.push(a);
+      }
+    }
+    if (!radici.length) radici.push(".");
+
+    let trovati = [];
+    for (const radice of radici) {
+      if (!V.esiste(sh.fs, radice)) throw new V.ErroreFs(`${radice}: file o cartella non esistente`);
+      trovati = trovati.concat(V.sottoalbero(sh.fs, radice));
+    }
     if (nome) {
       // Solo il glob con l'asterisco: gli altri caratteri speciali non servono
       // a nessuno degli esercizi previsti, e ognuno costerebbe un caso in piu'.
