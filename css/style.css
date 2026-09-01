@@ -196,6 +196,13 @@ button.minuscolo {
   font-size: .9rem; padding: .5rem 0; min-height: 44px;
 }
 .riga-prompt input:focus { outline: none; }
+/* Riprende l'ultimo comando dove la freccia su non esiste: sul telefono. */
+.tasto-storia {
+  flex: none; min-width: 44px; min-height: 44px;
+  border: 1px solid var(--bordo); border-radius: var(--raggio);
+  background: none; color: var(--tx2); font-size: 1rem; cursor: pointer;
+}
+.tasto-storia:active { color: var(--acc); border-color: var(--acc); }
 
 /* Anteprima della pagina HTML che stai scrivendo. Fondo bianco fisso: e' una
    pagina a se', e mostrarla sul tema scuro dell'app direbbe una bugia su come

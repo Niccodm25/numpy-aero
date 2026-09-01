@@ -358,8 +358,9 @@ function montaTerminale(zona, es) {
     <div class="riga-prompt">
       <span class="prompt" id="t-prompt"></span>
       <input id="t-in" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off">
+      <button id="t-su" class="tasto-storia" type="button" aria-label="Riprendi il comando precedente">↑</button>
     </div>
-    <p class="muto">Invio per eseguire. Freccia su per riprendere l'ultimo comando.</p>`;
+    <p class="muto">Invio per eseguire. Il tasto ↑ (o la freccia su) riprende l'ultimo comando.</p>`;
 
   const out = zona.querySelector("#t-out");
   const input = zona.querySelector("#t-in");
@@ -381,19 +382,37 @@ function montaTerminale(zona, es) {
   aggiornaStato();
 
   let indiceStoria = null;
+  // Su telefono la freccia su non c'e': il bottone accanto al prompt fa la
+  // stessa cosa, e ripassa da qui.
+  const risali = (passo) => {
+    if (!sh.storia.length) return;
+    if (indiceStoria === null) {
+      if (passo > 0) return;
+      indiceStoria = sh.storia.length - 1;
+    } else {
+      indiceStoria = Math.min(sh.storia.length - 1, Math.max(0, indiceStoria + passo));
+    }
+    input.value = sh.storia[indiceStoria];
+  };
+
+  // Il preventDefault sul mousedown evita che il bottone rubi il cursore
+  // all'input: senza, su telefono la tastiera si chiude a ogni tocco.
+  const tastoSu = zona.querySelector("#t-su");
+  tastoSu.onmousedown = (ev) => ev.preventDefault();
+  tastoSu.onclick = () => {
+    risali(-1);
+    input.focus();
+  };
+
   input.onkeydown = (ev) => {
     if (ev.key === "ArrowUp") {
       ev.preventDefault();
-      if (!sh.storia.length) return;
-      indiceStoria = indiceStoria === null ? sh.storia.length - 1 : Math.max(0, indiceStoria - 1);
-      input.value = sh.storia[indiceStoria];
+      risali(-1);
       return;
     }
     if (ev.key === "ArrowDown") {
       ev.preventDefault();
-      if (indiceStoria === null) return;
-      indiceStoria = Math.min(sh.storia.length - 1, indiceStoria + 1);
-      input.value = sh.storia[indiceStoria];
+      risali(1);
       return;
     }
     if (ev.key !== "Enter") return;
