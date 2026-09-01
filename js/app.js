@@ -307,13 +307,22 @@ function montaFisica(zona, es) {
     ordina: "Scrivi le sigle dei passi nell'ordine giusto, separate da spazi.",
     insieme: "Elenca i simboli, separati da spazi. L'ordine non conta.",
   }[es.tipo];
+  // Il segnaposto dice la FORMA della risposta e mai il suo contenuto: un
+  // esercizio con mezza soluzione gia' scritta nella casella non e' un
+  // esercizio. Per questo non lo decide il file del modulo.
+  const segnaposto = {
+    formula: "la formula, con * per il prodotto e ^ per la potenza",
+    numerico: "il numero, o il conto",
+    ordina: "le sigle, separate da spazi",
+    insieme: "i simboli, separati da spazi",
+  }[es.tipo];
 
   zona.innerHTML = `
     ${es.dati ? `<p class="muto">Dati:</p><pre><code>${escapeHtml(es.dati)}</code></pre>` : ""}
     ${passi}
     <div class="riga-prompt">
       <input id="risposta" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"
-             placeholder="${escapeHtml(es.segnaposto ?? "")}">
+             placeholder="${escapeHtml(segnaposto)}">
     </div>
     ${es.tipo === "formula" || es.tipo === "numerico"
       ? `<div class="simboli">${(es.tasti ?? (es.tipo === "numerico" ? TASTI_CONTO : TASTI_FORMULA)).map((x) => `<button data-s="${escapeHtml(x)}">${escapeHtml(x)}</button>`).join("")}</div>`

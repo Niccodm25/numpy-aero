@@ -42,7 +42,6 @@
           "tipo": "insieme",
           "difficolta": 2,
           "testo": "Il velivolo vola su una traiettoria **rettilinea**. Elenca le componenti di velocita' angolare in assi corpo che questa sola ipotesi annulla.",
-          "segnaposto": "p q r",
           "soluzione": "p q r",
           "verifica": {
             "insieme": [
@@ -61,7 +60,6 @@
           "tipo": "insieme",
           "difficolta": 2,
           "testo": "Il volo si svolge nel piano longitudinale di simmetria. Elenca le grandezze che l'ipotesi di **simmetria** pone a zero, fra queste: `alpha beta phi theta delta_A delta_E delta_R delta_T`.",
-          "segnaposto": "beta phi ...",
           "soluzione": "beta phi delta_A delta_R",
           "verifica": {
             "insieme": [
@@ -82,7 +80,6 @@
           "tipo": "insieme",
           "difficolta": 2,
           "testo": "Per la simmetria del modello aerodinamico, tre componenti di forza e momento si annullano identicamente. Elencale usando `X Y Z L_roll M N`.",
-          "segnaposto": "Y ...",
           "soluzione": "Y L_roll N",
           "verifica": {
             "insieme": [
@@ -101,7 +98,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "Scrivi il **primo membro** dell'equazione di equilibrio lungo `x_B` (asse corpo longitudinale), quella che deve valere zero. Usa `X T_x m g theta`.",
-          "segnaposto": "(X + T_x)/m - ...",
           "soluzione": "(X + T_x)/m - g*sin(theta)",
           "verifica": {
             "equivale": "(X + T_x)/m - g*sin(theta)",
@@ -141,7 +137,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "Stessa cosa per l'asse `z_B`, che punta verso il **basso** del velivolo. Scrivi il primo membro dell'equazione di equilibrio, usando `Z T_z m g theta`.",
-          "segnaposto": "(Z + T_z)/m + ...",
           "soluzione": "(Z + T_z)/m + g*cos(theta)",
           "verifica": {
             "equivale": "(Z + T_z)/m + g*cos(theta)",
@@ -203,7 +198,6 @@
               "testo": "Si impone la simmetria: beta = 0, phi = 0, comandi laterali indeflessi"
             }
           ],
-          "segnaposto": "ST RE ...",
           "soluzione": "ST RE IN SI LA",
           "verifica": {
             "ordine": [
@@ -226,7 +220,6 @@
           "difficolta": 4,
           "testo": "Un velivolo da 22000 kg vola in salita con assetto `theta = 8` gradi. Quanto vale, in newton, la componente del peso lungo `x_B` che compare nella prima equazione di equilibrio? Rispondi con il valore **con il suo segno**, come lo scriveresti a primo membro (cioe' il termine `-m g sin(theta)` moltiplicato per la massa).",
           "dati": "m = 22000 kg\ntheta = 8 gradi\ng = 9.81 m/s^2",
-          "segnaposto": "-22000*9.81*sin(...)",
           "soluzione": "-22000*9.81*sin(8*pi/180)",
           "verifica": {
             "valore": -30040,
@@ -244,7 +237,6 @@
           "difficolta": 4,
           "testo": "Lo stesso velivolo, sempre a `theta = 8` gradi. Nell'equazione lungo `z_B` il termine di peso e' `+m g cos(theta)`. Di quanti newton differisce dal peso pieno `m g`? Rispondi con il valore assoluto della differenza.",
           "dati": "m = 22000 kg\ntheta = 8 gradi\ng = 9.81 m/s^2",
-          "segnaposto": "22000*9.81*(1 - cos(...))",
           "soluzione": "22000*9.81*(1 - cos(8*pi/180))",
           "verifica": {
             "valore": 2101,
@@ -268,7 +260,6 @@
           "tipo": "numerico",
           "difficolta": 2,
           "testo": "Presa la quota come parametro noto, quante sono le **incognite** del problema del trim in volo simmetrico? Rispondi con il numero.",
-          "segnaposto": "5",
           "soluzione": "5",
           "verifica": {
             "valore": 5,
@@ -284,7 +275,6 @@
           "tipo": "insieme",
           "difficolta": 2,
           "testo": "Con cinque incognite e tre equazioni si prescrivono due grandezze, e restano tre incognite vere. Elenca le **tre incognite** che restano da determinare, fra `V alpha theta delta_E delta_T gamma`.",
-          "segnaposto": "alpha ...",
           "soluzione": "alpha delta_E delta_T",
           "verifica": {
             "insieme": [
@@ -304,7 +294,6 @@
           "tipo": "formula",
           "difficolta": 2,
           "testo": "Scrivi l'assetto `theta` in funzione di angolo d'attacco e angolo di rampa.",
-          "segnaposto": "alpha + ...",
           "soluzione": "alpha + gamma",
           "verifica": {
             "equivale": "alpha + gamma",
@@ -333,7 +322,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "In volo simmetrico, scrivi la componente `w` della velocita' in assi corpo in funzione di `V` e `alpha`.",
-          "segnaposto": "V*sin(...)",
           "soluzione": "V*sin(alpha)",
           "verifica": {
             "equivale": "V*sin(alpha)",
@@ -362,7 +350,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "Scrivi la relazione inversa: l'angolo d'attacco `alpha` a partire dalle componenti `u` e `w`.",
-          "segnaposto": "atan(...)",
           "soluzione": "atan(w/u)",
           "verifica": {
             "equivale": "atan(w/u)",
@@ -395,7 +382,6 @@
           "difficolta": 3,
           "testo": "Una centralina inerziale misura `u = 184 m/s` e `w = 11.5 m/s`. Qual e' l'angolo d'attacco, in **gradi**?",
           "dati": "u = 184 m/s\nw = 11.5 m/s",
-          "segnaposto": "atan(11.5/184)*180/pi",
           "soluzione": "atan(11.5/184)*180/pi",
           "verifica": {
             "valore": 3.576,
@@ -413,7 +399,6 @@
           "difficolta": 4,
           "testo": "Un velivolo sale con `V = 95 m/s` e rateo di salita `h_dot = 12 m/s`. L'angolo d'attacco al trim vale `alpha = 5.5` gradi. Quanto vale l'assetto `theta`, in gradi?",
           "dati": "V = 95 m/s\nh_dot = 12 m/s\nalpha = 5.5 gradi",
-          "segnaposto": "5.5 + asin(...)*180/pi",
           "soluzione": "5.5 + asin(12/95)*180/pi",
           "verifica": {
             "valore": 12.75,
@@ -430,7 +415,6 @@
           "tipo": "formula",
           "difficolta": 4,
           "testo": "Scrivi il **primo membro** dell'equazione dei momenti di beccheggio in assi corpo, quella che vale zero, esplicitando il momento aerodinamico con la pressione dinamica e il momento propulsivo con il suo braccio. Usa `rho V S c C_m T d_T`.",
-          "segnaposto": "0.5*rho*V^2*S*c*C_m + ...",
           "soluzione": "0.5*rho*V^2*S*c*C_m + T*d_T",
           "verifica": {
             "equivale": "0.5*rho*V^2*S*c*C_m + T*d_T",
@@ -492,7 +476,6 @@
           "tipo": "formula",
           "difficolta": 2,
           "testo": "In volo simmetrico, scrivi `C_X` in funzione di `C_L`, `C_D` e `alpha`.",
-          "segnaposto": "-C_D*cos(alpha) + ...",
           "soluzione": "-C_D*cos(alpha) + C_L*sin(alpha)",
           "verifica": {
             "equivale": "-C_D*cos(alpha) + C_L*sin(alpha)",
@@ -527,7 +510,6 @@
           "tipo": "formula",
           "difficolta": 2,
           "testo": "Sempre in volo simmetrico, scrivi `C_Z` in funzione di `C_L`, `C_D` e `alpha`.",
-          "segnaposto": "-C_D*sin(alpha) - ...",
           "soluzione": "-C_D*sin(alpha) - C_L*cos(alpha)",
           "verifica": {
             "equivale": "-C_D*sin(alpha) - C_L*cos(alpha)",
@@ -561,7 +543,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "Inverti le due relazioni: scrivi `C_L` in funzione di `C_X`, `C_Z` e `alpha`.",
-          "segnaposto": "C_X*sin(alpha) - ...",
           "soluzione": "C_X*sin(alpha) - C_Z*cos(alpha)",
           "verifica": {
             "equivale": "C_X*sin(alpha) - C_Z*cos(alpha)",
@@ -599,7 +580,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "Scrivi il primo membro dell'equazione di trim lungo la **tangente** alla traiettoria (assi vento): spinta, resistenza, peso. Usa `T alpha eta_T rho V S C_D m g gamma`.",
-          "segnaposto": "T*cos(alpha + eta_T) - ...",
           "soluzione": "T*cos(alpha + eta_T) - 0.5*rho*V^2*S*C_D - m*g*sin(gamma)",
           "verifica": {
             "equivale": "T*cos(alpha + eta_T) - 0.5*rho*V^2*S*C_D - m*g*sin(gamma)",
@@ -664,7 +644,6 @@
           "tipo": "formula",
           "difficolta": 3,
           "testo": "E lungo la **normale** alla traiettoria: portanza, componente verticale della spinta, peso. Usa gli stessi simboli con `C_L`.",
-          "segnaposto": "0.5*rho*V^2*S*C_L + ...",
           "soluzione": "0.5*rho*V^2*S*C_L + T*sin(alpha + eta_T) - m*g*cos(gamma)",
           "verifica": {
             "equivale": "0.5*rho*V^2*S*C_L + T*sin(alpha + eta_T) - m*g*cos(gamma)",
@@ -729,7 +708,6 @@
           "difficolta": 3,
           "testo": "Volo livellato: `m = 18000 kg`, `V = 140 m/s`, `rho = 0.66 kg/m^3` (quota di crociera), `S = 78 m^2`. Quanto vale il `C_L` di trim?",
           "dati": "m = 18000 kg\nV = 140 m/s\nrho = 0.66 kg/m^3\nS = 78 m^2\ng = 9.81 m/s^2",
-          "segnaposto": "18000*9.81/(0.5*0.66*140^2*78)",
           "soluzione": "18000*9.81/(0.5*0.66*140^2*78)",
           "verifica": {
             "valore": 0.35,
@@ -747,7 +725,6 @@
           "difficolta": 4,
           "testo": "Lo stesso velivolo dell'esercizio precedente, in crociera livellata, ha efficienza `E = L/D = 16`. Quanta spinta serve, in newton, sotto le ipotesi del trim semplificato?",
           "dati": "m = 18000 kg\nE = 16\ngamma = 0 (volo livellato)\ng = 9.81 m/s^2",
-          "segnaposto": "18000*9.81/16",
           "soluzione": "18000*9.81/16",
           "verifica": {
             "valore": 11036,
@@ -764,7 +741,6 @@
           "tipo": "formula",
           "difficolta": 4,
           "testo": "Trim semplificato. Scrivi la spinta richiesta `T` in funzione della condizione di volo, cioe' il secondo membro della prima equazione del trim semplificato. Usa `rho V S C_D m g gamma`.",
-          "segnaposto": "0.5*rho*V^2*S*C_D + ...",
           "soluzione": "0.5*rho*V^2*S*C_D + m*g*sin(gamma)",
           "verifica": {
             "equivale": "0.5*rho*V^2*S*C_D + m*g*sin(gamma)",

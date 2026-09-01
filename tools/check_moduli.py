@@ -129,6 +129,20 @@ def controlla_teoria(dati):
     if senza:
         problemi.append(f"{len(senza)} esercizi senza soluzione o senza verifica (es. {senza[0]})")
 
+    # Il 2026-09-01 gli esercizi sono nati con la soluzione scritta nel
+    # segnaposto della casella: si apriva l'esercizio e la risposta era gia'
+    # li'. La forma della risposta la decide l'app, per tipo; il modulo no.
+    con_segnaposto = [e["id"] for e in esercizi if e.get("segnaposto")]
+    if con_segnaposto:
+        problemi.append(f"{len(con_segnaposto)} esercizi dichiarano un segnaposto (es. {con_segnaposto[0]}): "
+                        "la casella non deve suggerire la risposta")
+
+    regala = [e["id"] for e in esercizi
+              if e.get("soluzione") and len(e["soluzione"]) > 3
+              and e["soluzione"].replace(" ", "") in e.get("testo", "").replace(" ", "")]
+    if regala:
+        problemi.append(f"{len(regala)} esercizi hanno la soluzione dentro il testo (es. {regala[0]})")
+
     senza_perche = [e["id"] for e in esercizi if not e.get("spiegazione")]
     if senza_perche:
         problemi.append(f"{len(senza_perche)} esercizi senza spiegazione (es. {senza_perche[0]})")
