@@ -33,6 +33,7 @@ const OPERATORI = {
   infty: "∞", partial: "∂", nabla: "∇", sum: "∑", int: "∫", prod: "∏",
   in: "∈", notin: "∉", subset: "⊂", cup: "∪", cap: "∩",
   forall: "∀", exists: "∃", ldots: "…", cdots: "⋯", dots: "…",
+  bullet: "•", bigl: "", bigr: "",
   perp: "⊥", parallel: "∥", angle: "∠", circ: "∘", ast: "∗", star: "⋆",
   langle: "⟨", rangle: "⟩", lVert: "‖", rVert: "‖", vert: "|",
 };

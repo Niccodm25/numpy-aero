@@ -1,0 +1,1848 @@
+{
+  "id": "d02",
+  "titolo": "Il modello aerodinamico: la portanza",
+  "perche": "Le equazioni del trim contengono C_L e C_m come funzioni di alpha e delta_E: finche' restano simboli non si risolve niente. Qui si costruisce il primo dei due modelli, pezzo per pezzo — ala-fusoliera, impennaggio, downwash, equilibratore — e si scopre perche' viene lineare, che e' l'unica ragione per cui il problema del trim ha una soluzione in forma chiusa.",
+  "fonte": "Dinamica del Volo, Parte II, capitolo 1, paragrafi 1.5-1.6 (pagine 10-13). Lezione del 05-06/03/2026, prof. Giulio Avanzini.",
+  "notazione": "Nelle risposte: alpha alpha_t delta_E epsilon eps_0 deps (per d eps / d alpha) i_t tau_E eta_t S S_t V V_t c C_L C_L0 C_La C_LdE C_L_wb C_L0_wb C_La_wb C_L_t C_La_t C_L_trim. Le funzioni sono sin cos tan asin acos atan sqrt exp log abs.",
+  "lezioni": [
+    {
+      "id": "d02-lez-cp-ac",
+      "titolo": "Centro di pressione e centro aerodinamico",
+      "md": "Per esplicitare $C_L(\\alpha, \\delta_E)$ e $C_m(\\alpha, \\delta_E)$ servono due concetti sui profili.\n\n### Centro di pressione\n\nIl **centro di pressione** CP e' il punto in cui si puo' immaginare applicata la risultante della forza aerodinamica, in modo che il momento calcolato rispetto a CP sia **identicamente nullo**.\n\nSembra la scelta naturale, e invece e' un polo scomodo: la posizione $x_{CP}$ lungo la corda **dipende da** $\\alpha$. Per un profilo con curvatura positiva (*camber*) $x_{CP}$ arretra al diminuire di $\\alpha$, e\n\n$$x_{CP} \\to \\infty \\quad \\text{per} \\quad \\alpha \\to 0$$\n\nUn polo che scappa all'infinito quando l'ala non porta non si puo' usare per scrivere un'equazione di equilibrio.\n\n### Centro aerodinamico\n\nSi usa allora il **centro aerodinamico** AC: il punto rispetto al quale il momento aerodinamico $M_{AC}$ **non dipende** da $\\alpha$ (per piccoli $\\alpha$). Per i profili in regime subsonico la teoria potenziale dei profili sottili fornisce\n\n$$x_{AC} \\approx 0.25\\,\\bar{c}$$\n\ncioe' il centro aerodinamico e' al **25% della corda** dal bordo d'attacco.\n\nLa forza aerodinamica risultante si descrive quindi come applicata in AC, con un momento residuo $M_{AC}$ costante in $\\alpha$. Per profili con curvatura positiva $M_{AC} < 0$, cioe' **a picchiare**: il momento tipico di un'ala con camber positivo tende ad abbassare il muso.\n\n### La differenza in una riga\n\n- in CP il **momento e' nullo** ma il punto si muove con $\\alpha$;\n- in AC il **punto e' fermo** ma resta un momento, che pero' e' costante.\n\nPer scrivere il bilancio dei momenti del velivolo conviene la seconda: un braccio fisso e un momento noto."
+    },
+    {
+      "id": "d02-lez-wing-body",
+      "titolo": "Perche' ala e fusoliera si trattano insieme",
+      "md": "Gli oggetti portanti sono essenzialmente due: l'insieme **ala-fusoliera** (*wing-body*, $wb$) e l'**impennaggio orizzontale** (*tail*, $t$):\n\n$$L = L_{wb} + L_t, \\qquad \\tfrac{1}{2}\\rho V^2 S\\, C_L = \\tfrac{1}{2}\\rho V^2 S\\, C_{L,wb} + \\tfrac{1}{2}\\rho V_t^2 S_t\\, C_{L,t}$$\n\nIl contributo dell'impennaggio e' scritto con pressione dinamica e superficie **proprie**: la velocita' $V_t$ vista dalla coda non e' in generale uguale alla $V$ del velivolo (per via del *downwash* dell'ala) e $S_t \\neq S$.\n\n### Idealmente sarebbero tre pezzi\n\nVerrebbe da scrivere $L = L_w + L_{fus} + L_t$. Sperimentalmente pero', mettendo in galleria prima la fusoliera, poi l'ala e infine il complesso, le forze **non sono additive**: compaiono i **fenomeni di interferenza**.\n\n- La fusoliera distrugge parte della distribuzione di portanza dell'ala alla radice: occupa spazio che sarebbe stato produttivo.\n- Lo strato limite dell'ala alla radice si fonde con quello della fusoliera, si ispessisce e dissipa energia: la resistenza globale cresce.\n- La fusoliera, per la sua geometria tridimensionale, induce un campo perturbativo non trascurabile sull'ala.\n\nSono effetti difficili da modellare analiticamente. In pratica si tratta il *wing-body* come **un unico corpo**, con coefficienti $C_{L,wb}$ e $C_{m,wb}$ misurati a posteriori sul complesso — non come somma di contributi separati.\n\n### Il modello lineare\n\nLontano dallo stallo ($\\alpha$ piccolo) la curva di portanza del wing-body e' una retta:\n\n$$C_{L,wb} = C_{L0,wb} + C_{L\\alpha,wb}\\,\\alpha$$\n\ncon $C_{L0,wb}$ coefficiente di portanza a $\\alpha = 0$ (positivo per camber positivo) e $C_{L\\alpha,wb} = \\partial C_{L,wb}/\\partial\\alpha$ pendenza della curva di portanza, anch'essa positiva.\n\nL'impennaggio e' una piccola superficie portante a se' stante, in prima approssimazione isolata:\n\n$$C_{L,t} = C_{L0,t} + C_{L\\alpha,t}\\,\\alpha_t$$\n\ndove $\\alpha_t$ e' l'angolo d'attacco visto dall'impennaggio, **in generale diverso da** $\\alpha$. Per impennaggi simmetrici si assume $C_{L0,t} \\approx 0$."
+    },
+    {
+      "id": "d02-lez-alpha-t",
+      "titolo": "L'angolo d'attacco della coda: calettamento, downwash, equilibratore",
+      "md": "L'angolo d'attacco visto dall'impennaggio dipende da quattro contributi:\n\n$$\\alpha_t = i_t + \\alpha - \\varepsilon + \\tau_E\\,\\delta_E$$\n\n- $i_t$ — **angolo di calettamento** (*incidence*) dell'impennaggio rispetto a $x_B$, fissato in fase di progetto;\n- $\\alpha$ — l'angolo d'attacco del velivolo ($x_B$ rispetto a $\\mathbf{V}$);\n- $\\varepsilon$ — angolo di **downwash** indotto dalla scia dell'ala nel piano dell'impennaggio;\n- $\\tau_E\\,\\delta_E$ — effetto della deflessione dell'**equilibratore**.\n\n### Il downwash\n\nA causa della circolazione e dei vortici di scia il flusso che investe la coda e' ruotato verso il basso. Si scrive\n\n$$\\varepsilon = \\varepsilon_0 + \\frac{d\\varepsilon}{d\\alpha}\\,\\alpha, \\qquad \\frac{d\\varepsilon}{d\\alpha} \\approx 0.3 \\div 0.6$$\n\nIl segno conta: $\\varepsilon$ e' definito positivo verso il basso, cioe' il downwash **riduce** l'angolo d'attacco effettivo dell'impennaggio — per questo compare col segno meno in $\\alpha_t$. Cambiare convenzione cambia il segno di $d\\varepsilon/d\\alpha$ nelle formule successive.\n\nLa conseguenza pratica e' che la coda «sente» solo una frazione dell'angolo d'attacco del velivolo: se $d\\varepsilon/d\\alpha = 0.45$, di ogni grado di $\\alpha$ alla coda ne arrivano poco piu' di metà.\n\n### L'efficienza dell'equilibratore\n\n$$\\tau_E = \\frac{d\\alpha}{d\\delta_E}$$\n\n$\\tau_E$ e' l'**efficienza dell'equilibratore**: dice quanti gradi di angolo d'attacco equivalenti produce un grado di deflessione. E' una caratteristica della geometria della superficie mobile — quanta parte della coda si muove — e non della condizione di volo.\n\n### Il rapporto di pressioni dinamiche\n\nLa coda vola dentro la scia dell'ala, dove la velocita' e' minore. Si definisce\n\n$$\\eta_t = \\frac{\\tfrac{1}{2}\\rho V_t^2}{\\tfrac{1}{2}\\rho V^2} = \\left(\\frac{V_t}{V}\\right)^2$$\n\nTipicamente $\\eta_t$ vale 0.85-1: la coda lavora con una pressione dinamica ridotta, e ogni suo contributo entra nelle formule moltiplicato per $\\eta_t$."
+    },
+    {
+      "id": "d02-lez-sintesi",
+      "titolo": "La sintesi: il coefficiente di portanza globale",
+      "md": "Si parte da\n\n$$\\tfrac{1}{2}\\rho V^2 S\\, C_L = \\tfrac{1}{2}\\rho V^2 S\\, C_{L,wb} + \\tfrac{1}{2}\\rho V_t^2 S_t\\, C_{L,t}$$\n\nDividendo per $\\tfrac{1}{2}\\rho V^2 S$ e usando la definizione di $\\eta_t$:\n\n$$C_L = C_{L,wb} + \\eta_t\\,\\frac{S_t}{S}\\,C_{L,t}$$\n\nSostituendo i modelli lineari $C_{L,wb} = C_{L0,wb} + C_{L\\alpha,wb}\\alpha$ e $C_{L,t} = C_{L\\alpha,t}\\alpha_t$, con $\\alpha_t = i_t + \\alpha - \\varepsilon_0 - (d\\varepsilon/d\\alpha)\\alpha + \\tau_E\\delta_E$, e raccogliendo per potenze di $\\alpha$ e $\\delta_E$:\n\n$$C_L = \\left(C_{L0,wb} + \\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}(i_t - \\varepsilon_0)\\right) + \\left(C_{L\\alpha,wb} + \\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}\\left(1 - \\tfrac{d\\varepsilon}{d\\alpha}\\right)\\right)\\alpha + \\left(\\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}\\,\\tau_E\\right)\\delta_E$$\n\n### Il risultato\n\n$$C_L = C_{L0} + C_{L\\alpha}\\,\\alpha + C_{L\\delta_E}\\,\\delta_E$$\n\ncon\n\n$$\\begin{aligned}\nC_{L0} &= C_{L0,wb} + \\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}\\,(i_t - \\varepsilon_0) \\\\\nC_{L\\alpha} &= C_{L\\alpha,wb} + \\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}\\left(1 - \\tfrac{d\\varepsilon}{d\\alpha}\\right) \\\\\nC_{L\\delta_E} &= \\eta_t \\tfrac{S_t}{S} C_{L\\alpha,t}\\,\\tau_E\n\\end{aligned}$$\n\n### Perche' e' importante che sia lineare\n\nIl modello e' **lineare nelle incognite di trim** $\\alpha$ e $\\delta_E$: e' la proprieta' essenziale per la solubilita' analitica del problema visto nel modulo precedente.\n\nE c'e' una struttura che si ripete: ogni contributo dell'impennaggio compare come\n\n$$\\bullet_{wb} + \\eta_t\\frac{S_t}{S}\\bullet_t$$\n\ncioe' ridotto dal rapporto di pressioni dinamiche $\\eta_t$ **e** dal rapporto di superfici $S_t/S$, che e' piccolo — dell'ordine di 0.1 o meno. La coda e' piccola: conta poco sulla portanza. Nel prossimo modulo si vedra' che sul **momento** conta moltissimo, perche' li' entra anche il braccio."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "d02-portanza",
+      "comando": "portanza",
+      "titolo": "I due corpi portanti: wing-body e impennaggio",
+      "esercizi": [
+        {
+          "id": "d02-po-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Lontano dallo stallo la curva di portanza del *wing-body* e' una retta. Scrivi $C_{L,wb}$ in funzione di `alpha`, usando `C_L0_wb` e `C_La_wb`.",
+          "soluzione": "C_L0_wb + C_La_wb*alpha",
+          "verifica": {
+            "equivale": "C_L0_wb + C_La_wb*alpha",
+            "usa": [
+              "C_L0_wb",
+              "C_La_wb",
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Una retta ha un'intercetta e una pendenza.",
+            "L'intercetta e' la portanza che l'ala fa a incidenza nulla, e per un profilo con camber non e' zero."
+          ],
+          "spiegazione": "$C_{L,wb} = C_{L0,wb} + C_{L\\alpha,wb}\\,\\alpha$. L'intercetta $C_{L0,wb}$ e' positiva per camber positivo: un'ala con curvatura porta anche a incidenza nulla, ed e' il motivo per cui un aereo non deve stare col muso in su per volare."
+        },
+        {
+          "id": "d02-po-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "L'impennaggio e' una superficie portante a se'. Con $C_{L0,t} \\approx 0$, scrivi $C_{L,t}$ in funzione di `alpha_t` e `C_La_t`.",
+          "soluzione": "C_La_t*alpha_t",
+          "verifica": {
+            "equivale": "C_La_t*alpha_t",
+            "usa": [
+              "C_La_t",
+              "alpha_t"
+            ],
+            "senza": [
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Per un impennaggio simmetrico la portanza a incidenza nulla e' zero.",
+            "Attenzione a quale angolo d'attacco: quello della coda, non quello del velivolo."
+          ],
+          "spiegazione": "$C_{L,t} = C_{L\\alpha,t}\\,\\alpha_t$. Il termine noto sparisce perche' l'impennaggio e' quasi sempre un profilo **simmetrico**: senza camber non c'e' portanza a incidenza nulla. E l'angolo e' $\\alpha_t$, non $\\alpha$: la coda vede un'aria diversa da quella che vede l'ala."
+        },
+        {
+          "id": "d02-po-3",
+          "tipo": "numerico",
+          "difficolta": 2,
+          "testo": "La corda media aerodinamica di un'ala vale `2.8 m`. A che distanza dal bordo d'attacco si trova il centro aerodinamico, in metri?",
+          "dati": "c = 2.8 m",
+          "soluzione": "0.25*2.8",
+          "verifica": {
+            "valore": 0.7,
+            "entro": 0.02
+          },
+          "hint": [
+            "La teoria dei profili sottili in subsonico da' una frazione fissa della corda."
+          ],
+          "spiegazione": "$x_{AC} \\approx 0.25\\,\\bar{c} = 0.70$ m. Il quarto anteriore della corda: e' il punto rispetto al quale il momento non dipende dall'angolo d'attacco, e per questo ci si scrive l'equilibrio dei momenti invece che nel centro di pressione, che si sposta a ogni cambio di incidenza."
+        },
+        {
+          "id": "d02-po-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il rapporto di pressioni dinamiche di coda `eta_t` in funzione di `V_t` e `V`.",
+          "soluzione": "(V_t/V)^2",
+          "verifica": {
+            "equivale": "(V_t/V)^2",
+            "usa": [
+              "V_t",
+              "V"
+            ],
+            "senza": [
+              "rho"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "E' il rapporto fra due pressioni dinamiche con la stessa densita'.",
+            "La densita' si semplifica, il quadrato no."
+          ],
+          "spiegazione": "$\\eta_t = \\dfrac{\\frac{1}{2}\\rho V_t^2}{\\frac{1}{2}\\rho V^2} = \\left(\\dfrac{V_t}{V}\\right)^2$. La densita' si semplifica perche' coda e ala volano nella stessa aria; resta il quadrato del rapporto di velocita', ed e' per questo che una perdita del 10% di velocita' alla coda vale una perdita del 19% di pressione dinamica."
+        },
+        {
+          "id": "d02-po-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "La coda di un velivolo vede una velocita' pari al 92% di quella di volo. Quanto vale `eta_t`?",
+          "dati": "V_t / V = 0.92",
+          "soluzione": "0.92^2",
+          "verifica": {
+            "valore": 0.8464,
+            "entro": 0.002
+          },
+          "hint": [
+            "Il rapporto di pressioni dinamiche e' il quadrato del rapporto di velocita'."
+          ],
+          "spiegazione": "$\\eta_t = 0.92^2 = 0.846$. Un valore tipico: la coda lavora con circa il 15% di pressione dinamica in meno dell'ala, perche' vola dentro la scia. Ogni contributo dell'impennaggio andra' moltiplicato per questo numero."
+        },
+        {
+          "id": "d02-po-6",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Dividendo l'equazione della portanza per $\\frac{1}{2}\\rho V^2 S$, scrivi $C_L$ in funzione di `C_L_wb`, `C_L_t`, `eta_t`, `S_t` e `S`.",
+          "soluzione": "C_L_wb + eta_t*(S_t/S)*C_L_t",
+          "verifica": {
+            "equivale": "C_L_wb + eta_t*(S_t/S)*C_L_t",
+            "usa": [
+              "C_L_wb",
+              "C_L_t",
+              "eta_t",
+              "S_t",
+              "S"
+            ],
+            "senza": [
+              "V",
+              "rho"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Il contributo di coda era scritto con pressione dinamica e superficie proprie.",
+            "Dividendo, quelle proprie diventano due rapporti: uno di pressioni dinamiche, uno di superfici."
+          ],
+          "spiegazione": "$C_L = C_{L,wb} + \\eta_t\\frac{S_t}{S}C_{L,t}$. E' la struttura che si ripetera' in ogni grandezza: il contributo della coda entra ridotto **due volte**, dal rapporto di pressioni dinamiche e da quello di superfici. Con $S_t/S \\approx 0.15$ e $\\eta_t \\approx 0.9$, la coda pesa poco piu' del 13% di quanto peserebbe se fosse grande come l'ala."
+        },
+        {
+          "id": "d02-po-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo ha $S = 88$ m², $S_t = 13$ m², $\\eta_t = 0.90$. In una certa condizione il wing-body da' $C_{L,wb} = 0.62$ e la coda $C_{L,t} = -0.18$ (deportante). Quanto vale il $C_L$ del velivolo?",
+          "dati": "S = 88 m^2\nS_t = 13 m^2\neta_t = 0.90\nC_L_wb = 0.62\nC_L_t = -0.18",
+          "soluzione": "0.62 + 0.90*(13/88)*(-0.18)",
+          "verifica": {
+            "valore": 0.5961,
+            "entro": 0.002
+          },
+          "hint": [
+            "Il contributo di coda va moltiplicato per il rapporto di pressioni dinamiche e per quello di superfici.",
+            "Una coda deportante toglie portanza: aspettati un numero piu' piccolo di 0.62."
+          ],
+          "spiegazione": "$C_L = 0.62 + 0.90 \\cdot 0.148 \\cdot (-0.18) = 0.596$. La coda deportante costa il 4% della portanza: poco, perche' e' piccola e lavora in scia. Il conto e' diverso per il **momento**, dove lo stesso $C_{L,t}$ viene moltiplicato per un braccio lungo tutta la fusoliera."
+        },
+        {
+          "id": "d02-po-8",
+          "tipo": "insieme",
+          "difficolta": 4,
+          "testo": "Perche' ala e fusoliera si trattano come un corpo unico? Elenca i fenomeni che rendono **non additive** le forze misurate separatamente, scegliendo fra: `interferenza downwash_coda camber compressibilita stallo`.",
+          "soluzione": "interferenza downwash_coda",
+          "verifica": {
+            "insieme": [
+              "interferenza",
+              "downwash_coda"
+            ]
+          },
+          "hint": [
+            "Due dei cinque sono effetti che l'ala e la fusoliera si fanno a vicenda, o che l'ala fa alla coda.",
+            "Camber, compressibilita' e stallo esistono anche per un'ala isolata: non spiegano perche' la somma non torni."
+          ],
+          "spiegazione": "Interferenza (la fusoliera distrugge portanza alla radice, gli strati limite si fondono, la geometria 3D perturba il campo) e downwash sulla coda. Sono effetti **fra** i corpi, e per questo non si possono ottenere sommando misure separate: in galleria si misura il complesso, e $C_{L,wb}$ e' un coefficiente del complesso, non una somma."
+        }
+      ]
+    },
+    {
+      "id": "d02-alpha-t",
+      "comando": "alpha_t",
+      "titolo": "L'angolo d'attacco della coda: calettamento, downwash, equilibratore",
+      "esercizi": [
+        {
+          "id": "d02-at-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi l'angolo d'attacco visto dall'impennaggio, `alpha_t`, in funzione di `i_t`, `alpha`, `epsilon` e della deflessione `delta_E` con la sua efficienza `tau_E`.",
+          "soluzione": "i_t + alpha - epsilon + tau_E*delta_E",
+          "verifica": {
+            "equivale": "i_t + alpha - epsilon + tau_E*delta_E",
+            "usa": [
+              "i_t",
+              "alpha",
+              "epsilon",
+              "tau_E",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Quattro contributi: uno geometrico fisso, uno del velivolo, uno della scia, uno del comando.",
+            "Il downwash e' definito positivo verso il basso: entra con il segno meno."
+          ],
+          "spiegazione": "$\\alpha_t = i_t + \\alpha - \\varepsilon + \\tau_E\\delta_E$. Il segno meno davanti a $\\varepsilon$ e' la cosa da ricordare: il downwash **riduce** l'incidenza effettiva della coda. Cambiare convenzione di segno per $\\varepsilon$ cambierebbe il segno di $d\\varepsilon/d\\alpha$ in tutte le formule che seguono."
+        },
+        {
+          "id": "d02-at-2",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi l'angolo di downwash `epsilon` in funzione di `alpha`, usando `eps_0` e `deps` (cioe' $d\\varepsilon/d\\alpha$).",
+          "soluzione": "eps_0 + deps*alpha",
+          "verifica": {
+            "equivale": "eps_0 + deps*alpha",
+            "usa": [
+              "eps_0",
+              "deps",
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Anche questa e' una retta: un termine costante e uno proporzionale all'incidenza."
+          ],
+          "spiegazione": "$\\varepsilon = \\varepsilon_0 + \\frac{d\\varepsilon}{d\\alpha}\\alpha$, con $d\\varepsilon/d\\alpha$ tipicamente fra 0.3 e 0.6. Piu' l'ala porta, piu' devia il flusso verso il basso, e piu' la coda si trova a incidenza ridotta."
+        },
+        {
+          "id": "d02-at-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Sostituisci il downwash dentro `alpha_t` e scrivi il risultato raccogliendo `alpha`. Usa `i_t eps_0 deps alpha tau_E delta_E`.",
+          "soluzione": "i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E",
+          "verifica": {
+            "equivale": "i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E",
+            "usa": [
+              "i_t",
+              "eps_0",
+              "deps",
+              "alpha",
+              "tau_E",
+              "delta_E"
+            ],
+            "senza": [
+              "epsilon"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Parti da $\\alpha_t = i_t + \\alpha - \\varepsilon + \\tau_E\\delta_E$ e metti dentro $\\varepsilon = \\varepsilon_0 + (d\\varepsilon/d\\alpha)\\alpha$.",
+            "I due termini in `alpha` si raccolgono in un fattore $(1 - d\\varepsilon/d\\alpha)$."
+          ],
+          "spiegazione": "$\\alpha_t = (i_t - \\varepsilon_0) + (1 - \\frac{d\\varepsilon}{d\\alpha})\\alpha + \\tau_E\\delta_E$. Il fattore $(1 - d\\varepsilon/d\\alpha)$ e' la vera pendenza con cui la coda segue il velivolo: con $d\\varepsilon/d\\alpha = 0.45$, alla coda arriva il 55% di ogni grado di incidenza. E' questo fattore che ricomparira' dentro $C_{L\\alpha}$ e, nel prossimo modulo, dentro $C_{m\\alpha}$."
+        },
+        {
+          "id": "d02-at-4",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Un velivolo vola a $\\alpha = 5$ gradi. L'impennaggio ha calettamento $i_t = -2$ gradi, il downwash vale $\\varepsilon_0 = 1.0$ grado con $d\\varepsilon/d\\alpha = 0.42$, e l'equilibratore e' neutro. Quanto vale $\\alpha_t$, in gradi?",
+          "dati": "alpha = 5 gradi\ni_t = -2 gradi\neps_0 = 1.0 grado\ndeps = 0.42\ndelta_E = 0",
+          "soluzione": "-2 + 5 - (1.0 + 0.42*5)",
+          "verifica": {
+            "valore": -0.1,
+            "entro": 0.03
+          },
+          "hint": [
+            "Prima il downwash: $\\varepsilon = \\varepsilon_0 + (d\\varepsilon/d\\alpha)\\alpha$, in gradi.",
+            "Poi la somma dei quattro contributi, con l'equilibratore che non contribuisce."
+          ],
+          "spiegazione": "$\\varepsilon = 1.0 + 0.42 \\cdot 5 = 3.1$ gradi, quindi $\\alpha_t = -2 + 5 - 3.1 = -0.1$ gradi. La coda e' praticamente a incidenza nulla mentre l'ala lavora a 5 gradi: e' il risultato del calettamento negativo piu' il downwash. Non e' un caso — il calettamento si sceglie in progetto proprio per far lavorare la coda dove serve."
+        },
+        {
+          "id": "d02-at-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo, stessa condizione, ma l'equilibratore viene deflesso di $\\delta_E = -6$ gradi (bordo d'uscita verso l'alto) con efficienza $\\tau_E = 0.55$. Di quanto cambia $\\alpha_t$, in gradi? Rispondi con la variazione, col suo segno.",
+          "dati": "delta_E = -6 gradi\ntau_E = 0.55",
+          "soluzione": "0.55*(-6)",
+          "verifica": {
+            "valore": -3.3,
+            "entro": 0.05
+          },
+          "hint": [
+            "La variazione e' solo l'ultimo termine di $\\alpha_t$.",
+            "L'efficienza dice quanti gradi di incidenza equivalente vale un grado di deflessione."
+          ],
+          "spiegazione": "$\\Delta\\alpha_t = \\tau_E\\delta_E = 0.55 \\cdot (-6) = -3.3$ gradi. Sei gradi di equilibratore valgono poco piu' di tre gradi di incidenza della coda: $\\tau_E < 1$ perche' si muove solo una parte della superficie. E' la ragione per cui un impennaggio tutto mobile (*stabilator*) e' piu' efficace di uno con equilibratore: li' $\\tau_E = 1$."
+        },
+        {
+          "id": "d02-at-6",
+          "tipo": "insieme",
+          "difficolta": 3,
+          "testo": "Da quali grandezze dipende `alpha_t`? Elenca quelle che compaiono nella sua espressione, scegliendo fra `i_t alpha epsilon delta_E V S_t eta_t`.",
+          "soluzione": "i_t alpha epsilon delta_E",
+          "verifica": {
+            "insieme": [
+              "i_t",
+              "alpha",
+              "epsilon",
+              "delta_E"
+            ]
+          },
+          "hint": [
+            "Sono gli angoli, non le grandezze che descrivono quanto e' grande o quanto va veloce la coda."
+          ],
+          "spiegazione": "$\\alpha_t$ e' fatto solo di angoli: calettamento, incidenza del velivolo, downwash, deflessione. La superficie $S_t$ e il rapporto $\\eta_t$ entrano dopo, quando dall'angolo si passa alla **forza**; la velocita' $V$ entra ancora dopo, nella pressione dinamica. Tenere separati i tre passaggi e' quello che rende leggibile tutto il modello."
+        },
+        {
+          "id": "d02-at-7",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Metti insieme i due pezzi: scrivi $C_{L,t}$ in funzione di `alpha` e `delta_E`, con `C_La_t i_t eps_0 deps tau_E`.",
+          "soluzione": "C_La_t*(i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E)",
+          "verifica": {
+            "equivale": "C_La_t*(i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E)",
+            "usa": [
+              "C_La_t",
+              "i_t",
+              "eps_0",
+              "deps",
+              "alpha",
+              "tau_E",
+              "delta_E"
+            ],
+            "senza": [
+              "alpha_t",
+              "epsilon"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Parti da $C_{L,t} = C_{L\\alpha,t}\\alpha_t$ e sostituisci l'espressione di $\\alpha_t$ gia' raccolta.",
+            "Il risultato deve essere lineare in `alpha` e in `delta_E`, e non contenere piu' `alpha_t`."
+          ],
+          "spiegazione": "$C_{L,t} = C_{L\\alpha,t}\\left[(i_t - \\varepsilon_0) + (1 - \\frac{d\\varepsilon}{d\\alpha})\\alpha + \\tau_E\\delta_E\\right]$. Ecco perche' il modello resta lineare in $\\alpha$ e $\\delta_E$: ogni passaggio e' una sostituzione lineare dentro un'altra. E' la proprieta' che rende il trim risolvibile in forma chiusa."
+        },
+        {
+          "id": "d02-at-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un impennaggio ha $C_{L\\alpha,t} = 3.4$ 1/rad. In volo a $\\alpha = 4$ gradi, con $i_t = -1.5$ gradi, $\\varepsilon_0 = 0.8$ gradi, $d\\varepsilon/d\\alpha = 0.40$ ed equilibratore neutro, quanto vale $C_{L,t}$? Attenzione alle unita': la pendenza e' per radiante.",
+          "dati": "C_La_t = 3.4 1/rad\nalpha = 4 gradi\ni_t = -1.5 gradi\neps_0 = 0.8 gradi\ndeps = 0.40\ndelta_E = 0",
+          "soluzione": "3.4*(-1.5 + 4 - (0.8 + 0.40*4))*pi/180",
+          "verifica": {
+            "valore": 0.0059,
+            "entro": 0.0004
+          },
+          "hint": [
+            "Prima $\\alpha_t$ in gradi, poi la conversione in radianti prima di moltiplicare per la pendenza.",
+            "$\\alpha_t = i_t + \\alpha - \\varepsilon$, con $\\varepsilon = \\varepsilon_0 + (d\\varepsilon/d\\alpha)\\alpha$."
+          ],
+          "spiegazione": "$\\alpha_t = -1.5 + 4 - 2.4 = 0.1$ gradi $= 0.00175$ rad, quindi $C_{L,t} = 3.4 \\cdot 0.00175 = 0.006$. Praticamente nulla: in crociera la coda di un velivolo ben calettato lavora quasi scarica, ed e' esattamente quello che si vuole — una coda che porta molto e' una coda che genera resistenza indotta per niente."
+        }
+      ]
+    },
+    {
+      "id": "d02-globale",
+      "comando": "modello globale",
+      "titolo": "Il modello lineare globale e i suoi tre coefficienti",
+      "esercizi": [
+        {
+          "id": "d02-gl-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il modello lineare del coefficiente di portanza globale, in funzione di `alpha` e `delta_E`, usando `C_L0 C_La C_LdE`.",
+          "soluzione": "C_L0 + C_La*alpha + C_LdE*delta_E",
+          "verifica": {
+            "equivale": "C_L0 + C_La*alpha + C_LdE*delta_E",
+            "usa": [
+              "C_L0",
+              "C_La",
+              "alpha",
+              "C_LdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Un termine noto e due termini proporzionali alle due incognite del trim."
+          ],
+          "spiegazione": "$C_L = C_{L0} + C_{L\\alpha}\\alpha + C_{L\\delta_E}\\delta_E$. Tre coefficienti che riassumono tutta la geometria del velivolo: e' questa espressione che entra nella prima equazione del trim semplificato, $C_L = C_{L,trim}$."
+        },
+        {
+          "id": "d02-gl-2",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il termine noto `C_L0` del modello globale, in funzione di `C_L0_wb eta_t S_t S C_La_t i_t eps_0`.",
+          "soluzione": "C_L0_wb + eta_t*(S_t/S)*C_La_t*(i_t - eps_0)",
+          "verifica": {
+            "equivale": "C_L0_wb + eta_t*(S_t/S)*C_La_t*(i_t - eps_0)",
+            "usa": [
+              "C_L0_wb",
+              "eta_t",
+              "S_t",
+              "S",
+              "C_La_t",
+              "i_t",
+              "eps_0"
+            ],
+            "senza": [
+              "alpha",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "E' quello che resta con `alpha = 0` e `delta_E = 0`.",
+            "Il contributo di coda entra sempre come $\\eta_t (S_t/S) \\cdot$ qualcosa."
+          ],
+          "spiegazione": "$C_{L0} = C_{L0,wb} + \\eta_t\\frac{S_t}{S}C_{L\\alpha,t}(i_t - \\varepsilon_0)$. Con $i_t$ negativo (calettamento a picchiare, quello tipico) il contributo della coda **toglie** portanza a incidenza nulla: e' il prezzo che si paga per avere un velivolo stabile."
+        },
+        {
+          "id": "d02-gl-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi la pendenza `C_La` del modello globale. Usa `C_La_wb eta_t S_t S C_La_t deps`.",
+          "soluzione": "C_La_wb + eta_t*(S_t/S)*C_La_t*(1 - deps)",
+          "verifica": {
+            "equivale": "C_La_wb + eta_t*(S_t/S)*C_La_t*(1 - deps)",
+            "usa": [
+              "C_La_wb",
+              "eta_t",
+              "S_t",
+              "S",
+              "C_La_t",
+              "deps"
+            ],
+            "senza": [
+              "alpha",
+              "i_t"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "E' il coefficiente di `alpha`: dal wing-body arriva la sua pendenza, dalla coda quella ridotta dal downwash.",
+            "Il downwash entra come fattore $(1 - d\\varepsilon/d\\alpha)$."
+          ],
+          "spiegazione": "$C_{L\\alpha} = C_{L\\alpha,wb} + \\eta_t\\frac{S_t}{S}C_{L\\alpha,t}(1 - \\frac{d\\varepsilon}{d\\alpha})$. La coda aggiunge poca pendenza: e' piccola ($S_t/S$), lavora in scia ($\\eta_t$) e sente solo una frazione dell'incidenza ($1 - d\\varepsilon/d\\alpha$). Tre riduzioni in fila, ed e' il motivo per cui la portanza di un velivolo e' quasi tutta dell'ala."
+        },
+        {
+          "id": "d02-gl-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il coefficiente `C_LdE`, cioe' quanta portanza produce la deflessione dell'equilibratore.",
+          "soluzione": "eta_t*(S_t/S)*C_La_t*tau_E",
+          "verifica": {
+            "equivale": "eta_t*(S_t/S)*C_La_t*tau_E",
+            "usa": [
+              "eta_t",
+              "S_t",
+              "S",
+              "C_La_t",
+              "tau_E"
+            ],
+            "senza": [
+              "alpha",
+              "delta_E",
+              "deps"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "E' il coefficiente di `delta_E`: viene tutto dalla coda, il wing-body non c'entra.",
+            "Solita struttura, con l'efficienza dell'equilibratore al posto del fattore di downwash."
+          ],
+          "spiegazione": "$C_{L\\delta_E} = \\eta_t\\frac{S_t}{S}C_{L\\alpha,t}\\tau_E$. Non c'e' nessun termine del wing-body, perche' l'equilibratore sta sulla coda. Il downwash non compare: la deflessione agisce direttamente sulla superficie, non attraverso l'incidenza del velivolo."
+        },
+        {
+          "id": "d02-gl-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Calcola $C_{L\\alpha}$ di un velivolo con $C_{L\\alpha,wb} = 4.6$ 1/rad, $\\eta_t = 0.9$, $S_t/S = 0.16$, $C_{L\\alpha,t} = 3.5$ 1/rad, $d\\varepsilon/d\\alpha = 0.45$.",
+          "dati": "C_La_wb = 4.6 1/rad\neta_t = 0.9\nS_t/S = 0.16\nC_La_t = 3.5 1/rad\ndeps = 0.45",
+          "soluzione": "4.6 + 0.9*0.16*3.5*(1 - 0.45)",
+          "verifica": {
+            "valore": 4.877,
+            "entro": 0.01
+          },
+          "hint": [
+            "Il contributo di coda e' un prodotto di quattro fattori, tutti minori di uno tranne la pendenza."
+          ],
+          "spiegazione": "$C_{L\\alpha} = 4.6 + 0.277 = 4.88$ 1/rad. La coda aggiunge il 6% della pendenza: quasi niente. Tienilo a mente per il prossimo modulo, dove lo stesso impennaggio, moltiplicato per il braccio, domina il $C_{m\\alpha}$ e decide la stabilita' dell'intero velivolo."
+        },
+        {
+          "id": "d02-gl-6",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Stesso velivolo, con efficienza dell'equilibratore $\\tau_E = 0.5$. Quanto vale $C_{L\\delta_E}$, in 1/rad?",
+          "dati": "eta_t = 0.9\nS_t/S = 0.16\nC_La_t = 3.5 1/rad\ntau_E = 0.5",
+          "soluzione": "0.9*0.16*3.5*0.5",
+          "verifica": {
+            "valore": 0.252,
+            "entro": 0.004
+          },
+          "hint": [
+            "Stessa struttura del contributo di coda, con l'efficienza al posto del fattore di downwash."
+          ],
+          "spiegazione": "$C_{L\\delta_E} = 0.9 \\cdot 0.16 \\cdot 3.5 \\cdot 0.5 = 0.252$ 1/rad, cioe' 0.0044 per grado. Dieci gradi di equilibratore valgono 0.044 di $C_L$: sulla portanza e' poco, ma sul momento quegli stessi dieci gradi spostano il trim di parecchi gradi di incidenza. L'equilibratore non serve a portare, serve a **bilanciare**."
+        },
+        {
+          "id": "d02-gl-7",
+          "tipo": "ordina",
+          "difficolta": 4,
+          "testo": "Rimetti in ordine i passi che portano dai due modelli lineari separati al modello globale. Scrivi le sigle nell'ordine giusto.",
+          "passi": [
+            {
+              "id": "RA",
+              "testo": "Si raccoglie per potenze di alpha e delta_E, leggendo i tre coefficienti"
+            },
+            {
+              "id": "SO",
+              "testo": "Si scrive L = L_wb + L_t con pressione dinamica e superficie proprie della coda"
+            },
+            {
+              "id": "SU",
+              "testo": "Si sostituiscono i modelli lineari del wing-body e della coda, con alpha_t esplicito"
+            },
+            {
+              "id": "DI",
+              "testo": "Si divide tutto per la pressione dinamica del velivolo e la superficie alare"
+            },
+            {
+              "id": "ET",
+              "testo": "Compaiono il rapporto di pressioni dinamiche eta_t e il rapporto di superfici S_t/S"
+            }
+          ],
+          "soluzione": "SO DI ET SU RA",
+          "verifica": {
+            "ordine": [
+              "SO",
+              "DI",
+              "ET",
+              "SU",
+              "RA"
+            ]
+          },
+          "hint": [
+            "Si parte dalla somma delle due portanze scritta con le pressioni dinamiche proprie.",
+            "La divisione fa comparire i due rapporti; solo dopo si sostituiscono i modelli lineari."
+          ],
+          "spiegazione": "Somma delle portanze, divisione per $\\frac{1}{2}\\rho V^2 S$, comparsa di $\\eta_t$ e $S_t/S$, sostituzione dei modelli lineari (compresa l'espressione di $\\alpha_t$), raccolta per potenze di $\\alpha$ e $\\delta_E$. L'ordine non e' arbitrario: adimensionalizzare **prima** di sostituire e' quello che fa comparire la struttura $\\bullet_{wb} + \\eta_t(S_t/S)\\bullet_t$ che poi si ritrova identica nel momento."
+        },
+        {
+          "id": "d02-gl-8",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "In volo livellato l'equilibratore serve anche a mettere il velivolo al $C_{L,trim}$ richiesto. Ricava l'angolo d'attacco `alpha` in funzione di `C_L_trim`, `C_L0`, `C_La`, `C_LdE` e `delta_E`.",
+          "soluzione": "(C_L_trim - C_L0 - C_LdE*delta_E)/C_La",
+          "verifica": {
+            "equivale": "(C_L_trim - C_L0 - C_LdE*delta_E)/C_La",
+            "usa": [
+              "C_L_trim",
+              "C_L0",
+              "C_La",
+              "C_LdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "V": [
+                70,
+                250
+              ],
+              "V_t": [
+                60,
+                240
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "C_L_wb": [
+                0.1,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L0": [
+                0.1,
+                0.5
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "epsilon": [
+                0.0,
+                0.12
+              ]
+            }
+          },
+          "hint": [
+            "Parti da $C_L = C_{L0} + C_{L\\alpha}\\alpha + C_{L\\delta_E}\\delta_E$ e imponi $C_L = C_{L,trim}$.",
+            "Poi isola `alpha`."
+          ],
+          "spiegazione": "$\\alpha_{eq} = \\dfrac{C_{L,trim} - C_{L0} - C_{L\\delta_E}\\delta_E}{C_{L\\alpha}}$. E' la prima delle due equazioni del trim semplificato risolta rispetto a $\\alpha$: da sola non basta, perche' contiene ancora $\\delta_E$. La seconda equazione — quella dei momenti, che vedrai nel prossimo modulo — chiude il sistema e fissa entrambi."
+        }
+      ]
+    }
+  ]
+}

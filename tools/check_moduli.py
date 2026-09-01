@@ -137,8 +137,11 @@ def controlla_teoria(dati):
         problemi.append(f"{len(con_segnaposto)} esercizi dichiarano un segnaposto (es. {con_segnaposto[0]}): "
                         "la casella non deve suggerire la risposta")
 
+    # Negli esercizi a elenco le opzioni si mostrano apposta: la risposta e'
+    # scegliere il sottoinsieme giusto, non indovinare le parole.
     regala = [e["id"] for e in esercizi
-              if e.get("soluzione") and len(e["soluzione"]) > 3
+              if e["tipo"] in ("formula", "numerico")
+              and e.get("soluzione") and len(e["soluzione"]) > 3
               and e["soluzione"].replace(" ", "") in e.get("testo", "").replace(" ", "")]
     if regala:
         problemi.append(f"{len(regala)} esercizi hanno la soluzione dentro il testo (es. {regala[0]})")

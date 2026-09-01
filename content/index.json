@@ -132,12 +132,13 @@
       "perche": "Come si scrive che un aeroplano sta in equilibrio, e cosa si ricava da quelle equazioni. Si studia una dimostrazione alla volta: le formule si scrivono, non si riconoscono in mezzo a quattro opzioni.",
       "disponibile": true,
       "moduli": [
-        "d01"
+        "d01",
+        "d02"
       ],
       "prossimi": [
-        "Centro di pressione e centro aerodinamico; il modello di portanza (wing-body, impennaggio)",
-        "Contributi al momento di beccheggio; volume di coda V_H",
-        "Stabilita' statica longitudinale a comandi bloccati; punto neutro e margine statico"
+        "Contributi al momento di beccheggio; volume di coda V_H; soluzione del trim",
+        "Stabilita' statica longitudinale a comandi bloccati; punto neutro e margine statico",
+        "Stabilita' in velocita', effetti del Mach, limite posteriore"
       ]
     }
   ],
@@ -496,6 +497,12 @@
       "id": "d01",
       "file": "d01-trim.json",
       "titolo": "Equilibrio in volo simmetrico: il trim",
+      "disponibile": true
+    },
+    {
+      "id": "d02",
+      "file": "d02-portanza.json",
+      "titolo": "Il modello aerodinamico: la portanza",
       "disponibile": true
     }
   ]
