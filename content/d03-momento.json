@@ -1,0 +1,2531 @@
+{
+  "id": "d03",
+  "titolo": "Momento di beccheggio e soluzione del trim",
+  "perche": "Il momento e' dove tutto si decide: la portanza dice se il velivolo sta su, il momento dice se ci sta dritto. Qui si costruisce C_m contributo per contributo — ala, fusoliera, motore, impennaggio con il suo braccio — si trova il volume di coda, e si chiude il problema del trim con una formula che dice quanto equilibratore serve a una data velocita'. Il segno di C_m,alpha che esce da qui e' la stabilita' statica di tutto il resto del corso.",
+  "fonte": "Dinamica del Volo, Parte II, capitolo 1, paragrafi 1.7-1.9 (pagine 14-20). Lezione del 05-06/03/2026, prof. Giulio Avanzini.",
+  "notazione": "Nelle risposte: alpha alpha_t delta_E h (per (x_G - x_AC)/c) l_t l_t1 V_H V_H1 eta_t eps_0 deps i_t tau_E S S_t c C_L_w C_La_wb C_L0_wb C_La_t C_m0_w C_m0_fus C_ma_fus C_m0_eng C_ma_eng C_m0_wb C_ma_wb C_m0 C_ma C_mdE C_L0 C_La C_LdE C_L_trim.",
+  "lezioni": [
+    {
+      "id": "d03-lez-ala",
+      "titolo": "Il momento dell'ala, e la posizione del baricentro",
+      "md": "Il calcolo di $C_m$ e' analogo a quello di $C_L$, ma piu' articolato: ogni contributo di forza genera un momento **attraverso il proprio braccio** rispetto al centro di massa. I contributi sono tre:\n\n$$\\mathcal{M} = \\mathcal{M}_{wb} + \\mathcal{M}_{eng} + \\mathcal{M}_t$$\n\nala-fusoliera (interferenza inclusa), motore, impennaggio.\n\n### L'ala isolata\n\nIl momento dell'ala rispetto al centro di massa $G$ e' il momento focale $M_{AC,w}$ piu' il momento di portanza e resistenza applicate in $AC_w$. Posto $x_G - x_{AC}$ la distanza orizzontale lungo $x_B$ (positiva se $G$ e' **dietro** AC) e $z_{AC}$ quella verticale:\n\n$$M_w = \\tfrac{1}{2}\\rho V^2 S \\bar{c}\\, C_{m0,w} + L_w\\left[(x_G - x_{AC})\\cos\\alpha - z_{AC}\\sin\\alpha\\right] + D_w\\left[(x_G - x_{AC})\\sin\\alpha + z_{AC}\\cos\\alpha\\right]$$\n\nQui entrano gli ordini di grandezza gia' visti: $C_{m0,w} < 0$ (momento focale a picchiare), $L_w \\gg D_w$ perche' $E \\approx 10$, e $\\alpha \\ll 1$ rad, dunque $\\cos\\alpha \\approx 1$ e $\\sin\\alpha \\approx \\alpha \\ll 1$. Trascurando i termini in $D_w$ e ponendo $\\cos\\alpha \\approx 1$:\n\n$$M_w \\approx \\tfrac{1}{2}\\rho V^2 S\\bar{c}\\, C_{m0,w} + L_w (x_G - x_{AC})$$\n\n### In forma adimensionale\n\n$$C_{m,w} = C_{m0,w} + C_{L,w}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)$$\n\nLa quantita' $(x_G - x_{AC})/\\bar{c}$ e' la **posizione adimensionale del centro di massa rispetto al centro aerodinamico**, ed e' il numero attorno a cui girera' tutto il resto del corso.\n\nSe $x_G > x_{AC}$ — centro di massa **dietro** al centro aerodinamico — la portanza dell'ala genera un momento positivo, a cabrare, attorno a $G$. E' la configurazione tipica, ed e' anche quella che rende l'ala da sola **instabile**: se l'incidenza aumenta, la portanza aumenta, e il momento a cabrare aumenta ancora l'incidenza."
+    },
+    {
+      "id": "d03-lez-fusoliera-motore",
+      "titolo": "Fusoliera e motore: i due contributi destabilizzanti",
+      "md": "### La fusoliera isolata\n\nUna fusoliera, come ogni corpo in un fluido, tende a orientarsi presentando alla corrente la sezione di massima area frontale — lo stesso motivo per cui le frecce hanno le piume in coda. E' quindi **instabile** in beccheggio: al crescere di $\\alpha$ la distribuzione di pressione fra prua e poppa cambia, generando un momento crescente con $\\alpha$:\n\n$$M_{fus} = \\tfrac{1}{2}\\rho V^2 S\\bar{c}\\,(C_{m0,fus} + C_{m\\alpha,fus}\\,\\alpha)$$\n\ncon $C_{m0,fus} > 0$ (piccolo) e $C_{m\\alpha,fus} > 0$ potenzialmente importante: entrambi **a cabrare**, dunque destabilizzanti.\n\n### L'interferenza\n\nOltre ai contributi isolati esiste un contributo di **interferenza**, anch'esso funzione di $\\alpha$:\n\n- l'ala induce, per la circolazione, un *upwash* sulla parte anteriore della fusoliera e un *downwash* su quella posteriore, tanto piu' intenso quanto piu' si e' vicini al vortice attaccato dell'ala;\n- la fusoliera accelera localmente il flusso che la aggira: la componente $V\\sin\\alpha$ normale alla fusoliera puo' raddoppiare presso la radice alare, modificando l'angolo d'attacco effettivo dell'ala.\n\nCome per la portanza, ala, fusoliera e interferenza vengono accorpati in un unico modello globale per $C_{m,wb}$, calibrato su misure o CFD del velivolo completo:\n\n$$C_{m,wb} = C_{m0,wb} + C_{m\\alpha,wb}\\,\\alpha + C_{L,wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)$$\n\n### Il motore\n\nIl motore da' un contributo al momento **anche quando l'asse di spinta passa per il centro di massa**. In volo allineato ($\\alpha = 0$) l'incremento di quantita' di moto e' puramente assiale e da' la spinta $T \\propto \\Delta V_J$. A incidenza non nulla il flusso entra nella presa d'aria con una componente **normale** $\\Delta V_n \\propto \\sin\\alpha \\approx \\alpha$ e viene espulso lungo l'asse: nasce una forza $F_n \\propto \\Delta V_n$ alla presa d'aria.\n\nSe il motore e' davanti al centro di massa il momento e' a cabrare ($C_{m\\alpha,eng} > 0$); se dietro, a picchiare. L'effetto, proporzionale ad $\\alpha$, si modella come\n\n$$C_{m,eng} = C_{m0,eng} + C_{m\\alpha,eng}\\,\\alpha$$\n\nUn motore davanti al baricentro e' quindi un secondo contributo destabilizzante, che si somma a quello della fusoliera."
+    },
+    {
+      "id": "d03-lez-coda-vh",
+      "titolo": "L'impennaggio e il volume di coda",
+      "md": "L'impennaggio e' un piccolo oggetto portante a distanza $\\ell_t$ dal centro di massa (*tail arm*). Trascurando $D_t$ rispetto a $L_t$ e il momento focale $M_{AC,t}$ rispetto al momento di braccio:\n\n$$M_t \\approx -\\ell_t L_t$$\n\ncon il segno meno perche' $L_t$ positiva (verso l'alto) e $\\ell_t$ positivo verso poppa danno un momento **a picchiare** attorno al centro di massa.\n\n### Perche' il braccio non e' un dato geometrico fisso\n\n$\\ell_t$ e' la distanza fra il centro aerodinamico dell'impennaggio e il centro di massa $G$. Ma $G$ **non e' fisso**: si sposta col carico, col combustibile, con la disposizione dei passeggeri. E' invece fissata dalla configurazione la distanza $\\ell_t'$ fra i centri aerodinamici di ala e impennaggio:\n\n$$\\ell_t = \\ell_t' - (x_G - x_{AC})$$\n\nCosi' si tiene conto della variabilita' di $\\ell_t$ al variare del centraggio — il punto chiave delle prossime lezioni su stabilita' e limiti di centraggio.\n\n### Il volume di coda\n\nSostituendo $L_t = \\frac{1}{2}\\rho V_t^2 S_t C_{L,t}$ con $C_{L,t} = C_{L\\alpha,t}\\alpha_t$ e adimensionalizzando rispetto a $\\frac{1}{2}\\rho V^2 S\\bar{c}$ compare una grandezza geometrica fondamentale:\n\n$$V_H \\equiv \\frac{\\ell_t\\, S_t}{S\\, \\bar{c}}$$\n\n$V_H$ e' il prodotto del rapporto di superfici $S_t/S$ (piccolo, circa 0.1) per il rapporto $\\ell_t/\\bar{c}$ (relativamente grande, 2-4). Mentre $S_t/S$ misura solo quanto e' grande l'impennaggio, $V_H$ misura **quanto efficacemente** l'impennaggio genera momento per unita' di angolo d'attacco: e' la cifra di merito principale per dimensionarlo.\n\nIn termini di $V_H$ il coefficiente di momento dell'impennaggio e'\n\n$$C_{m,t} = -\\eta_t V_H C_{L\\alpha,t}\\,(i_t + \\alpha - \\varepsilon + \\tau_E\\delta_E)$$\n\ne, tenendo conto di $\\ell_t = \\ell_t' - (x_G - x_{AC})$, anche $V_H$ si decompone in una parte fissa e una che dipende dal centraggio:\n\n$$V_H = V_H' - \\frac{S_t}{S}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right)$$"
+    },
+    {
+      "id": "d03-lez-sintesi-cm",
+      "titolo": "La sintesi del momento, e il segno che decide tutto",
+      "md": "Sommando i tre contributi e raccogliendo, come si e' fatto per $C_L$:\n\n$$C_m = C_{m0} + C_{m\\alpha}\\,\\alpha + C_{m\\delta_E}\\,\\delta_E$$\n\ncon\n\n$$\\begin{aligned}\nC_{m0} &= C_{m0,wb} + C_{m0,eng} + C_{L0,wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) - \\eta_t V_H C_{L\\alpha,t}(i_t - \\varepsilon_0) \\\\\nC_{m\\alpha} &= C_{m\\alpha,wb} + C_{m\\alpha,eng} + C_{L\\alpha,wb}\\left(\\frac{x_G}{\\bar{c}} - \\frac{x_{AC}}{\\bar{c}}\\right) - \\eta_t V_H C_{L\\alpha,t}\\left(1 - \\frac{d\\varepsilon}{d\\alpha}\\right) \\\\\nC_{m\\delta_E} &= -\\eta_t V_H C_{L\\alpha,t}\\,\\tau_E\n\\end{aligned}$$\n\n### Controllo di segni\n\n$C_{m\\delta_E}$ deve essere **negativo** perche' la convenzione sia coerente: una deflessione positiva dell'equilibratore (bordo d'uscita verso il basso) produce una forza verso l'alto sulla coda, che a sua volta produce un momento a picchiare. Quindi $\\delta_E > 0 \\Rightarrow C_m < 0$, cioe' $C_{m\\delta_E} < 0$: il segno meno nella formula e' corretto.\n\n### Il segno che decide tutto\n\nIl segno di $C_{m\\alpha}$ e' cruciale per la **stabilita' statica longitudinale**, che e' l'argomento delle prossime lezioni: la condizione di stabilita' richiede\n\n$$C_{m\\alpha} < 0$$\n\nGuarda da dove viene ciascun termine:\n\n- $C_{m\\alpha,fus} > 0$ e $C_{m\\alpha,eng} > 0$ — destabilizzanti;\n- $C_{L\\alpha,wb}\\left(\\frac{x_G - x_{AC}}{\\bar{c}}\\right) > 0$ se $G$ e' **dietro** ad AC — destabilizzante;\n- $-\\eta_t V_H C_{L\\alpha,t}(1 - d\\varepsilon/d\\alpha)$ — sempre negativo, quindi **stabilizzante**, e con il braccio dentro $V_H$ e' anche grosso.\n\nE' l'impennaggio a fornire la stabilita': cio' legittima il nome di **stabilizzatore**."
+    },
+    {
+      "id": "d03-lez-soluzione",
+      "titolo": "La soluzione del trim, e cosa dice la formula",
+      "md": "Disponendo dei due modelli lineari, il trim semplificato si scrive:\n\n$$\\begin{aligned}\nC_L = C_{L0} + C_{L\\alpha}\\alpha + C_{L\\delta_E}\\delta_E &= C_{L,trim} = \\frac{mg}{\\tfrac{1}{2}\\rho V^2 S} \\\\\nC_m = C_{m0} + C_{m\\alpha}\\alpha + C_{m\\delta_E}\\delta_E &= 0\n\\end{aligned}$$\n\nDue equazioni lineari nelle due incognite $\\alpha$ e $\\delta_E$.\n\n### La soluzione esplicita\n\nDalla prima si ricava $\\alpha$ in funzione di $\\delta_E$:\n\n$$\\alpha_{eq} = \\frac{(C_{L,trim} - C_{L0}) - C_{L\\delta_E}\\delta_E}{C_{L\\alpha}}$$\n\nSostituendo nella seconda e moltiplicando per $C_{L\\alpha}$:\n\n$$C_{m0}C_{L\\alpha} + C_{m\\alpha}\\left[(C_{L,trim} - C_{L0}) - C_{L\\delta_E}\\delta_E\\right] + C_{L\\alpha}C_{m\\delta_E}\\delta_E = 0$$\n\nda cui, raccogliendo $\\delta_E$:\n\n$$\\delta_{E,eq} = \\frac{C_{m0}C_{L\\alpha} + C_{m\\alpha}(C_{L,trim} - C_{L0})}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}$$\n\nSpesso $C_{L0} \\ll C_{L,trim}$ e il termine si trascura.\n\n### La forma che conta\n\n$$\\delta_{E,eq} = A + B\\,C_{L,trim}, \\qquad A = \\frac{C_{m0}C_{L\\alpha}}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}, \\qquad B = \\frac{C_{m\\alpha}}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}$$\n\nLa struttura $\\delta_{E,eq} = A + B\\,C_{L,trim}$ e' fondamentale: la deflessione richiesta per trimmare varia **linearmente con** $C_{L,trim}$, cioe' con l'inverso del quadrato della velocita', poiche' $C_{L,trim} = mg/(\\frac{1}{2}\\rho V^2 S)$.\n\nA quote alte e basse velocita' servono grandi $C_{L,trim}$ e quindi grandi $\\delta_E$; a basse quote e alte velocita' $\\delta_E \\to A$. I coefficienti $A$ e $B$ dipendono dalla geometria, **incluso il centraggio** $x_G$ attraverso $V_H$: la curva $\\delta_E$ contro $C_{L,trim}$ cambia col centro di massa, ed e' la base delle lezioni sulla stabilita'.\n\n### Quando le ipotesi non valgono\n\nPer un caccia con $T/(mg) \\sim 1$, asse di spinta non baricentrico o forti angoli di rampa si risolve il sistema completo, che e' non lineare e accoppiato. Si costruisce un algoritmo iterativo che parte dalla soluzione semplificata come *first guess*:\n\n1. si risolve il problema disaccoppiato e si ottiene $(\\alpha^{(0)}, \\delta_E^{(0)})$;\n2. si stima la manetta: $\\delta_T^{(0)} = \\dfrac{\\frac{1}{2}\\rho V^2 S C_D + mg\\sin\\gamma}{T_{max}\\cos(\\alpha^{(0)} + \\eta_T)}$;\n3. si aggiornano $C_L$ e $C_m$ reinserendo i termini di accoppiamento spinta-momento valutati all'iterazione precedente;\n4. si aggiorna la manetta;\n5. si ripete finche' la variazione e' sotto tolleranza.\n\nE' una variante del metodo del punto fisso: funziona perche' le correzioni — proporzionali a $T\\sin(\\alpha + \\eta_T)/(mg)$ e a $T d_T/(\\frac{1}{2}\\rho V^2 S\\bar{c})$ — sono piccole rispetto ai termini dominanti. La mappa e' una contrazione e converge in 2-4 iterazioni."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "d03-momenti",
+      "comando": "momenti",
+      "titolo": "Ala, fusoliera, motore: i contributi e i loro bracci",
+      "esercizi": [
+        {
+          "id": "d03-mo-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il coefficiente di momento dell'ala rispetto al baricentro, in funzione di `C_m0_w`, `C_L_w` e della posizione adimensionale `h` del centro di massa rispetto al centro aerodinamico (cioe' $h = (x_G - x_{AC})/\\bar{c}$).",
+          "soluzione": "C_m0_w + C_L_w*h",
+          "verifica": {
+            "equivale": "C_m0_w + C_L_w*h",
+            "usa": [
+              "C_m0_w",
+              "C_L_w",
+              "h"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "C_m0_w": [
+                -0.12,
+                -0.02
+              ]
+            }
+          },
+          "hint": [
+            "Il momento focale non dipende da alpha, il resto e' portanza per braccio.",
+            "Il braccio, adimensionalizzato con la corda, e' proprio `h`."
+          ],
+          "spiegazione": "$C_{m,w} = C_{m0,w} + C_{L,w}\\left(\\frac{x_G - x_{AC}}{\\bar{c}}\\right)$. Due pezzi: un momento costante (il focale, tipicamente a picchiare) e uno proporzionale alla portanza, con braccio la distanza fra baricentro e centro aerodinamico."
+        },
+        {
+          "id": "d03-mo-2",
+          "tipo": "insieme",
+          "difficolta": 2,
+          "testo": "Nel momento dell'ala si trascurano dei termini. Elenca le approssimazioni usate, scegliendo fra `E_grande alpha_piccolo M_focale_nullo z_AC_nullo camber_nullo`.",
+          "soluzione": "E_grande alpha_piccolo",
+          "verifica": {
+            "insieme": [
+              "E_grande",
+              "alpha_piccolo"
+            ]
+          },
+          "hint": [
+            "Si buttano via i termini in resistenza, e si semplificano seno e coseno.",
+            "Il momento focale invece resta: e' il primo termine del risultato."
+          ],
+          "spiegazione": "Si usano $L_w \\gg D_w$ (cioe' $E \\approx 10$) per trascurare i termini in resistenza, e $\\alpha \\ll 1$ per porre $\\cos\\alpha \\approx 1$ e $\\sin\\alpha \\approx \\alpha$. Il momento focale **non** e' nullo (e' il $C_{m0,w}$ del risultato) e $z_{AC}$ sparisce solo perche' moltiplica termini gia' piccoli."
+        },
+        {
+          "id": "d03-mo-3",
+          "tipo": "numerico",
+          "difficolta": 2,
+          "testo": "Un velivolo ha corda media aerodinamica $\\bar{c} = 3.5$ m, centro aerodinamico a 0.90 m dal bordo d'attacco e baricentro a 1.25 m. Quanto vale la posizione adimensionale $h = (x_G - x_{AC})/\\bar{c}$?",
+          "dati": "c = 3.5 m\nx_AC = 0.90 m\nx_G = 1.25 m",
+          "soluzione": "(1.25 - 0.90)/3.5",
+          "verifica": {
+            "valore": 0.1,
+            "entro": 0.003
+          },
+          "hint": [
+            "E' una differenza divisa per la corda."
+          ],
+          "spiegazione": "$h = 0.35/3.5 = 0.10$. Il baricentro e' un decimo di corda dietro al centro aerodinamico: configurazione tipica, e destabilizzante — la portanza dell'ala fa momento a cabrare. Il compito di riportare $C_{m\\alpha}$ sotto zero tocca alla coda."
+        },
+        {
+          "id": "d03-mo-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "La fusoliera isolata e' instabile. Scrivi il suo coefficiente di momento in funzione di `alpha`, con `C_m0_fus` e `C_ma_fus`.",
+          "soluzione": "C_m0_fus + C_ma_fus*alpha",
+          "verifica": {
+            "equivale": "C_m0_fus + C_ma_fus*alpha",
+            "usa": [
+              "C_m0_fus",
+              "C_ma_fus",
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "C_m0_fus": [
+                0.0,
+                0.05
+              ],
+              "C_ma_fus": [
+                0.05,
+                0.5
+              ]
+            }
+          },
+          "hint": [
+            "Ancora una retta: un termine costante e uno proporzionale all'incidenza."
+          ],
+          "spiegazione": "$C_{m,fus} = C_{m0,fus} + C_{m\\alpha,fus}\\alpha$, con **entrambi positivi**: a cabrare, dunque destabilizzanti. E' il motivo per cui le frecce hanno le piume in coda — un corpo affusolato da solo tende a mettersi di traverso, non dritto."
+        },
+        {
+          "id": "d03-mo-5",
+          "tipo": "insieme",
+          "difficolta": 3,
+          "testo": "Elenca i contributi che compongono il momento di beccheggio totale, scegliendo fra `wing_body motore impennaggio downwash pressione_dinamica`.",
+          "soluzione": "wing_body motore impennaggio",
+          "verifica": {
+            "insieme": [
+              "wing_body",
+              "motore",
+              "impennaggio"
+            ]
+          },
+          "hint": [
+            "Sono tre oggetti fisici, non tre effetti."
+          ],
+          "spiegazione": "$\\mathcal{M} = \\mathcal{M}_{wb} + \\mathcal{M}_{eng} + \\mathcal{M}_t$. Downwash e pressione dinamica non sono contributi: sono **effetti** che modificano quanto vale il contributo dell'impennaggio, e infatti compaiono dentro $C_{m,t}$ come $(1 - d\\varepsilon/d\\alpha)$ e $\\eta_t$."
+        },
+        {
+          "id": "d03-mo-6",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Il motore contribuisce al momento anche con asse di spinta baricentrico. Scrivi `C_m_eng` in funzione di `alpha`, con `C_m0_eng` e `C_ma_eng`.",
+          "soluzione": "C_m0_eng + C_ma_eng*alpha",
+          "verifica": {
+            "equivale": "C_m0_eng + C_ma_eng*alpha",
+            "usa": [
+              "C_m0_eng",
+              "C_ma_eng",
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "L'effetto nasce dalla componente normale della quantita' di moto alla presa d'aria, proporzionale a sin(alpha).",
+            "Per angoli piccoli sin(alpha) circa alpha: viene di nuovo una retta."
+          ],
+          "spiegazione": "$C_{m,eng} = C_{m0,eng} + C_{m\\alpha,eng}\\alpha$. A incidenza non nulla il flusso entra nella presa con una componente normale e viene espulso lungo l'asse: nasce una forza alla presa d'aria. Motore **davanti** al baricentro, momento a cabrare, $C_{m\\alpha,eng} > 0$ — un secondo destabilizzante che si somma alla fusoliera."
+        },
+        {
+          "id": "d03-mo-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un'ala genera $C_{L,w} = 0.55$, ha momento focale $C_{m0,w} = -0.06$ e il baricentro sta a $h = 0.12$ dietro al centro aerodinamico. Quanto vale $C_{m,w}$ rispetto al baricentro?",
+          "dati": "C_L_w = 0.55\nC_m0_w = -0.06\nh = 0.12",
+          "soluzione": "-0.06 + 0.55*0.12",
+          "verifica": {
+            "valore": 0.006,
+            "entro": 0.002
+          },
+          "hint": [
+            "Somma dei due contributi: il focale (negativo) e la portanza per il braccio."
+          ],
+          "spiegazione": "$C_{m,w} = -0.06 + 0.066 = +0.006$: appena positivo. Con il baricentro un po' piu' indietro il termine di portanza vince sul focale e l'ala da sola diventa nettamente a cabrare. Sono numeri piccoli, ed e' proprio per questo che il contributo dell'impennaggio — moltiplicato per un braccio lungo tutta la fusoliera — domina il bilancio."
+        },
+        {
+          "id": "d03-mo-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Stessa ala, stesso momento focale, ma il carico si sposta e il baricentro arretra a $h = 0.22$. Di quanto cambia $C_{m,w}$ rispetto al caso precedente?",
+          "dati": "C_L_w = 0.55\nh prima = 0.12\nh dopo = 0.22",
+          "soluzione": "0.55*(0.22 - 0.12)",
+          "verifica": {
+            "valore": 0.055,
+            "entro": 0.002
+          },
+          "hint": [
+            "Cambia solo il braccio: la variazione e' la portanza per la variazione di `h`."
+          ],
+          "spiegazione": "$\\Delta C_{m,w} = C_{L,w}\\,\\Delta h = 0.55 \\cdot 0.10 = +0.055$. Dieci punti percentuali di corda di arretramento valgono quasi dieci volte il momento focale: il centraggio non e' un dettaglio di carico, e' la variabile che decide il comportamento del velivolo. Le lezioni sui limiti di centraggio nascono da qui."
+        }
+      ]
+    },
+    {
+      "id": "d03-volume-coda",
+      "comando": "volume di coda",
+      "titolo": "L'impennaggio: braccio, volume di coda, momento",
+      "esercizi": [
+        {
+          "id": "d03-vh-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il coefficiente di volume di coda `V_H` in funzione di `l_t`, `S_t`, `S` e `c`.",
+          "soluzione": "l_t*S_t/(S*c)",
+          "verifica": {
+            "equivale": "l_t*S_t/(S*c)",
+            "usa": [
+              "l_t",
+              "S_t",
+              "S",
+              "c"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "E' un rapporto di superfici moltiplicato per un rapporto di lunghezze.",
+            "La lunghezza di riferimento longitudinale e' la corda media aerodinamica."
+          ],
+          "spiegazione": "$V_H = \\dfrac{\\ell_t S_t}{S\\bar{c}}$. E' adimensionale, e mette insieme le due cose che rendono efficace un impennaggio: quanto e' grande e quanto e' lontano. Un impennaggio piccolo su una fusoliera lunga puo' valere piu' di uno grande attaccato corto."
+        },
+        {
+          "id": "d03-vh-2",
+          "tipo": "numerico",
+          "difficolta": 2,
+          "testo": "Calcola $V_H$ di un velivolo con $\\ell_t = 14$ m, $S_t = 15$ m², $S = 92$ m², $\\bar{c} = 3.4$ m.",
+          "dati": "l_t = 14 m\nS_t = 15 m^2\nS = 92 m^2\nc = 3.4 m",
+          "soluzione": "14*15/(92*3.4)",
+          "verifica": {
+            "valore": 0.6714,
+            "entro": 0.006
+          },
+          "hint": [
+            "Il prodotto dei due rapporti: superfici e lunghezze."
+          ],
+          "spiegazione": "$V_H = 0.67$. Valori tipici stanno fra 0.4 e 1.0 per i velivoli da trasporto. Nota i due pezzi: $S_t/S = 0.16$ e $\\ell_t/\\bar{c} = 4.1$; il rapporto di superfici e' piccolo, quello di lunghezze e' grande, ed e' il secondo a fare il lavoro."
+        },
+        {
+          "id": "d03-vh-3",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Il braccio non e' fisso, perche' il baricentro si sposta. Scrivi `l_t` in funzione della distanza fissa `l_t1` fra i centri aerodinamici di ala e coda e della posizione adimensionale `h` (con la corda `c`).",
+          "soluzione": "l_t1 - h*c",
+          "verifica": {
+            "equivale": "l_t1 - h*c",
+            "usa": [
+              "l_t1",
+              "h",
+              "c"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "l_t1": [
+                8,
+                25
+              ]
+            }
+          },
+          "hint": [
+            "Se il baricentro arretra verso la coda, il braccio si accorcia.",
+            "`h` e' adimensionale: per sottrarlo a una distanza va moltiplicato per la corda."
+          ],
+          "spiegazione": "$\\ell_t = \\ell_t' - (x_G - x_{AC}) = \\ell_t' - h\\bar{c}$. E' la formula che tiene insieme geometria e carico: la configurazione fissa $\\ell_t'$ una volta per tutte, il caricamento del volo decide $h$, e da li' cambia il braccio, quindi $V_H$, quindi la stabilita'."
+        },
+        {
+          "id": "d03-vh-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il coefficiente di momento dell'impennaggio `C_m_t` in funzione di `eta_t`, `V_H`, `C_La_t` e dell'angolo d'attacco della coda `alpha_t`.",
+          "soluzione": "-eta_t*V_H*C_La_t*alpha_t",
+          "verifica": {
+            "equivale": "-eta_t*V_H*C_La_t*alpha_t",
+            "usa": [
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "alpha_t"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ],
+              "alpha_t": [
+                -0.05,
+                0.15
+              ]
+            }
+          },
+          "hint": [
+            "La portanza di coda verso l'alto fa momento a picchiare: davanti a tutto ci va un segno meno.",
+            "Il braccio e la superficie sono gia' dentro `V_H`."
+          ],
+          "spiegazione": "$C_{m,t} = -\\eta_t V_H C_{L\\alpha,t}\\alpha_t$. Il segno meno e' la stabilita' in persona: se l'incidenza aumenta, $\\alpha_t$ aumenta, la coda porta di piu' e il muso viene spinto in basso. Il volume di coda dice quanto forte."
+        },
+        {
+          "id": "d03-vh-5",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Con $\\eta_t = 0.92$, $V_H = 0.70$, $C_{L\\alpha,t} = 3.6$ 1/rad e $\\alpha_t = 2$ gradi, quanto vale $C_{m,t}$?",
+          "dati": "eta_t = 0.92\nV_H = 0.70\nC_La_t = 3.6 1/rad\nalpha_t = 2 gradi",
+          "soluzione": "-0.92*0.70*3.6*2*pi/180",
+          "verifica": {
+            "valore": -0.0809,
+            "entro": 0.001
+          },
+          "hint": [
+            "I gradi vanno convertiti in radianti prima di moltiplicare per la pendenza.",
+            "Il risultato e' negativo: momento a picchiare."
+          ],
+          "spiegazione": "$C_{m,t} = -0.92 \\cdot 0.70 \\cdot 3.6 \\cdot 0.0349 = -0.081$. Confrontalo con i momenti dell'ala calcolati nella raccolta precedente, dell'ordine di 0.006: la coda, a parita' di incidenza, conta **dieci volte** tanto. E' tutto merito del braccio."
+        },
+        {
+          "id": "d03-vh-6",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi il coefficiente `C_mdE`, cioe' il momento prodotto dalla deflessione dell'equilibratore.",
+          "soluzione": "-eta_t*V_H*C_La_t*tau_E",
+          "verifica": {
+            "equivale": "-eta_t*V_H*C_La_t*tau_E",
+            "usa": [
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "tau_E"
+            ],
+            "senza": [
+              "alpha",
+              "deps"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Stessa struttura del contributo di coda, con l'efficienza dell'equilibratore.",
+            "Il segno resta quello del momento di coda."
+          ],
+          "spiegazione": "$C_{m\\delta_E} = -\\eta_t V_H C_{L\\alpha,t}\\tau_E$, **negativo**. Il controllo di coerenza: $\\delta_E > 0$ (bordo d'uscita in basso) fa portanza verso l'alto sulla coda, quindi momento a picchiare, quindi $C_m < 0$. Se ti viene positivo, hai sbagliato un segno da qualche parte."
+        },
+        {
+          "id": "d03-vh-7",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo ha $V_H' = 0.75$ (parte fissa), $S_t/S = 0.16$. Il baricentro arretra da $h = 0.10$ a $h = 0.28$. Di quanto cambia $V_H$?",
+          "dati": "V_H1 = 0.75\nS_t/S = 0.16\nh prima = 0.10\nh dopo = 0.28",
+          "soluzione": "-0.16*(0.28 - 0.10)",
+          "verifica": {
+            "valore": -0.0288,
+            "entro": 0.001
+          },
+          "hint": [
+            "$V_H = V_H' - (S_t/S)\\,h$: la parte variabile e' proporzionale al centraggio.",
+            "Se il baricentro va verso la coda, il braccio si accorcia e $V_H$ cala."
+          ],
+          "spiegazione": "$\\Delta V_H = -0.16 \\cdot 0.18 = -0.029$, cioe' $V_H$ passa da 0.734 a 0.705: circa il 4% in meno di efficacia dell'impennaggio. Sembra poco, ma il termine stabilizzante cala **mentre** quello destabilizzante ($C_{L\\alpha,wb}h$) cresce: i due effetti vanno nella stessa direzione sbagliata, ed e' per questo che esiste un limite posteriore di centraggio."
+        },
+        {
+          "id": "d03-vh-8",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Metti insieme volume di coda e angolo d'attacco della coda: scrivi `C_m_t` in funzione di `alpha` e `delta_E`, usando `eta_t V_H C_La_t i_t eps_0 deps tau_E`.",
+          "soluzione": "-eta_t*V_H*C_La_t*(i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E)",
+          "verifica": {
+            "equivale": "-eta_t*V_H*C_La_t*(i_t - eps_0 + (1 - deps)*alpha + tau_E*delta_E)",
+            "usa": [
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "i_t",
+              "eps_0",
+              "deps",
+              "alpha",
+              "tau_E",
+              "delta_E"
+            ],
+            "senza": [
+              "alpha_t"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Sostituisci dentro $C_{m,t} = -\\eta_t V_H C_{L\\alpha,t}\\alpha_t$ l'espressione di $\\alpha_t$ gia' raccolta nel modulo precedente.",
+            "Il risultato deve essere lineare in `alpha` e `delta_E`."
+          ],
+          "spiegazione": "$C_{m,t} = -\\eta_t V_H C_{L\\alpha,t}\\left[(i_t - \\varepsilon_0) + (1 - \\frac{d\\varepsilon}{d\\alpha})\\alpha + \\tau_E\\delta_E\\right]$. Da qui si leggono in fila i tre contributi dell'impennaggio a $C_{m0}$, $C_{m\\alpha}$ e $C_{m\\delta_E}$: sono esattamente i tre termini con il segno meno davanti nella sintesi."
+        }
+      ]
+    },
+    {
+      "id": "d03-soluzione",
+      "comando": "soluzione del trim",
+      "titolo": "La sintesi di C_m e la soluzione del trim",
+      "esercizi": [
+        {
+          "id": "d03-tr-1",
+          "tipo": "formula",
+          "difficolta": 2,
+          "testo": "Scrivi il modello lineare del coefficiente di momento globale, in funzione di `alpha` e `delta_E`, con `C_m0 C_ma C_mdE`.",
+          "soluzione": "C_m0 + C_ma*alpha + C_mdE*delta_E",
+          "verifica": {
+            "equivale": "C_m0 + C_ma*alpha + C_mdE*delta_E",
+            "usa": [
+              "C_m0",
+              "C_ma",
+              "alpha",
+              "C_mdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Stessa forma del modello di portanza: un termine noto e due derivate."
+          ],
+          "spiegazione": "$C_m = C_{m0} + C_{m\\alpha}\\alpha + C_{m\\delta_E}\\delta_E$. Insieme a $C_L$, e' meta' del sistema che risolve il trim: due equazioni lineari, due incognite."
+        },
+        {
+          "id": "d03-tr-2",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Scrivi la derivata `C_ma` mettendo insieme i quattro contributi: wing-body, motore, braccio del baricentro e impennaggio. Usa `C_ma_wb C_ma_eng C_La_wb h eta_t V_H C_La_t deps`.",
+          "soluzione": "C_ma_wb + C_ma_eng + C_La_wb*h - eta_t*V_H*C_La_t*(1 - deps)",
+          "verifica": {
+            "equivale": "C_ma_wb + C_ma_eng + C_La_wb*h - eta_t*V_H*C_La_t*(1 - deps)",
+            "usa": [
+              "C_ma_wb",
+              "C_ma_eng",
+              "C_La_wb",
+              "h",
+              "eta_t",
+              "V_H",
+              "C_La_t",
+              "deps"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Tre termini si sommano e uno si sottrae: quello della coda.",
+            "Il contributo del braccio e' la pendenza di portanza del wing-body per la posizione del baricentro."
+          ],
+          "spiegazione": "$C_{m\\alpha} = C_{m\\alpha,wb} + C_{m\\alpha,eng} + C_{L\\alpha,wb}h - \\eta_t V_H C_{L\\alpha,t}(1 - \\frac{d\\varepsilon}{d\\alpha})$. Guarda i segni: i primi tre sono positivi (destabilizzanti) in configurazione tipica, il quarto e' sempre negativo. La stabilita' e' una gara fra questi quattro numeri, e la vince la coda."
+        },
+        {
+          "id": "d03-tr-3",
+          "tipo": "numerico",
+          "difficolta": 3,
+          "testo": "Calcola $C_{m\\alpha}$ con $C_{m\\alpha,wb} = 0.18$, $C_{m\\alpha,eng} = 0.05$, $C_{L\\alpha,wb} = 4.6$, $h = 0.12$, $\\eta_t = 0.9$, $V_H = 0.70$, $C_{L\\alpha,t} = 3.5$, $d\\varepsilon/d\\alpha = 0.45$. Tutto in 1/rad.",
+          "dati": "C_ma_wb = 0.18\nC_ma_eng = 0.05\nC_La_wb = 4.6\nh = 0.12\neta_t = 0.9\nV_H = 0.70\nC_La_t = 3.5\ndeps = 0.45",
+          "soluzione": "0.18 + 0.05 + 4.6*0.12 - 0.9*0.70*3.5*(1 - 0.45)",
+          "verifica": {
+            "valore": -0.4302,
+            "entro": 0.006
+          },
+          "hint": [
+            "Somma i tre termini destabilizzanti, poi sottrai il contributo di coda.",
+            "Se il risultato viene positivo il velivolo e' instabile: qui non deve."
+          ],
+          "spiegazione": "$C_{m\\alpha} = 0.18 + 0.05 + 0.552 - 1.212 = -0.43$ 1/rad. Negativo: il velivolo e' staticamente stabile. Nota le proporzioni — i destabilizzanti sommano 0.78, la coda da sola vale -1.21. Togli l'impennaggio e resta un velivolo che al primo disturbo di incidenza continua a cabrare."
+        },
+        {
+          "id": "d03-tr-4",
+          "tipo": "formula",
+          "difficolta": 3,
+          "testo": "Dalla prima equazione del trim, ricava `alpha` in funzione di `delta_E`. Usa `C_L_trim C_L0 C_La C_LdE delta_E`.",
+          "soluzione": "(C_L_trim - C_L0 - C_LdE*delta_E)/C_La",
+          "verifica": {
+            "equivale": "(C_L_trim - C_L0 - C_LdE*delta_E)/C_La",
+            "usa": [
+              "C_L_trim",
+              "C_L0",
+              "C_La",
+              "C_LdE",
+              "delta_E"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Imponi $C_L = C_{L,trim}$ nel modello lineare e isola `alpha`."
+          ],
+          "spiegazione": "$\\alpha_{eq} = \\dfrac{(C_{L,trim} - C_{L0}) - C_{L\\delta_E}\\delta_E}{C_{L\\alpha}}$. E' il primo passo della soluzione: si esprime un'incognita in funzione dell'altra, poi si sostituisce nell'equazione dei momenti."
+        },
+        {
+          "id": "d03-tr-5",
+          "tipo": "ordina",
+          "difficolta": 3,
+          "testo": "Rimetti in ordine i passi che portano alla soluzione esplicita del trim semplificato.",
+          "passi": [
+            {
+              "id": "MO",
+              "testo": "Si moltiplica per C_La per liberarsi del denominatore"
+            },
+            {
+              "id": "AL",
+              "testo": "Si ricava alpha_eq dall'equazione della portanza, in funzione di delta_E"
+            },
+            {
+              "id": "DE",
+              "testo": "Si riconosce la forma delta_E,eq = A + B C_L,trim"
+            },
+            {
+              "id": "SO",
+              "testo": "Si sostituisce alpha_eq nell'equazione dei momenti"
+            },
+            {
+              "id": "RA",
+              "testo": "Si raccoglie delta_E e si divide"
+            }
+          ],
+          "soluzione": "AL SO MO RA DE",
+          "verifica": {
+            "ordine": [
+              "AL",
+              "SO",
+              "MO",
+              "RA",
+              "DE"
+            ]
+          },
+          "hint": [
+            "Si comincia ricavando un'incognita dall'equazione della portanza.",
+            "L'ultimo passo e' leggere il risultato nella forma A + B C_L,trim."
+          ],
+          "spiegazione": "Ricavare $\\alpha$ dalla portanza, sostituire nei momenti, moltiplicare per $C_{L\\alpha}$ per togliere il denominatore, raccogliere $\\delta_E$, e riconoscere la forma $\\delta_{E,eq} = A + B\\,C_{L,trim}$. E' la struttura standard di un sistema lineare 2x2 risolto per sostituzione: qui conta perche' la forma finale dice una cosa fisica, non solo un numero."
+        },
+        {
+          "id": "d03-tr-6",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "Scrivi la deflessione di equilibrio `delta_E` risolvendo il sistema. Usa `C_m0 C_La C_ma C_L_trim C_L0 C_LdE C_mdE`.",
+          "soluzione": "(C_m0*C_La + C_ma*(C_L_trim - C_L0))/(C_ma*C_LdE - C_La*C_mdE)",
+          "verifica": {
+            "equivale": "(C_m0*C_La + C_ma*(C_L_trim - C_L0))/(C_ma*C_LdE - C_La*C_mdE)",
+            "usa": [
+              "C_m0",
+              "C_La",
+              "C_ma",
+              "C_L_trim",
+              "C_L0",
+              "C_LdE",
+              "C_mdE"
+            ],
+            "senza": [
+              "alpha"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "Sostituisci $\\alpha_{eq}$ nell'equazione dei momenti e moltiplica tutto per $C_{L\\alpha}$.",
+            "Al denominatore compare la combinazione $C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}$: e' il determinante del sistema."
+          ],
+          "spiegazione": "$\\delta_{E,eq} = \\dfrac{C_{m0}C_{L\\alpha} + C_{m\\alpha}(C_{L,trim} - C_{L0})}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}$. Il denominatore e' il determinante del sistema 2x2: se si annulla il velivolo non e' trimmabile, ed e' esattamente quello che succede al punto neutro a comandi liberi che si studia piu' avanti."
+        },
+        {
+          "id": "d03-tr-7",
+          "tipo": "formula",
+          "difficolta": 4,
+          "testo": "La formula si scrive in forma compatta come $\\delta_{E,eq} = A + B\\,C_{L,trim}$. Scrivi il coefficiente `B`, trascurando `C_L0`.",
+          "soluzione": "C_ma/(C_ma*C_LdE - C_La*C_mdE)",
+          "verifica": {
+            "equivale": "C_ma/(C_ma*C_LdE - C_La*C_mdE)",
+            "usa": [
+              "C_ma",
+              "C_LdE",
+              "C_La",
+              "C_mdE"
+            ],
+            "senza": [
+              "C_m0",
+              "C_L_trim"
+            ],
+            "dominio": {
+              "alpha": [
+                0.02,
+                0.2
+              ],
+              "delta_E": [
+                -0.3,
+                0.3
+              ],
+              "eta_t": [
+                0.85,
+                1.0
+              ],
+              "V_H": [
+                0.4,
+                1.2
+              ],
+              "V_H1": [
+                0.4,
+                1.2
+              ],
+              "C_La_t": [
+                2.5,
+                4.5
+              ],
+              "tau_E": [
+                0.4,
+                0.7
+              ],
+              "S_t": [
+                8,
+                30
+              ],
+              "S": [
+                40,
+                130
+              ],
+              "l_t": [
+                8,
+                25
+              ],
+              "c": [
+                1.5,
+                6
+              ],
+              "h": [
+                -0.1,
+                0.3
+              ],
+              "i_t": [
+                -0.05,
+                0.02
+              ],
+              "eps_0": [
+                0.0,
+                0.04
+              ],
+              "deps": [
+                0.3,
+                0.6
+              ],
+              "C_m0_wb": [
+                -0.12,
+                -0.02
+              ],
+              "C_m0_eng": [
+                -0.02,
+                0.02
+              ],
+              "C_ma_wb": [
+                -0.2,
+                0.6
+              ],
+              "C_ma_eng": [
+                0.0,
+                0.3
+              ],
+              "C_L0_wb": [
+                0.05,
+                0.4
+              ],
+              "C_La_wb": [
+                3.5,
+                5.5
+              ],
+              "C_m0": [
+                0.02,
+                0.2
+              ],
+              "C_ma": [
+                -1.5,
+                -0.3
+              ],
+              "C_mdE": [
+                -1.6,
+                -0.6
+              ],
+              "C_L0": [
+                0.05,
+                0.4
+              ],
+              "C_La": [
+                4.0,
+                6.0
+              ],
+              "C_LdE": [
+                0.2,
+                0.8
+              ],
+              "C_L_trim": [
+                0.2,
+                1.2
+              ],
+              "C_L_t": [
+                -0.4,
+                0.4
+              ],
+              "C_L_w": [
+                0.1,
+                1.2
+              ],
+              "m": [
+                4000,
+                60000
+              ],
+              "rho": [
+                0.35,
+                1.22
+              ],
+              "Vel": [
+                70,
+                250
+              ],
+              "gamma": [
+                -0.15,
+                0.3
+              ],
+              "C_D": [
+                0.015,
+                0.12
+              ],
+              "T_max": [
+                20000,
+                200000
+              ],
+              "eta_T": [
+                -0.05,
+                0.09
+              ]
+            }
+          },
+          "hint": [
+            "`B` e' il coefficiente che moltiplica `C_L_trim` nella soluzione appena trovata."
+          ],
+          "spiegazione": "$B = \\dfrac{C_{m\\alpha}}{C_{m\\alpha}C_{L\\delta_E} - C_{L\\alpha}C_{m\\delta_E}}$. La pendenza della curva $\\delta_E$ contro $C_{L,trim}$ e' proporzionale a $C_{m\\alpha}$: e' il legame diretto fra **stabilita'** e **manovrabilita'**, e nelle prossime lezioni diventa il criterio storico di stabilita' in velocita'."
+        },
+        {
+          "id": "d03-tr-8",
+          "tipo": "numerico",
+          "difficolta": 4,
+          "testo": "Un velivolo ha $C_{m0} = 0.09$, $C_{m\\alpha} = -0.43$, $C_{m\\delta_E} = -1.10$, $C_{L\\alpha} = 4.9$, $C_{L\\delta_E} = 0.25$. In una condizione con $C_{L,trim} = 0.62$ (e $C_{L0}$ trascurabile), quanti radianti di equilibratore servono per trimmare?",
+          "dati": "C_m0 = 0.09\nC_ma = -0.43\nC_mdE = -1.10\nC_La = 4.9\nC_LdE = 0.25\nC_L_trim = 0.62",
+          "soluzione": "(0.09*4.9 + (-0.43)*0.62)/((-0.43)*0.25 - 4.9*(-1.10))",
+          "verifica": {
+            "valore": 0.0335,
+            "entro": 0.0008
+          },
+          "hint": [
+            "Applica la formula: numeratore $C_{m0}C_{L\\alpha} + C_{m\\alpha}C_{L,trim}$.",
+            "Attenzione ai segni al denominatore: $C_{m\\alpha}$ e $C_{m\\delta_E}$ sono entrambi negativi."
+          ],
+          "spiegazione": "$\\delta_{E,eq} = \\dfrac{0.441 - 0.267}{-0.1075 + 5.39} = \\dfrac{0.174}{5.28} = 0.033$ rad, cioe' circa 1.9 gradi a scendere. Un valore piccolo e sensato: in crociera l'equilibratore lavora vicino al neutro, ed e' il segno che il velivolo e' ben calettato. Se per trimmare in crociera servissero dieci gradi, si starebbe pagando resistenza per un errore di progetto."
+        }
+      ]
+    }
+  ]
+}

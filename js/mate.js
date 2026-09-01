@@ -22,6 +22,8 @@ const GRECHE = {
   tau: "τ", upsilon: "υ", phi: "φ", varphi: "φ", chi: "χ", psi: "ψ", omega: "ω",
   Gamma: "Γ", Delta: "Δ", Theta: "Θ", Lambda: "Λ", Xi: "Ξ", Pi: "Π",
   Sigma: "Σ", Upsilon: "Υ", Phi: "Φ", Psi: "Ψ", Omega: "Ω",
+  // ell: la elle corsiva del braccio di coda, che non e' una L qualunque.
+  ell: "ℓ",
 };
 
 /** Simboli che si comportano da operatore: vanno in <mo>. */

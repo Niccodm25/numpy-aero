@@ -133,12 +133,13 @@
       "disponibile": true,
       "moduli": [
         "d01",
-        "d02"
+        "d02",
+        "d03"
       ],
       "prossimi": [
-        "Contributi al momento di beccheggio; volume di coda V_H; soluzione del trim",
         "Stabilita' statica longitudinale a comandi bloccati; punto neutro e margine statico",
-        "Stabilita' in velocita', effetti del Mach, limite posteriore"
+        "Configurazioni: tail-less, flying-wing, convenzionale, canard",
+        "Stabilita' in velocita', effetti del Mach, limite posteriore di centraggio"
       ]
     }
   ],
@@ -503,6 +504,12 @@
       "id": "d02",
       "file": "d02-portanza.json",
       "titolo": "Il modello aerodinamico: la portanza",
+      "disponibile": true
+    },
+    {
+      "id": "d03",
+      "file": "d03-momento.json",
+      "titolo": "Momento di beccheggio e soluzione del trim",
       "disponibile": true
     }
   ]
