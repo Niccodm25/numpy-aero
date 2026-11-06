@@ -574,12 +574,25 @@ const COMANDI = {
             .map(([k]) => k)
         );
     if (args.includes("--oneline")) {
-      return lista
-        .map((c) => {
-          const rif = perRamo(c.id);
-          return `${c.id}${rif.length ? ` (${rif.join(", ")})` : ""} ${c.messaggio}`;
-        })
-        .join("\n");
+      const righe = lista.map((c) => {
+        const rif = perRamo(c.id);
+        return `${c.id}${rif.length ? ` (${rif.join(", ")})` : ""} ${c.messaggio}`;
+      });
+      // --graph disegna a sinistra la forma della storia: un asterisco per
+      // commit, una barra per la linea che prosegue, e la coppia davanti a un
+      // commit di unione. E' una versione piu' semplice di quella di git — una
+      // colonna sola — ma racconta la stessa cosa: dove la storia si e'
+      // divisa e dove si e' richiusa.
+      if (args.includes("--graph")) {
+        const fuori = [];
+        lista.forEach((c, i) => {
+          const unione = c.genitori.length > 1;
+          fuori.push((unione ? "*   " : "* ") + righe[i]);
+          if (i < lista.length - 1) fuori.push(unione ? "|\\  " : "| ");
+        });
+        return fuori.join("\n");
+      }
+      return righe.join("\n");
     }
     return lista
       .map((c) => {

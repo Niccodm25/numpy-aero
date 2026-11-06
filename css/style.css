@@ -8,7 +8,11 @@
   --ok: #1f7a4d;
   --ko: #b3261e;
   --codebg: #f3f1ec;
+  --info: #1f6f8b;
+  --giallo: #8a6d1f;
+  --viola: #7b3fa0;
   --raggio: 10px;
+  color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -21,6 +25,9 @@
     --ok: #4ec98a;
     --ko: #f2857c;
     --codebg: #100f0e;
+    --info: #68c6e0;
+    --giallo: #d8b44a;
+    --viola: #c08ae0;
   }
 }
 
@@ -358,3 +365,50 @@ button.card.traguardo {
   }
   .pop-corpo { max-height: calc(86dvh - 4.25rem); padding: 1rem; }
 }
+
+/* ---- colori dell'uscita del terminale ----
+   Gli stessi di git: verde quello che entra nel commit, rosso quello che
+   resta fuori, giallo gli hash. Sono tinte, non decorazione: su un `git
+   status` lungo sono l'unico modo per trovare la riga che conta. */
+.terminale .t-ok { color: var(--ok); }
+.terminale .t-ko { color: var(--ko); }
+.terminale .t-muto { color: var(--tx2); }
+.terminale .t-info { color: var(--info); }
+.terminale .t-giallo { color: var(--giallo); }
+.terminale .t-conflitto { color: var(--viola); font-weight: 700; }
+
+/* La citazione nelle lezioni: l'inciso, l'avvertenza, la nota a margine.
+   Prima compariva come testo con un maggiore davanti. */
+blockquote {
+  margin: 1rem 0;
+  padding: .6rem .9rem;
+  border-left: 3px solid var(--acc);
+  background: var(--codebg);
+  border-radius: 0 var(--raggio) var(--raggio) 0;
+  color: var(--tx);
+}
+blockquote code { background: var(--card); }
+
+/* Il campo del terminale non ha un anello di focus suo: lo prende la riga
+   intera, altrimenti con la tastiera non si vede dove si sta scrivendo. */
+.riga-prompt:focus-within { border-color: var(--acc); box-shadow: inset 0 0 0 1px var(--acc); }
+
+/* Il doppio tap non deve aspettare lo zoom, e l'evidenziazione azzurra di
+   sistema sui tocchi la decidiamo noi. */
+button, a, .card, input { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+h1, h2, h3, h4 { text-wrap: balance; }
+
+/* Chi ha chiesto meno animazioni non deve vedere la barra dei progressi
+   strisciare. */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* Un disegno dentro una lezione: scorre se e' piu' largo dello schermo, e
+   prende i colori del tema invece di averne di suoi. */
+ol, ul { padding-left: 1.3rem; }
+ol li, ul li { margin: .3rem 0; }
+
+.disegno { margin: 1rem 0; padding: 0; overflow-x: auto; }
+.disegno svg { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; }

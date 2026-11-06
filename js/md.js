@@ -14,7 +14,16 @@ export function md(src = "") {
   // contenuto non viene toccato dalle regole inline né dall'escape: il LaTeX è
   // pieno di barre e di & che il markdown non deve vedere. Sentinelle
   // improbabili in prosa.
-  let t = String(src).replace(/```(?:\w+)?\n([\s\S]*?)```/g, (_, c) => {
+  let t = String(src).replace(/```(\w+)?\n([\s\S]*?)```/g, (_, lingua, c) => {
+    // Un blocco ```svg e' un disegno, e passa cosi' com'e'. Il contenuto
+    // viene dai nostri file di modulo, non da fuori: e' la stessa fiducia che
+    // si da' al testo delle lezioni. Un diagramma fatto di trattini dentro un
+    // blocco di codice si legge male su un telefono, e questo e' il motivo
+    // per cui l'eccezione esiste.
+    if (lingua === "svg") {
+      formule.push(`<figure class="disegno">${c}</figure>`);
+      return `@@MATE${formule.length - 1}@@`;
+    }
     code.push(c.replace(/\n+$/, ""));
     return `@@CODE${code.length - 1}@@`;
   });
@@ -42,9 +51,24 @@ export function md(src = "") {
       if (/^@@CODE\d+@@$/.test(b) || /^@@MATE\d+@@$/.test(b)) return b;
       if (b.startsWith("### ")) return `<h4>${b.slice(4)}</h4>`;
       if (b.startsWith("## ")) return `<h3>${b.slice(3)}</h3>`;
+      // Citazione: la riga che comincia con "&gt; " (il > e' gia' stato
+      // protetto dall'escape). Nelle lezioni e' l'inciso — l'avvertenza, la
+      // nota a margine — e va distinto dal corpo, non stampato con il segno
+      // maggiore davanti come faceva prima.
+      if (b.split("\n").every((l) => l.trim().startsWith("&gt;"))) {
+        const dentro = b
+          .split("\n")
+          .map((l) => l.trim().replace(/^&gt;\s?/, ""))
+          .join("<br>");
+        return `<blockquote>${dentro}</blockquote>`;
+      }
       if (tabella(b)) return tabella(b);
       if (b.split("\n").every((l) => /^[-*] /.test(l.trim())))
         return `<ul>${b.split("\n").map((l) => `<li>${l.trim().slice(2)}</li>`).join("")}</ul>`;
+      // Elenco numerato: i passi di una procedura. Prima finivano in un
+      // paragrafo unico, con i numeri scritti dentro il testo.
+      if (b.split("\n").every((l) => /^\d+\. /.test(l.trim())))
+        return `<ol>${b.split("\n").map((l) => `<li>${l.trim().replace(/^\d+\.\s*/, "")}</li>`).join("")}</ol>`;
       return `<p>${b.replace(/\n/g, "<br>")}</p>`;
     })
     .join("");

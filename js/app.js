@@ -284,6 +284,58 @@ async function vistaModulo(id) {
     }`;
 }
 
+/**
+ * Colora l'uscita di un comando, riga per riga, come farebbe un terminale.
+ *
+ * Le regole sono quelle di git, che e' il comando che ne ha piu' bisogno: il
+ * diff verde e rosso, le due sezioni di `status` con i colori opposti, i
+ * conflitti in evidenza, gli hint del push rifiutato in grigio. Senza colore
+ * quelle uscite sono un muro di testo in cui la riga che conta non si trova.
+ *
+ * E' presentazione, non contenuto: il testo resta identico e la verifica
+ * continua a leggere quello.
+ *
+ * ponytail: un classificatore di righe con qualche espressione regolare, non
+ * un interprete di sequenze ANSI. I comandi restituiscono testo e non devono
+ * sapere niente di come verra' disegnato.
+ */
+function coloraUscita(testo) {
+  let sezione = null;
+  return String(testo)
+    .split("\n")
+    .map((r) => {
+      const t = escapeHtml(r);
+      if (/^(Changes to be committed|Unmerged paths)/.test(r)) sezione = "ok";
+      else if (/^(Changes not staged|Untracked files)/.test(r)) sezione = "ko";
+      else if (r.trim() === "") sezione = null;
+
+      if (/^(CONFLICT|error:|fatal:|\s*! \[rejected\])/.test(r)) return `<b class="t-ko">${t}</b>`;
+      if (/^hint:/.test(r)) return `<span class="t-muto">${t}</span>`;
+      if (/^(<{7}|={7}|>{7})/.test(r)) return `<span class="t-conflitto">${t}</span>`;
+      if (/^(\+\+\+|---|diff --git|index )/.test(r)) return `<span class="t-muto">${t}</span>`;
+      if (/^@@/.test(r)) return `<span class="t-info">${t}</span>`;
+      if (/^\+/.test(r)) return `<span class="t-ok">${t}</span>`;
+      if (/^-/.test(r)) return `<span class="t-ko">${t}</span>`;
+      if (/^commit [0-9a-f]{7}/.test(r)) return `<span class="t-giallo">${t}</span>`;
+      if (/^\s*\* \[new branch\]/.test(r)) return `<span class="t-ok">${t}</span>`;
+      // Lo stato breve: prima colonna l'area di staging, seconda il working tree.
+      const breve = r.match(/^([ AMDR?])([ AMD?]) (.+)$/);
+      if (breve) {
+        const a = breve[1] === " " ? " " : `<span class="t-ok">${breve[1]}</span>`;
+        const b = breve[2] === " " ? " " : `<span class="t-ko">${breve[2]}</span>`;
+        return `${a}${b} ${escapeHtml(breve[3])}`;
+      }
+      // Dentro una sezione di status i nomi dei file prendono il colore della
+      // sezione: e' cosi' che si vede a colpo d'occhio che cosa entra nel
+      // commit e che cosa resta fuori.
+      if (sezione && /^\t/.test(r)) return `<span class="t-${sezione}">${t}</span>`;
+      const corto = r.match(/^([0-9a-f]{7})( .*)$/);
+      if (corto) return `<span class="t-giallo">${corto[1]}</span>${escapeHtml(corto[2])}`;
+      return t;
+    })
+    .join("\n");
+}
+
 // I tasti dei simboli che servono da telefono: una formula si scrive con i
 // simboli del corso, un conto con le parentesi e le funzioni.
 const TASTI_FORMULA = ["alpha", "gamma", "theta", "C_L", "C_D", "sin(", "cos(", "^", "*", "/", "(", ")"];
@@ -431,7 +483,13 @@ function montaTerminale(zona, es) {
   const scrivi = (testo, classe = "") => {
     const riga = document.createElement("div");
     if (classe) riga.className = classe;
-    riga.textContent = testo;
+    // L'uscita dei comandi si colora riga per riga. Un terminale vero lo fa —
+    // `git diff` verde e rosso, `git status` verde per lo staging e rosso per
+    // il resto — e senza colore quelle uscite sono un muro di testo in cui la
+    // riga che conta non si trova. E' presentazione, non contenuto: il testo
+    // resta identico, e la verifica continua a leggere quello.
+    if (classe) riga.textContent = testo;
+    else riga.innerHTML = coloraUscita(testo);
     out.appendChild(riga);
     out.scrollTop = out.scrollHeight;
   };
