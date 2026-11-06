@@ -48,6 +48,41 @@ export function statoGit(sh, scenario = {}) {
   for (const [nome, r] of Object.entries(scenario.remoti || {})) {
     sh.git.remoti[nome] = { url: r.url ?? urlDi(nome, r.nome ?? "progetto"), repo: repoNudo(sh, r) };
   }
+
+  // `clonato: "origin"` costruisce la situazione normale del lavoro in due:
+  // un repository locale che viene da un clone, e da li' in poi due storie
+  // che possono divergere. L'ordine conta ed e' quello della realta': prima
+  // si clona, poi tu fai i tuoi commit (`poi`), poi il remoto riceve quelli
+  // di qualcun altro (il `poi` del remoto).
+  if (scenario.clonato) {
+    const nome = scenario.clonato;
+    const remoto = sh.git.remoti[nome];
+    if (!remoto) throw new V.ErroreFs(`lo scenario clona da '${nome}', che non e' dichiarato`);
+    sh.git.locale = clonaDa(sh, nome, remoto, scenario.cartella ?? (scenario.remoti[nome].nome ?? "progetto"));
+    const locale = sh.git.locale;
+    let albero = alberoDi(locale, testaId(locale));
+    for (const c of scenario.poi || []) {
+      albero = { ...albero, ...(c.file || {}) };
+      for (const via of c.rimuove || []) delete albero[via];
+      creaCommit(sh, locale, c.messaggio, { ...albero });
+    }
+    scriviAlbero(sh, locale, albero);
+    locale.indice = { ...albero };
+
+    // E adesso il remoto va avanti per conto suo: e' il collega che ha
+    // pushato mentre tu lavoravi, cioe' la causa del push rifiutato.
+    const rem = remoto.repo;
+    const principale = rem.ramoPrincipale ?? "main";
+    let suo = alberoDi(rem, rem.rami[principale]);
+    const headPrima = rem.HEAD;
+    rem.HEAD = { ramo: principale };
+    for (const c of scenario.remoti[nome].poi || []) {
+      suo = { ...suo, ...(c.file || {}) };
+      for (const via of c.rimuove || []) delete suo[via];
+      creaCommit(sh, rem, c.messaggio, { ...suo }, c.autore ?? "anna");
+    }
+    rem.HEAD = headPrima;
+  }
   return sh;
 }
 
@@ -170,6 +205,32 @@ function repoDaScenario(sh, spec) {
     repo.indice[via] = contenuto;
   }
   return repo;
+}
+
+/**
+ * Costruisce il repository locale a partire da un remoto: la storia intera,
+ * il ramo principale, i riferimenti `origin/*` e il collegamento fra il ramo
+ * locale e il suo corrispondente remoto.
+ *
+ * Sta in una funzione sua perche' lo usano in due: il comando `git clone` e
+ * gli scenari degli esercizi che partono "da dopo il clone".
+ */
+function clonaDa(sh, nomeRemoto, remoto, cartella) {
+  const radice = V.normalizza(sh.fs, cartella);
+  const locale = repoVuoto(radice);
+  V.creaDir(sh.fs, radice, true);
+  V.creaDir(sh.fs, radice + "/.git", true);
+  locale.commit = structuredClone(remoto.repo.commit);
+  const principale = remoto.repo.ramoPrincipale ?? "main";
+  locale.rami = { [principale]: remoto.repo.rami[principale] ?? null };
+  locale.HEAD = { ramo: principale };
+  for (const [n, id] of Object.entries(remoto.repo.rami)) locale.remoti[`${nomeRemoto}/${n}`] = id;
+  locale.tracking[principale] = `${nomeRemoto}/${principale}`;
+  const albero = alberoDi(locale, locale.rami[principale]);
+  scriviAlbero(sh, locale, albero);
+  locale.indice = { ...albero };
+  annota(locale, `clone: from ${remoto.url}`);
+  return locale;
 }
 
 /** Un repository senza working tree: quello che sta "su GitHub". */
@@ -482,6 +543,11 @@ const COMANDI = {
     }
 
     const fuori = [r.HEAD.ramo ? `On branch ${r.HEAD.ramo}` : `HEAD detached at ${r.HEAD.commit}`];
+    // Quanto sei avanti o indietro rispetto al remoto: e' la riga per cui si
+    // digita `git status` prima di ogni push, e dice da sola se il push
+    // passera' o verra' rifiutato.
+    const rispetto = confrontoColRemoto(r);
+    if (rispetto) fuori.push(rispetto);
     if (!testaId(r)) fuori.push("", "No commits yet");
     if (r.unione) {
       fuori.push("", "You have unmerged paths.", '  (fix conflicts and run "git commit")');
@@ -623,10 +689,22 @@ const COMANDI = {
 
   log(sh, args) {
     const r = repo(sh);
-    const testa = testaId(r);
+    // `git log` guarda il ramo corrente, ma puo' guardare qualunque altro
+    // riferimento — `git log origin/main` e' il modo di vedere che cosa c'e'
+    // sul remoto dopo un fetch, senza unirlo.
+    const rif = args.find((a) => !a.startsWith("-"));
+    // E la forma `A..B` elenca i commit che stanno in B e non in A: quello
+    // che un push manderebbe, o quello che un pull porterebbe.
+    const intervallo = rif && rif.includes("..") ? rif.split("..") : null;
+    const testa = intervallo ? risolvi(sh, r, intervallo[1] || "HEAD") : rif ? risolvi(sh, r, rif) : testaId(r);
     if (!testa) throw new V.ErroreFs(`fatal: your current branch '${r.HEAD.ramo}' does not have any commits yet`);
     const quanti = Number((args.find((a) => /^-\d+$/.test(a)) ?? "0").slice(1)) || Infinity;
-    const lista = cronologia(r, testa).slice(0, quanti);
+    let lista = cronologia(r, testa);
+    if (intervallo) {
+      const esclusi = antenati(r, risolvi(sh, r, intervallo[0] || "HEAD"));
+      lista = lista.filter((c) => !esclusi.has(c.id));
+    }
+    lista = lista.slice(0, quanti);
     const perRamo = (id) =>
       Object.entries(r.rami)
         .filter(([, v]) => v === id)
@@ -1073,19 +1151,7 @@ const COMANDI = {
     const nome = liberi[1] ?? (url.split("/").pop() || "progetto").replace(/\.git$/, "");
     const radice = V.normalizza(sh.fs, nome);
     if (V.esiste(sh.fs, radice)) throw new V.ErroreFs(`fatal: destination path '${nome}' already exists and is not an empty directory.`);
-    const remoto = sorgente[1].repo;
-    const locale = repoVuoto(radice);
-    V.creaDir(sh.fs, radice, true);
-    V.creaDir(sh.fs, radice + "/.git", true);
-    locale.commit = structuredClone(remoto.commit);
-    const principale = remoto.ramoPrincipale ?? "main";
-    locale.rami = { [principale]: remoto.rami[principale] ?? null };
-    locale.HEAD = { ramo: principale };
-    for (const [n, id] of Object.entries(remoto.rami)) locale.remoti[`${sorgente[0]}/${n}`] = id;
-    locale.tracking[principale] = `${sorgente[0]}/${principale}`;
-    const albero = alberoDi(locale, locale.rami[principale]);
-    scriviAlbero(sh, locale, albero);
-    locale.indice = { ...albero };
+    const locale = clonaDa(sh, sorgente[0], sorgente[1], nome);
     g(sh).locale = locale;
     const n = Object.keys(locale.commit).length;
     return [
@@ -1180,6 +1246,38 @@ const COMANDI = {
     ].join("\n");
   },
 };
+
+/**
+ * La riga che git stampa sotto "On branch": quanti commit hai tu che il
+ * remoto non ha, e viceversa. Null se il ramo non segue nessun remoto.
+ */
+function confrontoColRemoto(r) {
+  const ramo = r.HEAD.ramo;
+  const tracciato = ramo && r.tracking[ramo];
+  if (!tracciato || !(tracciato in r.remoti)) return null;
+  const mio = r.rami[ramo];
+  const suo = r.remoti[tracciato];
+  if (mio === suo) return `Your branch is up to date with '${tracciato}'.`;
+  const miei = antenati(r, mio);
+  const suoi = antenati(r, suo);
+  const avanti = [...miei].filter((x) => !suoi.has(x)).length;
+  const indietro = [...suoi].filter((x) => !miei.has(x)).length;
+  const q = (n) => `${n} commit${n === 1 ? "" : "s"}`;
+  if (avanti && indietro) {
+    return (
+      `Your branch and '${tracciato}' have diverged,\n` +
+      `and have ${avanti} and ${indietro} different commits each, respectively.\n` +
+      `  (use "git pull" if you want to integrate the remote branch with yours)`
+    );
+  }
+  if (avanti) {
+    return `Your branch is ahead of '${tracciato}' by ${q(avanti)}.\n  (use "git push" to publish your local commits)`;
+  }
+  return (
+    `Your branch is behind '${tracciato}' by ${q(indietro)}, and can be fast-forwarded.\n` +
+    `  (use "git pull" to update your local branch)`
+  );
+}
 
 /** Da un riferimento (ramo, hash, HEAD, HEAD~2, origin/main) al suo commit. */
 function risolvi(sh, r, rif) {

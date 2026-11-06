@@ -1,0 +1,1308 @@
+{
+  "id": "g04",
+  "titolo": "Il remoto",
+  "perche": "Un repository remoto e' una copia senza cartella di lavoro che serve a scambiare il lavoro. Qui si impara a prenderlo (clone), a mandarci i commit (push), a prendere quelli degli altri (fetch e pull) e soprattutto a cavarsela quando le due storie divergono — il push rifiutato non e' un guasto, e' git che si rifiuta di buttare via il lavoro di qualcun altro.",
+  "lezioni": [
+    {
+      "id": "g04-lez-remoto",
+      "titolo": "Il remoto: una copia che non ha una cartella",
+      "md": "Fino a qui git e' stato tutto sulla tua macchina. Il **remoto** e' un'altra copia dello stesso repository, di solito su un server — GitHub, GitLab, il computer del laboratorio — che serve a scambiare il lavoro.\n\n```svg\n<svg viewBox=\"0 0 330 210\" role=\"img\" aria-label=\"Il repository su GitHub e la copia locale, collegati da clone, push, fetch e pull\">\n  <style>\n    .scatola { fill: var(--card); stroke: var(--bordo); stroke-width: 1.5; }\n    .nome { fill: var(--tx); font: 600 14px system-ui, sans-serif; }\n    .sotto { fill: var(--tx2); font: 11px system-ui, sans-serif; }\n    .cmd { fill: var(--acc); font: 600 12px ui-monospace, monospace; }\n    .freccia { stroke: var(--acc); stroke-width: 2; fill: none; }\n  </style>\n  <defs>\n    <marker id=\"p4\" viewBox=\"0 0 10 10\" refX=\"9\" refY=\"5\" markerWidth=\"6\" markerHeight=\"6\" orient=\"auto\">\n      <path d=\"M 0 0 L 10 5 L 0 10 z\" fill=\"var(--acc)\" />\n    </marker>\n  </defs>\n\n  <rect class=\"scatola\" x=\"75\" y=\"6\" width=\"180\" height=\"52\" rx=\"8\" />\n  <text class=\"nome\" x=\"165\" y=\"28\" text-anchor=\"middle\">origin</text>\n  <text class=\"sotto\" x=\"165\" y=\"46\" text-anchor=\"middle\">il repository su GitHub</text>\n\n  <path class=\"freccia\" d=\"M 110 62 L 110 140\" marker-end=\"url(#p4)\" />\n  <text class=\"cmd\" x=\"104\" y=\"92\" text-anchor=\"end\">clone</text>\n  <text class=\"cmd\" x=\"104\" y=\"110\" text-anchor=\"end\">fetch</text>\n  <text class=\"cmd\" x=\"104\" y=\"128\" text-anchor=\"end\">pull</text>\n\n  <path class=\"freccia\" d=\"M 220 140 L 220 62\" marker-end=\"url(#p4)\" />\n  <text class=\"cmd\" x=\"228\" y=\"105\">push</text>\n\n  <rect class=\"scatola\" x=\"75\" y=\"148\" width=\"180\" height=\"52\" rx=\"8\" />\n  <text class=\"nome\" x=\"165\" y=\"170\" text-anchor=\"middle\">la tua macchina</text>\n  <text class=\"sotto\" x=\"165\" y=\"188\" text-anchor=\"middle\">storia intera, piu' i file</text>\n</svg>\n```\n\n### Che cos'e' davvero\n\nUn repository remoto e' un repository **senza working tree**: ha i commit, i rami, la storia, ma nessuna cartella di file da aprire. Nessuno ci lavora dentro direttamente — ci si manda il lavoro e lo si prende.\n\nE' per questo che su GitHub la pagina di un progetto mostra i file ricostruendoli da un commit, non leggendoli da una cartella.\n\n### origin\n\n```\ngit remote -v\norigin  https://github.com/tu/campagna.git (fetch)\norigin  https://github.com/tu/campagna.git (push)\n```\n\n`origin` e' **solo un nome**, quello che git assegna di default al remoto da cui hai clonato. Non ha niente di speciale: puoi rinominarlo, averne piu' di uno, chiamarne uno `laboratorio` e un altro `backup`.\n\nLe due righe sono per leggere e per scrivere: quasi sempre sono lo stesso indirizzo, ma possono essere diversi.\n\n### Aggiungerlo a mano\n\n```\ngit remote add origin https://github.com/tu/campagna.git\n```\n\nE' quello che si fa quando il repository e' nato in locale con `git init` e poi si decide di pubblicarlo: si crea il repository vuoto su GitHub, si copia l'indirizzo, e lo si collega.\n\n### Perche' «distribuito» non e' una parola vuota\n\nOgni copia ha la **storia intera**. Il remoto non e' l'originale e tu non hai una copia parziale: sono due repository con gli stessi commit. Se GitHub sparisse domani, qualunque clone basterebbe a ricostruirlo.\n\nLa conseguenza di tutti i giorni: commit, rami, storia, confronti funzionano senza rete. Servono i comandi di questo modulo solo quando vuoi **scambiare**."
+    },
+    {
+      "id": "g04-lez-clone",
+      "titolo": "clone: portarsi via tutto",
+      "md": "```\ngit clone https://github.com/tu/campagna.git\n```\n\nCrea una cartella `campagna`, ci mette dentro il repository con **tutta la storia** (non solo l'ultima versione), e tira fuori i file del ramo principale.\n\n```\nCloning into 'campagna'...\nremote: Enumerating objects: 12, done.\nReceiving objects: 100% (12/12), done.\n```\n\nUn clone e' un repository completo: `git log` funziona offline, puoi tornare a un commit di tre anni fa senza rete.\n\n### Che cosa ti ritrovi configurato\n\nDopo il clone, senza che tu faccia niente:\n\n- il remoto si chiama **`origin`** e punta all'indirizzo da cui hai clonato;\n- sei sul ramo principale, di solito `main`;\n- esiste un riferimento **`origin/main`**, che e' il ramo del remoto **come l'hai visto l'ultima volta**;\n- il tuo `main` **segue** `origin/main`: e' il *tracking*, ed e' quello che permette di scrivere `git push` senza argomenti.\n\n### origin/main non e' il remoto\n\nQuesta e' la cosa che confonde di piu'. `origin/main` e' un **riferimento locale**: una fotografia di dov'era il ramo del remoto l'ultima volta che hai parlato con lui. Non si aggiorna da solo.\n\nSe un collega pusha adesso, il tuo `origin/main` resta fermo finche' non fai `git fetch`. Non e' un difetto: e' quello che permette a git di dirti **che cosa e' cambiato** da quando hai guardato l'ultima volta.\n\n### Dare un altro nome alla cartella\n\n```\ngit clone https://github.com/tu/campagna.git analisi-2026\n```\n\nIl secondo argomento e' il nome della cartella da creare. Il repository e' lo stesso."
+    },
+    {
+      "id": "g04-lez-push",
+      "titolo": "push: mandare i commit",
+      "md": "```\ngit push\n```\n\nManda al remoto i commit che tu hai e lui no, e sposta il suo ramo.\n\n```\nEnumerating objects: 9, done.\nTo https://github.com/tu/campagna.git\n   f1152cf..1762ba2  main -> main\n```\n\n`main -> main` vuol dire «il mio ramo main verso il suo ramo main». I due nomi potrebbero essere diversi, e in quel caso si scrivono per esteso.\n\n### Che cosa viene mandato\n\nSolo i **commit**. Non il working tree, non l'area di staging, non le modifiche non committate. Quello che non hai committato non esiste per il remoto — ed e' il motivo per cui si risponde «ho pushato» solo dopo aver controllato `git status`.\n\n### Il ramo nuovo\n\nUn ramo creato in locale il remoto non lo conosce. La prima volta serve dirglielo:\n\n```\ngit push -u origin grafico\n```\n\n- `origin` e' il remoto;\n- `grafico` e' il ramo;\n- **`-u`** (cioe' `--set-upstream`) stabilisce il collegamento: da li' in poi, stando su quel ramo, basta `git push`.\n\n```\n * [new branch]      grafico -> grafico\nbranch 'grafico' set up to track 'origin/grafico'.\n```\n\n### Sapere prima se passera'\n\n```\ngit status\nOn branch main\nYour branch is ahead of 'origin/main' by 2 commits.\n  (use \"git push\" to publish your local commits)\n```\n\n«Avanti di 2» vuol dire che il push passera'. Se invece dice **behind** o **diverged**, il remoto ha qualcosa che tu non hai, e il push verra' rifiutato: e' la lezione dopo."
+    },
+    {
+      "id": "g04-lez-fetch-pull",
+      "titolo": "fetch e pull: prendere il lavoro degli altri",
+      "md": "Sono due comandi diversi, e la differenza conta.\n\n### fetch: guarda ma non tocca\n\n```\ngit fetch\nFrom https://github.com/tu/campagna\n   f1152cf..3eaf298  main     -> origin/main\n```\n\n`git fetch` scarica i commit nuovi e aggiorna i riferimenti `origin/*`. **Il tuo ramo e i tuoi file non cambiano**: sei esattamente dove eri.\n\nDopo un fetch puoi guardare che cosa e' arrivato prima di decidere:\n\n```\ngit log --oneline origin/main     # la storia del remoto\ngit diff main origin/main         # che cosa cambierebbe\n```\n\nE' il comando prudente: utile quando non sai che cosa hanno combinato gli altri, o quando sei a meta' di una cosa e non vuoi che ti si muova niente sotto i piedi.\n\n### pull: prendi e unisci\n\n```\ngit pull\n```\n\ne' esattamente **`git fetch` seguito da `git merge origin/main`**. Scarica e unisce subito nel tuo ramo.\n\nSe tu non hai commit nuovi, l'unione e' un avanti veloce e non te ne accorgi nemmeno. Se ne hai, nasce un commit di unione — e se avete toccato le stesse righe, un conflitto, che si risolve esattamente come quelli del modulo precedente: non c'e' niente di speciale nei conflitti che arrivano dalla rete.\n\n### La regola pratica\n\n**Pull prima di push, e pull spesso.** Due rami che divergono per un'ora si uniscono senza accorgersene; due rami che divergono per una settimana producono un conflitto per ogni file.\n\n> Esiste anche `git pull --rebase`, che invece di creare un commit di unione riscrive i tuoi commit sopra quelli arrivati, lasciando la storia dritta. E' una scelta di stile molto diffusa, e non e' simulata qui: quando la incontrerai in un progetto vero, sappi che fa la stessa cosa con una forma diversa."
+    },
+    {
+      "id": "g04-lez-divergenza",
+      "titolo": "Quando le due storie divergono",
+      "md": "Hai committato in locale. Nel frattempo un collega ha pushato. Provi a pushare:\n\n```\nTo https://github.com/tu/campagna.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs to 'https://github.com/tu/campagna.git'\nhint: Updates were rejected because the remote contains work that you do not\nhint: have locally.\n```\n\n**Non e' un guasto**: git si sta rifiutando di buttare via il lavoro di qualcun altro. Se accettasse il tuo push, i commit del collega resterebbero senza nessun ramo che li nomina — cioe' sparirebbero dalla vista di tutti.\n\n### Come si esce\n\n```\ngit pull        # prendi il suo lavoro e uniscilo al tuo\ngit push        # adesso hai tutto, e il push passa\n```\n\nFra i due puo' esserci un conflitto da risolvere: in quel caso si risolve, si committa, e poi si pusha.\n\nDopo il pull, `git status` dice `ahead by 2 commits` — il tuo piu' il commit di unione — e il push li manda entrambi.\n\n### --force, e perche' quasi mai\n\n```\ngit push --force\n```\n\nImpone il tuo ramo al remoto, **cancellando i commit che lui aveva e tu no**. Il lavoro del collega sparisce dal ramo, e lui se ne accorgera' quando il suo prossimo pull gli dira' cose incomprensibili.\n\nEsiste un caso legittimo: un ramo **tuo**, che nessun altro usa, su cui hai riscritto la storia di proposito (un `--amend`, un `reset`). Anche li' la forma educata e' `git push --force-with-lease`, che si rifiuta se nel frattempo qualcun altro ha pushato.\n\n> La regola che riassume i tre moduli: **non riscrivere mai la storia che hai gia' condiviso**. In locale sei padrone — reset, amend, quello che vuoi. Dopo il push, quei commit sono anche di altri."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "g04-clone",
+      "comando": "clone, remote",
+      "titolo": "Collegarsi a un repository remoto",
+      "esercizi": [
+        {
+          "id": "g04-cl-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il repository `campagna` esiste su GitHub all'indirizzo `https://github.com/tu/campagna.git`. Clonalo e guarda che cosa ti sei portato nella cartella.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "git clone https://github.com/tu/campagna.git\ncd campagna\nls",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 2
+            },
+            "esiste": [
+              "/home/tu/campagna/.git"
+            ],
+            "stampa": "Cloning into",
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Il comando che copia un repository remoto si chiama come l'inglese per «clonare»."
+          ],
+          "spiegazione": "`git clone` crea la cartella, ci mette dentro il repository con **tutta la storia** e tira fuori i file dell'ultimo commit. Da questo momento `git log` funziona anche senza rete: un clone non e' una copia parziale, e' un repository completo."
+        },
+        {
+          "id": "g04-cl-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Dopo il clone, guarda qual e' il remoto configurato e a che indirizzo punta.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\ngit remote -v",
+          "verifica": {
+            "stampa": [
+              "origin",
+              "(fetch)",
+              "(push)"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git remote` che mostra anche gli indirizzi."
+          ],
+          "spiegazione": "`origin` e' il nome che git da' di default al remoto da cui hai clonato: non ha niente di speciale, e' una convenzione. Le due righe sono per leggere e per scrivere — quasi sempre lo stesso indirizzo, ma possono essere diversi."
+        },
+        {
+          "id": "g04-cl-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Guarda la storia compatta del repository clonato: accanto all'ultimo commit devono comparire sia il tuo ramo sia quello del remoto.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\ngit log --oneline",
+          "verifica": {
+            "stampa": [
+              "HEAD -> main",
+              "origin/main"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "La forma compatta mostra le etichette fra parentesi."
+          ],
+          "spiegazione": "`(HEAD -> main, origin/main)`: tre etichette sullo stesso commit. `main` e' il tuo ramo, `origin/main` e' **dove era il ramo del remoto l'ultima volta che ci hai parlato**, e subito dopo un clone coincidono. Da qui in poi possono separarsi, ed e' tutto il contenuto del modulo."
+        },
+        {
+          "id": "g04-cl-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai un repository locale nato con `git init` e vuoi collegarlo a GitHub. Aggiungi il remoto `origin` con indirizzo `https://github.com/tu/banco.git`, poi verifica che sia stato registrato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/banco",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# banco\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd banco\ngit remote add origin https://github.com/tu/banco.git\ngit remote -v",
+          "verifica": {
+            "stampa": "banco.git",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "La forma e' `git remote add nome indirizzo`.",
+            "Per convenzione il primo remoto si chiama `origin`."
+          ],
+          "spiegazione": "E' il giro che si fa quando il progetto nasce in locale: si crea il repository vuoto su GitHub, si copia l'indirizzo, e lo si collega. Da solo non manda ancora niente — il remoto adesso esiste, ma e' vuoto finche' non fai il primo push."
+        },
+        {
+          "id": "g04-cl-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Clona il repository dando alla cartella il nome `analisi-2026` invece di quello predefinito, poi entra e controlla la storia.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "git clone https://github.com/tu/campagna.git analisi-2026\ncd analisi-2026\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "commit": 2
+            },
+            "esiste": [
+              "/home/tu/analisi-2026/.git"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il secondo argomento di `git clone` e' il nome della cartella da creare."
+          ],
+          "spiegazione": "La cartella si chiama come vuoi tu; il repository dentro e' identico. E' utile quando cloni due versioni dello stesso progetto, o quando il nome del repository su GitHub non e' quello con cui lo chiami tu."
+        },
+        {
+          "id": "g04-cl-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a clonare un repository che non esiste, all'indirizzo `https://github.com/tu/inesistente.git`, e leggi come git te lo dice.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "git clone https://github.com/tu/inesistente.git",
+          "verifica": {
+            "errore": "does not exist",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Basta provare: l'indirizzo non corrisponde a nessun repository."
+          ],
+          "spiegazione": "`fatal: repository '...' does not exist`. Su una macchina vera lo stesso errore arriva anche quando il repository esiste ma e' **privato** e tu non sei autenticato: git non puo' distinguere i due casi, e non deve — dire «esiste ma non puoi vederlo» sarebbe gia' un'informazione di troppo."
+        },
+        {
+          "id": "g04-cl-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Da locale a GitHub.** Nel repository `banco` collega il remoto `origin` all'indirizzo `https://github.com/tu/banco.git`, manda il ramo `main` stabilendo il collegamento, e verifica con lo stato che tu e il remoto siate allineati.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/banco",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# banco\n"
+                  }
+                }
+              ]
+            },
+            "remoti": {
+              "origin": {
+                "nome": "banco",
+                "commit": []
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd banco\ngit remote add origin https://github.com/tu/banco.git\ngit push -u origin main\ngit status",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 1
+                }
+              }
+            },
+            "stampa": [
+              "new branch",
+              "up to date"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Tre passi: collega, manda, controlla.",
+            "L'opzione che stabilisce il collegamento fra il tuo ramo e quello remoto e' `-u`."
+          ],
+          "spiegazione": "`* [new branch] main -> main` seguito da `branch 'main' set up to track 'origin/main'`. Da adesso basta `git push` senza argomenti, perche' git sa dove mandare. E `git status` chiude con `Your branch is up to date with 'origin/main'`, che e' la conferma che non e' rimasto niente da mandare."
+        },
+        {
+          "id": "g04-cl-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quanti commit mi sono portato?** Clona il repository e conta i commit che ti sei preso, usando gli strumenti del ramo Linux.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "git clone https://github.com/tu/campagna.git\ncd campagna\ngit log --oneline | wc -l",
+          "verifica": {
+            "stampa": "2",
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "La storia compatta e' una riga per commit."
+          ],
+          "spiegazione": "Due commit: il clone porta la **storia intera**, non l'ultima versione. E' la differenza fra git e lo scaricare uno zip del progetto — con lo zip hai i file di oggi, con il clone hai anche come ci si e' arrivati, e puoi tornare indietro senza chiedere niente a nessuno."
+        }
+      ]
+    },
+    {
+      "id": "g04-push",
+      "comando": "push",
+      "titolo": "Mandare i commit",
+      "esercizi": [
+        {
+          "id": "g04-ps-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Hai un commit che il remoto non ha. Mandalo, e leggi che cosa git stampa.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit push",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 3
+                }
+              }
+            },
+            "stampa": "main -> main",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando e' una parola sola: il ramo segue gia' quello remoto."
+          ],
+          "spiegazione": "`f1152cf..1762ba2  main -> main`: i due hash sono il prima e il dopo del ramo sul remoto. Nota che `git push` da solo basta perche' il ramo **segue** `origin/main` dal clone — altrimenti avresti dovuto scrivere a chi e che cosa."
+        },
+        {
+          "id": "g04-ps-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Prima di mandare qualcosa, chiedi a git a che punto sei rispetto al remoto.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit status",
+          "verifica": {
+            "stampa": "ahead of 'origin/main'",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che dice sempre a che punto sei dice anche questo."
+          ],
+          "spiegazione": "`Your branch is ahead of 'origin/main' by 1 commit.` E' la riga per cui si digita `git status` prima di ogni push: **ahead** vuol dire che il push passera'. Se dicesse *behind* o *diverged*, il remoto avrebbe qualcosa che tu non hai."
+        },
+        {
+          "id": "g04-ps-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Crea il ramo `grafico`, aggiungi un file `grafico.py` che contiene `import numpy`, committalo con messaggio `bozza del grafico` e mandalo al remoto stabilendo il collegamento.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\ngit switch -c grafico\necho import numpy > grafico.py\ngit add grafico.py\ngit commit -m \"bozza del grafico\"\ngit push -u origin grafico",
+          "verifica": {
+            "git": {
+              "ramo": "grafico",
+              "remoto": {
+                "origin": {
+                  "grafico": 3
+                }
+              }
+            },
+            "stampa": [
+              "new branch",
+              "set up to track"
+            ],
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Il remoto non conosce il ramo nuovo: la prima volta va nominato per esteso.",
+            "`git push -u origin grafico` stabilisce anche il collegamento per le volte dopo."
+          ],
+          "spiegazione": "`* [new branch] grafico -> grafico` e poi `branch 'grafico' set up to track 'origin/grafico'`. Il `-u` serve una volta sola: da li' in poi, stando su quel ramo, basta `git push`. Senza, ogni volta git ti chiederebbe di specificare dove mandare."
+        },
+        {
+          "id": "g04-ps-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai modificato `config.txt` scrivendoci `soglia=99` ma **non** hai committato. Prova a mandare il lavoro al remoto e poi controlla lo stato: scoprirai che il push non ha mandato niente.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\necho soglia=99 > config.txt\ngit push\ngit status",
+          "verifica": {
+            "stampa": [
+              "Changes not staged",
+              "up to date"
+            ],
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Il push manda i commit, non i file.",
+            "Alla fine lo stato dira' che sei allineato con il remoto **e** che hai modifiche non committate."
+          ],
+          "spiegazione": "`Everything up-to-date` o nessun commit da mandare, e intanto `git status` mostra ancora `modified: config.txt`. **Il push manda solo i commit**: quello che non hai committato non esiste per il remoto. E' l'errore che fa dire «ma io l'avevo pushato» quando in realta' non era mai stato committato."
+        },
+        {
+          "id": "g04-ps-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Fai due commit uno dopo l'altro — prima `misure.csv` con dentro `quota,mach` con messaggio `aggiunge le misure`, poi `note.txt` con dentro `appunti` con messaggio `aggiunge gli appunti` — e mandali tutti e due in un push solo. Poi verifica lo stato.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\necho quota,mach > misure.csv\ngit add misure.csv\ngit commit -m \"aggiunge le misure\"\necho appunti > note.txt\ngit add note.txt\ngit commit -m \"aggiunge gli appunti\"\ngit push\ngit status",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 4
+                }
+              }
+            },
+            "stampa": "up to date",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Due commit, poi un push solo: il push manda tutto quello che il remoto non ha.",
+            "Alla fine lo stato deve dire che sei allineato."
+          ],
+          "spiegazione": "Un push manda **tutti** i commit che mancano al remoto, non l'ultimo. E' il motivo per cui si puo' committare dieci volte in un pomeriggio e pushare una volta sola alla fine — e anche il motivo per cui la storia che arriva agli altri e' quella vera, con tutti i passaggi."
+        },
+        {
+          "id": "g04-ps-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda la storia compatta dopo aver fatto il push: le etichette del tuo ramo e di quello remoto devono essere tornate sullo stesso commit.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit push\ngit log --oneline",
+          "verifica": {
+            "stampa": [
+              "HEAD -> main",
+              "origin/main"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima si manda, poi si guarda la storia."
+          ],
+          "spiegazione": "Dopo il push `main` e `origin/main` sono di nuovo insieme sullo stesso commit. Prima del push `origin/main` era indietro di uno: era quella la distanza che `git status` chiamava *ahead by 1 commit*."
+        },
+        {
+          "id": "g04-ps-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Pubblicare un lavoro intero.** Nel repository `banco`, che non ha ancora nessun remoto, collega `origin` a `https://github.com/tu/banco.git`, aggiungi un file `analisi.py` con dentro `import numpy`, committalo con messaggio `aggiunge analisi.py`, manda tutto stabilendo il collegamento e verifica che sul remoto siano arrivati due commit.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/banco",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# banco\n"
+                  }
+                }
+              ]
+            },
+            "remoti": {
+              "origin": {
+                "nome": "banco",
+                "commit": []
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd banco\ngit remote add origin https://github.com/tu/banco.git\necho import numpy > analisi.py\ngit add analisi.py\ngit commit -m \"aggiunge analisi.py\"\ngit push -u origin main\ngit status",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 2
+                }
+              }
+            },
+            "stampa": [
+              "new branch",
+              "up to date"
+            ],
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Sei passi: remoto, file, add, commit, push con -u, controllo.",
+            "Il push manda tutti i commit, anche quello che c'era gia' prima."
+          ],
+          "spiegazione": "Sul remoto arrivano **due** commit: quello che era gia' in locale e quello appena fatto. Un repository vuoto su GitHub riceve tutta la storia che gli mandi, non solo l'ultimo pezzo — ed e' per questo che pubblicare un progetto vecchio non perde niente del suo passato."
+        },
+        {
+          "id": "g04-ps-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Che cosa sto per mandare?** Prima di pushare, guarda i messaggi dei commit che il remoto non ha ancora, contandoli. Poi manda.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit log --oneline origin/main..main | wc -l\ngit push\ngit status",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 3
+                }
+              }
+            },
+            "stampa": [
+              "1",
+              "up to date"
+            ],
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "`origin/main..main` vuol dire «i commit che stanno in main e non in origin/main».",
+            "E' la stessa notazione con due punti che si usa per i confronti."
+          ],
+          "spiegazione": "La notazione `A..B` elenca i commit raggiungibili da B ma non da A: qui, esattamente quello che il push manderebbe. E' il controllo che si fa prima di pushare su un progetto condiviso — leggere i propri messaggi di commit **prima** che li leggano gli altri."
+        }
+      ]
+    },
+    {
+      "id": "g04-pull",
+      "comando": "fetch, pull",
+      "titolo": "Prendere, e quando le storie divergono",
+      "esercizi": [
+        {
+          "id": "g04-dv-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il remoto e' andato avanti mentre tu non facevi niente. Scarica le novita' **senza** unirle al tuo lavoro, poi guarda a che punto sei.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\ngit fetch\ngit status",
+          "verifica": {
+            "stampa": [
+              "origin/main",
+              "behind"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando prudente e' quello che scarica e basta."
+          ],
+          "spiegazione": "`git fetch` aggiorna `origin/main` e non tocca ne' il tuo ramo ne' i tuoi file: dopo il fetch sei esattamente dove eri. Lo stato adesso dice `behind by 1 commit, and can be fast-forwarded`, cioe' «c'e' roba da prendere, e prenderla e' indolore»."
+        },
+        {
+          "id": "g04-dv-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Prendi il lavoro arrivato sul remoto e uniscilo al tuo ramo in un comando solo, poi controlla che il file nuovo sia nella cartella.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin"
+          },
+          "soluzione": "cd campagna\ngit pull\nls",
+          "verifica": {
+            "git": {
+              "commit": 3,
+              "tracciato": [
+                "log.txt"
+              ]
+            },
+            "stampa": "log.txt",
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Il comando che scarica **e** unisce e' una parola sola."
+          ],
+          "spiegazione": "`git pull` e' `git fetch` piu' `git merge origin/main`. Qui tu non avevi commit nuovi, quindi l'unione e' un avanti veloce: nessun commit di unione, il ramo scorre in avanti e il file compare nella cartella."
+        },
+        {
+          "id": "g04-dv-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Tu hai un commit, il remoto ne ha un altro. Prova a mandare il tuo e leggi perche' git si rifiuta.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit push",
+          "verifica": {
+            "stampa": [
+              "rejected",
+              "fetch first"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Basta provare: il push fallisce da solo."
+          ],
+          "spiegazione": "`! [rejected] main -> main (fetch first)`. Non e' un guasto: se git accettasse, il commit del collega resterebbe senza nessun ramo che lo nomina, cioe' sparirebbe dalla vista di tutti. Git si rifiuta di buttare via il lavoro di qualcun altro, e te lo dice con tre righe di `hint:` che spiegano la via d'uscita."
+        },
+        {
+          "id": "g04-dv-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Dopo il rifiuto, risolvi: prendi il lavoro del remoto, uniscilo al tuo, e manda tutto. Poi verifica di essere allineato.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit pull\ngit push\ngit status",
+          "verifica": {
+            "git": {
+              "remoto": {
+                "origin": {
+                  "main": 5
+                }
+              }
+            },
+            "stampa": [
+              "Merge made by",
+              "up to date"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Due comandi: prima prendi, poi manda.",
+            "L'unione qui crea un commit, perche' tutti e due i lati sono andati avanti."
+          ],
+          "spiegazione": "`git pull` unisce i due lavori con un commit di unione, e il push manda sia il tuo commit sia quello di unione: sul remoto ne arrivano due. E' il giro piu' comune del lavoro in piu' persone, e si impara a farlo senza pensarci."
+        },
+        {
+          "id": "g04-dv-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prima di unire alla cieca, guarda che cosa e' arrivato: scarica senza unire e poi leggi la storia del ramo remoto.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit fetch\ngit log --oneline origin/main",
+          "verifica": {
+            "stampa": "anna",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima il comando prudente, poi la storia del riferimento remoto.",
+            "`origin/main` si usa come un nome di ramo qualunque."
+          ],
+          "spiegazione": "Dopo il fetch, `origin/main` e' aggiornato e si puo' leggere come qualunque altro ramo: `git log --oneline origin/main` mostra che cosa ha fatto il collega **prima** di unirlo al tuo lavoro. E' il modo di non trovarsi sorprese dentro un merge."
+        },
+        {
+          "id": "g04-dv-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Tu e il collega avete cambiato la stessa riga di `config.txt`. Prendi il suo lavoro e guarda che cosa succede.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: alza la soglia a 60",
+                    "file": {
+                      "config.txt": "soglia=60\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "abbassa la soglia a 10",
+                "file": {
+                  "config.txt": "soglia=10\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit pull\ngit status",
+          "verifica": {
+            "git": {
+              "conflitto": true
+            },
+            "stampa": [
+              "CONFLICT",
+              "Unmerged paths"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il pull unisce, e l'unione puo' andare in conflitto come qualunque altra."
+          ],
+          "spiegazione": "`CONFLICT (content): Merge conflict in config.txt`. Non c'e' niente di speciale nei conflitti che arrivano dalla rete: sono gli stessi del modulo precedente, con gli stessi marcatori e la stessa soluzione. L'unica differenza e' che l'altra versione l'ha scritta una persona a cui puoi chiedere."
+        },
+        {
+          "id": "g04-dv-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il giro completo del lavoro in due.** Il push ti viene rifiutato perche' il collega ha cambiato la stessa riga. Prendi il suo lavoro, risolvi il conflitto tenendo `soglia=60`, chiudi l'unione con messaggio `tiene la soglia del collega`, e manda tutto.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: alza la soglia a 60",
+                    "file": {
+                      "config.txt": "soglia=60\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "abbassa la soglia a 10",
+                "file": {
+                  "config.txt": "soglia=10\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit push\ngit pull\necho soglia=60 > config.txt\ngit add config.txt\ngit commit -m \"tiene la soglia del collega\"\ngit push\ngit status",
+          "verifica": {
+            "git": {
+              "conflitto": false,
+              "remoto": {
+                "origin": {
+                  "main": 5
+                }
+              },
+              "contiene": {
+                "config.txt": "soglia=60"
+              }
+            },
+            "stampa": [
+              "rejected",
+              "up to date"
+            ],
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Sette passi, ma e' la giornata tipo: provi, ti rifiuta, prendi, risolvi, chiudi, mandi.",
+            "La risoluzione e' scrivere il file come deve essere, poi add e commit."
+          ],
+          "spiegazione": "E' il modulo intero in un esercizio: push rifiutato, pull che porta un conflitto, risoluzione a mano, commit di unione, push che finalmente passa. Nessuno di questi passaggi e' un errore — e' semplicemente come si lavora in due sullo stesso file, e git non fa altro che non lasciarti perdere il lavoro di nessuno."
+        },
+        {
+          "id": "g04-dv-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quanto siamo lontani?** Scarica le novita' senza unire, poi conta quanti commit ha il remoto che tu non hai, e quanti ne hai tu che lui non ha.",
+          "git": {
+            "remoti": {
+              "origin": {
+                "nome": "campagna",
+                "commit": [
+                  {
+                    "messaggio": "primo impianto",
+                    "file": {
+                      "README.md": "# campagna\n"
+                    },
+                    "autore": "anna"
+                  },
+                  {
+                    "messaggio": "aggiunge la configurazione",
+                    "file": {
+                      "config.txt": "soglia=25\n"
+                    },
+                    "autore": "anna"
+                  }
+                ],
+                "poi": [
+                  {
+                    "messaggio": "anna: aggiunge il log",
+                    "file": {
+                      "log.txt": "INFO avvio\n"
+                    }
+                  }
+                ]
+              }
+            },
+            "clonato": "origin",
+            "poi": [
+              {
+                "messaggio": "aggiunge le misure",
+                "file": {
+                  "misure.csv": "quota,mach\n9000,0.82\n"
+                }
+              }
+            ]
+          },
+          "soluzione": "cd campagna\ngit fetch\ngit log --oneline main..origin/main | wc -l\ngit log --oneline origin/main..main | wc -l",
+          "verifica": {
+            "stampa": "1",
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "`A..B` elenca i commit che stanno in B e non in A.",
+            "Invertendo i due nomi si ottiene la distanza nell'altro verso."
+          ],
+          "spiegazione": "Uno e uno: e' esattamente quello che `git status` riassume con `have diverged, and have 1 and 1 different commits each`. La notazione `A..B` e' il modo di guardarci dentro — quali commit, non solo quanti — ed e' il primo comando da dare quando una divergenza sembra piu' grossa del previsto."
+        }
+      ]
+    }
+  ]
+}
