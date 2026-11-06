@@ -121,6 +121,17 @@ export const OPZIONI = {
   sshd: { c: "t" },
   tmux: { wrap: true, c: "st", v: "st", l: ["new-session"] },
 
+  // --- controllo di versione ---
+  // git ha un sottocomando per ogni cosa: qui stanno le opzioni di tutti i
+  // sottocomandi implementati, perche' il controllo guarda la riga intera.
+  git: {
+    c: "abcdfmnsuvADM",
+    v: "mcb",
+    num: true,
+    l: ["amend", "oneline", "graph", "staged", "cached", "short", "global", "message",
+        "hard", "soft", "mixed", "set-upstream", "force", "abort", "all", "delete"],
+  },
+
   // --- pacchetti e ambienti ---
   apt: { c: "y", l: ["installed", "upgradable"] },
   pip: { c: "UVr", v: "r", l: ["upgrade", "version", "user"] },

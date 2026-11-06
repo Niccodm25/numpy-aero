@@ -29,6 +29,7 @@ const PRECACHE = [
   "js/shell.js",
   "js/opzioni.js",
   "js/fisica.js",
+  "js/versioni.js",
   "js/ambienti.js",
   "js/powershell.js",
   "js/html.js",

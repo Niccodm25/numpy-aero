@@ -30,6 +30,7 @@ import { DISCHI, statoDischi } from "../js/dischi.js";
 import { CONTAINER, statoContainer } from "../js/container.js";
 import { SICUREZZA, statoSicurezza } from "../js/sicurezza.js";
 import { AUTOMAZIONE, statoAutomazione } from "../js/automazione.js";
+import { VERSIONI, statoGit } from "../js/versioni.js";
 
 let fatti = 0;
 const casi = [];
@@ -1451,6 +1452,7 @@ for (const meta of indice.moduli) {
         if (es.container) comandi = { ...(comandi ?? POSIX), ...CONTAINER };
         if (es.sicurezza) comandi = { ...(comandi ?? POSIX), ...SICUREZZA };
         if (es.automazione) comandi = { ...(comandi ?? POSIX), ...AUTOMAZIONE };
+  if (es.git) comandi = { ...(comandi ?? POSIX), ...VERSIONI };
         const sh = creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
         if (es.interpreti) statoAmbienti(sh, es.interpreti);
         if (es.processi) statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -1465,6 +1467,7 @@ for (const meta of indice.moduli) {
         if (es.container) statoContainer(sh, es.container === true ? undefined : es.container);
         if (es.sicurezza) statoSicurezza(sh, es.sicurezza === true ? undefined : es.sicurezza);
         if (es.automazione) statoAutomazione(sh);
+  if (es.git) statoGit(sh, es.git === true ? undefined : es.git);
         const t = eseguiTutto(sh, es.soluzione);
         const esito = verifica(sh, es.verifica, t);
         assert.equal(

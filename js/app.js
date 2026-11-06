@@ -23,6 +23,7 @@ import * as AU from "./automazione.js";
 import { fraseSbagliato } from "./frasi.js";
 import * as T from "./traguardi.js";
 import * as FI from "./fisica.js";
+import * as GV from "./versioni.js";
 
 const app = document.getElementById("app");
 const barra = document.getElementById("stato");
@@ -391,6 +392,7 @@ function montaTerminale(zona, es) {
   if (es.container) comandi = { ...(comandi ?? SH.POSIX), ...CT.CONTAINER };
   if (es.sicurezza) comandi = { ...(comandi ?? SH.POSIX), ...SC.SICUREZZA };
   if (es.automazione) comandi = { ...(comandi ?? SH.POSIX), ...AU.AUTOMAZIONE };
+  if (es.git) comandi = { ...(comandi ?? SH.POSIX), ...GV.VERSIONI };
   const sh = SH.creaShell(es.filesystem || {}, { cwd: es.cwd, env: es.env, comandi });
   if (es.interpreti) A.statoAmbienti(sh, es.interpreti);
   if (es.processi) PR.statoProcessi(sh, es.processi === true ? undefined : es.processi);
@@ -405,6 +407,7 @@ function montaTerminale(zona, es) {
   if (es.container) CT.statoContainer(sh, es.container === true ? undefined : es.container);
   if (es.sicurezza) SC.statoSicurezza(sh, es.sicurezza === true ? undefined : es.sicurezza);
   if (es.automazione) AU.statoAutomazione(sh);
+  if (es.git) GV.statoGit(sh, es.git === true ? undefined : es.git);
   const trascrizione = [];
 
   zona.innerHTML = `

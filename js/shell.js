@@ -6,6 +6,7 @@
 
 import * as V from "./vfs.js";
 import { opzioneIgnota } from "./opzioni.js";
+import { verificaGit } from "./versioni.js";
 
 export function creaShell(iniziale = {}, opzioni = {}) {
   const fs = V.crea(iniziale);
@@ -1014,6 +1015,10 @@ export function verifica(sh, attesa, trascrizione = []) {
     if (nodo.tipo !== "link") p(`${nome} non e' un collegamento`);
     else if (nodo.destinazione !== V.normalizza(sh.fs, bersaglio)) p(`${nome} punta a ${nodo.destinazione}, non a ${bersaglio}`);
   }
+
+  // Lo stato di un repository git non sta nel filesystem ma nel modello di
+  // versioni.js, che sa anche come raccontare quello che non torna.
+  if (attesa.git) problemi.push(...verificaGit(sh, attesa.git));
 
   // "usa" guarda i comandi digitati, non lo stato: serve quando l'esercizio
   // insegna proprio quel comando e raggiungere il risultato in altro modo
