@@ -1,0 +1,1166 @@
+{
+  "id": "g02",
+  "titolo": "Disfare",
+  "perche": "Il momento in cui git serve davvero e' quando hai sbagliato. Ma «annullare» non e' una cosa sola: dipende da dove sta lo sbaglio — nel file, nell'area di staging, in un commit tuo, in un commit che hanno gia' visto gli altri — e a ogni posto corrisponde un comando diverso. Qui si impara a sceglierlo, e soprattutto si impara che quasi tutto si recupera, tranne quello che non e' mai stato committato.",
+  "lezioni": [
+    {
+      "id": "g02-lez-mappa",
+      "titolo": "Quattro modi di tornare indietro",
+      "md": "Il momento in cui git serve davvero e' quando hai sbagliato. Ma «annullare» non e' una cosa sola: dipende da **dove** sta lo sbaglio, e i tre posti del modulo precedente tornano qui come mappa.\n\n| lo sbaglio sta in | il comando | che cosa fa |\n|---|---|---|\n| working tree | `git restore file` | rimette il file com'era nell'ultimo commit |\n| area di staging | `git restore --staged file` | lo toglie dallo staging, la modifica resta |\n| un commit tuo, non condiviso | `git reset` | sposta il ramo indietro, il commit sparisce dalla storia |\n| un commit gia' condiviso | `git revert` | aggiunge un commit che annulla, senza riscrivere niente |\n\n### La domanda che decide\n\n**Quel commit l'hanno gia' visto gli altri?**\n\n- No → `reset`. Riscrivi la storia, nessuno se ne accorge.\n- Si' → `revert`. Non si riscrive una storia che altri hanno gia' copiato: si aggiunge un commit che disfa.\n\nE' la regola che divide questo modulo in due meta', e vale anche quando «gli altri» sei tu da un'altra macchina.\n\n### L'unico comando che distrugge davvero\n\nFra tutti, `git restore` (sul working tree) e `git reset --hard` **buttano via il lavoro non committato**, e quello non e' recuperabile da nessuna parte: git non lo ha mai visto. Tutto il resto — compresi i commit che sembrano spariti — si recupera, e il come e' l'ultima lezione del modulo."
+    },
+    {
+      "id": "g02-lez-restore",
+      "titolo": "restore: il file e lo staging",
+      "md": "```\ngit restore config.txt            # il file torna com'era\ngit restore --staged config.txt   # esce dall'area di staging\n```\n\nSono due comandi diversi che si scrivono quasi uguale, e la differenza e' tutta in quale confine attraversano.\n\n### Senza --staged: dal commit al working tree\n\n`git restore config.txt` prende la versione che sta in area di staging — di solito quella dell'ultimo commit — e la riscrive sul disco. **Le modifiche che non avevi committato spariscono**, e non c'e' modo di riaverle.\n\nE' il comando giusto quando hai rovinato un file mentre provavi una cosa e vuoi ripartire da capo. E' il comando sbagliato quando non sei sicuro: in quel caso committa prima su un ramo di prova, che costa due secondi.\n\n### Con --staged: dallo staging al niente\n\n`git restore --staged config.txt` toglie il file dall'area di staging ma **lascia il file sul disco com'e'**. Serve quando hai fatto `git add` di qualcosa che non doveva entrare in questo commit.\n\n```\ngit add .                      # ops, e' entrata anche la chiave\ngit restore --staged chiave.env\ngit commit -m \"aggiunge i dati\"\n```\n\n### Il vecchio nome\n\nFino al 2019 si usava `git checkout -- file` per la prima cosa e `git reset HEAD file` per la seconda. Funzionano ancora, e li trovi in tutte le guide scritte prima: `restore` e' stato introdotto proprio perche' `checkout` faceva **cinque mestieri diversi** e nessuno si ricordava quale.\n\n> `git status` suggerisce sempre il comando giusto fra le parentesi, sotto ogni gruppo di file. E' il motivo per cui si digita prima `status` e poi si decide."
+    },
+    {
+      "id": "g02-lez-reset",
+      "titolo": "reset: soft, mixed, hard",
+      "md": "`git reset` sposta **il ramo** su cui sei a un altro commit. I commit che restano fuori non vengono cancellati — restano nel repository senza nessuna etichetta che li nomini — ma spariscono dalla storia del ramo.\n\nLe tre varianti si distinguono per quanto in la' si spingono nei tre posti:\n\n```svg\n<svg viewBox=\"0 0 330 232\" role=\"img\" aria-label=\"reset soft sposta solo il ramo, mixed anche l'area di staging, hard anche il working tree\">\n  <style>\n    .scatola { fill: var(--card); stroke: var(--bordo); stroke-width: 1.5; }\n    .tocca { fill: var(--card); stroke: var(--acc); stroke-width: 2; }\n    .nome { fill: var(--tx); font: 600 13px system-ui, sans-serif; }\n    .modo { fill: var(--acc); font: 700 13px ui-monospace, monospace; }\n    .nota { fill: var(--tx2); font: 11px system-ui, sans-serif; }\n  </style>\n  <text class=\"modo\" x=\"8\" y=\"20\">--soft</text>\n  <rect class=\"tocca\" x=\"100\" y=\"6\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"134\" y=\"25\" text-anchor=\"middle\">ramo</text>\n  <rect class=\"scatola\" x=\"176\" y=\"6\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"210\" y=\"25\" text-anchor=\"middle\">staging</text>\n  <rect class=\"scatola\" x=\"252\" y=\"6\" width=\"70\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"287\" y=\"25\" text-anchor=\"middle\">lavoro</text>\n  <text class=\"nota\" x=\"100\" y=\"52\">le modifiche restano in staging</text>\n\n  <text class=\"modo\" x=\"8\" y=\"100\">--mixed</text>\n  <rect class=\"tocca\" x=\"100\" y=\"86\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"134\" y=\"105\" text-anchor=\"middle\">ramo</text>\n  <rect class=\"tocca\" x=\"176\" y=\"86\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"210\" y=\"105\" text-anchor=\"middle\">staging</text>\n  <rect class=\"scatola\" x=\"252\" y=\"86\" width=\"70\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"287\" y=\"105\" text-anchor=\"middle\">lavoro</text>\n  <text class=\"nota\" x=\"100\" y=\"132\">i file restano modificati, da riaggiungere</text>\n\n  <text class=\"modo\" x=\"8\" y=\"180\">--hard</text>\n  <rect class=\"tocca\" x=\"100\" y=\"166\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"134\" y=\"185\" text-anchor=\"middle\">ramo</text>\n  <rect class=\"tocca\" x=\"176\" y=\"166\" width=\"68\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"210\" y=\"185\" text-anchor=\"middle\">staging</text>\n  <rect class=\"tocca\" x=\"252\" y=\"166\" width=\"70\" height=\"28\" rx=\"6\" />\n  <text class=\"nome\" x=\"287\" y=\"185\" text-anchor=\"middle\">lavoro</text>\n  <text class=\"nota\" x=\"100\" y=\"212\">il lavoro non committato sparisce</text>\n</svg>\n```\n\n```\ngit reset --soft HEAD~1    # disfa il commit, tiene tutto pronto\ngit reset HEAD~1           # (mixed, il default) disfa anche l'add\ngit reset --hard HEAD~1    # disfa tutto, anche sul disco\n```\n\n### Quando serve ciascuno\n\n- **`--soft`** — il commit era giusto ma il messaggio no, o volevi dividerlo in due. Tutto resta in staging: rifai il commit come volevi.\n- **`--mixed`** — hai committato file che non c'entravano. Torni indietro e riscegli che cosa aggiungere.\n- **`--hard`** — quella strada era sbagliata del tutto, e il lavoro va buttato. **Non chiede conferma.**\n\n### HEAD~1, HEAD~2\n\n`HEAD` e' il commit su cui sei. `HEAD~1` e' il suo genitore, `HEAD~2` il nonno. E' la notazione per dire «indietro di n» senza andare a cercare l'hash.\n\n> `git reset --hard` e' il comando con cui si perde lavoro piu' spesso. Prima di darlo vale la pena guardare `git status`: se c'e' qualcosa in «Changes not staged», quello e' esattamente cio' che stai per buttare."
+    },
+    {
+      "id": "g02-lez-revert",
+      "titolo": "revert: disfare senza riscrivere",
+      "md": "```\ngit revert a1b2c3d\n```\n\n`git revert` **non toglie niente dalla storia**. Calcola l'opposto di un commit e lo aggiunge in cima come commit nuovo, con un messaggio automatico `Revert \"...\"`.\n\n```\nprima:   A ── B ── C          C ha introdotto il guasto\ndopo:    A ── B ── C ── C'    C' annulla C, e C resta li'\n```\n\n### Perche' non usare reset\n\nPerche' se il commit e' gia' su GitHub, altri lo hanno copiato. Riscrivere la storia con `reset` e poi forzare il push crea due versioni incompatibili dello stesso ramo, e chi ha gia' tirato giu' quel commit si trova in un pasticcio che va risolto a mano.\n\nCon `revert` la storia resta uguale per tutti: c'e' un commit in piu', e dice che quello prima era sbagliato. **La storia conserva anche gli errori**, ed e' una caratteristica, non un difetto — fra sei mesi saprai che quella strada e' stata provata e perche' e' stata abbandonata.\n\n### Revertire un revert\n\n`git revert` si puo' revertire a sua volta: annulla l'annullamento e il codice torna. E' l'unico modo pulito per dire «avevamo ragione la prima volta»."
+    },
+    {
+      "id": "g02-lez-reflog",
+      "titolo": "reflog: la rete di sicurezza",
+      "md": "Hai fatto `git reset --hard` e il commit non c'e' piu' da nessuna parte. `git log` non lo mostra, il ramo non lo nomina. E' perso?\n\nQuasi mai.\n\n```\ngit reflog\n```\n\nIl **reflog** e' il registro di tutti gli spostamenti di `HEAD` sulla tua macchina: ogni commit, ogni cambio di ramo, ogni reset, ogni merge.\n\n```\n405d6d3 HEAD@{0}: reset: moving to HEAD~1\nc1ad236 HEAD@{1}: commit: aggiunge il grafico\n405d6d3 HEAD@{2}: commit: impianto\n```\n\nQuel `c1ad236` nella riga `HEAD@{1}` e' il commit che credevi perso. Per tornarci:\n\n```\ngit reset --hard c1ad236\n```\n\n### Perche' funziona\n\nUn commit, una volta creato, resta nel repository. I rami sono solo **etichette** che puntano a un commit; `reset` sposta l'etichetta, non distrugge il commit. Un commit senza nessuna etichetta che lo raggiunga diventa irraggiungibile, ma c'e' ancora, e il reflog ne conserva l'indirizzo.\n\nGit li tiene per **90 giorni** prima di fare pulizia (30 per quelli mai raggiungibili). In pratica, quello che hai committato negli ultimi tre mesi si recupera sempre.\n\n### Il limite\n\nIl reflog e' **locale e personale**: registra quello che e' successo sulla tua macchina, non viene mai condiviso, e un repository appena clonato ha un reflog vuoto.\n\nE soprattutto: registra solo gli spostamenti di `HEAD`. Il lavoro **mai committato** — quello che `reset --hard` o `restore` hanno cancellato dal working tree — non e' mai stato in nessun commit, quindi nel reflog non c'e'.\n\n> La morale pratica di tutto il modulo: **committa spesso, anche lavoro a meta'**. Un commit brutto si sistema dopo con `--amend`, `reset --soft` o `revert`; un lavoro mai committato non si sistema affatto."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "g02-restore",
+      "comando": "restore",
+      "titolo": "Il file e l'area di staging",
+      "esercizi": [
+        {
+          "id": "g02-rs-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Hai riscritto `config.txt` per sbaglio e il file adesso contiene `tutto rotto`. Rimettilo com'era nell'ultimo commit e controlla il contenuto.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "config.txt": "tutto rotto\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore config.txt\ncat config.txt",
+          "verifica": {
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "usa": [
+              "git",
+              "cat"
+            ]
+          },
+          "hint": [
+            "`git status` suggerisce il comando giusto fra parentesi."
+          ],
+          "spiegazione": "`git restore` riscrive il file con la versione in area di staging, che qui e' quella dell'ultimo commit. Le modifiche non committate spariscono e non tornano: e' uno dei due comandi di git che distrugge lavoro davvero."
+        },
+        {
+          "id": "g02-rs-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Hai fatto `git add` di `chiave.env`, che non doveva entrare. Toglilo dall'area di staging senza cancellare il file, poi controlla lo stato in forma breve.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "staged": {
+                "chiave.env": "TOKEN=abc123\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore --staged chiave.env\ngit status -s",
+          "verifica": {
+            "esiste": [
+              "/home/tu/campagna/chiave.env"
+            ],
+            "stampa": "?? chiave.env",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git restore` che agisce sull'area di staging invece che sul file.",
+            "Il file deve restare sul disco: nello stato breve deve tornare fra i non tracciati."
+          ],
+          "spiegazione": "`--staged` cambia il confine su cui il comando lavora: toglie il file dalla lista del prossimo commit e lascia il disco intatto. Nello stato breve `chiave.env` torna a `??`, cioe' non tracciato. Senza `--staged` avresti riscritto il file, che e' tutta un'altra cosa."
+        },
+        {
+          "id": "g02-rs-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Nel repository ci sono due file modificati, `config.txt` e `note.txt`. Rimetti a posto **solo** `config.txt` e poi guarda lo stato: `note.txt` deve risultare ancora modificato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "config.txt": "soglia=25\nporta=22\n",
+                    "note.txt": "appunti\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "config.txt": "tutto rotto\n",
+                "note.txt": "appunti\nriga nuova\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore config.txt\ngit status",
+          "verifica": {
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "stampa": "note.txt",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando prende il nome del file su cui agire.",
+            "Se li ripristini entrambi l'esercizio non mostra quello che deve mostrare."
+          ],
+          "spiegazione": "`git restore` agisce su quello che gli nomini, un file per volta o una cartella. E' il modo di buttare via una prova sbagliata senza toccare il resto del lavoro in corso."
+        },
+        {
+          "id": "g02-rs-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai aggiunto in staging tre file con `git add .`, ma `deploy.env` non doveva entrarci. Toglilo dallo staging, poi committa gli altri due con messaggio `aggiunge i dati della campagna`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "staged": {
+                "misure.csv": "quota,mach\n9000,0.82\n",
+                "note.txt": "appunti\n",
+                "deploy.env": "TOKEN=abc\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore --staged deploy.env\ngit commit -m \"aggiunge i dati della campagna\"\ngit status -s",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "tracciato": [
+                "misure.csv",
+                "note.txt"
+              ],
+              "nonTracciato": [
+                "deploy.env"
+              ]
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima si toglie il file di troppo, poi si committa quello che resta.",
+            "Il commit prende quello che c'e' in area di staging in quel momento."
+          ],
+          "spiegazione": "Due comandi, e il commit contiene solo quello che doveva. E' il giro che si fa ogni volta che un `git add .` e' stato troppo generoso — ed e' il motivo per cui si guarda sempre `git status` prima di committare, non dopo."
+        },
+        {
+          "id": "g02-rs-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il file `analisi.py` e' stato modificato e **gia' aggiunto** in staging. Riportalo com'era nell'ultimo commit sia nello staging sia sul disco, in due passaggi, e verifica che il working tree sia pulito.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "staged": {
+                "analisi.py": "import csv\nimport sys\nprint('prova')\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore --staged analisi.py\ngit restore analisi.py\ngit status",
+          "verifica": {
+            "git": {
+              "pulito": true
+            },
+            "contenuto": {
+              "/home/tu/campagna/analisi.py": "import csv\n"
+            },
+            "stampa": "working tree clean",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Servono tutti e due i comandi, in quest'ordine: prima lo staging, poi il file.",
+            "Se fai solo il secondo, lo staging resta con la versione modificata."
+          ],
+          "spiegazione": "L'ordine conta: `restore --staged` riporta l'indice all'ultimo commit, e solo dopo `restore` puo' riscrivere il file con quella versione. Invertendoli il file verrebbe riscritto con la versione **modificata** che sta ancora in staging, e non cambierebbe niente."
+        },
+        {
+          "id": "g02-rs-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova la forma vecchia: ripristina `config.txt` con `git checkout`, che e' il comando che si usava prima che esistesse `restore`. Poi controlla il contenuto.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "config.txt": "tutto rotto\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit checkout -- config.txt\ncat config.txt",
+          "verifica": {
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "usa": [
+              "git",
+              "cat"
+            ]
+          },
+          "hint": [
+            "La forma e' `git checkout -- nomefile`: i due trattini separano i file dai rami."
+          ],
+          "spiegazione": "`git checkout -- file` fa esattamente quello che fa `git restore file`. I due trattini servono a dire «quello che segue e' un file, non un ramo», ed esistono perche' `checkout` faceva cinque mestieri diversi. `restore` e' stato introdotto nel 2019 proprio per separarli: nelle guide scritte prima trovi solo la forma vecchia."
+        },
+        {
+          "id": "g02-rs-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Ripulire prima di committare.** Hai tre file modificati: `misure.csv` (lavoro buono), `config.txt` (prova sbagliata da buttare) e `scratch.txt` (file di appunti mai tracciato). Butta la prova sbagliata, metti in staging solo le misure, committa con messaggio `aggiunge le misure in quota` e lascia il resto com'e'.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "misure.csv": "quota,mach\n9000,0.82\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "misure.csv": "quota,mach\n9000,0.82\n15000,0.71\n",
+                "config.txt": "prova sbagliata\n",
+                "scratch.txt": "appunti sparsi\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit restore config.txt\ngit add misure.csv\ngit commit -m \"aggiunge le misure in quota\"\ngit status -s",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "contiene": {
+                "misure.csv": "15000"
+              },
+              "nonTracciato": [
+                "scratch.txt"
+              ]
+            },
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "stampa": "?? scratch.txt",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Tre passi: butta, aggiungi, committa.",
+            "Il file di appunti non va ne' buttato ne' committato: resta li' come non tracciato."
+          ],
+          "spiegazione": "Alla fine `git status -s` mostra solo `?? scratch.txt`: la prova sbagliata e' sparita, le misure sono nella storia, gli appunti sono rimasti dov'erano. E' lo stato in cui conviene lasciare un repository — pulito tranne quello che sai di volerci lasciare."
+        },
+        {
+          "id": "g02-rs-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quante righe sto per buttare?** Prima di ripristinare `dati.csv`, conta le righe che hai aggiunto e che stai per perdere, leggendole dal diff. Poi ripristina il file.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "dati.csv": "quota,mach\n9000,0.82\n15000,0.71\n17000,0.69\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit diff | grep -c \"^+1\"\ngit restore dati.csv\ngit status",
+          "verifica": {
+            "git": {
+              "pulito": true
+            },
+            "stampa": [
+              "2",
+              "working tree clean"
+            ],
+            "usa": [
+              "git",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Le righe aggiunte nel diff cominciano con `+`, ma l'intestazione `+++ b/dati.csv` non va contata.",
+            "I dati aggiunti cominciano tutti per 1: `^+1` prende quelli e salta l'intestazione."
+          ],
+          "spiegazione": "Due righe buttate. Il punto dell'esercizio e' l'abitudine: `git diff` prima di `restore` costa due secondi e dice esattamente che cosa sparira'. Dopo non c'e' piu' niente da guardare — quelle righe non sono mai state in un commit, quindi nemmeno il reflog le conosce."
+        }
+      ]
+    },
+    {
+      "id": "g02-reset",
+      "comando": "reset",
+      "titolo": "reset: soft, mixed, hard",
+      "esercizi": [
+        {
+          "id": "g02-re-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "L'ultimo commit ha il messaggio `asd` e il lavoro dentro e' buono. Disfa il commit tenendo tutto pronto in area di staging, poi guarda lo stato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --soft HEAD~1\ngit status",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "staged": [
+                "grafico.py"
+              ]
+            },
+            "stampa": "Changes to be committed",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "La variante di `reset` che tocca solo il ramo e lascia tutto il resto dov'e'.",
+            "`HEAD~1` vuol dire «il commit prima di quello su cui sono»."
+          ],
+          "spiegazione": "`--soft` sposta solo l'etichetta del ramo: il commit sparisce dalla storia, ma il suo contenuto resta in area di staging, pronto per essere ricommittato con il messaggio giusto. E' il modo di rimediare a un commit fatto male senza rifare il lavoro."
+        },
+        {
+          "id": "g02-re-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Stessa situazione, ma stavolta disfa il commit **e** l'add: il file deve restare sul disco modificato, ma fuori dall'area di staging.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset HEAD~1\ngit status -s",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "nonTracciato": [
+                "grafico.py"
+              ]
+            },
+            "stampa": "?? grafico.py",
+            "esiste": [
+              "/home/tu/campagna/grafico.py"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "E' la variante di default: non serve scrivere nessuna opzione.",
+            "Il file deve restare sul disco."
+          ],
+          "spiegazione": "`git reset HEAD~1` senza opzioni e' `--mixed`: sposta il ramo **e** svuota l'area di staging, lasciando i file sul disco. Nello stato breve `grafico.py` compare come `??` — git lo ha dimenticato ma il file c'e'."
+        },
+        {
+          "id": "g02-re-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il commit `asd` era una strada sbagliata: il codice non serve. Disfa il commit e cancella anche il file dal disco, poi verifica con `ls` che sia sparito.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --hard HEAD~1\nls",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "pulito": true
+            },
+            "nonEsiste": [
+              "/home/tu/campagna/grafico.py"
+            ],
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "E' la variante che si spinge fino al working tree.",
+            "Non chiede conferma: e' il comando con cui si perde lavoro piu' spesso."
+          ],
+          "spiegazione": "`--hard` riporta tutti e tre i posti al commit indicato: ramo, staging e file sul disco. `grafico.py` non c'e' piu'. Il commit pero' esiste ancora nel repository, senza etichetta — e nell'ultima lezione del modulo si vedra' come ritrovarlo."
+        },
+        {
+          "id": "g02-re-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai committato due cose insieme che dovevano essere due commit separati. Disfa l'ultimo commit tenendo tutto in staging, poi committa **solo** `dati.csv` con messaggio `aggiunge i dati della prova`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "dati e grafico insieme",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n",
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --soft HEAD~1\ngit restore --staged grafico.py\ngit commit -m \"aggiunge i dati della prova\"\ngit status -s",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "tracciato": [
+                "dati.csv"
+              ],
+              "nonTracciato": [
+                "grafico.py"
+              ],
+              "messaggio": "aggiunge i dati della prova"
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Tre passi: disfa il commit, togli dallo staging quello che non deve entrare, ricommitta.",
+            "`--soft` tiene tutto in staging, e da li' si sceglie."
+          ],
+          "spiegazione": "E' la ragione per cui `--soft` esiste: il commit torna a essere materiale in area di staging, e da li' si puo' riscegliere che cosa mettere in ciascun commit. Dividere un commit in due dopo averlo fatto e' normale amministrazione, e non lascia traccia nella storia."
+        },
+        {
+          "id": "g02-re-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai aggiunto `appunti.txt` in staging ma non volevi. Toglilo usando `git reset` invece di `restore`, poi controlla lo stato breve.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "staged": {
+                "appunti.txt": "appunti sparsi\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit reset appunti.txt\ngit status -s",
+          "verifica": {
+            "stampa": "?? appunti.txt",
+            "esiste": [
+              "/home/tu/campagna/appunti.txt"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "`git reset` seguito da un nome di file, senza nessun riferimento, agisce sull'area di staging.",
+            "E' la forma vecchia di `git restore --staged`."
+          ],
+          "spiegazione": "`git reset nomefile` e' la forma storica di `git restore --staged nomefile`: fa la stessa cosa. Nota che `reset` si comporta in modo completamente diverso a seconda che gli dai un **riferimento** (sposta il ramo) o un **file** (tocca solo lo staging). E' proprio questa ambiguita' che ha portato a creare `restore`."
+        },
+        {
+          "id": "g02-re-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda la storia, poi torna indietro di **due** commit buttando via tutto, e verifica che nella cartella sia rimasto solo quello del primo commit.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit log --oneline\ngit reset --hard HEAD~2\nls",
+          "verifica": {
+            "git": {
+              "commit": 1,
+              "pulito": true
+            },
+            "nonEsiste": [
+              "/home/tu/campagna/grafico.py",
+              "/home/tu/campagna/dati.csv"
+            ],
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "La notazione per andare indietro di due commit e' `HEAD~2`.",
+            "Prima guarda la storia, cosi' sai dove stai per arrivare."
+          ],
+          "spiegazione": "`HEAD~2` e' il nonno: indietro di due generazioni. Dopo il reset resta solo `README.md`, perche' il primo commit conteneva solo quello. Guardare `git log --oneline` **prima** e' l'abitudine che evita di contare male e buttare un commit in piu'."
+        },
+        {
+          "id": "g02-re-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il commit di troppo.** Il repository ha tre commit; l'ultimo contiene un file `temporaneo.txt` che non doveva entrare, mentre `dati.csv` del secondo commit va tenuto. Disfa solo l'ultimo commit buttando tutto, poi verifica che `dati.csv` ci sia ancora e `temporaneo.txt` no.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "salva i file temporanei",
+                  "file": {
+                    "temporaneo.txt": "scratch\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --hard HEAD~1\nls\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "tracciato": [
+                "dati.csv"
+              ]
+            },
+            "nonEsiste": [
+              "/home/tu/campagna/temporaneo.txt"
+            ],
+            "stampa": "dati.csv",
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Un commit solo indietro.",
+            "`ls` dopo serve a controllare che cosa e' rimasto."
+          ],
+          "spiegazione": "`--hard` butta il commit e il suo contenuto, ma non tocca quello che era gia' nei commit precedenti: `dati.csv` resta perche' fa parte del secondo commit, non del terzo. Il reset lavora sui commit interi, non sui singoli file."
+        },
+        {
+          "id": "g02-re-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Prima di buttare, guarda.** Stai per fare `git reset --hard` ma hai anche modifiche non committate. Conta quanti file risultano modificati nello stato breve, poi fai il reset e verifica che il working tree sia pulito.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "alza la soglia",
+                  "file": {
+                    "config.txt": "soglia=40\n"
+                  }
+                }
+              ],
+              "lavoro": {
+                "README.md": "# campagna\nriga di prova\n",
+                "nuovo.txt": "roba\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit status -s | wc -l\ngit reset --hard HEAD~1\ngit status",
+          "verifica": {
+            "git": {
+              "commit": 1,
+              "pulito": true
+            },
+            "stampa": [
+              "2",
+              "working tree clean"
+            ],
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Lo stato breve e' una riga per file: si conta con `wc -l`.",
+            "Quelle righe sono esattamente quello che `--hard` sta per buttare."
+          ],
+          "spiegazione": "Due file. Il `reset --hard` li butta **entrambi**, sia quello modificato sia il commit: non distingue fra «lavoro non committato» e «commit da disfare», li riporta tutti allo stato del commit indicato. Contarli prima e' l'unico modo per sapere che cosa si sta perdendo, perche' dopo non resta traccia da nessuna parte."
+        }
+      ]
+    },
+    {
+      "id": "g02-revert",
+      "comando": "revert, reflog",
+      "titolo": "revert e la rete di sicurezza",
+      "esercizi": [
+        {
+          "id": "g02-rv-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il commit in cima ha rotto la configurazione, ed e' gia' stato condiviso: non si puo' riscrivere la storia. Annullalo aggiungendo un commit che lo disfa, poi guarda la storia compatta.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "alza la soglia a 999",
+                  "file": {
+                    "config.txt": "soglia=999\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit revert HEAD\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "commit": 3,
+              "messaggio": "Revert"
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che annulla senza riscrivere si chiama come la parola inglese per «tornare indietro».",
+            "`HEAD` indica il commit in cima."
+          ],
+          "spiegazione": "`git revert` aggiunge un commit nuovo, con messaggio `Revert \"...\"`, che contiene l'opposto di quello annullato. La storia **cresce** invece di accorciarsi: adesso ci sono tre commit, e il secondo resta li' a documentare che quella strada era stata provata."
+        },
+        {
+          "id": "g02-rv-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Dopo il revert dell'esercizio precedente, controlla che `config.txt` sia davvero tornato al contenuto di prima.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "alza la soglia a 999",
+                  "file": {
+                    "config.txt": "soglia=999\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit revert HEAD\ncat config.txt",
+          "verifica": {
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "usa": [
+              "git",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prima si annulla, poi si guarda il file."
+          ],
+          "spiegazione": "Il file torna com'era prima del commit annullato, ma per una strada diversa dal reset: invece di cancellare il commit, ne e' stato aggiunto uno che lo contraddice. Il risultato sul disco e' lo stesso; la differenza e' nella storia, ed e' quella che conta quando il lavoro e' condiviso."
+        },
+        {
+          "id": "g02-rv-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai fatto `git reset --hard HEAD~1` e hai buttato un commit che invece serviva. Guarda il registro degli spostamenti di HEAD per trovarne l'hash.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --hard HEAD~1\ngit reflog",
+          "verifica": {
+            "stampa": [
+              "HEAD@{0}",
+              "HEAD@{1}"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando e' una parola sola: il registro di dove e' stato HEAD.",
+            "La riga `HEAD@{1}` e' lo stato subito prima dell'ultimo spostamento."
+          ],
+          "spiegazione": "`git reflog` elenca ogni spostamento di HEAD con il suo hash: `HEAD@{0}` e' adesso, `HEAD@{1}` e' un passo fa. Il commit che il reset ha abbandonato e' li', con il suo hash, perche' un commit non viene cancellato — perde solo l'etichetta che lo nominava."
+        },
+        {
+          "id": "g02-rv-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Stessa situazione: hai buttato il commit `asd` con un reset. Recuperalo riportando il ramo esattamente dove era prima del reset, e verifica con `ls` che il file sia tornato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --hard HEAD~1\ngit reflog\ngit reset --hard HEAD@{1}\nls",
+          "verifica": {
+            "git": {
+              "commit": 3
+            },
+            "esiste": [
+              "/home/tu/campagna/grafico.py"
+            ],
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "`HEAD@{1}` si puo' usare come riferimento, esattamente come un hash o un nome di ramo.",
+            "Serve di nuovo `reset --hard`, ma stavolta in avanti."
+          ],
+          "spiegazione": "`git reset --hard HEAD@{1}` riporta il ramo dove era un passo fa, e il commit torna nella storia con il suo file. E' la manovra che salva la giornata dopo un reset sbagliato, e funziona perche' il commit non era mai stato cancellato davvero."
+        },
+        {
+          "id": "g02-rv-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda il reflog di un repository in cui sono successe parecchie cose e conta quante volte HEAD si e' spostato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c prova\ngit switch main\ngit reflog | wc -l",
+          "verifica": {
+            "stampa": "5",
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Ogni commit, ogni cambio di ramo e ogni reset lascia una riga.",
+            "Il reflog e' testo: si conta con `wc -l` come qualunque altra uscita."
+          ],
+          "spiegazione": "Cinque righe: tre commit piu' due cambi di ramo. Nota che `git switch -c` conta come spostamento anche se il commit e' lo stesso — il reflog registra dove **HEAD** e' stato, non quali commit sono stati creati. E' per questo che ci si ritrova dentro anche i rami abbandonati."
+        },
+        {
+          "id": "g02-rv-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a fare `git reset --hard` verso un hash che non esiste, e leggi come git te lo dice.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "grafico.py": "import numpy\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit reset --hard 1dc4ff8",
+          "verifica": {
+            "errore": "unknown revision",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Un hash inventato non corrisponde a nessun commit."
+          ],
+          "spiegazione": "`fatal: ambiguous argument '1dc4ff8': unknown revision or path not in the working tree.` Git dice «ambiguo» perche' quella stringa potrebbe essere un commit **oppure** un nome di file, e non e' ne' l'uno ne' l'altro. E' lo stesso messaggio che vedrai quando sbagli a copiare un hash dal reflog."
+        },
+        {
+          "id": "g02-rv-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**La scelta giusta.** Il commit in cima ha rotto la configurazione ed e' gia' su GitHub. Annullalo nel modo che **non riscrive la storia**, controlla che il file sia tornato a posto, e verifica che la storia sia cresciuta a tre commit invece di tornare a uno.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "alza la soglia a 999",
+                  "file": {
+                    "config.txt": "soglia=999\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit revert HEAD\ncat config.txt\ngit log --oneline | wc -l",
+          "verifica": {
+            "git": {
+              "commit": 3,
+              "messaggio": "Revert"
+            },
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "stampa": "3",
+            "usa": [
+              "git",
+              "cat",
+              "wc"
+            ]
+          },
+          "hint": [
+            "Condiviso vuol dire che `reset` non si puo' usare.",
+            "Alla fine la storia deve avere tre commit, non uno."
+          ],
+          "spiegazione": "Tre commit: l'impianto, il guasto, e il commit che lo annulla. Con `reset --hard HEAD~1` il file sarebbe tornato uguale ma la storia sarebbe tornata a due — e chiunque avesse gia' scaricato il commit intermedio si troverebbe con una storia diversa dalla tua. **Condiviso si reverte, privato si resetta.**"
+        },
+        {
+          "id": "g02-rv-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Disastro e recupero.** Fai un commit nuovo di `misure.csv` con messaggio `aggiunge le misure`, poi buttalo con un reset duro, poi accorgiti dell'errore e recuperalo dal reflog. Alla fine il file deve essere tornato e la storia deve avere tre commit.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge la configurazione",
+                  "file": {
+                    "config.txt": "soglia=25\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "misure.csv": "quota,mach\n9000,0.82\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit add misure.csv\ngit commit -m \"aggiunge le misure\"\ngit reset --hard HEAD~1\ngit reflog\ngit reset --hard HEAD@{1}\nls",
+          "verifica": {
+            "git": {
+              "commit": 3,
+              "tracciato": [
+                "misure.csv"
+              ],
+              "messaggio": "aggiunge le misure"
+            },
+            "esiste": [
+              "/home/tu/campagna/misure.csv"
+            ],
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Cinque passi: add, commit, reset, reflog, reset.",
+            "Dopo il primo reset il commit non e' perso: ha solo perso l'etichetta.",
+            "`HEAD@{1}` e' dove HEAD era un passo prima dell'ultimo spostamento."
+          ],
+          "spiegazione": "E' il giro completo del modulo in un esercizio solo: committare, buttare, recuperare. Il punto che resta e' questo — **quello che e' stato committato almeno una volta si recupera quasi sempre**, quello che non e' mai stato committato no. Da cui la regola pratica: committa spesso, anche lavoro a meta'."
+        }
+      ]
+    }
+  ]
+}

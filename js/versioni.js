@@ -91,7 +91,17 @@ function repoVuoto(radice) {
     tracking: {}, // "main" -> "origin/main"
     tag: {},
     unione: null, // merge in corso non risolto
+    // Ogni spostamento di HEAD lascia una riga qui, la piu' recente in testa.
+    // E' il reflog: la rete che permette di tornare indietro anche dopo un
+    // reset --hard, perche' il commit abbandonato resta raggiungibile.
+    reflog: [],
   };
+}
+
+/** Registra uno spostamento di HEAD. `azione` e' il testo che git scrive. */
+function annota(repo, azione) {
+  if (!repo.reflog) repo.reflog = [];
+  repo.reflog.unshift({ id: testaId(repo), azione });
 }
 
 /** Un repository descritto dallo scenario: una lista di commit gia' fatti. */
@@ -218,6 +228,7 @@ function creaCommitCon(sh, repo, messaggio, albero, genitori, autore) {
   repo.commit[id] = { id, messaggio, genitori, albero: { ...albero }, autore: chi, data: dataDi(sh) };
   if (repo.HEAD.ramo) repo.rami[repo.HEAD.ramo] = id;
   else repo.HEAD = { commit: id };
+  annota(repo, `${genitori.length > 1 ? "commit (merge)" : "commit"}: ${messaggio}`);
   return id;
 }
 
@@ -371,7 +382,7 @@ const etichetta = (s) => `${(s.come + ":").padEnd(12)}${s.via}`;
 const SOTTOCOMANDI = [
   "init", "status", "add", "commit", "log", "diff", "show", "branch", "switch",
   "checkout", "merge", "restore", "reset", "revert", "rm", "mv", "tag", "remote",
-  "clone", "fetch", "pull", "push", "config",
+  "clone", "fetch", "pull", "push", "config", "reflog",
 ];
 
 export const VERSIONI = {
@@ -558,6 +569,22 @@ const COMANDI = {
     return [`[${r.HEAD.ramo}${radice} ${id}] ${messaggio}`, ...(unione ? [] : [s.capo, ...s.righeFile])].join("\n");
   },
 
+  /**
+   * Il registro degli spostamenti di HEAD. E' la rete di sicurezza di git: un
+   * commit abbandonato da un reset non e' perso, e' solo rimasto senza
+   * etichetta, e qui dentro c'e' ancora il suo hash.
+   */
+  reflog(sh, args) {
+    const r = repo(sh);
+    const lista = r.reflog ?? [];
+    if (!lista.length) return "";
+    const quanti = Number((args.find((a) => /^-\d+$/.test(a)) ?? "0").slice(1)) || Infinity;
+    return lista
+      .slice(0, quanti)
+      .map((e, i) => `${e.id ?? "0000000"} HEAD@{${i}}: ${e.azione}`)
+      .join("\n");
+  },
+
   log(sh, args) {
     const r = repo(sh);
     const testa = testaId(r);
@@ -679,8 +706,13 @@ const COMANDI = {
     if (!nome) throw new V.ErroreFs("fatal: missing branch name");
     if (crea) {
       if (nome in r.rami) throw new V.ErroreFs(`fatal: a branch named '${nome}' already exists`);
+      const da = r.HEAD.ramo ?? String(testaId(r)).slice(0, 7);
       r.rami[nome] = testaId(r);
       r.HEAD = { ramo: nome };
+      // Anche creare un ramo e saltarci sopra e' uno spostamento di HEAD, e
+      // nel reflog ci finisce: e' il motivo per cui li' dentro si ritrovano
+      // anche i rami che hai abbandonato.
+      annota(r, `checkout: moving from ${da} to ${nome}`);
       return `Switched to a new branch '${nome}'`;
     }
     return vaiA(sh, r, nome);
@@ -707,6 +739,12 @@ const COMANDI = {
       const rel = relDi(r, V.normalizza(sh.fs, spec));
       if (staged) {
         const testa = alberoDi(r, testaId(r));
+        // Un file che non sta ne' in staging ne' nell'ultimo commit non ha
+        // niente da togliere dall'area di staging: dirlo e' meglio che fare
+        // finta di aver fatto qualcosa.
+        if (!(rel in testa) && !(rel in r.indice)) {
+          throw new V.ErroreFs(`error: pathspec '${spec}' did not match any file(s) known to git`);
+        }
         if (rel in testa) r.indice[rel] = testa[rel];
         else delete r.indice[rel];
       } else {
@@ -721,13 +759,21 @@ const COMANDI = {
     const r = repo(sh);
     const modo = args.includes("--hard") ? "hard" : args.includes("--soft") ? "soft" : "mixed";
     const rif = args.filter((a) => !a.startsWith("-"))[0];
-    // `git reset file` senza ref toglie un file dallo staging.
+    // `git reset file` senza ref toglie un file dallo staging. Si riconosce
+    // perche' quel nome e' davvero un file che git conosce: altrimenti e' un
+    // riferimento, e se non esiste deve dirlo invece di non fare niente.
     if (rif && !(rif in r.rami) && !r.commit[rif] && !/^HEAD/.test(rif)) {
-      return COMANDI.restore(sh, ["--staged", rif]);
+      const rel = relDi(r, V.normalizza(sh.fs, rif));
+      const conosciuto = rel in r.indice || rel in alberoDi(r, testaId(r));
+      if (conosciuto) return COMANDI.restore(sh, ["--staged", rif]);
+      throw new V.ErroreFs(
+        `fatal: ambiguous argument '${rif}': unknown revision or path not in the working tree.`
+      );
     }
     const id = risolvi(sh, r, rif ?? "HEAD");
     if (r.HEAD.ramo) r.rami[r.HEAD.ramo] = id;
     else r.HEAD = { commit: id };
+    annota(r, `reset: moving to ${rif ?? "HEAD"}`);
     const albero = alberoDi(r, id);
     if (modo !== "soft") r.indice = { ...albero };
     if (modo === "hard") {
@@ -827,6 +873,7 @@ const COMANDI = {
       scriviAlbero(sh, r, albero);
       r.indice = { ...albero };
       const s = riassunto(prima, albero);
+      annota(r, `merge ${nome}: Fast-forward`);
       return [`Updating ${mio.slice(0, 7)}..${altro.slice(0, 7)}`, "Fast-forward", ...s.righeFile, s.capo].join("\n");
     }
 
@@ -1015,6 +1062,15 @@ const COMANDI = {
 /** Da un riferimento (ramo, hash, HEAD, HEAD~2, origin/main) al suo commit. */
 function risolvi(sh, r, rif) {
   if (!rif) return testaId(r);
+  // HEAD@{2}: dove HEAD era due spostamenti fa, letto dal reflog. E' la
+  // notazione con cui si recupera un commit dopo un reset sbagliato, e non
+  // somiglia a niente altro in git: per questo si riconosce qui, per prima.
+  const daReflog = rif.match(/^HEAD@\{(\d+)\}$/);
+  if (daReflog) {
+    const voce = (r.reflog ?? [])[Number(daReflog[1])];
+    if (!voce) throw new V.ErroreFs(`fatal: log for 'HEAD' only has ${(r.reflog ?? []).length} entries`);
+    return voce.id;
+  }
   const m = rif.match(/^(.*?)(?:~(\d+)|\^)?$/);
   const base = m[1] || "HEAD";
   const quanti = m[2] ? Number(m[2]) : /\^$/.test(rif) ? 1 : 0;
@@ -1058,7 +1114,9 @@ function vaiA(sh, r, nome) {
   scriviAlbero(sh, r, alberoNuovo);
   scriviAlbero(sh, r, modificheDaPortare);
   r.indice = { ...alberoNuovo };
+  const da = r.HEAD.ramo ?? String(testaId(r)).slice(0, 7);
   r.HEAD = eRamo ? { ramo: nome } : { commit: id };
+  annota(r, `checkout: moving from ${da} to ${nome}`);
   if (!eRamo) {
     return [
       `Note: switching to '${nome}'.`,

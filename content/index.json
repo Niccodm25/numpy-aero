@@ -150,10 +150,10 @@
       "perche": "Il controllo di versione e il lavoro in piu' persone. Si impara sbagliando al sicuro: il push rifiutato, il conflitto da risolvere a mano, il reset che cancella il lavoro. Tutto simulato, niente che finisca davvero in rete.",
       "disponibile": true,
       "moduli": [
-        "g01"
+        "g01",
+        "g02"
       ],
       "prossimi": [
-        "Disfare — restore, reset, revert, reflog",
         "Rami e merge — branch, switch, conflitti",
         "Il remoto — clone, push, pull, divergenza",
         "GitHub — pull request, review, merge",
@@ -546,6 +546,12 @@
       "id": "g01",
       "file": "g01-repository.json",
       "titolo": "Il repository locale",
+      "disponibile": true
+    },
+    {
+      "id": "g02",
+      "file": "g02-disfare.json",
+      "titolo": "Disfare",
       "disponibile": true
     }
   ]
