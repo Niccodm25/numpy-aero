@@ -958,6 +958,10 @@
             "esiste": [
               "/home/tu/campagna/grafico.py"
             ],
+            "stampa": [
+              "HEAD@{1}",
+              "grafico.py"
+            ],
             "usa": [
               "git",
               "ls"

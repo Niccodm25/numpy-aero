@@ -91,6 +91,7 @@ function repoVuoto(radice) {
     tracking: {}, // "main" -> "origin/main"
     tag: {},
     unione: null, // merge in corso non risolto
+    riposto: [], // la pila di git stash, la piu' recente in testa
     // Ogni spostamento di HEAD lascia una riga qui, la piu' recente in testa.
     // E' il reflog: la rete che permette di tornare indietro anche dopo un
     // reset --hard, perche' il commit abbandonato resta raggiungibile.
@@ -116,6 +117,38 @@ function repoDaScenario(sh, spec) {
     for (const via of c.rimuove || []) delete albero[via];
     creaCommit(sh, repo, c.messaggio, { ...albero }, c.autore);
   }
+  // Rami che si staccano da qui e vanno avanti per conto loro. Servono agli
+  // esercizi sul merge e sui conflitti, dove la situazione di partenza e' gia'
+  // due storie divergenti: ricostruirla a mano ogni volta vorrebbe dire far
+  // digitare dieci comandi prima di arrivare a quello che l'esercizio insegna.
+  const stacco = testaId(repo);
+  for (const [nome, lista] of Object.entries(spec.altriRami || {})) {
+    repo.rami[nome] = stacco;
+    repo.HEAD = { ramo: nome };
+    let suo = { ...albero };
+    for (const c of lista) {
+      suo = { ...suo, ...(c.file || {}) };
+      for (const via of c.rimuove || []) delete suo[via];
+      creaCommit(sh, repo, c.messaggio, { ...suo }, c.autore);
+    }
+  }
+  repo.HEAD = { ramo: spec.ramo ?? "main" };
+
+  // E poi il ramo principale prosegue: e' quello che rende impossibile
+  // l'avanti veloce, e quindi necessario un vero merge.
+  for (const c of spec.poi || []) {
+    albero = { ...albero, ...(c.file || {}) };
+    for (const via of c.rimuove || []) delete albero[via];
+    creaCommit(sh, repo, c.messaggio, { ...albero }, c.autore);
+  }
+
+  // Un ramo gia' unito: per gli esercizi che partono da dopo l'unione.
+  if (spec.unisci) {
+    const altro = repo.rami[spec.unisci];
+    albero = { ...alberoDi(repo, altro), ...albero };
+    creaCommitCon(sh, repo, `Merge branch '${spec.unisci}'`, albero, [testaId(repo), altro]);
+  }
+
   // I file dell'ultimo commit compaiono nel working tree, come dopo un clone.
   scriviAlbero(sh, repo, albero);
   repo.indice = { ...albero };
@@ -123,6 +156,9 @@ function repoDaScenario(sh, spec) {
   if (spec.ramo) {
     repo.rami[spec.ramo] ??= repo.rami.main;
     repo.HEAD = { ramo: spec.ramo };
+    albero = alberoDi(repo, testaId(repo));
+    scriviAlbero(sh, repo, albero);
+    repo.indice = { ...albero };
   }
   for (const [via, contenuto] of Object.entries(spec.lavoro || {})) {
     scriviFile(sh, repo, via, contenuto);
@@ -382,7 +418,7 @@ const etichetta = (s) => `${(s.come + ":").padEnd(12)}${s.via}`;
 const SOTTOCOMANDI = [
   "init", "status", "add", "commit", "log", "diff", "show", "branch", "switch",
   "checkout", "merge", "restore", "reset", "revert", "rm", "mv", "tag", "remote",
-  "clone", "fetch", "pull", "push", "config", "reflog",
+  "clone", "fetch", "pull", "push", "config", "reflog", "stash",
 ];
 
 export const VERSIONI = {
@@ -842,6 +878,88 @@ const COMANDI = {
     return "";
   },
 
+  /**
+   * Mette da parte il lavoro non committato e riporta la cartella all'ultimo
+   * commit. Serve quando devi cambiare ramo a meta' di una cosa: e' la
+   * risposta alla riga "Please commit your changes or stash them" che git
+   * stampa quando si rifiuta di spostarsi.
+   *
+   * ponytail: la pila tiene il working tree intero, non un diff. Su un
+   * repository di esercizio sono qualche riga, e il modello resta leggibile;
+   * git salva due commit nascosti, che qui non servirebbero a niente.
+   */
+  stash(sh, args) {
+    const r = repo(sh);
+    r.riposto ??= [];
+    const azione = args.filter((a) => !a.startsWith("-"))[0] ?? "push";
+    const testa = testaId(r);
+    const albero = alberoDi(r, testa);
+
+    if (azione === "list") {
+      return r.riposto
+        .map((x, i) => `stash@{${i}}: WIP on ${x.ramo}: ${String(x.su).slice(0, 7)} ${x.messaggio}`)
+        .join("\n");
+    }
+
+    if (azione === "pop" || azione === "apply") {
+      if (!r.riposto.length) throw new V.ErroreFs("No stash entries found.");
+      const x = r.riposto[0];
+      // Se nel frattempo hai toccato uno dei file che stanno nella pila, git
+      // si ferma invece di sovrascriverti il lavoro.
+      const s = statoDi(sh, r);
+      const scontro = Object.keys(x.lavoro).filter(
+        (k) => s.lav[k] !== undefined && s.lav[k] !== albero[k] && s.lav[k] !== x.lavoro[k]
+      );
+      if (scontro.length) {
+        sh.esito = 1;
+        return [
+          "error: Your local changes to the following files would be overwritten by merge:",
+          ...scontro.map((k) => `\t${k}`),
+          "Please commit your changes or stash them before you merge.",
+          "Aborting",
+        ].join("\n");
+      }
+      for (const [k, c] of Object.entries(x.lavoro)) scriviFile(sh, r, k, c);
+      r.indice = { ...x.indice };
+      if (azione === "pop") r.riposto.shift();
+      const dopo = COMANDI.status(sh, []);
+      return azione === "pop" ? `${dopo}\n\nDropped refs/stash@{0} (${x.id})` : dopo;
+    }
+
+    if (azione === "drop") {
+      if (!r.riposto.length) throw new V.ErroreFs("No stash entries found.");
+      const x = r.riposto.shift();
+      return `Dropped refs/stash@{0} (${x.id})`;
+    }
+
+    if (azione !== "push") throw new V.ErroreFs(`usage: git stash [push|list|pop|apply|drop]`);
+
+    const s = statoDi(sh, r);
+    const sporco =
+      s.daAggiungere.length ||
+      s.inStaging.aggiunti.length ||
+      s.inStaging.modificati.length ||
+      s.inStaging.tolti.length;
+    if (!sporco) return "No local changes to save";
+    const i = args.indexOf("-m");
+    const messaggio = i >= 0 ? args[i + 1] : r.commit[testa] ? r.commit[testa].messaggio : "(nessun commit)";
+    const voce = {
+      id: impronta("stash" + JSON.stringify(s.lav) + r.riposto.length),
+      ramo: r.HEAD.ramo ?? "HEAD",
+      su: testa,
+      messaggio,
+      lavoro: { ...s.lav },
+      indice: { ...r.indice },
+    };
+    r.riposto.unshift(voce);
+    // La cartella torna com'era all'ultimo commit: e' questo che libera la
+    // strada per cambiare ramo.
+    for (const k of Object.keys(s.lav)) if (!(k in albero)) V.rimuovi(sh.fs, absDi(r, k));
+    scriviAlbero(sh, r, albero);
+    r.indice = { ...albero };
+    return `Saved working directory and index state WIP on ${voce.ramo}: ${String(testa).slice(0, 7)} ${messaggio}`;
+  },
+
   merge(sh, args) {
     const r = repo(sh);
     if (args.includes("--abort")) {
@@ -865,7 +983,10 @@ const COMANDI = {
     if (antenati(r, mio).has(altro)) return "Already up to date.";
 
     // Avanti veloce: non c'e' niente da unire, basta spostare l'etichetta.
-    if (antenati(r, altro).has(mio)) {
+    // Con --no-ff si fa lo stesso un commit di unione: la storia conserva il
+    // fatto che quel lavoro e' stato sviluppato su un ramo a parte, invece di
+    // appiattirsi in una fila di commit indistinguibili.
+    if (antenati(r, altro).has(mio) && !args.includes("--no-ff")) {
       if (r.HEAD.ramo) r.rami[r.HEAD.ramo] = altro;
       const albero = alberoDi(r, altro);
       const prima = alberoDi(r, mio);
@@ -891,9 +1012,10 @@ const COMANDI = {
       const a = aAltro[k];
       if (m === a) continue;
       if (m === b) {
+        // L'ha cambiato solo l'altro ramo: si prende la sua versione, e git
+        // non lo annuncia nemmeno — non c'e' stato niente da unire.
         if (a === undefined) delete unito[k];
         else unito[k] = a;
-        fuori.push(`Auto-merging ${k}`);
         continue;
       }
       if (a === b) continue; // l'ho cambiato solo io

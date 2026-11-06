@@ -129,7 +129,7 @@ export const OPZIONI = {
     v: "mcb",
     num: true,
     l: ["amend", "oneline", "graph", "staged", "cached", "short", "global", "message",
-        "hard", "soft", "mixed", "set-upstream", "force", "abort", "all", "delete"],
+        "hard", "soft", "mixed", "set-upstream", "force", "abort", "all", "delete", "no-ff", "staged"],
   },
 
   // --- pacchetti e ambienti ---

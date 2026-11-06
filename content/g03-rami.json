@@ -1,0 +1,1240 @@
+{
+  "id": "g03",
+  "titolo": "Rami e merge",
+  "perche": "Un ramo in git e' un'etichetta attaccata a un commit, non una copia del progetto: per questo se ne creano per qualunque cosa — una prova, un'idea, una correzione urgente. Qui si impara a staccarsi, a mettere da parte il lavoro a meta', a riunire le strade, e soprattutto a risolvere i conflitti, che non sono un guasto ma il momento in cui git ti passa una decisione che non puo' prendere lui.",
+  "lezioni": [
+    {
+      "id": "g03-lez-cosa",
+      "titolo": "Un ramo e' un'etichetta, non una copia",
+      "md": "In altri sistemi di controllo di versione creare un ramo voleva dire copiare l'intero progetto: lento, pesante, da chiedere al capo. In git un ramo e' **un'etichetta attaccata a un commit**, e niente di piu'.\n\n```svg\n<svg viewBox=\"0 0 330 190\" role=\"img\" aria-label=\"Due rami che partono dallo stesso commit: main prosegue dritto, grafico si stacca e poi viene unito\">\n  <style>\n    .linea { stroke: var(--bordo); stroke-width: 2; fill: none; }\n    .ramo { stroke: var(--acc); stroke-width: 2; fill: none; }\n    .nodo { fill: var(--card); stroke: var(--tx2); stroke-width: 2; }\n    .nodoR { fill: var(--card); stroke: var(--acc); stroke-width: 2; }\n    .et { fill: var(--tx); font: 600 12px ui-monospace, monospace; }\n    .etR { fill: var(--acc); font: 600 12px ui-monospace, monospace; }\n    .nota { fill: var(--tx2); font: 11px system-ui, sans-serif; }\n  </style>\n  <path class=\"linea\" d=\"M 30 120 H 300\" />\n  <path class=\"ramo\" d=\"M 90 120 C 120 120, 120 60, 150 60 H 210 C 240 60, 240 120, 270 120\" />\n\n  <circle class=\"nodo\" cx=\"30\" cy=\"120\" r=\"9\" />\n  <circle class=\"nodo\" cx=\"90\" cy=\"120\" r=\"9\" />\n  <circle class=\"nodo\" cx=\"180\" cy=\"120\" r=\"9\" />\n  <circle class=\"nodo\" cx=\"270\" cy=\"120\" r=\"9\" />\n  <circle class=\"nodoR\" cx=\"150\" cy=\"60\" r=\"9\" />\n  <circle class=\"nodoR\" cx=\"210\" cy=\"60\" r=\"9\" />\n\n  <text class=\"et\" x=\"300\" y=\"145\" text-anchor=\"end\">main</text>\n  <text class=\"etR\" x=\"180\" y=\"40\" text-anchor=\"middle\">grafico</text>\n  <text class=\"nota\" x=\"90\" y=\"160\" text-anchor=\"middle\">switch -c</text>\n  <text class=\"nota\" x=\"270\" y=\"160\" text-anchor=\"middle\">merge</text>\n  <text class=\"nota\" x=\"30\" y=\"160\" text-anchor=\"middle\">stesso commit</text>\n</svg>\n```\n\nCreare un ramo costa la scrittura di un file da quaranta byte. Per questo in git si creano rami per qualunque cosa: una prova, un'idea, una correzione urgente, un esperimento che probabilmente non funzionera'.\n\n### HEAD\n\n`HEAD` e' l'etichetta che dice **dove sei adesso**. Di solito punta a un ramo (`HEAD -> main`), che a sua volta punta a un commit.\n\n```\nHEAD ──► main ──► a1b2c3d ──► e4f5g6h ──► ...\n```\n\nQuando fai un commit, succedono due cose in cascata: nasce il commit nuovo, e **il ramo su cui sei** viene spostato a puntarci. Gli altri rami restano dove sono: e' cosi' che due linee di lavoro divergono.\n\n### I nomi\n\n- **branch** — ramo. Il nome viene dall'immagine dell'albero, che e' la stessa degli alberi genealogici: ogni commit ha dei genitori.\n- **main** — il ramo principale. Si chiamava `master` fino al 2020, e in molti repository vecchi si chiama ancora cosi'. GitHub usa `main` di default dall'ottobre 2020.\n- **HEAD** — la testa. Scritto in maiuscolo perche' e' un riferimento speciale, non un ramo che puoi creare tu.\n\n### Perche' non lavorare sempre su main\n\nPerche' `main` deve restare una cosa che funziona. Se stai provando una strada e a meta' arriva una correzione urgente, su un ramo a parte ti basta cambiare ramo; su `main` ti trovi con il lavoro a meta' in mezzo ai piedi."
+    },
+    {
+      "id": "g03-lez-creare",
+      "titolo": "Creare un ramo e spostarsi",
+      "md": "```\ngit branch grafico          # crea il ramo, resta dove sei\ngit switch grafico          # ci si sposta\ngit switch -c grafico       # crea e si sposta, in un colpo\ngit branch                  # elenca i rami, con * su quello corrente\ngit branch -d grafico       # cancella il ramo (solo se gia' unito)\n```\n\n`git switch -c` e' quello che si usa nove volte su dieci: creare un ramo senza andarci subito serve raramente.\n\n### Che cosa succede ai file quando cambi ramo\n\nIl working tree viene **riscritto** con il contenuto del commit a cui punta il ramo di destinazione. I file che esistevano solo nell'altro ramo spariscono dalla cartella — non sono persi, sono nei commit dell'altro ramo.\n\nÈ la cosa che spaventa la prima volta: cambi ramo, fai `ls`, e meta' dei file non c'e' piu'. Torna indietro e sono tutti li'.\n\n### Le modifiche non committate\n\nSe hai modifiche in corso quando cambi ramo, git fa una delle due:\n\n- **se il file non cambia fra i due rami**, se le porta dietro: comodissimo, e permette di spostare un lavoro iniziato sul ramo sbagliato;\n- **se il file e' diverso nei due rami**, si rifiuta:\n\n```\nerror: Your local changes to the following files would be overwritten by checkout:\n\tconfig.txt\nPlease commit your changes or stash them before you switch branches.\n```\n\nNon e' un dispetto: sta dicendo che non puo' riscrivere quel file senza buttare via il tuo lavoro. Le vie d'uscita sono due — committare, oppure **mettere da parte**, che e' la lezione dopo.\n\n### Il vecchio nome\n\n`git checkout grafico` e `git checkout -b grafico` fanno le stesse cose. `switch` e' arrivato nel 2019 insieme a `restore`, per spezzare in due comandi leggibili quello che `checkout` faceva tutto insieme."
+    },
+    {
+      "id": "g03-lez-stash",
+      "titolo": "stash: mettere da parte",
+      "md": "```\ngit stash                 # mette via tutto e pulisce la cartella\ngit stash list            # che cosa c'e' nella pila\ngit stash pop             # riprende l'ultimo e lo toglie dalla pila\ngit stash apply           # lo riprende ma lo lascia nella pila\ngit stash drop            # lo butta senza riprenderlo\n```\n\n`git stash` prende le modifiche non committate, le mette su una **pila** a parte, e riporta la cartella all'ultimo commit. Dopo, la strada e' libera: puoi cambiare ramo, tirare giu' il lavoro degli altri, guardare com'era una cosa ieri.\n\n```\nSaved working directory and index state WIP on main: a1b2c3d alza la soglia\n```\n\n`WIP` sta per *work in progress*.\n\n### Il caso tipico\n\nStai a meta' di una modifica su `main` e arriva da sistemare una cosa urgente:\n\n```\ngit stash                      # via il lavoro a meta'\ngit switch -c correzione       # ramo per l'urgenza\n...                            # sistema, committa\ngit switch main\ngit stash pop                  # il lavoro a meta' torna dov'era\n```\n\n### Attenzione\n\nLa pila **non e' un posto dove archiviare**. Nessuno la guarda, non viene mai condivisa, e dopo due settimane non ti ricorderai piu' che cosa c'era dentro `stash@{3}`. Se una cosa deve durare, merita un commit su un ramo — che costa uguale e ha un messaggio.\n\n> Se nel frattempo hai modificato uno dei file che stanno nella pila, `git stash pop` si ferma invece di sovrascriverti il lavoro: lo stesso principio del cambio di ramo."
+    },
+    {
+      "id": "g03-lez-merge",
+      "titolo": "merge: avanti veloce e tre vie",
+      "md": "Unire un ramo vuol dire portare il suo lavoro dentro quello su cui sei:\n\n```\ngit switch main\ngit merge grafico\n```\n\nSi va **sul ramo che deve ricevere** e si nomina quello da cui prendere. Invertirli e' l'errore piu' comune, e fa esattamente il contrario di quello che volevi.\n\n### Avanti veloce\n\nSe dal punto in cui il ramo si e' staccato **tu non hai fatto nessun commit**, non c'e' niente da unire: git sposta semplicemente l'etichetta in avanti.\n\n```\nUpdating a1b2c3d..e4f5g6h\nFast-forward\n grafico.py | 12 ++++++++++++\n```\n\nLa storia resta una fila dritta, e del ramo non resta traccia.\n\n### Tre vie\n\nSe invece **entrambi i rami hanno commit nuovi**, git guarda tre versioni di ogni file: quella della **base comune** (il commit da cui vi siete separati), la tua e la loro. Per ogni file:\n\n- l'ha cambiato solo uno dei due → si prende quella versione, senza dire niente;\n- l'hanno cambiato entrambi allo stesso modo → nessun problema;\n- l'hanno cambiato entrambi in modo diverso → **conflitto**, ed e' la lezione dopo.\n\nSe non ci sono conflitti, git crea un **commit di unione** con due genitori:\n\n```\nMerge made by the 'ort' strategy.\n```\n\n*ort* e' il nome dell'algoritmo di merge usato da git dal 2021 (prima si chiamava *recursive*).\n\n### --no-ff\n\n```\ngit merge --no-ff grafico\n```\n\nForza il commit di unione anche quando l'avanti veloce sarebbe possibile. Serve a **lasciare nella storia la traccia** che quel lavoro e' stato sviluppato a parte: con `git log --graph` si vede la forma a bolla, e si capisce quali commit appartenevano alla stessa lavorazione.\n\n### Guardare la forma\n\n```\ngit log --oneline --graph\n```\n\nL'asterisco e' un commit, le barre sono le linee che proseguono, e dove due linee si richiudono c'e' un merge.\n\n### Cancellare il ramo dopo\n\n```\ngit branch -d grafico\n```\n\nDopo l'unione il ramo non serve piu': i suoi commit sono nella storia di `main`. Con `-d` git lo cancella **solo se e' gia' stato unito**; se non lo e', si rifiuta e propone `-D`, che cancella comunque. Quel rifiuto e' una delle poche protezioni automatiche di git, e vale la pena non aggirarla d'abitudine."
+    },
+    {
+      "id": "g03-lez-conflitti",
+      "titolo": "I conflitti",
+      "md": "Un conflitto nasce quando **due rami cambiano lo stesso punto dello stesso file in modo diverso**. Git non prova a indovinare chi ha ragione: si ferma e chiede.\n\n```\nAuto-merging config.txt\nCONFLICT (content): Merge conflict in config.txt\nAutomatic merge failed; fix conflicts and then commit the result.\n```\n\nNon e' un errore e non e' colpa di nessuno: e' la conseguenza normale di due persone che lavorano sulla stessa riga.\n\n### Che cosa trovi nel file\n\nGit scrive **tutte e due le versioni** nel file, separate dai marcatori:\n\n```\n<<<<<<< HEAD\nsoglia=40\n=======\nsoglia=25\n>>>>>>> grafico\n```\n\n- fra `<<<<<<< HEAD` e `=======` c'e' la versione del ramo **su cui sei**;\n- fra `=======` e `>>>>>>>` c'e' quella del ramo che stai **unendo**.\n\n### Risolvere\n\nRisolvere vuol dire **scrivere il file come deve essere**, marcatori compresi: si tiene una delle due versioni, o si scrive una terza cosa che le mette insieme. I `<<<<<<<` devono sparire — se restano, finiscono nel commit e il file e' rotto.\n\nPoi si dice a git che hai finito:\n\n```\ngit add config.txt       # «questo file e' risolto»\ngit commit               # chiude il merge\n```\n\nDurante un conflitto `git status` cambia: i file in conflitto compaiono sotto **Unmerged paths** come `both modified`, e il commit e' bloccato finche' restano li'.\n\n### Ripensarci\n\n```\ngit merge --abort\n```\n\nAnnulla tutto e riporta il repository a com'era prima del merge. Utile quando ti accorgi che il conflitto e' piu' grosso del previsto e vuoi prima parlare con chi ha scritto l'altra versione.\n\n> La vera difesa dai conflitti non e' tecnica: e' unire **spesso**. Due rami che divergono per un pomeriggio si uniscono senza accorgersene; due rami che divergono per tre settimane producono un conflitto per ogni file."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "g03-branch",
+      "comando": "branch, switch, stash",
+      "titolo": "Staccarsi, spostarsi, mettere da parte",
+      "esercizi": [
+        {
+          "id": "g03-br-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Crea un ramo chiamato `grafico` e spostati sopra in un comando solo, poi controlla su quale ramo sei.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c grafico\ngit branch",
+          "verifica": {
+            "git": {
+              "ramo": "grafico",
+              "rami": [
+                "main",
+                "grafico"
+              ]
+            },
+            "stampa": "* grafico",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git switch` che crea il ramo e ci salta sopra."
+          ],
+          "spiegazione": "`git switch -c grafico` crea l'etichetta sul commit corrente e ci sposta HEAD. `git branch` elenca i rami con un asterisco su quello corrente. Nota che il contenuto della cartella non e' cambiato: i due rami puntano allo stesso commit, e un ramo e' solo un'etichetta."
+        },
+        {
+          "id": "g03-br-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il repository ha gia' un ramo `grafico` con un file che su `main` non esiste. Spostati su `grafico` e guarda che cosa c'e' nella cartella.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit switch grafico\nls",
+          "verifica": {
+            "git": {
+              "ramo": "grafico"
+            },
+            "stampa": "grafico.py",
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Il comando per spostarsi su un ramo che esiste gia' non vuole nessuna opzione."
+          ],
+          "spiegazione": "Cambiando ramo il working tree viene riscritto con il contenuto di quel ramo, e `grafico.py` compare. Tornando su `main` sparirebbe di nuovo — non e' perso, sta nei commit del ramo `grafico`."
+        },
+        {
+          "id": "g03-br-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei sul ramo `grafico`. Torna su `main` e verifica con `ls` che il file del ramo non ci sia piu'.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              },
+              "ramo": "grafico"
+            }
+          },
+          "soluzione": "cd campagna\ngit switch main\nls",
+          "verifica": {
+            "git": {
+              "ramo": "main"
+            },
+            "nonStampa": "grafico.py",
+            "usa": [
+              "git",
+              "ls"
+            ]
+          },
+          "hint": [
+            "Il ramo principale si chiama `main`."
+          ],
+          "spiegazione": "`grafico.py` sparisce dalla cartella perche' non fa parte di nessun commit raggiungibile da `main`. E' il momento che spaventa la prima volta: i file non sono persi, sono nell'altro ramo. Tornando su `grafico` ricompaiono tutti."
+        },
+        {
+          "id": "g03-br-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Crea il ramo `misure`, spostati, aggiungi un file `prova1.csv` che contiene `quota,mach` e committalo con messaggio `aggiunge la prima prova`. Poi guarda la storia compatta.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c misure\necho quota,mach > prova1.csv\ngit add prova1.csv\ngit commit -m \"aggiunge la prima prova\"\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "ramo": "misure",
+              "commit": 2,
+              "tracciato": [
+                "prova1.csv"
+              ]
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Cinque passi: ramo, file, add, commit, storia.",
+            "Il commit sposta solo il ramo su cui sei: `main` resta dov'era."
+          ],
+          "spiegazione": "Il commit nuovo e' su `misure`; `main` e' rimasto al commit di prima. E' cosi' che due linee di lavoro divergono — e nella storia compatta si vede `(HEAD -> misure)` sul commit nuovo e `main` su quello vecchio."
+        },
+        {
+          "id": "g03-br-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai modificato `config.txt` e provi a cambiare ramo, ma il file e' diverso nei due rami. Prova a spostarti su `grafico` e leggi come git si rifiuta.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "configurazione del grafico",
+                    "file": {
+                      "config.txt": "soglia=99\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "lavoro": {
+                "config.txt": "soglia=77\nporta=22\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit switch grafico",
+          "verifica": {
+            "errore": "would be overwritten",
+            "git": {
+              "ramo": "main"
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Basta provare: il comando fallisce da solo."
+          ],
+          "spiegazione": "`error: Your local changes to the following files would be overwritten by checkout`. Git non puo' riscrivere `config.txt` con la versione dell'altro ramo senza buttare il tuo lavoro, quindi si ferma e resta dove sei. Le due vie d'uscita le nomina lui: committare, oppure mettere da parte."
+        },
+        {
+          "id": "g03-br-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Stessa situazione: metti da parte le modifiche, spostati su `grafico`, e controlla che la pila contenga una voce.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "configurazione del grafico",
+                    "file": {
+                      "config.txt": "soglia=99\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "lavoro": {
+                "config.txt": "soglia=77\nporta=22\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit stash\ngit switch grafico\ngit stash list",
+          "verifica": {
+            "git": {
+              "ramo": "grafico"
+            },
+            "stampa": "stash@{0}",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che mette da parte il lavoro non committato si chiama come l'inglese per «nascondiglio».",
+            "Dopo averlo messo via, la cartella e' pulita e il cambio di ramo riesce."
+          ],
+          "spiegazione": "`git stash` porta via le modifiche e riporta la cartella all'ultimo commit: da li' il cambio di ramo non ha piu' niente da sovrascrivere. La riga `WIP on main` dice da dove veniva quel lavoro."
+        },
+        {
+          "id": "g03-br-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**L'urgenza che arriva a meta'.** Stai modificando `config.txt` su `main` quando devi correggere il README. Metti da parte, crea il ramo `correzione`, scrivi `# Campagna di misure` dentro `README.md`, committa con messaggio `sistema il titolo`, torna su `main` e riprendi il lavoro messo da parte.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "config.txt": "soglia=99\n"
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit stash\ngit switch -c correzione\necho \"# Campagna di misure\" > README.md\ngit commit -am \"sistema il titolo\"\ngit switch main\ngit stash pop\ncat config.txt",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "rami": [
+                "correzione"
+              ]
+            },
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=99\n"
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Sei passi: metti via, ramo, modifica, commit, torna, riprendi.",
+            "`git stash pop` riprende l'ultimo lavoro messo da parte e lo toglie dalla pila."
+          ],
+          "spiegazione": "E' il giro per cui `stash` esiste. Alla fine il lavoro a meta' e' tornato esattamente dov'era, la correzione urgente e' su un ramo suo, e `main` non ha mai visto il lavoro incompleto. Nota che il commit della correzione e' su `correzione`, non su `main`: unirlo e' il contenuto della raccolta dopo."
+        },
+        {
+          "id": "g03-br-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quanti rami ho aperto?** Crea i rami `prova1`, `prova2` e `prova3` senza spostarti, poi contali con gli strumenti del ramo Linux.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto della campagna",
+                  "file": {
+                    "README.md": "# campagna\n",
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit branch prova1\ngit branch prova2\ngit branch prova3\ngit branch | wc -l",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "rami": [
+                "prova1",
+                "prova2",
+                "prova3"
+              ]
+            },
+            "stampa": "4",
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "`git branch` senza opzioni crea il ramo e **non** ci si sposta.",
+            "L'elenco comprende anche `main`: sono quattro righe."
+          ],
+          "spiegazione": "Quattro: i tre nuovi piu' `main`. `git branch nome` crea l'etichetta e basta — HEAD resta dov'e'. E l'elenco dei rami e' testo come qualunque altra uscita, quindi si conta, si filtra e si passa nella pipe."
+        }
+      ]
+    },
+    {
+      "id": "g03-merge",
+      "comando": "merge",
+      "titolo": "Riunire le strade",
+      "esercizi": [
+        {
+          "id": "g03-mg-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il ramo `grafico` ha un commit che `main` non ha, e `main` non e' andato avanti. Vai su `main` e uniscilo, poi guarda il messaggio che git stampa.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit switch main\ngit merge grafico",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 2,
+              "tracciato": [
+                "grafico.py"
+              ]
+            },
+            "stampa": "Fast-forward",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima si va sul ramo che deve **ricevere**, poi si nomina quello da cui prendere."
+          ],
+          "spiegazione": "`Fast-forward`: dal punto in cui `grafico` si e' staccato, `main` non ha fatto nessun commit, quindi non c'e' niente da unire — basta spostare l'etichetta in avanti. La storia resta una fila dritta e del ramo non resta traccia."
+        },
+        {
+          "id": "g03-mg-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Dopo aver unito `grafico` in `main`, cancella il ramo che ormai non serve piu' e verifica che sia sparito dall'elenco.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "aggiunge gli appunti",
+                  "file": {
+                    "note.txt": "appunti\n"
+                  }
+                }
+              ],
+              "unisci": "grafico"
+            }
+          },
+          "soluzione": "cd campagna\ngit branch -d grafico\ngit branch",
+          "verifica": {
+            "git": {
+              "nonRami": [
+                "grafico"
+              ]
+            },
+            "stampa": "Deleted branch",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git branch` che cancella, e vuole la lettera minuscola."
+          ],
+          "spiegazione": "`git branch -d` cancella l'etichetta: i commit restano, perche' adesso fanno parte della storia di `main`. Con `-d` git cancella **solo se il ramo e' gia' stato unito**; altrimenti si rifiuta, ed e' una delle poche protezioni automatiche che ha."
+        },
+        {
+          "id": "g03-mg-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Prova a cancellare il ramo `prova`, che ha un commit mai unito in `main`, e leggi come git si rifiuta.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "prova": [
+                  {
+                    "messaggio": "prova mai finita",
+                    "file": {
+                      "bozza.txt": "roba\n"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit branch -d prova",
+          "verifica": {
+            "errore": "not fully merged",
+            "git": {
+              "rami": [
+                "prova"
+              ]
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Basta provare la cancellazione normale."
+          ],
+          "spiegazione": "`error: The branch 'prova' is not fully merged.` Quel commit non e' raggiungibile da nessun altro ramo: cancellando l'etichetta diventerebbe irraggiungibile. Git propone `-D`, che cancella comunque — e dopo il commit si ritrova solo dal reflog."
+        },
+        {
+          "id": "g03-mg-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Entrambi i rami sono andati avanti: `main` ha un commit e `misure` ne ha un altro, su file diversi. Unisci `misure` dentro `main` e guarda come git descrive l'operazione.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "misure": [
+                  {
+                    "messaggio": "aggiunge le misure",
+                    "file": {
+                      "misure.csv": "quota,mach\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "aggiunge gli appunti",
+                  "file": {
+                    "note.txt": "appunti\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge misure\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 4
+            },
+            "stampa": "Merge made by",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Sei gia' su `main`: basta nominare il ramo da unire."
+          ],
+          "spiegazione": "`Merge made by the 'ort' strategy.` Qui l'avanti veloce non e' possibile, perche' anche `main` ha un commit nuovo: git confronta le due versioni con la loro base comune e crea un **commit di unione** con due genitori. La storia smette di essere una fila dritta."
+        },
+        {
+          "id": "g03-mg-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Unisci il ramo `grafico` forzando un commit di unione anche se l'avanti veloce sarebbe possibile, poi guarda la forma della storia.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "soluzione": "cd campagna\ngit merge --no-ff grafico\ngit log --oneline --graph",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 3
+            },
+            "stampa": [
+              "Merge made by",
+              "|\\"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git merge` che vieta l'avanti veloce.",
+            "La forma della storia si guarda con `--graph`."
+          ],
+          "spiegazione": "Con `--no-ff` la storia conserva la bolla: si vede che quei commit appartenevano a una lavorazione a parte. Senza, sarebbero una fila indistinguibile dagli altri. E' una scelta di stile che molte squadre impongono proprio per poter leggere la storia a colpo d'occhio."
+        },
+        {
+          "id": "g03-mg-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda la forma della storia di un repository in cui un ramo e' gia' stato unito, e conta quanti commit ci sono in tutto.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "grafico": [
+                  {
+                    "messaggio": "aggiunge il grafico",
+                    "file": {
+                      "grafico.py": "import numpy\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "aggiunge gli appunti",
+                  "file": {
+                    "note.txt": "appunti\n"
+                  }
+                }
+              ],
+              "unisci": "grafico"
+            }
+          },
+          "soluzione": "cd campagna\ngit log --oneline --graph\ngit log --oneline | wc -l",
+          "verifica": {
+            "stampa": [
+              "Merge branch",
+              "4"
+            ],
+            "usa": [
+              "git",
+              "wc"
+            ]
+          },
+          "hint": [
+            "`--graph` disegna la forma, `--oneline` da solo si conta con `wc -l`."
+          ],
+          "spiegazione": "Quattro commit: due sulla linea principale, uno sul ramo, e il commit di unione. Nel grafico il merge si riconosce perche' ha due genitori e la riga `|\\` sotto. Contare i commit della storia e' il modo piu' rapido per capire quanto e' grosso un progetto che non conosci."
+        },
+        {
+          "id": "g03-mg-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Il giro completo.** Crea il ramo `soglia`, cambia `config.txt` scrivendoci `soglia=40`, committa con messaggio `alza la soglia a 40`, torna su `main`, unisci e cancella il ramo. Alla fine verifica il contenuto del file.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=25\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c soglia\necho soglia=40 > config.txt\ngit commit -am \"alza la soglia a 40\"\ngit switch main\ngit merge soglia\ngit branch -d soglia\ncat config.txt",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 2,
+              "nonRami": [
+                "soglia"
+              ],
+              "contiene": {
+                "config.txt": "soglia=40"
+              }
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Sette passi, ma e' il giro che si fa tutti i giorni.",
+            "Il file e' gia' tracciato, quindi si puo' committare in un comando solo con `-am`."
+          ],
+          "spiegazione": "E' il ciclo di lavoro normale con i rami: stacca, lavora, committa, unisci, pulisci. Il merge qui e' un avanti veloce, perche' `main` non si e' mosso nel frattempo; la cancellazione riesce perche' il ramo e' stato unito."
+        },
+        {
+          "id": "g03-mg-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Due lavori in parallelo.** Dal ramo corrente crea `grafico`, aggiungi `grafico.py` con dentro `import numpy` e committa con messaggio `bozza del grafico`. Torna su `main`, aggiungi `note.txt` con dentro `appunti` e committa con messaggio `aggiunge gli appunti`. Poi unisci `grafico` e verifica che nella cartella ci siano entrambi i file.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c grafico\necho import numpy > grafico.py\ngit add grafico.py\ngit commit -m \"bozza del grafico\"\ngit switch main\necho appunti > note.txt\ngit add note.txt\ngit commit -m \"aggiunge gli appunti\"\ngit merge grafico\nls",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 4,
+              "tracciato": [
+                "grafico.py",
+                "note.txt"
+              ]
+            },
+            "stampa": "Merge made by",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Due rami che vanno avanti ciascuno per conto suo, poi l'unione.",
+            "File diversi: nessun conflitto, git li prende entrambi."
+          ],
+          "spiegazione": "Quattro commit: l'impianto, uno per ramo, e l'unione. Non c'e' conflitto perche' i due rami hanno toccato file diversi — git prende la versione di chi l'ha cambiata, senza nemmeno annunciarlo. I conflitti nascono solo quando lo stesso punto dello stesso file cambia da entrambe le parti."
+        }
+      ]
+    },
+    {
+      "id": "g03-conflitti",
+      "comando": "conflitti",
+      "titolo": "Quando git chiede a te",
+      "esercizi": [
+        {
+          "id": "g03-cf-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "I due rami hanno cambiato la stessa riga di `config.txt`. Unisci `soglia` dentro `main` e leggi come git si ferma.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia",
+          "verifica": {
+            "git": {
+              "conflitto": true
+            },
+            "stampa": "CONFLICT",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Basta provare l'unione: il conflitto arriva da solo."
+          ],
+          "spiegazione": "`CONFLICT (content): Merge conflict in config.txt`, e poi `Automatic merge failed; fix conflicts and then commit the result.` Git non prova a indovinare chi ha ragione: ha scritto nel file tutte e due le versioni e aspetta che tu decida."
+        },
+        {
+          "id": "g03-cf-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Dopo il conflitto, guarda che cosa git ha scritto dentro `config.txt`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\ncat config.txt",
+          "verifica": {
+            "stampa": [
+              "<<<<<<< HEAD",
+              "======="
+            ],
+            "usa": [
+              "git",
+              "cat"
+            ]
+          },
+          "hint": [
+            "Prima si provoca il conflitto, poi si guarda il file."
+          ],
+          "spiegazione": "Fra `<<<<<<< HEAD` e `=======` c'e' la versione del ramo su cui sei; fra `=======` e `>>>>>>>` quella del ramo che stai unendo. Sono righe vere dentro il file: se le lasci li' e committi, il file resta rotto con dentro i marcatori."
+        },
+        {
+          "id": "g03-cf-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Dopo il conflitto, guarda lo stato: i file in conflitto compaiono in una sezione tutta loro.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\ngit status",
+          "verifica": {
+            "git": {
+              "conflitto": true
+            },
+            "stampa": [
+              "Unmerged paths",
+              "both modified"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che dice sempre a che punto sei."
+          ],
+          "spiegazione": "**Unmerged paths**, con l'etichetta `both modified`: una sezione che compare solo durante un merge non risolto. Finche' quel file resta li', `git commit` e' bloccato — git si rifiuta di chiudere un'unione che non hai finito di risolvere."
+        },
+        {
+          "id": "g03-cf-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Risolvi il conflitto tenendo la versione del ramo `soglia` (cioe' `soglia=25`), segnala a git che hai finito, e chiudi il merge con messaggio `unisce la soglia`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\necho soglia=25 > config.txt\ngit add config.txt\ngit commit -m \"unisce la soglia\"\ngit status",
+          "verifica": {
+            "git": {
+              "conflitto": false,
+              "ramo": "main",
+              "contiene": {
+                "config.txt": "soglia=25"
+              }
+            },
+            "stampa": "working tree clean",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Risolvere vuol dire scrivere il file come deve essere, marcatori compresi.",
+            "Poi `git add` dice «questo e' risolto», e il commit chiude l'unione."
+          ],
+          "spiegazione": "Tre passi dopo il conflitto: scrivi il file giusto, `git add` per dire che e' risolto, `git commit` per chiudere. Il commit che ne esce ha due genitori come qualunque merge. Nota che il file non contiene piu' nessun marcatore: li hai riscritti tu."
+        },
+        {
+          "id": "g03-cf-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Provoca il conflitto e poi ripensaci: annulla l'unione e riporta il repository a com'era prima.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\ngit merge --abort\ngit status\ncat config.txt",
+          "verifica": {
+            "git": {
+              "conflitto": false,
+              "ramo": "main",
+              "commit": 2
+            },
+            "stampa": "working tree clean",
+            "nonStampa": "<<<<<<<",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git merge` che annulla un'unione in corso."
+          ],
+          "spiegazione": "`git merge --abort` riporta tutto a prima del merge: i marcatori spariscono dal file, lo stato torna pulito, il commit di unione non viene creato. Serve quando ti accorgi che il conflitto e' piu' grosso del previsto e conviene prima parlare con chi ha scritto l'altra versione."
+        },
+        {
+          "id": "g03-cf-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "I due rami hanno scelto 40 e 25. Risolvi il conflitto **con una terza versione**: il file deve contenere `soglia=35` seguito da `porta=22`. Poi chiudi il merge con messaggio `tiene la soglia intermedia`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\necho soglia=35 > config.txt\necho porta=22 >> config.txt\ngit add config.txt\ngit commit -m \"tiene la soglia intermedia\"\ncat config.txt",
+          "verifica": {
+            "git": {
+              "conflitto": false,
+              "contiene": {
+                "config.txt": "soglia=35"
+              },
+              "messaggio": "soglia intermedia"
+            },
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=35\nporta=22\n"
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Risolvere non vuol dire per forza scegliere una delle due: puoi scrivere una terza versione.",
+            "Due `echo`, il secondo con `>>` per aggiungere invece di riscrivere."
+          ],
+          "spiegazione": "E' il caso piu' comune nella pratica: nessuna delle due versioni va bene da sola, e la risoluzione e' una terza cosa. Nota che quel 35 non esisteva in nessuno dei due rami — git non lo avrebbe mai potuto calcolare da solo, e infatti non ci prova: si ferma e chiede a te."
+        },
+        {
+          "id": "g03-cf-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Conflitto da capo.** Crea il ramo `urgente`, scrivi `soglia=60` in `config.txt` e committa con messaggio `soglia di emergenza`. Torna su `main`, scrivi `soglia=10` nello stesso file e committa con messaggio `abbassa la soglia`. Poi unisci `urgente`, risolvi tenendo `soglia=60`, e chiudi con messaggio `tiene la soglia di emergenza`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=25\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit switch -c urgente\necho soglia=60 > config.txt\ngit commit -am \"soglia di emergenza\"\ngit switch main\necho soglia=10 > config.txt\ngit commit -am \"abbassa la soglia\"\ngit merge urgente\necho soglia=60 > config.txt\ngit add config.txt\ngit commit -m \"tiene la soglia di emergenza\"\ncat config.txt",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "conflitto": false,
+              "contiene": {
+                "config.txt": "soglia=60"
+              }
+            },
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=60\n"
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Prima si costruisce la situazione: due rami che cambiano la stessa riga.",
+            "Poi l'unione fallisce, e si risolve scrivendo il file e facendo add e commit."
+          ],
+          "spiegazione": "Il giro completo, dal provocare il conflitto al chiuderlo. Il punto che resta: il conflitto non e' un guasto, e' il momento in cui git ti passa una decisione che non puo' prendere lui. Qui la decisione era quale soglia tenere, e nessun algoritmo poteva saperlo."
+        },
+        {
+          "id": "g03-cf-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quanti marcatori sono rimasti?** Provoca il conflitto, poi conta le righe di marcatori che git ha scritto nel file, e infine risolvi tenendo `soglia=25` e chiudendo con messaggio `risolve il conflitto`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "config.txt": "soglia=30\nporta=22\n",
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "altriRami": {
+                "soglia": [
+                  {
+                    "messaggio": "abbassa la soglia a 25",
+                    "file": {
+                      "config.txt": "soglia=25\nporta=22\n"
+                    }
+                  }
+                ]
+              },
+              "poi": [
+                {
+                  "messaggio": "alza la soglia a 40",
+                  "file": {
+                    "config.txt": "soglia=40\nporta=22\n"
+                  }
+                }
+              ]
+            }
+          },
+          "soluzione": "cd campagna\ngit merge soglia\ngrep -c \"<<<<<<<\\|=======\\|>>>>>>>\" config.txt\necho soglia=25 > config.txt\ngit add config.txt\ngit commit -m \"risolve il conflitto\"\ngit log --oneline --graph",
+          "verifica": {
+            "git": {
+              "conflitto": false,
+              "contiene": {
+                "config.txt": "soglia=25"
+              }
+            },
+            "stampa": [
+              "3",
+              "|"
+            ],
+            "usa": [
+              "git",
+              "grep",
+              "echo"
+            ]
+          },
+          "hint": [
+            "I marcatori sono tre tipi di riga: li si prende con un'alternativa in `grep`.",
+            "`grep -c` conta invece di stampare."
+          ],
+          "spiegazione": "Tre righe di marcatori, una per tipo. Il punto dell'esercizio e' che sono **righe vere dentro il file**: se ne resta anche una sola, finisce nel commit e il file e' rotto. Contare con `grep -c` prima di committare e' l'abitudine che lo evita, ed e' il controllo che molte squadre mettono automatico prima del push."
+        }
+      ]
+    }
+  ]
+}

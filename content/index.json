@@ -151,10 +151,10 @@
       "disponibile": true,
       "moduli": [
         "g01",
-        "g02"
+        "g02",
+        "g03"
       ],
       "prossimi": [
-        "Rami e merge — branch, switch, conflitti",
         "Il remoto — clone, push, pull, divergenza",
         "GitHub — pull request, review, merge",
         "Collaborare — issue, fork, protezioni, Actions, Pages"
@@ -552,6 +552,12 @@
       "id": "g02",
       "file": "g02-disfare.json",
       "titolo": "Disfare",
+      "disponibile": true
+    },
+    {
+      "id": "g03",
+      "file": "g03-rami.json",
+      "titolo": "Rami e merge",
       "disponibile": true
     }
   ]
