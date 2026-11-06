@@ -117,6 +117,12 @@ function repoDaScenario(sh, spec) {
   for (const [via, contenuto] of Object.entries(spec.lavoro || {})) {
     scriviFile(sh, repo, via, contenuto);
   }
+  // File gia' in area di staging all'inizio dell'esercizio: servono quando si
+  // vuole partire dal passo dopo, senza far rifare ogni volta il git add.
+  for (const [via, contenuto] of Object.entries(spec.staged || {})) {
+    scriviFile(sh, repo, via, contenuto);
+    repo.indice[via] = contenuto;
+  }
   return repo;
 }
 

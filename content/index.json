@@ -143,6 +143,22 @@
         "Comandi reversibili e irreversibili; momento di cerniera; aletta di trim",
         "Stabilita' a comandi liberi e stick-force trim"
       ]
+    },
+    {
+      "id": "github",
+      "titolo": "Git e GitHub",
+      "perche": "Il controllo di versione e il lavoro in piu' persone. Si impara sbagliando al sicuro: il push rifiutato, il conflitto da risolvere a mano, il reset che cancella il lavoro. Tutto simulato, niente che finisca davvero in rete.",
+      "disponibile": true,
+      "moduli": [
+        "g01"
+      ],
+      "prossimi": [
+        "Disfare — restore, reset, revert, reflog",
+        "Rami e merge — branch, switch, conflitti",
+        "Il remoto — clone, push, pull, divergenza",
+        "GitHub — pull request, review, merge",
+        "Collaborare — issue, fork, protezioni, Actions, Pages"
+      ]
     }
   ],
   "moduli": [
@@ -524,6 +540,12 @@
       "id": "d05",
       "file": "d05-punto-neutro.json",
       "titolo": "Punto neutro, margine statico, curve di trim",
+      "disponibile": true
+    },
+    {
+      "id": "g01",
+      "file": "g01-repository.json",
+      "titolo": "Il repository locale",
       "disponibile": true
     }
   ]

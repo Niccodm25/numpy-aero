@@ -1,0 +1,1026 @@
+{
+  "id": "g01",
+  "titolo": "Il repository locale",
+  "perche": "Git tiene la storia completa di una cartella e sa riportarti a qualunque punto del passato. Qui si impara il giro che si fa cento volte al giorno — modificare, guardare lo stato, aggiungere, committare — e soprattutto l'idea che lo rende diverso da «salva una copia»: i tre posti in cui puo' stare un file, e l'area di staging che decide che cosa entra nel prossimo commit.",
+  "lezioni": [
+    {
+      "id": "g01-lez-perche",
+      "titolo": "Perche' esiste il controllo di versione",
+      "md": "Hai una cartella con l'analisi della campagna. Funziona. La modifichi per provare una cosa, non funziona piu', e non ti ricordi che cosa hai toccato. Oppure la copi in `analisi_v2`, poi `analisi_v2_buona`, poi `analisi_v2_buona_DEFINITIVA`.\n\nIl controllo di versione e' la risposta a questo: un sistema che tiene **la storia completa** di una cartella, e che sa riportarti a qualunque punto del passato, dirti cosa e' cambiato fra due punti, e tenere insieme il lavoro di piu' persone sugli stessi file.\n\n### Da dove vengono i nomi\n\n- **git** — lo scrisse Linus Torvalds nel 2005, in dieci giorni, perche' il kernel Linux aveva perso l'accesso allo strumento che usava. Sul nome ha scherzato: *git* in inglese britannico vuol dire «stupido, idiota», e lui disse di chiamare tutti i suoi progetti come se stesso.\n- **repository** — il magazzino. E' la cartella con dentro tutta la storia, non solo i file di adesso.\n- **commit** — dal verbo *to commit*, impegnarsi. Un commit e' un punto della storia che hai deciso di fissare: da li' in poi quel lavoro e' al sicuro.\n- **GitHub** — un sito che ospita repository git e ci costruisce sopra il lavoro di gruppo. Git funziona benissimo senza GitHub; GitHub senza git non esiste.\n\n### Distribuito\n\nGit e' **distribuito**: ogni copia del repository ha la storia intera, non un pezzo. Se il server esplode, qualunque collaboratore ha tutto. E' la differenza con i sistemi precedenti, dove il server era l'unico posto in cui la storia esisteva.\n\nLa conseguenza pratica: **puoi lavorare senza rete**. Commit, rami, cronologia, confronti — tutto locale. La rete serve solo per scambiare il lavoro con gli altri, ed e' il contenuto dei moduli piu' avanti.\n\n### Prima di cominciare, sulla macchina vera\n\nSu un computer vero git si installa (`apt install git` su Debian e Ubuntu, `brew install git` su macOS, l'installatore ufficiale su Windows) e si configura una volta sola:\n\n```\ngit config --global user.name \"Nome Cognome\"\ngit config --global user.email \"tua@email.it\"\n```\n\nQuel nome e quella email finiscono **dentro ogni commit che fai**, per sempre. Non e' un dettaglio di cortesia: e' la firma di chi ha scritto quella riga, ed e' quello che `git log` mostra anni dopo."
+    },
+    {
+      "id": "g01-lez-init",
+      "titolo": "git init, e la cartella .git",
+      "md": "Un repository si crea dentro una cartella qualunque:\n\n```\ncd campagna\ngit init\n```\n\nDa quel momento la cartella contiene una sottocartella nascosta **`.git`**, e tutto il resto e' il **working tree** — i tuoi file, quelli che apri e modifichi.\n\n```\ncampagna/\n├── .git/          ← il repository: storia, commit, configurazione\n├── dati.csv       ← il working tree: i file veri\n└── analisi.py\n```\n\nNon si vede con `ls`, perche' comincia con un punto: serve `ls -a`. E' la stessa regola dei file nascosti che hai visto nel ramo Linux.\n\n> Cancellare `.git` cancella **tutta la storia** e lascia i file come sono adesso. E' il modo piu' veloce per trasformare un repository in una cartella qualunque, e non si disfa.\n\n### Dove NON fare git init\n\nDentro un'altra repository (annidarne due crea confusione), e nella home: `git init` nella home vorrebbe dire versionare ogni file dell'utente. Si fa dentro la cartella del progetto, una volta sola.\n\n### Fuori da un repository\n\nSe dai un comando git in una cartella che non e' un repository, git te lo dice chiaro:\n\n```\nfatal: not a git repository (or any of the parent directories): .git\n```\n\n«Ne' qui ne' in nessuna cartella sopra»: git risale l'albero fino alla radice cercando `.git`, ed e' il motivo per cui i comandi funzionano anche dalle sottocartelle del progetto."
+    },
+    {
+      "id": "g01-lez-tre-posti",
+      "titolo": "I tre posti in cui sta un file",
+      "md": "E' l'idea che rende git diverso da «salva una copia», ed e' l'unica cosa di questo modulo che va capita davvero.\n\n```\n  working tree          area di staging           repository\n  (i tuoi file)   →     (il prossimo commit)  →   (la storia)\n                 git add                   git commit\n```\n\n1. **Working tree** — i file sulla tua macchina, come li vedi con `ls` e `cat`.\n2. **Area di staging** (*index*) — una lista di quello che finira' nel prossimo commit. E' un posto a se': un file puo' essere modificato nel working tree **e** registrato in staging con un contenuto diverso.\n3. **Repository** — la storia dei commit, dentro `.git`.\n\n### Perche' tre e non due\n\nPerche' un commit deve raccontare **una cosa sola**. Se in mezz'ora hai sistemato un bug e aggiunto una funzione, l'area di staging ti permette di fare due commit separati scegliendo quali file (o quali pezzi) mettere in ciascuno. Senza staging, ogni commit sarebbe «tutto quello che ho toccato da ieri», che e' esattamente il commit inutile da leggere sei mesi dopo.\n\n### git status: la risposta alla domanda «a che punto sono»\n\n```\ngit status\n```\n\nE' il comando che si usa piu' di tutti. Dice su che ramo sei e divide i file in tre gruppi, che corrispondono ai tre posti:\n\n- **Changes to be committed** — in staging, pronti per il commit;\n- **Changes not staged for commit** — modificati nel working tree ma non ancora aggiunti;\n- **Untracked files** — file che git non ha mai visto.\n\nQuando non c'e' niente da fare la risposta e' `nothing to commit, working tree clean`.\n\n### git add: dal working tree allo staging\n\n```\ngit add dati.csv          # un file\ngit add dati/             # una cartella intera\ngit add .                 # tutto quello che c'e' da aggiungere\n```\n\n### git diff: fra quali due posti\n\nI tre posti danno due confini, e `git diff` guarda un confine alla volta:\n\n```\ngit diff            # working tree  contro  area di staging\ngit diff --staged   # area di staging  contro  ultimo commit\n```\n\nIl primo risponde a «che cosa ho cambiato e non ho ancora aggiunto», il secondo a «che cosa sto per committare». Il secondo e' il controllo da fare **prima** di ogni commit: due secondi che evitano di mandare nella storia una riga di prova dimenticata.\n\nUna cosa che sorprende sempre: `git add` fotografa il file **in quel momento**. Se lo modifichi ancora dopo l'add, la modifica nuova non e' in staging, e `git status` lo mostra in due gruppi contemporaneamente. Non e' un errore di git: e' il senso dell'area di staging."
+    },
+    {
+      "id": "g01-lez-commit",
+      "titolo": "commit: una fotografia con un messaggio",
+      "md": "```\ngit commit -m \"aggiunge i dati della prova del 12 marzo\"\n```\n\nIl commit prende **quello che c'e' in area di staging** — non il working tree — e lo fissa nella storia. La risposta di git:\n\n```\n[main (root-commit) 6af2871] aggiunge i dati della prova del 12 marzo\n 1 file changed, 1 insertion(+)\n```\n\n- `main` e' il ramo su cui sei;\n- `root-commit` compare solo per il primo commit di tutti, quello senza genitore;\n- `6af2871` e' l'**hash**: l'identificatore del commit, calcolato dal suo contenuto. Due commit diversi hanno hash diversi, e lo stesso commit ha lo stesso hash su qualunque macchina. E' la ragione per cui git si accorge se la storia e' stata alterata.\n\n### Il messaggio\n\nUn messaggio di commit si scrive per **chi lo leggera' fra sei mesi**, che spesso sei tu. Le due regole che bastano:\n\n- dire **che cosa cambia**, non che cosa hai toccato: «corregge la soglia di allarme a 25» batte «modificato config»;\n- all'imperativo presente e sotto i 50 caratteri la prima riga, come fa git stesso nei suoi messaggi automatici (`Merge branch...`, `Revert...`).\n\n«aggiornamenti», «fix», «asd» sono messaggi che costeranno tempo a qualcuno.\n\n### Guardare la storia\n\n```\ngit log               # la storia per esteso: hash, autore, data, messaggio\ngit log --oneline     # una riga per commit\ngit log -3            # solo gli ultimi tre\ngit show              # l'ultimo commit, con le differenze che ha introdotto\n```\n\n### Scrivere e riscrivere\n\nSe ti accorgi subito di aver sbagliato il messaggio (o di aver dimenticato un file):\n\n```\ngit add il_file_dimenticato\ngit commit --amend -m \"il messaggio giusto\"\n```\n\n`--amend` **sostituisce** l'ultimo commit con uno nuovo. L'hash cambia: e' un commit diverso, non lo stesso corretto. Finche' il commit e' solo sulla tua macchina non importa a nessuno; dopo averlo mandato agli altri, riscriverlo crea problemi che vedrai nel modulo sul remoto."
+    },
+    {
+      "id": "g01-lez-gitignore",
+      "titolo": "Che cosa non va versionato: .gitignore",
+      "md": "Non tutto quello che sta nella cartella del progetto deve finire nella storia.\n\n| cosa | perche' no |\n|---|---|\n| chiavi, password, token (`.env`) | finiscono nella storia **per sempre**, e la storia si copia su GitHub |\n| ambienti virtuali (`.venv/`) | centinaia di MB ricostruibili con un comando |\n| file generati (`__pycache__/`, `*.pyc`, `build/`) | si rigenerano, e cambiano a ogni esecuzione |\n| dati grossi (campagne da gigabyte) | git tiene ogni versione: il repository esplode |\n| file dell'editor (`.vscode/`, `.DS_Store`) | riguardano te, non il progetto |\n\nSi dichiarano in un file chiamato **`.gitignore`**, nella radice del repository, una riga per motivo:\n\n```\n*.env\n.venv/\n__pycache__/\n*.log\ndati_grezzi/\n```\n\n`*` sta per qualunque sequenza di caratteri; la barra finale indica una cartella. Il file `.gitignore` **si versiona**: serve a tutti quelli che lavorano al progetto, non solo a te.\n\n### Il caso che capita a tutti\n\n`.gitignore` ignora i file **non tracciati**. Se un file e' gia' stato committato una volta, continuera' a essere seguito anche se poi lo aggiungi a `.gitignore`. Per smettere:\n\n```\ngit rm --cached chiave.env\n```\n\n`--cached` lo toglie dal **controllo di versione** lasciandolo sul disco. Senza `--cached`, `git rm` cancella anche il file vero.\n\n> Se una chiave e' gia' finita in un commit, toglierla adesso non la toglie dalla **storia**: chi ha il repository puo' ancora recuperarla da un commit vecchio. L'unica cosa veramente da fare, in quel caso, e' cambiare la chiave."
+    }
+  ],
+  "raccolte": [
+    {
+      "id": "g01-init",
+      "comando": "init, status, add",
+      "titolo": "Il repository e l'area di staging",
+      "esercizi": [
+        {
+          "id": "g01-in-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "La cartella `campagna` c'e' gia' ma non e' sotto controllo di versione. Entraci e trasformala in un repository.",
+          "git": true,
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n"
+          },
+          "soluzione": "cd campagna\ngit init",
+          "verifica": {
+            "git": {
+              "ramo": "main",
+              "commit": 0
+            },
+            "esiste": [
+              "/home/tu/campagna/.git"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che crea un repository e' una parola sola dopo git."
+          ],
+          "spiegazione": "`git init` crea la cartella `.git` dentro `campagna`: da quel momento quella cartella ha una storia. I file che c'erano prima non sono ancora versionati — git non tocca niente senza che glielo si dica."
+        },
+        {
+          "id": "g01-in-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Sei nella home, che non e' un repository. Prova a chiedere a git a che punto sei, e leggi come lo dice.",
+          "git": true,
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n"
+          },
+          "soluzione": "git status",
+          "verifica": {
+            "errore": "not a git repository",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che chiede lo stato e' lo stesso che userai mille volte."
+          ],
+          "spiegazione": "`fatal: not a git repository (or any of the parent directories): .git`. Quel «or any of the parent directories» e' importante: git risale l'albero delle cartelle cercando `.git`, ed e' per questo che i comandi funzionano anche dalle sottocartelle del progetto. Qui non lo trova da nessuna parte."
+        },
+        {
+          "id": "g01-in-3",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Nel repository `campagna` c'e' gia' un file `dati.csv` di cui git non sa niente. Entra e fatti dire da git come lo vede.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n"
+          },
+          "soluzione": "cd campagna\ngit status",
+          "verifica": {
+            "stampa": "Untracked files",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Un file che git non ha mai visto si chiama *untracked*."
+          ],
+          "spiegazione": "`dati.csv` compare sotto **Untracked files**: esiste sul disco, ma git non lo segue. La riga finale lo dice esplicitamente — `nothing added to commit but untracked files present`. Git non versiona niente di sua iniziativa: e' una scelta, non una dimenticanza."
+        },
+        {
+          "id": "g01-in-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Metti `dati.csv` in area di staging, poi controlla che git lo veda come pronto per il commit.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n"
+          },
+          "soluzione": "cd campagna\ngit add dati.csv\ngit status",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati.csv"
+              ]
+            },
+            "stampa": "Changes to be committed",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima si aggiunge, poi si controlla.",
+            "Il comando per aggiungere e' `git add` seguito dal nome del file."
+          ],
+          "spiegazione": "Il file e' passato dal gruppo «Untracked» a «Changes to be committed», con l'etichetta `new file:`. Non e' ancora nella storia: e' in area di staging, cioe' nella lista di quello che il prossimo commit conterra'."
+        },
+        {
+          "id": "g01-in-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Nel repository ci sono due file nuovi, `dati.csv` e `note.txt`. Aggiungi **solo** `dati.csv` all'area di staging e guarda lo stato: git deve mostrarti due gruppi diversi.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n",
+            "/home/tu/campagna/note.txt": "appunti della campagna\n"
+          },
+          "soluzione": "cd campagna\ngit add dati.csv\ngit status",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati.csv"
+              ]
+            },
+            "stampa": "Untracked files",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Aggiungi un file solo, poi chiedi lo stato.",
+            "Se aggiungi tutto con `git add .` l'esercizio non mostra quello che deve mostrare."
+          ],
+          "spiegazione": "Due gruppi: `dati.csv` sotto «Changes to be committed», `note.txt` sotto «Untracked files». E' il senso dell'area di staging — si sceglie **che cosa** entra nel prossimo commit, non si prende tutto quello che e' cambiato."
+        },
+        {
+          "id": "g01-in-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Aggiungi `dati.csv` in staging, poi aggiungi al file la riga `11000,0.78` e guarda lo stato. Lo stesso file deve comparire in due gruppi.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n"
+          },
+          "soluzione": "cd campagna\ngit add dati.csv\necho 11000,0.78 >> dati.csv\ngit status",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati.csv"
+              ]
+            },
+            "contiene": {
+              "/home/tu/campagna/dati.csv": "11000,0.78"
+            },
+            "stampa": [
+              "Changes to be committed",
+              "Changes not staged for commit"
+            ],
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Prima `git add`, poi la modifica, poi `git status`.",
+            "Con `>>` si aggiunge in fondo al file senza cancellare quello che c'e'."
+          ],
+          "spiegazione": "Lo stesso file compare sia in «Changes to be committed» sia in «Changes not staged for commit». Non e' un bug: `git add` ha fotografato il file **com'era in quel momento**, e la riga aggiunta dopo non e' in quella fotografia. Se committi adesso, `11000,0.78` non entra."
+        },
+        {
+          "id": "g01-in-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Parti da zero: crea la cartella `banco`, falla diventare un repository, metti dentro una cartella `dati` con il file `prova1.csv` che contiene `t,quota`, e aggiungi tutta la cartella `dati` all'area di staging. Poi verifica con lo stato in forma breve.",
+          "git": true,
+          "filesystem": {},
+          "soluzione": "mkdir banco\ncd banco\ngit init\nmkdir dati\necho t,quota > dati/prova1.csv\ngit add dati\ngit status -s",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati/prova1.csv"
+              ]
+            },
+            "esiste": [
+              "/home/tu/banco/.git"
+            ],
+            "usa": [
+              "git",
+              "mkdir",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Quattro passi: cartella, repository, file, add.",
+            "`git add` accetta il nome di una cartella e prende tutto quello che c'e' dentro.",
+            "La forma breve dello stato e' `git status -s`."
+          ],
+          "spiegazione": "`git add dati` prende la cartella intera. La forma breve stampa `A  dati/prova1.csv`: la **A** nella prima colonna vuol dire *added*, cioe' in staging. La prima colonna e' lo staging, la seconda il working tree — e' il formato che si impara a leggere in due giorni e poi non si abbandona piu'."
+        },
+        {
+          "id": "g01-in-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Nel repository `campagna` ci sono `dati.csv` e `chiave.env`. Guarda che cosa c'e' davvero nella cartella (compreso quello che `ls` normalmente nasconde), poi aggiungi all'area di staging **solo** il file di dati.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {
+            "/home/tu/campagna/dati.csv": "quota,mach\n9000,0.82\n",
+            "/home/tu/campagna/analisi.py": "import csv\n",
+            "/home/tu/campagna/chiave.env": "TOKEN=abc123\n"
+          },
+          "soluzione": "cd campagna\nls -a\ngit add dati.csv\ngit status -s",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati.csv"
+              ]
+            },
+            "stampa": [
+              ".git",
+              "?? chiave.env"
+            ],
+            "usa": [
+              "ls",
+              "git"
+            ]
+          },
+          "hint": [
+            "`ls -a` mostra anche i file e le cartelle che cominciano con il punto.",
+            "La chiave non deve entrare: aggiungi solo il file di dati."
+          ],
+          "spiegazione": "`ls -a` fa vedere `.git`, che e' il repository vero e proprio. Nello stato breve `A  dati.csv` e `?? chiave.env`: i due punti interrogativi sono i file che git non conosce. Una chiave che non entra in staging non puo' finire in un commit per sbaglio — nel prossimo blocco si vedra' come renderlo automatico con `.gitignore`."
+        }
+      ]
+    },
+    {
+      "id": "g01-commit",
+      "comando": "commit, log, show",
+      "titolo": "Fissare la storia e rileggerla",
+      "esercizi": [
+        {
+          "id": "g01-co-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "In `campagna` il file `dati.csv` e' gia' in area di staging. Fissalo nella storia con il messaggio `aggiunge i dati della prima prova`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [],
+              "staged": {
+                "dati.csv": "quota,mach\n9000,0.82\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit commit -m \"aggiunge i dati della prima prova\"",
+          "verifica": {
+            "git": {
+              "commit": 1,
+              "messaggio": "aggiunge i dati",
+              "tracciato": [
+                "dati.csv"
+              ]
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il messaggio va fra virgolette, dopo `-m`."
+          ],
+          "spiegazione": "Il primo commit di un repository si chiama *root-commit*: e' l'unico senza genitore, e git lo segnala. Da adesso `dati.csv` e' nella storia, e qualunque cosa gli succeda si puo' tornare a questa versione."
+        },
+        {
+          "id": "g01-co-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Il repository `campagna` ha gia' due commit. Guarda la storia e scopri chi ha scritto il primo.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati della prima prova",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit log",
+          "verifica": {
+            "stampa": "anna",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando che mostra la storia e' una parola sola."
+          ],
+          "spiegazione": "`git log` stampa per ogni commit l'hash completo, l'autore, la data e il messaggio, dal piu' recente al piu' vecchio. L'autore non e' chi possiede il file adesso: e' chi ha fatto **quel** commit, e resta li' per sempre."
+        },
+        {
+          "id": "g01-co-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Aggiungi la riga `11000,0.78` a `dati.csv`, mettila in staging e fai un commit con messaggio `aggiunge la misura a 11000 piedi`. Poi guarda la storia in forma compatta.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati della prima prova",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho 11000,0.78 >> dati.csv\ngit add dati.csv\ngit commit -m \"aggiunge la misura a 11000 piedi\"\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "commit": 3,
+              "messaggio": "11000",
+              "contiene": {
+                "dati.csv": "11000,0.78"
+              }
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Tre passi: modifica, add, commit.",
+            "La forma compatta della storia e' `git log --oneline`."
+          ],
+          "spiegazione": "`git log --oneline` da' una riga per commit: hash corto e messaggio. E' la forma che si usa per capire al volo dove si e'; quella lunga serve quando interessano autore e data. Nota `(HEAD -> main)` sul commit piu' recente: HEAD e' l'etichetta che dice dove sei adesso."
+        },
+        {
+          "id": "g01-co-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Guarda l'ultimo commit del repository: non solo il messaggio, ma anche le righe che ha cambiato.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge i dati della prima prova",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit show",
+          "verifica": {
+            "stampa": "+9000,0.82",
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Il comando mostra un commit con dentro le sue differenze."
+          ],
+          "spiegazione": "`git show` e' `git log` di un commit solo piu' il suo diff. Le righe con il `+` davanti sono quelle che quel commit ha aggiunto. E' il comando per rispondere alla domanda «che cosa ha fatto esattamente questo commit», che e' diversa da «che cosa dice il messaggio»."
+        },
+        {
+          "id": "g01-co-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Il file `analisi.py` e' gia' tracciato. Aggiungici la riga `import numpy` e committa in **un comando solo**, con messaggio `importa numpy`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho import numpy >> analisi.py\ngit commit -am \"importa numpy\"",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "messaggio": "importa numpy",
+              "contiene": {
+                "analisi.py": "import numpy"
+              },
+              "pulito": true
+            },
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git commit` che fa l'add dei file gia' tracciati.",
+            "Si combina con `-m`: `git commit -am \\\"...\\\"`."
+          ],
+          "spiegazione": "`-a` mette in staging tutti i file **gia' tracciati** che sono cambiati, e salta il passaggio di `git add`. Attenzione: non tocca i file nuovi, che restano untracked. E' la scorciatoia piu' usata di git e anche quella che fa dimenticare un file nuovo piu' spesso."
+        },
+        {
+          "id": "g01-co-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "L'ultimo commit ha il messaggio `asd`. Riscrivilo in `corregge la soglia di allarme`, senza aggiungere un commit nuovo.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "asd",
+                  "file": {
+                    "config.txt": "soglia=25\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit commit --amend -m \"corregge la soglia di allarme\"\ngit log --oneline",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "messaggio": "corregge la soglia di allarme"
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git commit` che sostituisce l'ultimo invece di aggiungerne uno.",
+            "Il numero di commit nella storia non deve cambiare."
+          ],
+          "spiegazione": "`--amend` sostituisce l'ultimo commit con uno nuovo: stesso contenuto, messaggio diverso, **hash diverso**. La storia resta di due commit. Finche' il commit e' solo sulla tua macchina si puo' fare liberamente; dopo averlo mandato agli altri si crea una divergenza, ed e' il guaio che vedrai nel modulo sul remoto."
+        },
+        {
+          "id": "g01-co-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Hai committato `analisi.py` ma ti sei dimenticato `config.txt`, che era parte dello stesso lavoro. Aggiungilo all'ultimo commit lasciando il messaggio com'e' (`collega la configurazione`), poi verifica che il commit contenga entrambi i file.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto del progetto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "collega la configurazione",
+                  "file": {
+                    "analisi.py": "import csv\n"
+                  }
+                }
+              ],
+              "lavoro": {
+                "config.txt": "soglia=25\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit add config.txt\ngit commit --amend -m \"collega la configurazione\"\ngit show",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "tracciato": [
+                "analisi.py",
+                "config.txt"
+              ],
+              "messaggio": "collega la configurazione"
+            },
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "Prima il file va in area di staging, poi si corregge il commit.",
+            "`--amend` prende quello che trova in staging."
+          ],
+          "spiegazione": "`--amend` non serve solo per i messaggi: prende quello che c'e' in area di staging e rifa' l'ultimo commit. E' il modo di rimediare al file dimenticato senza lasciare nella storia un commit «aggiunge il file che avevo dimenticato», che non dice niente a nessuno."
+        },
+        {
+          "id": "g01-co-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "Nel repository ci sono cinque commit. Conta quanti parlano di `misura`, usando la storia compatta e gli strumenti del ramo Linux.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge la misura a 9000 piedi",
+                  "file": {
+                    "m1.csv": "9000\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "corregge il titolo del readme",
+                  "file": {
+                    "README.md": "# Campagna di misure\n"
+                  }
+                },
+                {
+                  "messaggio": "aggiunge la misura a 11000 piedi",
+                  "file": {
+                    "m2.csv": "11000\n"
+                  }
+                },
+                {
+                  "messaggio": "scarta la misura a 3000 piedi",
+                  "file": {
+                    "scarti.txt": "3000\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit log --oneline | grep -c misura",
+          "verifica": {
+            "stampa": "3",
+            "usa": [
+              "git",
+              "grep"
+            ]
+          },
+          "hint": [
+            "La storia compatta e' una riga per commit: si puo' passare nella pipe.",
+            "`grep -c` conta le righe che corrispondono invece di stamparle."
+          ],
+          "spiegazione": "`git log --oneline | grep -c misura` risponde 3. E' il motivo per cui `--oneline` esiste: una riga per commit si filtra, si conta e si passa a un altro comando come qualunque testo. La storia di git e' testo, e tutto quello che hai imparato nel ramo Linux ci funziona sopra."
+        }
+      ]
+    },
+    {
+      "id": "g01-diff",
+      "comando": "diff, gitignore, rm",
+      "titolo": "Differenze, e che cosa non va versionato",
+      "esercizi": [
+        {
+          "id": "g01-df-1",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Aggiungi la riga `13000,0.74` a `dati.csv` e chiedi a git che cosa e' cambiato rispetto all'ultimo commit.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho 13000,0.74 >> dati.csv\ngit diff",
+          "verifica": {
+            "stampa": "+13000,0.74",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Il comando che mostra le differenze e' una parola sola."
+          ],
+          "spiegazione": "`git diff` confronta il working tree con l'area di staging e stampa le righe cambiate: `+` davanti a quelle aggiunte, `-` a quelle tolte. Senza opzioni guarda **solo i file tracciati**: un file che git non conosce non ha niente da cui differire, e infatti compare in `status`, non in `diff`."
+        },
+        {
+          "id": "g01-df-2",
+          "tipo": "terminale",
+          "difficolta": 2,
+          "testo": "Aggiungi la riga `13000,0.74` a `dati.csv`, mettila in staging, e poi fatti mostrare le differenze **che il prossimo commit conterra'**.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho 13000,0.74 >> dati.csv\ngit add dati.csv\ngit diff --staged",
+          "verifica": {
+            "git": {
+              "staged": [
+                "dati.csv"
+              ]
+            },
+            "stampa": "+13000,0.74",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Dopo `git add`, `git diff` da solo non mostra piu' niente: la modifica e' passata in staging.",
+            "C'e' un'opzione di `git diff` che guarda l'area di staging."
+          ],
+          "spiegazione": "Dopo l'add, `git diff` e' vuoto e `git diff --staged` mostra la modifica: i due comandi guardano due confini diversi dei tre posti. `diff` sta fra working tree e staging, `diff --staged` fra staging e ultimo commit. E' il controllo da fare **prima** di committare."
+        },
+        {
+          "id": "g01-df-3",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Nel repository c'e' `chiave.env`, che non deve mai finire nella storia. Scrivi un `.gitignore` che ignori tutti i file `.env`, poi controlla con lo stato breve che la chiave sia sparita dai file non tracciati.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "chiave.env": "TOKEN=abc123\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho *.env > .gitignore\ngit status -s",
+          "verifica": {
+            "contiene": {
+              "/home/tu/campagna/.gitignore": "*.env"
+            },
+            "nonStampa": "chiave.env",
+            "usa": [
+              "echo",
+              "git"
+            ]
+          },
+          "hint": [
+            "Una riga per motivo: l'asterisco sta per qualunque nome.",
+            "Il file si chiama `.gitignore` e sta nella radice del repository."
+          ],
+          "spiegazione": "Dopo il `.gitignore`, nello stato breve resta solo `?? .gitignore`: la chiave non compare piu'. Nota che e' sparita dalla lista ma non dal disco — `.gitignore` dice a git di non guardarla, non la cancella. E il `.gitignore` stesso **si versiona**: serve a tutti quelli che lavorano al progetto."
+        },
+        {
+          "id": "g01-df-4",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "`chiave.env` e' stato committato per sbaglio nel commit precedente. Toglilo dal controllo di versione **lasciandolo sul disco**, e committa con messaggio `toglie la chiave dal repository`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                },
+                {
+                  "messaggio": "aggiunge la configurazione",
+                  "file": {
+                    "chiave.env": "TOKEN=abc123\n"
+                  }
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit rm --cached chiave.env\ngit commit -m \"toglie la chiave dal repository\"\nls",
+          "verifica": {
+            "git": {
+              "nonTracciato": [
+                "chiave.env"
+              ],
+              "messaggio": "toglie la chiave"
+            },
+            "esiste": [
+              "/home/tu/campagna/chiave.env"
+            ],
+            "usa": [
+              "git"
+            ]
+          },
+          "hint": [
+            "C'e' un'opzione di `git rm` che agisce solo sull'indice di git.",
+            "Senza quell'opzione il file viene cancellato davvero."
+          ],
+          "spiegazione": "`git rm --cached` toglie il file dal controllo di versione e lo lascia dov'e'. Nota pero' che la chiave resta nei **commit vecchi**: chi ha il repository puo' ancora recuperarla da li'. Quando una chiave e' finita in un commit, l'unica cosa veramente da fare e' cambiarla."
+        },
+        {
+          "id": "g01-df-5",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Hai rovinato `config.txt` riscrivendolo per sbaglio. Rimettilo com'era nell'ultimo commit, poi controlla il contenuto.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "imposta la configurazione",
+                  "file": {
+                    "config.txt": "soglia=25\nporta=22\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "config.txt": "tutto rotto\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\ngit restore config.txt\ncat config.txt",
+          "verifica": {
+            "contenuto": {
+              "/home/tu/campagna/config.txt": "soglia=25\nporta=22\n"
+            },
+            "usa": [
+              "git",
+              "cat"
+            ]
+          },
+          "hint": [
+            "C'e' un comando di git che ripristina un file dal commit.",
+            "`git status` lo suggerisce da solo quando un file e' modificato."
+          ],
+          "spiegazione": "`git restore config.txt` riscrive il file con la versione in area di staging — che qui e' quella dell'ultimo commit. **Le modifiche non committate si perdono e non tornano**: e' uno dei pochi comandi di git che distrugge lavoro davvero, e infatti git lo nomina solo fra le parentesi di `status`."
+        },
+        {
+          "id": "g01-df-6",
+          "tipo": "terminale",
+          "difficolta": 3,
+          "testo": "Nel progetto c'e' la cartella `.venv` con dentro l'ambiente virtuale, e il file `analisi.log`. Scrivi un `.gitignore` che ignori la cartella `.venv` e tutti i file `.log`, poi verifica con lo stato breve che restino solo i file veri.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                ".venv/pyvenv.cfg": "home = /usr/bin\n",
+                "analisi.log": "INFO avvio\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho .venv/ > .gitignore\necho *.log >> .gitignore\ngit status -s",
+          "verifica": {
+            "contiene": {
+              "/home/tu/campagna/.gitignore": ".venv/"
+            },
+            "nonStampa": "analisi.log",
+            "usa": [
+              "echo",
+              "git"
+            ]
+          },
+          "hint": [
+            "Due righe, una per motivo: la prima con la barra finale per la cartella.",
+            "La seconda riga si aggiunge con `>>`, non con `>`, altrimenti riscrive il file."
+          ],
+          "spiegazione": "La barra finale dice «questa e' una cartella»: `.venv/` ignora tutto quello che c'e' dentro, che sono centinaia di megabyte ricostruibili con un comando. Un ambiente virtuale committato e' il modo piu' veloce per rendere un repository inutilizzabile dagli altri — contiene percorsi assoluti della **tua** macchina."
+        },
+        {
+          "id": "g01-df-7",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Repository da ripulire.** Nella cartella ci sono il file di dati `misure.csv`, una chiave `deploy.env` e un log `run.log`. Fai in modo che chiave e log non siano mai versionati, poi metti nella storia i dati e il `.gitignore` in un commit solo con messaggio `aggiunge le misure e ignora i file di servizio`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primo impianto",
+                  "file": {
+                    "README.md": "# campagna\n"
+                  },
+                  "autore": "anna"
+                }
+              ],
+              "lavoro": {
+                "misure.csv": "quota,mach\n9000,0.82\n",
+                "deploy.env": "TOKEN=abc\n",
+                "run.log": "INFO avvio\n"
+              }
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho *.env > .gitignore\necho *.log >> .gitignore\ngit add .\ngit commit -m \"aggiunge le misure e ignora i file di servizio\"\ngit status",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "tracciato": [
+                "misure.csv",
+                ".gitignore"
+              ],
+              "nonTracciato": [
+                "deploy.env",
+                "run.log"
+              ],
+              "pulito": true
+            },
+            "stampa": "working tree clean",
+            "usa": [
+              "git",
+              "echo"
+            ]
+          },
+          "hint": [
+            "Prima il `.gitignore`, poi l'add: se aggiungi prima, i file entrano comunque.",
+            "`git add .` prende tutto quello che non e' ignorato.",
+            "Alla fine `git status` deve dire che non c'e' piu' niente da fare."
+          ],
+          "spiegazione": "L'ordine conta: `.gitignore` prima di `git add .`, altrimenti chiave e log entrano in staging e il `.gitignore` non li toglie piu'. Il `working tree clean` finale e' la conferma che non e' rimasto niente fuori — ed e' lo stato in cui si lascia un repository alla fine di una sessione di lavoro."
+        },
+        {
+          "id": "g01-df-8",
+          "tipo": "terminale",
+          "difficolta": 4,
+          "testo": "**Quante righe ho cambiato?** Modifica `dati.csv` aggiungendo le due misure `15000,0.71` e `17000,0.69`, poi conta le righe aggiunte leggendole dal diff, e infine committa con messaggio `aggiunge due misure in quota`.",
+          "git": {
+            "repo": {
+              "radice": "/home/tu/campagna",
+              "commit": [
+                {
+                  "messaggio": "primi dati",
+                  "file": {
+                    "dati.csv": "quota,mach\n9000,0.82\n"
+                  },
+                  "autore": "anna"
+                }
+              ]
+            }
+          },
+          "filesystem": {},
+          "soluzione": "cd campagna\necho 15000,0.71 >> dati.csv\necho 17000,0.69 >> dati.csv\ngit diff | grep -c \"^+1\"\ngit commit -am \"aggiunge due misure in quota\"",
+          "verifica": {
+            "git": {
+              "commit": 2,
+              "messaggio": "due misure",
+              "contiene": {
+                "dati.csv": "17000,0.69"
+              },
+              "pulito": true
+            },
+            "stampa": "2",
+            "usa": [
+              "git",
+              "echo",
+              "grep"
+            ]
+          },
+          "hint": [
+            "Le righe aggiunte nel diff cominciano con `+`.",
+            "`^+1` prende le righe che cominciano con un piu' seguito da 1: evita di contare l'intestazione `+++ b/dati.csv`.",
+            "Alla fine si committa in un comando solo, perche' il file e' gia' tracciato."
+          ],
+          "spiegazione": "Il diff e' testo, quindi si conta con `grep -c`. Il motivo dell'`^+1` e' istruttivo: le prime righe del diff sono `--- a/dati.csv` e `+++ b/dati.csv`, e un `grep -c \"^+\"` ne conterebbe una di troppo. E' lo stesso tipo di trappola che hai visto contando i file con `ls`."
+        }
+      ]
+    }
+  ]
+}

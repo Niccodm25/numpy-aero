@@ -185,6 +185,26 @@ def main():
             for p in problemi:
                 print("       - " + p)
 
+    # Il ramo su git: esercizi di terminale, stesse regole del ramo Linux, ma
+    # con un vocabolario suo che riparte da zero.
+    gitramo = next((r for r in indice["rami"] if r["id"] == "github"), None)
+    vistiGit = set()
+    for mid in (gitramo or {}).get("moduli", []):
+        meta = next((m for m in indice["moduli"] if m["id"] == mid), None)
+        if not meta or not meta.get("disponibile"):
+            continue
+        dati = json.load(io.open("content/" + meta["file"], encoding="utf8"))
+        problemi, esercizi = controlla(mid, meta["titolo"], dati, vistiGit)
+        for e in esercizi:
+            vistiGit |= comandi_di(e.get("soluzione"))
+        if problemi:
+            fuori_standard += 1
+        if problemi or tutti:
+            stato = "ok" if not problemi else "DA RIFARE"
+            print("%-6s %-38s %5d %s" % (mid, meta["titolo"][:38], len(esercizi), stato))
+            for p in problemi:
+                print("       - " + p)
+
     # Il ramo di teoria, con le sue regole.
     teoria = next((r for r in indice["rami"] if r["id"] == "dinamica"), None)
     for mid in (teoria or {}).get("moduli", []):
